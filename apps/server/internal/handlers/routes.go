@@ -127,9 +127,8 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 		WebhookHandler:  NewWebhookHandler(app),
 	}
 
-	e.GET("/events", h.webSocketEventHandler)
-
-	v1 := e.Group("/api").Group("/v1")
+	v1 := e.Group("/api/v1")
+	v1.GET("/events", h.webSocketEventHandler)
 
 	//
 	// Auth middleware

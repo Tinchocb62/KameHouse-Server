@@ -10,6 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"kamehouse/internal/core"
+	"kamehouse/internal/handlers"
 )
 
 //go:embed all:web
@@ -35,39 +38,58 @@ func main() {
 	}
 }
 
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func run(ctx context.Context) error {
-	// 1. Dependency Injection Initialization
-	di := &AppDI{
-		Logger: slog.New(slog.NewJSONHandler(os.Stdout, nil)),
+	// Initialize robust arguments required by NewAntigravity inside KameHouse.
+	configOpts := &core.ConfigOptions{
+		Flags:        core.KameHouseFlags{Port: 43211, Host: "127.0.0.1", IsDesktopSidecar: true},
+		EmbeddedLogo: embeddedLogo,
 	}
 
-	// 2. HTTP Server Configuration
-	srv := &http.Server{
-		Addr:         ":8080", // Should be injected via config in the future
-		Handler:      http.NewServeMux(), // Placeholder: replace with AppRouter router
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
+	app := core.NewAntigravity(configOpts, nil)
 
-	// 3. Start server concurrently
+	// Since NewEchoApp returns an unstarted Echo instance, we run it manually
+	// Or use core.RunEchoServer if adapted to take context
+	e := core.NewEchoApp(app, &WebFS)
+	handlers.InitRoutes(app, e)
+
+	// Start server concurrently
 	errCh := make(chan error, 1)
 	go func() {
-		di.Logger.Info("server listening", "addr", srv.Addr)
-		errCh <- srv.ListenAndServe()
+		app.Logger.Info().Msg("server listening on :43211")
+		errCh <- e.Start(":43211")
 	}()
 
-	// 4. Block for shutdown signal or fatal error
+	// Block for shutdown signal or fatal error
 	select {
 	case err := <-errCh:
 		return err
 	case <-ctx.Done():
-		di.Logger.Info("initiating graceful shutdown")
-		
-		// Derive timeout context to ensure no infinite blocking on shutdown
+		app.Logger.Info().Msg("initiating graceful shutdown")
+
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		
-		return srv.Shutdown(shutdownCtx)
+
+		return e.Shutdown(shutdownCtx)
 	}
 }
