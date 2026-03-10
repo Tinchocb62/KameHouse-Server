@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"net/http"
+
 
 	"kamehouse/internal/core"
-	"kamehouse/internal/util/result"
 
 	"github.com/labstack/echo/v4"
 )
@@ -61,7 +60,7 @@ func (h *MobileV1Handler) GetAnimeLibraryDVO(c echo.Context) error {
 		},
 	}
 
-	return c.JSON(http.StatusOK, result.Ok(dvos))
+	return JSONSuccess(c, dvos)
 }
 
 // GetGeneralLibraryDVO returns a list of general media optimized for Android.
@@ -75,5 +74,5 @@ func (h *MobileV1Handler) GetGeneralLibraryDVO(c echo.Context) error {
 		},
 	}
 
-	return c.JSON(http.StatusOK, result.Ok(dvos))
+	return JSONSuccess(c, dvos)
 }

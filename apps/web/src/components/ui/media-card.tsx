@@ -2,6 +2,7 @@ import { cn } from "@/components/ui/core/styling"
 import type { CardAspect } from "@/lib/home-catalog"
 import { Folder, Zap } from "lucide-react"
 import * as React from "react"
+import { DeferredImage } from "@/components/shared/deferred-image"
 
 // ─── Intelligence tag colours ─────────────────────────────────────────────────
 
@@ -73,12 +74,10 @@ export function MediaCard({
                 className,
             )}
         >
-            {/* ── Poster / Backdrop image ────────────────────────────────── */}
-            <img
+            {/* ── Poster / Backdrop image (Deferred) ────────────────────── */}
+            <DeferredImage
                 src={artwork}
                 alt={title}
-                loading="lazy"
-                draggable={false}
                 className="absolute inset-0 h-full w-full select-none object-cover"
                 onError={(e) => {
                     ;(e.target as HTMLImageElement).src =

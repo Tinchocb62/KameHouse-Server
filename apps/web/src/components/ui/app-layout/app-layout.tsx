@@ -10,7 +10,7 @@ import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
 export const AppLayoutAnatomy = defineStyleAnatomy({
     root: cva([
         "UI-AppLayout__root appLayout",
-        "flex w-full flex-col group/appLayout min-h-dvh bg-zinc-950 text-white overflow-x-hidden",
+        "flex h-screen w-full overflow-hidden bg-zinc-950 text-white",
     ]),
 })
 
@@ -26,10 +26,7 @@ export const AppLayoutHeaderAnatomy = defineStyleAnatomy({
 export const AppLayoutContentAnatomy = defineStyleAnatomy({
     root: cva([
         "UI-AppLayoutContent__root",
-        "relative flex-1 min-w-0 flex flex-col w-full",
-        "overflow-y-auto overflow-x-hidden h-dvh",
-        "pt-20 md:pt-24", // Safe area for Top Nav
-        "pb-16 sm:pb-0", // reserve space for BottomNav only on mobile (<sm)
+        "flex-1 overflow-y-auto relative w-full",
     ]),
 })
 
@@ -141,7 +138,9 @@ export const AppLayout = React.forwardRef<HTMLDivElement, AppLayoutProps>((props
             )}
             {...rest}
         >
-            {children}
+            <div className="flex-1 flex flex-col min-w-0">
+                {children}
+            </div>
         </div>
     )
 

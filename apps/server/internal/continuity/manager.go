@@ -23,7 +23,7 @@ type (
 		db                          *db.Database
 		watchHistoryFileCacheBucket *filecache.Bucket
 
-		TelemetryPool *TelemetryWorkerPool
+		TelemetryManager *TelemetryManager
 
 		externalPlayerEpisodeDetails mo.Option[*ExternalPlayerEpisodeDetails]
 
@@ -72,7 +72,7 @@ func NewManager(opts *NewManagerOptions) *Manager {
 
 	ret.logger.Info().Msg("continuity: Initialized manager")
 
-	ret.TelemetryPool = NewTelemetryWorkerPool(ret, opts.Logger, 5*time.Second)
+	ret.TelemetryManager = NewTelemetryManager(ret, opts.Logger, 5*time.Second)
 
 	return ret
 }

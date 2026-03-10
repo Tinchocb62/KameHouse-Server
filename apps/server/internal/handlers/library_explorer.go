@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"strconv"
+
+	"kamehouse/internal/database/models/dto"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -30,6 +34,38 @@ func (h *Handler) HandleGetLibraryExplorerFileTree(c echo.Context) error {
 	fileTree, err := h.App.LibraryExplorer.GetFileTree()
 	if err != nil {
 		return h.RespondWithError(c, err)
+	}
+
+	limitStr := c.QueryParam("limit")
+	offsetStr := c.QueryParam("offset")
+
+	// Paginación segura para no saturar al cliente RSC con diccionarios de 10k elementos
+	if limitStr != "" || offsetStr != "" {
+		limit, _ := strconv.Atoi(limitStr)
+		offset, _ := strconv.Atoi(offsetStr)
+
+		if limit <= 0 {
+			limit = 100 // default fallback
+		}
+
+		current := 0
+		paginatedFiles := make(map[string]*dto.LocalFile)
+
+		for k, v := range fileTree.LocalFiles {
+			if current >= offset && current < (offset+limit) {
+				paginatedFiles[k] = v
+			}
+			current++
+			if current >= (offset + limit) {
+				break
+			}
+		}
+
+		// Crear una copia superficial del response tree para reemplazar el map gigante
+		paginatedTree := *fileTree
+		paginatedTree.LocalFiles = paginatedFiles
+
+		return h.RespondWithData(c, paginatedTree)
 	}
 
 	return h.RespondWithData(c, fileTree)

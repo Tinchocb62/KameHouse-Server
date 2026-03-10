@@ -51,7 +51,7 @@ func getActiveProvider(h *Handler) librarymetadata.Provider {
 		}
 	}
 
-	return librarymetadata.NewAniListProvider(h.App.AnilistClientRef.Get())
+	return librarymetadata.NewAniListProvider(h.App.Metadata.AnilistClientRef.Get())
 }
 
 func (h *Handler) getAnimeEntry(c echo.Context, lfs []*dto.LocalFile, mId int) (*anime.Entry, error) {
@@ -90,8 +90,8 @@ func (h *Handler) getAnimeEntry(c echo.Context, lfs []*dto.LocalFile, mId int) (
 		MediaId:             mId,
 		LocalFiles:          lfs,
 		Database:            h.App.Database,
-		PlatformRef:         h.App.AnilistPlatformRef,
-		MetadataProviderRef: h.App.MetadataProviderRef,
+		PlatformRef:         h.App.Metadata.AnilistPlatformRef,
+		MetadataProviderRef: h.App.Metadata.ProviderRef,
 		IsSimulated:         h.App.GetUser().IsSimulated,
 	})
 	if err != nil {
@@ -421,7 +421,7 @@ func (h *Handler) HandleAnimeEntryManualMatch(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	animeCollectionWithRelations, err := h.App.AnilistPlatformRef.Get().GetAnimeCollectionWithRelations(c.Request().Context())
+	animeCollectionWithRelations, err := h.App.Metadata.AnilistPlatformRef.Get().GetAnimeCollectionWithRelations(c.Request().Context())
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
@@ -473,8 +473,8 @@ func (h *Handler) HandleAnimeEntryManualMatch(c echo.Context) error {
 	fh := scanner.FileHydrator{
 		LocalFiles:          selectedLfs,
 		CompleteAnimeCache:  anilist.NewCompleteAnimeCache(),
-		PlatformRef:         h.App.AnilistPlatformRef,
-		MetadataProviderRef: h.App.MetadataProviderRef,
+		PlatformRef:         h.App.Metadata.AnilistPlatformRef,
+		MetadataProviderRef: h.App.Metadata.ProviderRef,
 		AnilistRateLimiter:  limiter.NewAnilistLimiter(),
 		Logger:              h.App.Logger,
 		ScanLogger:          scanLogger,
@@ -563,7 +563,7 @@ func (h *Handler) HandleGetMissingEpisodes(c echo.Context) error {
 		Database:            h.App.Database,
 		LocalFiles:          lfs,
 		SilencedMediaIds:    silencedMediaIds,
-		MetadataProviderRef: h.App.MetadataProviderRef,
+		MetadataProviderRef: h.App.Metadata.ProviderRef,
 	})
 
 	event := new(anime.MissingEpisodesEvent)
@@ -605,7 +605,7 @@ func (h *Handler) HandleGetUpcomingEpisodes(c echo.Context) error {
 	}
 	upcomingEps := anime.NewUpcomingEpisodes(&anime.NewUpcomingEpisodesOptions{
 		AnimeCollection:     animeCollection,
-		MetadataProviderRef: h.App.MetadataProviderRef,
+		MetadataProviderRef: h.App.Metadata.ProviderRef,
 	})
 
 	event := new(anime.UpcomingEpisodesEvent)
@@ -729,7 +729,7 @@ func (h *Handler) HandleUpdateAnimeEntryProgress(c echo.Context) error {
 	}
 
 	// Update the progress on AniList (for AniList-tracked media)
-	err := h.App.AnilistPlatformRef.Get().UpdateEntryProgress(
+	err := h.App.Metadata.AnilistPlatformRef.Get().UpdateEntryProgress(
 		c.Request().Context(),
 		b.MediaId,
 		b.EpisodeNumber,
@@ -765,7 +765,7 @@ func (h *Handler) HandleUpdateAnimeEntryRepeat(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	err := h.App.AnilistPlatformRef.Get().UpdateEntryRepeat(
+	err := h.App.Metadata.AnilistPlatformRef.Get().UpdateEntryRepeat(
 		c.Request().Context(),
 		b.MediaId,
 		b.Repeat,

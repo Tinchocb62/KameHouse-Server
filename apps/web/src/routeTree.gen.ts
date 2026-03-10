@@ -20,6 +20,7 @@ import { Route as CalendarIndexRouteImport } from './routes/calendar/index'
 import { Route as SplashscreenCrashIndexRouteImport } from './routes/splashscreen/crash/index'
 import { Route as SeriesSeriesIdIndexRouteImport } from './routes/series/$seriesId/index'
 import { Route as PublicAuthIndexRouteImport } from './routes/public/auth/index'
+import { Route as MediaSeriesIdIndexRouteImport } from './routes/media/$seriesId/index'
 import { Route as SeriesSeriesIdSagaIdRouteImport } from './routes/series/$seriesId/$sagaId'
 
 const ScanLogViewerIndexLazyRouteImport = createFileRoute('/scan-log-viewer/')()
@@ -90,6 +91,11 @@ const PublicAuthIndexRoute = PublicAuthIndexRouteImport.update({
   path: '/public/auth/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MediaSeriesIdIndexRoute = MediaSeriesIdIndexRouteImport.update({
+  id: '/media/$seriesId/',
+  path: '/media/$seriesId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SeriesSeriesIdSagaIdRoute = SeriesSeriesIdSagaIdRouteImport.update({
   id: '/series/$seriesId/$sagaId',
   path: '/series/$seriesId/$sagaId',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/issue-report/': typeof IssueReportIndexLazyRoute
   '/scan-log-viewer/': typeof ScanLogViewerIndexLazyRoute
   '/series/$seriesId/$sagaId': typeof SeriesSeriesIdSagaIdRoute
+  '/media/$seriesId/': typeof MediaSeriesIdIndexRoute
   '/public/auth/': typeof PublicAuthIndexRoute
   '/series/$seriesId/': typeof SeriesSeriesIdIndexRoute
   '/splashscreen/crash/': typeof SplashscreenCrashIndexRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/issue-report': typeof IssueReportIndexLazyRoute
   '/scan-log-viewer': typeof ScanLogViewerIndexLazyRoute
   '/series/$seriesId/$sagaId': typeof SeriesSeriesIdSagaIdRoute
+  '/media/$seriesId': typeof MediaSeriesIdIndexRoute
   '/public/auth': typeof PublicAuthIndexRoute
   '/series/$seriesId': typeof SeriesSeriesIdIndexRoute
   '/splashscreen/crash': typeof SplashscreenCrashIndexRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/issue-report/': typeof IssueReportIndexLazyRoute
   '/scan-log-viewer/': typeof ScanLogViewerIndexLazyRoute
   '/series/$seriesId/$sagaId': typeof SeriesSeriesIdSagaIdRoute
+  '/media/$seriesId/': typeof MediaSeriesIdIndexRoute
   '/public/auth/': typeof PublicAuthIndexRoute
   '/series/$seriesId/': typeof SeriesSeriesIdIndexRoute
   '/splashscreen/crash/': typeof SplashscreenCrashIndexRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/issue-report/'
     | '/scan-log-viewer/'
     | '/series/$seriesId/$sagaId'
+    | '/media/$seriesId/'
     | '/public/auth/'
     | '/series/$seriesId/'
     | '/splashscreen/crash/'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/issue-report'
     | '/scan-log-viewer'
     | '/series/$seriesId/$sagaId'
+    | '/media/$seriesId'
     | '/public/auth'
     | '/series/$seriesId'
     | '/splashscreen/crash'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/issue-report/'
     | '/scan-log-viewer/'
     | '/series/$seriesId/$sagaId'
+    | '/media/$seriesId/'
     | '/public/auth/'
     | '/series/$seriesId/'
     | '/splashscreen/crash/'
@@ -201,6 +213,7 @@ export interface RootRouteChildren {
   IssueReportIndexLazyRoute: typeof IssueReportIndexLazyRoute
   ScanLogViewerIndexLazyRoute: typeof ScanLogViewerIndexLazyRoute
   SeriesSeriesIdSagaIdRoute: typeof SeriesSeriesIdSagaIdRoute
+  MediaSeriesIdIndexRoute: typeof MediaSeriesIdIndexRoute
   PublicAuthIndexRoute: typeof PublicAuthIndexRoute
   SeriesSeriesIdIndexRoute: typeof SeriesSeriesIdIndexRoute
   SplashscreenCrashIndexRoute: typeof SplashscreenCrashIndexRoute
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicAuthIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/media/$seriesId/': {
+      id: '/media/$seriesId/'
+      path: '/media/$seriesId'
+      fullPath: '/media/$seriesId/'
+      preLoaderRoute: typeof MediaSeriesIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/series/$seriesId/$sagaId': {
       id: '/series/$seriesId/$sagaId'
       path: '/series/$seriesId/$sagaId'
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   IssueReportIndexLazyRoute: IssueReportIndexLazyRoute,
   ScanLogViewerIndexLazyRoute: ScanLogViewerIndexLazyRoute,
   SeriesSeriesIdSagaIdRoute: SeriesSeriesIdSagaIdRoute,
+  MediaSeriesIdIndexRoute: MediaSeriesIdIndexRoute,
   PublicAuthIndexRoute: PublicAuthIndexRoute,
   SeriesSeriesIdIndexRoute: SeriesSeriesIdIndexRoute,
   SplashscreenCrashIndexRoute: SplashscreenCrashIndexRoute,

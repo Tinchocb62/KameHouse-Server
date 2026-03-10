@@ -238,16 +238,12 @@ export function VideoPlayerModal({
     // Addon Subtitles
     const { data: addonSubtitles } = useGetAddonSubtitles("series", mediaId)
 
-    // Playback Telemetry (debounced 10s + onEnded)
-    const telemetry = usePlaybackTelemetry({
-        mediaId,
-        episodeNumber,
-        totalEpisodes: 0,
-    })
+    // Playback Telemetry
+    const telemetry = usePlaybackTelemetry(mediaId ? String(mediaId) : "")
 
     // Settings
     const { data: settings } = useGetSettings()
-    const isPredictiveCacheEnabled = settings?.mediaPlayer?.predictiveCache ?? false
+    const isPredictiveCacheEnabled = (settings?.mediaPlayer as any)?.predictiveCache ?? false
 
     // Insights (X-Ray Heatmap)
     const [insights, setInsights] = useState<InsightNode[]>([])
@@ -256,7 +252,7 @@ export function VideoPlayerModal({
         let cancelled = false
         fetch(`/api/v1/videocore/insights/${mediaId}-${episodeNumber}?duration=${duration}`)
             .then((r) => r.ok ? r.json() : null)
-            .then((res) => {
+            .then((res: any) => {
                 if (cancelled || !res?.data) return
                 setInsights(res.data)
             })
@@ -440,6 +436,9 @@ export function VideoPlayerModal({
 
             // Marathon triggers — buckets to 1 s, no re-render on every RAF tick
             checkPlaybackTriggers(time, dur)
+
+            // Playback telemetry
+            telemetry.reportProgress(time, false)
         }
         const updateDuration = () => setDuration(video.duration)
         const onPlay = () => {
@@ -451,7 +450,10 @@ export function VideoPlayerModal({
         }
         const onPause = () => {
             setIsPlaying(false)
-            if (video.duration > 0) saveContinuity(video.currentTime, video.duration)
+            if (video.duration > 0) {
+                saveContinuity(video.currentTime, video.duration)
+                telemetry.reportProgress(video.currentTime, true)
+            }
             // Flash the center pause icon
             if (centerFlashTimerRef.current) clearTimeout(centerFlashTimerRef.current)
             setCenterFlash("pause")
@@ -701,8 +703,14 @@ export function VideoPlayerModal({
                 // Ocultar controles nativos
                 controls={false}
                 // Playback telemetry
-                onTimeUpdate={telemetry.handleTimeUpdate}
-                onEnded={telemetry.handleEnded}
+                onEnded={() => {
+                    const video = videoRef.current
+                    if (video) telemetry.reportProgress(video.currentTime, true)
+                }}
+                onSeeked={() => {
+                    const video = videoRef.current
+                    if (video) telemetry.reportProgress(video.currentTime, true)
+                }}
             >
                 {/* Addon subtitle tracks (external WebVTT sources from addon system) */}
                 {addonSubtitles?.map((sub, idx) => (

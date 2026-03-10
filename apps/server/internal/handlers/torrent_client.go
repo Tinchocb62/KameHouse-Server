@@ -218,7 +218,7 @@ func (h *Handler) HandleTorrentClientDownload(c echo.Context) error {
 
 	var completeAnime *anilist.CompleteAnime
 	var err error
-	completeAnime, err = h.App.AnilistPlatformRef.Get().GetAnimeWithRelations(c.Request().Context(), b.Media.ID)
+	completeAnime, err = h.App.Metadata.AnilistPlatformRef.Get().GetAnimeWithRelations(c.Request().Context(), b.Media.ID)
 	if err != nil {
 		completeAnime = b.Media.ToCompleteAnime()
 	}
@@ -234,7 +234,7 @@ func (h *Handler) HandleTorrentClientDownload(c echo.Context) error {
 			EpisodeNumbers:   b.SmartSelect.MissingEpisodeNumbers,
 			Media:            completeAnime,
 			Destination:      b.Destination,
-			PlatformRef:      h.App.AnilistPlatformRef,
+			PlatformRef:      h.App.Metadata.AnilistPlatformRef,
 			ShouldAddTorrent: true,
 		})
 		if err != nil {
@@ -292,7 +292,7 @@ func (h *Handler) HandleTorrentClientDownload(c echo.Context) error {
 				return
 			}
 			// Add the media to the collection
-			err = h.App.AnilistPlatformRef.Get().AddMediaToCollection(c.Request().Context(), []int{b.Media.ID})
+			err = h.App.Metadata.AnilistPlatformRef.Get().AddMediaToCollection(c.Request().Context(), []int{b.Media.ID})
 			if err != nil {
 				h.App.Logger.Error().Err(err).Msg("anilist: Failed to add media to collection")
 			}

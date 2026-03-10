@@ -8,117 +8,100 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// PlaybackEvent represents a highly-frequent, transient playback progress tick
-// dispatched by the frontend without awaiting database commitments.
-type PlaybackEvent struct {
+// TelemetryEvent represents a highly-frequent, transient playback progress tick
+type TelemetryEvent struct {
 	MediaId       int
 	EpisodeNumber int
 	CurrentTime   float64
 	Duration      float64
 	Kind          Kind
 	Filepath      string
-	IsFinal       bool // Triggered on pause, unmount or completion
+	IsFinal       bool
 }
 
-// TelemetryWorkerPool orchestrates asynchronous, non-blocking playback progress aggregation.
-// It achieves Zero-Latency I/O by deferring database writes through rapid Go channels
-// and batching the resulting states in memory before flushing every N seconds.
-type TelemetryWorkerPool struct {
-	manager    *Manager
-	logger     *zerolog.Logger
-	eventsChan chan *PlaybackEvent
-
-	// Fast memory store for deduplicating high-frequency ticks before DB flush
-	memoryBatch map[int]*PlaybackEvent
-	batchMutex  sync.Mutex
-
+// TelemetryManager orchestrates asynchronous, non-blocking playback progress aggregation.
+type TelemetryManager struct {
+	manager       *Manager
+	logger        *zerolog.Logger
+	eventQueue    chan TelemetryEvent
+	memoryBatch   map[int]TelemetryEvent
+	batchMutex    sync.Mutex
 	flushInterval time.Duration
 	ctx           context.Context
 	cancel        context.CancelFunc
 }
 
-func NewTelemetryWorkerPool(manager *Manager, logger *zerolog.Logger, flushInterval time.Duration) *TelemetryWorkerPool {
+func NewTelemetryManager(manager *Manager, logger *zerolog.Logger, flushInterval time.Duration) *TelemetryManager {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	pool := &TelemetryWorkerPool{
+	tm := &TelemetryManager{
 		manager:       manager,
 		logger:        logger,
-		eventsChan:    make(chan *PlaybackEvent, 10000), // Buffer handles sudden traffic spikes
-		memoryBatch:   make(map[int]*PlaybackEvent),
+		eventQueue:    make(chan TelemetryEvent, 1000), // Buffer handles sudden traffic spikes
+		memoryBatch:   make(map[int]TelemetryEvent),
 		flushInterval: flushInterval,
 		ctx:           ctx,
 		cancel:        cancel,
 	}
 
-	// Spawn the relentless background aggregator
-	go pool.RunAggregator()
+	go tm.StartWorker()
 
-	pool.logger.Info().Dur("flushInterval", flushInterval).Msg("telemetry: Initialized Event-Driven Worker Pool")
-	return pool
+	tm.logger.Info().Dur("flushInterval", flushInterval).Msg("telemetry: Initialized High-Speed Telemetry Manager")
+	return tm
 }
 
-// Publish instantly queues the event (Sub-1ms guarantee) and returns control to the HTTP handler
-func (p *TelemetryWorkerPool) Publish(event *PlaybackEvent) {
+// Queue instantly queues the event (Sub-1ms guarantee) and returns control to the HTTP handler
+func (tm *TelemetryManager) Queue(event TelemetryEvent) {
 	select {
-	case p.eventsChan <- event:
+	case tm.eventQueue <- event:
 		// Sent successfully without blocking
 	default:
-		// Edge case: Channel buffer is fully saturated.
-		// We drop the transient tick to ensure we never block the main thread.
-		p.logger.Warn().Int("MediaId", event.MediaId).Msg("telemetry: Buffer saturated, dropped frequent tick")
+		tm.logger.Warn().Int("MediaId", event.MediaId).Msg("telemetry: Queue saturated, dropped frequent tick")
 	}
 }
 
-// RunAggregator is the core Event Loop.
-// It listens for instant transient ticks and collapses them into a Memory Map.
-func (p *TelemetryWorkerPool) RunAggregator() {
-	ticker := time.NewTicker(p.flushInterval)
+// StartWorker is the core Event Loop.
+func (tm *TelemetryManager) StartWorker() {
+	ticker := time.NewTicker(tm.flushInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-p.ctx.Done():
-			p.logger.Info().Msg("telemetry: Shutting down Telemetry Worker Pool")
-			p.FlushToDatabase() // Final graceful sync
+		case <-tm.ctx.Done():
+			tm.logger.Info().Msg("telemetry: Shutting down Telemetry Manager")
+			tm.FlushToDatabase()
 			return
 
-		case event := <-p.eventsChan:
-			p.batchMutex.Lock()
-			// Only keep the most recent tick for each media ID (Deduplication)
-			p.memoryBatch[event.MediaId] = event
-			p.batchMutex.Unlock()
+		case event := <-tm.eventQueue:
+			tm.batchMutex.Lock()
+			tm.memoryBatch[event.MediaId] = event
+			tm.batchMutex.Unlock()
 
-			// If it's a final event (User clicked pause or finished the episode), force a targeted immediate flush hook
 			if event.IsFinal {
-				p.handleFinalEvent(event)
+				tm.handleFinalEvent(&event)
 			}
 
 		case <-ticker.C:
-			// Time to sync Memory Batch to local Database safely
-			p.FlushToDatabase()
+			tm.FlushToDatabase()
 		}
 	}
 }
 
-func (p *TelemetryWorkerPool) FlushToDatabase() {
-	p.batchMutex.Lock()
+func (tm *TelemetryManager) FlushToDatabase() {
+	tm.batchMutex.Lock()
 
-	if len(p.memoryBatch) == 0 {
-		p.batchMutex.Unlock()
+	if len(tm.memoryBatch) == 0 {
+		tm.batchMutex.Unlock()
 		return
 	}
 
-	// Clone the batch to release lock quickly, allowing new ticks to flow into memory
-	clonedBatch := make(map[int]*PlaybackEvent, len(p.memoryBatch))
-	for k, v := range p.memoryBatch {
+	clonedBatch := make(map[int]TelemetryEvent, len(tm.memoryBatch))
+	for k, v := range tm.memoryBatch {
 		clonedBatch[k] = v
 	}
-	// Clear the origin map
-	p.memoryBatch = make(map[int]*PlaybackEvent)
-	p.batchMutex.Unlock()
+	tm.memoryBatch = make(map[int]TelemetryEvent)
+	tm.batchMutex.Unlock()
 
-	// Synchronize deduplicated events to DB
-	// This takes time (IO) but we are clear of the main thread and Mutex
 	for _, event := range clonedBatch {
 		opts := &UpdateWatchHistoryItemOptions{
 			MediaId:       event.MediaId,
@@ -129,31 +112,24 @@ func (p *TelemetryWorkerPool) FlushToDatabase() {
 			Filepath:      event.Filepath,
 		}
 
-		err := p.manager.UpdateWatchHistoryItem(opts)
+		err := tm.manager.UpdateWatchHistoryItem(opts)
 		if err != nil {
-			p.logger.Error().Err(err).Int("MediaID", event.MediaId).Msg("telemetry: Async DB Flush failed")
+			tm.logger.Error().Err(err).Int("MediaID", event.MediaId).Msg("telemetry: Async DB Flush failed")
 		} else {
-			p.logger.Trace().Int("MediaID", event.MediaId).Msg("telemetry: Flushed bulk tick to disk successfully")
+			tm.logger.Trace().Int("MediaID", event.MediaId).Msg("telemetry: Flushed bulk tick to disk successfully")
 		}
 	}
 }
 
-// handleFinalEvent triggers potential Scrobbler integration hooks when a user is done watching.
-func (p *TelemetryWorkerPool) handleFinalEvent(event *PlaybackEvent) {
-	// Let the batch flush it organically later, but we analyze MAL thresholds right now.
+func (tm *TelemetryManager) handleFinalEvent(event *TelemetryEvent) {
 	if event.Duration > 0 {
 		completionRatio := event.CurrentTime / event.Duration
 		if completionRatio >= IgnoreRatioThreshold {
-			// They crossed 90%! This means they watched the episode.
-			// Next, we notify the Dead Letter Queue Scrobbler to queue a MAL update.
-			p.logger.Info().Int("MediaId", event.MediaId).Int("Episode", event.EpisodeNumber).Msg("telemetry: User completed episode, signaling Scrobbler hooks")
-			// The actual trigger to the DLQ would reside here or via global event bus:
-			// hook.GlobalHookManager.OnEpisodeCompleted().Trigger(...)
+			tm.logger.Info().Int("MediaId", event.MediaId).Int("Episode", event.EpisodeNumber).Msg("telemetry: User completed episode, signaling Scrobbler hooks")
 		}
 	}
 }
 
-// Stop gracefully stops the pool
-func (p *TelemetryWorkerPool) Stop() {
-	p.cancel()
+func (tm *TelemetryManager) Stop() {
+	tm.cancel()
 }

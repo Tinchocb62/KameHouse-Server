@@ -26,7 +26,7 @@ import * as React from "react"
 import { cn } from "@/components/ui/core/styling"
 import { FaPlay } from "react-icons/fa"
 import { BsClock } from "react-icons/bs"
-import { Star, Zzz, Folder, Zap } from "lucide-react"
+import { Star, Folder, Zap } from "lucide-react"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -233,7 +233,7 @@ function EpisodeCard({ episode, saga, onPlay }: EpisodeCardProps) {
                         )}
                         {isFiller && (
                             <span className="inline-flex items-center text-zinc-400 shrink-0 ml-1" title="Episodio de Relleno">
-                                <Zzz className="w-3.5 h-3.5" />
+                                (Relleno)
                             </span>
                         )}
                     </div>

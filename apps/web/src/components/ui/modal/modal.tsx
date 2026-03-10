@@ -20,7 +20,7 @@ export const ModalAnatomy = defineStyleAnatomy({
     ]),
     content: cva([
         "UI-Modal__content",
-        "z-50 grid relative w-full w-full shadow-2xl border border-white/10 max-w-lg gap-4 bg-[--background]/80 backdrop-blur-2xl p-6 duration-200",
+        "z-50 grid relative w-full w-full shadow-2xl border border-border max-w-lg gap-4 bg-background/80 backdrop-blur-2xl p-6 duration-200",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         // "data-[state=open]:slide-in-from-top-[40%] data-[state=closed]:slide-out-to-bottom-[40%]",
@@ -48,7 +48,7 @@ export const ModalAnatomy = defineStyleAnatomy({
     ]),
     description: cva([
         "UI-Modal__description",
-        "text-sm text-[--muted]",
+        "text-sm text-muted-foreground",
     ]),
 })
 

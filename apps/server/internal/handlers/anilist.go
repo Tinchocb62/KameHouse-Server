@@ -93,7 +93,7 @@ func (h *Handler) HandleEditAnilistListEntry(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	err := h.App.AnilistPlatformRef.Get().UpdateEntry(
+	err := h.App.Metadata.AnilistPlatformRef.Get().UpdateEntry(
 		c.Request().Context(),
 		*p.MediaId,
 		p.Status,
@@ -147,7 +147,7 @@ func (h *Handler) HandleGetAnilistAnimeDetails(c echo.Context) error {
 	if details, ok := detailsCache.Get(mId); ok {
 		return h.RespondWithData(c, details)
 	}
-	details, err := h.App.AnilistPlatformRef.Get().GetAnimeDetails(c.Request().Context(), mId)
+	details, err := h.App.Metadata.AnilistPlatformRef.Get().GetAnimeDetails(c.Request().Context(), mId)
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
@@ -235,7 +235,7 @@ func (h *Handler) HandleGetAnilistStudioDetails(c echo.Context) error {
 	if details, ok := studioDetailsMap.Get(mId); ok {
 		return h.RespondWithData(c, details)
 	}
-	details, err := h.App.AnilistPlatformRef.Get().GetStudioDetails(c.Request().Context(), mId)
+	details, err := h.App.Metadata.AnilistPlatformRef.Get().GetStudioDetails(c.Request().Context(), mId)
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
@@ -305,7 +305,7 @@ func (h *Handler) HandleDeleteAnilistListEntry(c echo.Context) error {
 	}
 
 	// Delete the list entry
-	err := h.App.AnilistPlatformRef.Get().DeleteEntry(c.Request().Context(), *p.MediaId, listEntryID)
+	err := h.App.Metadata.AnilistPlatformRef.Get().DeleteEntry(c.Request().Context(), *p.MediaId, listEntryID)
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
@@ -404,7 +404,7 @@ func (h *Handler) HandleAnilistListAnime(c echo.Context) error {
 
 	// ── Step C: AniList API (network call) ───────────────────────────────
 	ret, err := anilist.ListAnimeM(
-		shared_platform.NewCacheLayer(h.App.AnilistClientRef),
+		shared_platform.NewCacheLayer(h.App.Metadata.AnilistClientRef),
 		p.Page,
 		p.Search,
 		p.PerPage,
@@ -516,7 +516,7 @@ func (h *Handler) HandleAnilistListRecentAiringAnime(c echo.Context) error {
 	}
 
 	ret, err := anilist.ListRecentAiringAnimeM(
-		shared_platform.NewCacheLayer(h.App.AnilistClientRef),
+		shared_platform.NewCacheLayer(h.App.Metadata.AnilistClientRef),
 		p.Page,
 		p.Search,
 		p.PerPage,
@@ -576,13 +576,13 @@ func (h *Handler) HandleAnilistListMissedSequels(c echo.Context) error {
 	}
 
 	// Get complete anime collection
-	animeCollection, err := h.App.AnilistPlatformRef.Get().GetAnimeCollectionWithRelations(c.Request().Context())
+	animeCollection, err := h.App.Metadata.AnilistPlatformRef.Get().GetAnimeCollectionWithRelations(c.Request().Context())
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
 
 	ret, err := anilist.ListMissedSequels(
-		shared_platform.NewCacheLayer(h.App.AnilistClientRef),
+		shared_platform.NewCacheLayer(h.App.Metadata.AnilistClientRef),
 		animeCollection,
 		h.App.Logger,
 		h.App.GetUserAnilistToken(),
@@ -612,7 +612,7 @@ func (h *Handler) HandleGetAniListStats(c echo.Context) error {
 		return h.RespondWithData(c, cached)
 	}
 
-	stats, err := h.App.AnilistPlatformRef.Get().GetViewerStats(c.Request().Context())
+	stats, err := h.App.Metadata.AnilistPlatformRef.Get().GetViewerStats(c.Request().Context())
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}

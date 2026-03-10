@@ -1,6 +1,7 @@
 package continuity
 
 import (
+	"context"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/test_utils"
 	"kamehouse/internal/util"
@@ -20,7 +21,7 @@ func TestHistoryItems(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Log(tempDir)
 
-	database, err := db.NewDatabase(test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
+	database, err := db.NewDatabase(context.Background(), test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
 	require.NoError(t, err)
 
 	cacher, err := filecache.NewCacher(filepath.Join(tempDir, "cache"))

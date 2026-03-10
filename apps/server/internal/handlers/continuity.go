@@ -25,8 +25,8 @@ func (h *Handler) HandleUpdateContinuityWatchHistoryItem(c echo.Context) error {
 	}
 
 	// Zero-Latency Telemetry Dispatch
-	if h.App.ContinuityManager.TelemetryPool != nil {
-		h.App.ContinuityManager.TelemetryPool.Publish(&continuity.PlaybackEvent{
+	if h.App.ContinuityManager.TelemetryManager != nil {
+		h.App.ContinuityManager.TelemetryManager.Queue(continuity.TelemetryEvent{
 			MediaId:       b.Options.MediaId,
 			EpisodeNumber: b.Options.EpisodeNumber,
 			CurrentTime:   b.Options.CurrentTime,

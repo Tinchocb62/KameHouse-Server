@@ -23,194 +23,44 @@
 
 @layer base {
     :root {
-        --media-cue-backdrop: blur(0px);
-        --media-captions-padding: 0%;
-        --video-captions-offset: 0px;
-        /*--brand-color-50: #f2f0ff;*/
-        /*--brand-color-100: #eeebff;*/
-        /*--brand-color-200: #d4d0ff;*/
-        /*--brand-color-300: #c7c2ff;*/
-        /*--brand-color-400: #9f92ff;*/
-        /*--brand-color-500: #6152df;*/
-        /*--brand-color-600: #5243cb;*/
-        /*--brand-color-700: #3f2eb2;*/
-        /*--brand-color-800: #312887;*/
-        /*--brand-color-900: #231c6b;*/
-        /*--brand-color-950: #1a144f;*/
-        /*--brand-color-default: #6152df;*/
+        --background: 240 10% 4%;
+        --foreground: 0 0% 98%;
 
-        --color-brand-50: 242 240 255;
-        --color-brand-100: 238 235 255;
-        --color-brand-200: 212 208 255;
-        --color-brand-300: 199 194 255;
-        --color-brand-400: 159 146 255;
-        --color-brand-500: 97 82 223;
-        --color-brand-600: 82 67 203;
-        --color-brand-700: 63 46 178;
-        --color-brand-800: 49 40 135;
-        --color-brand-900: 35 28 107;
-        --color-brand-950: 26 20 79;
-        --color-brand-default: 97 82 223;
+        --card: 240 10% 4%;
+        --card-foreground: 0 0% 98%;
 
-        /*--gray-color-50: #FAFAFA;*/
-        /*--gray-color-100: #F5F5F5;*/
-        /*--gray-color-200: #E5E5E5;*/
-        /*--gray-color-300: #D4D4D4;*/
-        /*--gray-color-400: #A3A3A3;*/
-        /*--gray-color-500: #737373;*/
-        /*--gray-color-600: #525252;*/
-        /*--gray-color-700: #404040;*/
-        /*--gray-color-800: #262626;*/
-        /*--gray-color-900: #171717;*/
-        /*--gray-color-950: #101010;*/
-        /*--gray-color-default: #737373;*/
+        --popover: 240 10% 4%;
+        --popover-foreground: 0 0% 98%;
 
-        /*      --color-gray-50: 250 250 250;
-        --color-gray-100: 245 245 245;
-        --color-gray-200: 229 229 229;
-        --color-gray-300: 212 212 212;
-        --color-gray-400: 163 163 163;
-        --color-gray-500: 115 115 115;
-        --color-gray-600: 82 82 82;
-        --color-gray-700: 64 64 64;
-        --color-gray-800: 38 38 38;
-        --color-gray-900: 23 23 23;
-        --color-gray-950: 16 16 16;
-        --color-gray-default: 115 115 115;*/
+        --primary: 24.6 95% 53.1%;
+        --primary-foreground: 0 0% 100%;
 
-        --color-gray-50: 230 230 230;
-        --color-gray-100: 225 225 225;
-        --color-gray-200: 209 209 209;
-        --color-gray-300: 202 202 202;
-        --color-gray-400: 143 143 143;
-        --color-gray-500: 90 90 90;
-        --color-gray-600: 72 72 72;
-        --color-gray-700: 54 54 54;
-        --color-gray-800: 28 28 28;
-        --color-gray-900: 16 16 16;
-        --color-gray-950: 11 11 11;
-        --color-gray-default: 105 105 105;
+        --secondary: 240 4% 16%;
+        --secondary-foreground: 0 0% 98%;
 
+        --muted: 240 4% 16%;
+        --muted-foreground: 240 5% 65%;
 
-        /*--radius: 0.375rem;*/
+        --accent: 240 4% 16%;
+        --accent-foreground: 0 0% 98%;
+
+        --destructive: 0 63% 31%;
+        --destructive-foreground: 0 0% 98%;
+
+        --border: 240 4% 16%;
+        --input: 240 4% 16%;
+        --ring: 24.6 95% 53.1%;
+
         --radius: 0.5rem;
-        --radius-md: 0.5rem;
-
-        --titlebar-h: theme("height.10");
-
-        --foreground: theme('colors.zinc.100');
-        --background: #000000;
-
-        --brand: theme('colors.brand.300');
-        --slate: theme('colors.slate.500');
-        --gray: theme('colors.gray.500');
-        --zinc: theme('colors.zinc.500');
-        --neutral: theme('colors.neutral.500');
-        --stone: theme('colors.stone.500');
-        --red: theme('colors.red.500');
-        --orange: theme('colors.orange.500');
-        --amber: theme('colors.amber.500');
-        --yellow: theme('colors.yellow.500');
-        --lime: theme('colors.lime.500');
-        --green: theme('colors.green.500');
-        --emerald: theme('colors.emerald.500');
-        --teal: theme('colors.teal.500');
-        --cyan: theme('colors.cyan.500');
-        --sky: theme('colors.sky.500');
-        --blue: theme('colors.blue.500');
-        --indigo: theme('colors.indigo.500');
-        --violet: theme('colors.violet.500');
-        --purple: theme('colors.purple.500');
-        --fuchsia: theme('colors.fuchsia.500');
-        --pink: theme('colors.pink.500');
-        --rose: theme('colors.rose.500');
-
-        --border: theme('colors.gray.200');
-        --ring: theme('colors.brand.500');
-
-        --muted: theme('colors.gray.500');
-        --muted-highlight: theme('colors.gray.700');
-
-        --paper: theme('colors.gray.950');
-        --subtle: rgba(0, 0, 0, 0.04);
-        --subtle-highlight: rgba(0, 0, 0, 0.06);
-
-        --media-card-popup-background: theme('colors.gray.950');
-        --hover-from-background-color: theme('colors.gray.900');
-
-        /*--media-accent-color: theme('colors.brand.400');*/
-        --media-accent-color: #fff;
-        --media-menu-item-hover-background: rgba(255, 255, 255, 0.1);
     }
 
-    .dark,
-    [data-mode="dark"] {
-        --foreground: theme('colors.zinc.100');
-        --background: #000000; /* Pure black background for high contrast */
-
-        /* Vibrant Warm Orange (Dragon Ball inspired) */
-        --brand: theme('colors.orange.500');
-        --color-brand-50: 255 243 230;
-        --color-brand-100: 255 230 199;
-        --color-brand-200: 255 204 140;
-        --color-brand-300: 255 174 77;
-        --color-brand-400: 255 154 0; /* #FF9A00 */
-        --color-brand-500: 255 122 0; /* #FF7A00 */
-        --color-brand-600: 234 88 12;
-        --color-brand-700: 194 65 12;
-        --color-brand-800: 154 52 18;
-        --color-brand-900: 124 45 18;
-        --color-brand-950: 67 20 7;
-        --color-brand-default: 255 122 0;
-
-        --slate: theme('colors.slate.300');
-        --gray: theme('colors.gray.300');
-        --zinc: theme('colors.zinc.300');
-        --neutral: theme('colors.neutral.300');
-        --stone: theme('colors.stone.300');
-        --red: theme('colors.red.300');
-        --orange: theme('colors.orange.300');
-        --amber: theme('colors.amber.300');
-        --yellow: theme('colors.yellow.300');
-        --lime: theme('colors.lime.300');
-        --green: theme('colors.green.300');
-        --emerald: theme('colors.emerald.300');
-        --teal: theme('colors.teal.300');
-        --cyan: theme('colors.cyan.300');
-        --sky: theme('colors.sky.300');
-        --blue: theme('colors.blue.300');
-        --indigo: theme('colors.indigo.300');
-        --violet: theme('colors.violet.300');
-        --purple: theme('colors.purple.300');
-        --fuchsia: theme('colors.fuchsia.300');
-        --pink: theme('colors.pink.300');
-        --rose: theme('colors.rose.300');
-
-        --border: rgba(255, 255, 255, 0.05); /* Softer borders for glassmorphism */
-        --ring: theme('colors.orange.500'); /* Use vibrant orange for focus rings */
-
-        --muted: rgba(255, 255, 255, 0.05); /* Softer muted background */
-        --muted-highlight: rgba(255, 255, 255, 0.1);
-
-        --paper: rgba(10, 10, 10, 0.8); /* Very dark gray for components to contrast pure black */
-        --paper-highlighter: rgba(255, 255, 255, 0.05);
-        --subtle: rgba(255, 255, 255, 0.03);
-        --subtle-highlight: rgba(255, 255, 255, 0.08);
-
+    body {
+        @apply bg-background text-foreground;
     }
-}
 
-html {
-    background-color: var(--background);
-    color: var(--foreground);
-}
-
-body {
-    background-color: transparent !important;
-}
-
-html * {
-    border-color: var(--border);
+    * {
+        @apply border-border;
+    }
 }
 
 /*h1, h2, h3, h4, h5, h6 {*/

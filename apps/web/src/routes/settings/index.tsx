@@ -11,6 +11,7 @@ import {
     useUninstallExternalExtension,
     type ExtensionData,
 } from "@/api/hooks/extensions.hooks"
+import { PageHeader } from "@/components/ui/page-header/page-header"
 
 export const Route = createFileRoute("/settings/")({
     component: SettingsPage,
@@ -35,17 +36,16 @@ function SettingsPage() {
     }
 
     return (
-        <div className="flex-1 w-full bg-[#0B0B0F] text-white p-6 overflow-y-auto">
-            <h1 className="text-3xl font-black mb-8 tracking-tight">
-                CONFIGURACIÓN <span className="text-orange-500">GENERAL</span>
-            </h1>
+        <div className="flex-1 w-full flex flex-col bg-background text-white overflow-y-auto pb-6">
+            <PageHeader title={<>CONFIGURACIÓN <span className="text-orange-500">GENERAL</span></>} />
 
-            {isLoading ? (
-                <div className="flex items-center justify-center p-20 text-orange-500 text-lg font-semibold animate-pulse">
-                    Cargando opciones...
-                </div>
-            ) : (
-                <Tabs defaultValue="library" className="w-full flex gap-8">
+            <div className="flex-1 w-full p-6 md:p-10">
+                {isLoading ? (
+                    <div className="flex items-center justify-center p-20 text-orange-500 text-lg font-semibold animate-pulse">
+                        Cargando opciones...
+                    </div>
+                ) : (
+                    <Tabs defaultValue="library" className="w-full flex gap-8">
                     {/* Sidebar de pestañas (Vertical) */}
                     <TabsList className="flex flex-col h-auto w-64 bg-transparent space-y-2 items-start justify-start p-0">
                         <TabsTrigger
@@ -153,7 +153,7 @@ function SettingsPage() {
                                             <p className="text-sm text-gray-500">Descarga el próximo episodio en segundo plano al alcanzar el 80% (Zero-buffering).</p>
                                         </div>
                                         <Switch
-                                            value={settings?.mediaPlayer?.predictiveCache ?? false}
+                                            value={(settings?.mediaPlayer as any)?.predictiveCache ?? false}
                                             onValueChange={(v) => handleToggle('mediaPlayer', 'predictiveCache', v)}
                                         />
                                     </div>
@@ -211,7 +211,8 @@ function SettingsPage() {
                         </TabsContent>
                     </div>
                 </Tabs>
-            )}
+                )}
+            </div>
         </div>
     )
 }

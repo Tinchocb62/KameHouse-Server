@@ -19,8 +19,13 @@ const BOTTOM_ITEMS: NavItem[] = [
     { to: "/settings", label: "Ajustes", icon: <FaCog className="w-5 h-5 flex-shrink-0" /> },
 ]
 
-export const AppTopNav = React.forwardRef<HTMLElement, React.ComponentPropsWithoutRef<"header">>((props, ref) => {
-    const { className, ...rest } = props
+export interface AppTopNavProps extends React.ComponentPropsWithoutRef<"header"> {
+    breadcrumbs?: React.ReactNode
+    actionButtons?: React.ReactNode
+}
+
+export const AppTopNav = React.forwardRef<HTMLElement, AppTopNavProps>((props, ref) => {
+    const { className, breadcrumbs, actionButtons, ...rest } = props
 
     return (
         <header
@@ -35,11 +40,18 @@ export const AppTopNav = React.forwardRef<HTMLElement, React.ComponentPropsWitho
         >
             <div className="flex items-center justify-between px-6 md:px-10 h-full w-full mx-auto max-w-[2000px]">
                 {/* Logo - Left */}
-                <div className="flex items-center gap-3 w-1/4">
-                    <img src="/kamehouse-logo.png" alt="KameHouse" className="h-10 w-10 shrink-0 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" />
-                    <span className="hidden lg:block text-sm font-black uppercase tracking-[0.24em] text-white">
-                        KameHouse
-                    </span>
+                <div className="flex items-center gap-4 w-1/4">
+                    <div className="flex items-center gap-3">
+                        <img src="/kamehouse-logo.png" alt="KameHouse" className="h-10 w-10 shrink-0 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" />
+                        <span className="hidden lg:block text-sm font-black uppercase tracking-[0.24em] text-white">
+                            KameHouse
+                        </span>
+                    </div>
+                    {breadcrumbs && (
+                        <div className="hidden md:flex items-center pl-4 border-l border-white/10 text-zinc-400">
+                            {breadcrumbs}
+                        </div>
+                    )}
                 </div>
 
                 {/* Nav Tabs - Center - Hidden on Mobile */}
@@ -67,15 +79,19 @@ export const AppTopNav = React.forwardRef<HTMLElement, React.ComponentPropsWitho
 
                 {/* User / Actions - Right */}
                 <div className="flex items-center justify-end gap-5 w-1/4">
-                    <button className="text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5">
-                        <FaSearch className="w-5 h-5" />
-                    </button>
-                    <button className="text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5">
-                        <FaCog className="w-5 h-5" />
-                    </button>
-                    <button className="text-zinc-300 hover:text-white transition-colors">
-                        <FaUserCircle className="w-8 h-8" />
-                    </button>
+                    {actionButtons ? actionButtons : (
+                        <>
+                            <button className="text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5">
+                                <FaSearch className="w-5 h-5" />
+                            </button>
+                            <button className="text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5">
+                                <FaCog className="w-5 h-5" />
+                            </button>
+                            <button className="text-zinc-300 hover:text-white transition-colors">
+                                <FaUserCircle className="w-8 h-8" />
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </header>

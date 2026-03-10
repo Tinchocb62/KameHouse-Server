@@ -21,11 +21,11 @@ func (a *App) SetOfflineMode(enabled bool) {
 	a.Logger.Info().Bool("enabled", enabled).Msg("app: Offline mode set")
 	a.isOfflineRef.Set(enabled)
 
-	if a.AnilistPlatformRef.IsPresent() {
-		a.AnilistPlatformRef.Get().Close()
+	if a.Metadata.AnilistPlatformRef.IsPresent() {
+		a.Metadata.AnilistPlatformRef.Get().Close()
 	}
-	if a.MetadataProviderRef.IsPresent() {
-		a.MetadataProviderRef.Get().Close()
+	if a.Metadata.ProviderRef.IsPresent() {
+		a.Metadata.ProviderRef.Get().Close()
 	}
 
 	// Update the platform and metadata provider
@@ -34,14 +34,14 @@ func (a *App) SetOfflineMode(enabled bool) {
 			a.NakamaManager.Stop()
 		}
 
-		anilistPlatform, _ := offline_platform.NewOfflinePlatform(a.LocalManager, a.AnilistClientRef, a.Logger)
-		a.AnilistPlatformRef.Set(anilistPlatform)
-		a.MetadataProviderRef.Set(a.LocalManager.GetOfflineMetadataProvider())
+		anilistPlatform, _ := offline_platform.NewOfflinePlatform(a.LocalManager, a.Metadata.AnilistClientRef, a.Logger)
+		a.Metadata.AnilistPlatformRef.Set(anilistPlatform)
+		a.Metadata.ProviderRef.Set(a.LocalManager.GetOfflineMetadataProvider())
 	} else {
 		// DEVNOTE: We don't handle local platform since the feature doesn't allow offline mode
-		anilistPlatform := anilist_platform.NewAnilistPlatform(a.AnilistClientRef, a.ExtensionBankRef, a.Logger, a.Database)
-		a.AnilistPlatformRef.Set(anilistPlatform)
-		a.MetadataProviderRef.Set(metadata_provider.NewProvider(&metadata_provider.NewProviderImplOptions{
+		anilistPlatform := anilist_platform.NewAnilistPlatform(a.Metadata.AnilistClientRef, a.ExtensionBankRef, a.Logger, a.Database)
+		a.Metadata.AnilistPlatformRef.Set(anilistPlatform)
+		a.Metadata.ProviderRef.Set(metadata_provider.NewProvider(&metadata_provider.NewProviderImplOptions{
 			Logger:           a.Logger,
 			FileCacher:       a.FileCacher,
 			ExtensionBankRef: a.ExtensionBankRef,
@@ -50,7 +50,7 @@ func (a *App) SetOfflineMode(enabled bool) {
 		a.InitOrRefreshAnilistData()
 	}
 	a.AddOnRefreshAnilistCollectionFunc("anilist-platform", func() {
-		a.AnilistPlatformRef.Get().ClearCache()
+		a.Metadata.AnilistPlatformRef.Get().ClearCache()
 	})
 
 	a.InitOrRefreshModules()

@@ -33,7 +33,7 @@ func (h *Handler) HandlePopulateFillerData(c echo.Context) error {
 	media, found := animeCollection.FindAnime(b.MediaId)
 	if !found {
 		// Fetch media
-		media, err = h.App.AnilistPlatformRef.Get().GetAnime(c.Request().Context(), b.MediaId)
+		media, err = h.App.Metadata.AnilistPlatformRef.Get().GetAnime(c.Request().Context(), b.MediaId)
 		if err != nil {
 			return h.RespondWithError(c, err)
 		}
@@ -126,7 +126,7 @@ func (h *Handler) HandleSaveMediaMetadataParent(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	h.App.MetadataProviderRef.Get().ClearCache()
+	h.App.Metadata.ProviderRef.Get().ClearCache()
 	anime.ClearEpisodeCollectionCache()
 
 	return h.RespondWithData(c, savedParent)
@@ -153,7 +153,7 @@ func (h *Handler) HandleDeleteMediaMetadataParent(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	h.App.MetadataProviderRef.Get().ClearCache()
+	h.App.Metadata.ProviderRef.Get().ClearCache()
 	anime.ClearEpisodeCollectionCache()
 
 	return h.RespondWithData(c, true)

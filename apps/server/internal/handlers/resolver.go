@@ -36,8 +36,7 @@ func (h *Handler) HandleResolveStreams(c echo.Context) error {
 			"error": "query parameter 'mediaId' is required",
 		})
 	}
-	mediaID, err := strconv.Atoi(mediaIDStr)
-	if err != nil {
+	if _, err := strconv.Atoi(mediaIDStr); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "'mediaId' must be a valid integer",
 		})
@@ -65,7 +64,7 @@ func (h *Handler) HandleResolveStreams(c echo.Context) error {
 
 	// ── Resolve ───────────────────────────────────────────────────────────────
 
-	resolver := core.NewUnifiedResolver(h.App.Database, &h.App.Logger)
+	resolver := core.NewUnifiedResolver(h.App.Database, h.App.Logger)
 
 	unifiedResponse, err := resolver.ResolveUnifiedMedia(c.Request().Context(), mediaIDStr, episode, mediaType)
 	if err != nil {

@@ -59,39 +59,43 @@ func (h *Handler) HandlePlaybackSync(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, NewErrorResponse(fmt.Errorf("mediaId and episodeNumber are required")))
 	}
 
-	// ─── 1. Update Continuity (watch position) ─────────────────────────
-	if b.Duration > 0 {
-		_ = h.App.ContinuityManager.UpdateWatchHistoryItem(&continuity.UpdateWatchHistoryItemOptions{
-			MediaId:       b.MediaId,
-			EpisodeNumber: b.EpisodeNumber,
-			CurrentTime:   b.CurrentTime,
-			Duration:      b.Duration,
-			Kind:          "mediastream",
-		})
-	}
+	// Process updates asynchronously to ensure <20ms HTTP response time
+	go func(payload PlaybackSyncPayload) {
+		// ─── 1. Update Continuity (watch position) ─────────────────────────
+		if payload.Duration > 0 {
+			h.App.ContinuityManager.TelemetryManager.Queue(continuity.TelemetryEvent{
+				MediaId:       payload.MediaId,
+				EpisodeNumber: payload.EpisodeNumber,
+				CurrentTime:   payload.CurrentTime,
+				Duration:      payload.Duration,
+				Kind:          "mediastream",
+				IsFinal:       false,
+			})
+		}
 
-	// ─── 2. Auto-scrobble at 85% ───────────────────────────────────────
-	if b.Progress >= 0.85 {
-		key := scrobbleKey(b.MediaId, b.EpisodeNumber)
+		// ─── 2. Auto-scrobble at 85% ───────────────────────────────────────
+		if payload.Progress >= 0.85 {
+			key := scrobbleKey(payload.MediaId, payload.EpisodeNumber)
 
-		// Only scrobble once per episode per session
-		if _, alreadyScrobbled := scrobbledEpisodes.LoadOrStore(key, true); !alreadyScrobbled {
-			h.App.Logger.Info().
-				Int("mediaId", b.MediaId).
-				Int("episode", b.EpisodeNumber).
-				Float64("progress", b.Progress).
-				Msg("playback sync: auto-scrobbling episode (>= 85%)")
+			// Only scrobble once per episode per session
+			if _, alreadyScrobbled := scrobbledEpisodes.LoadOrStore(key, true); !alreadyScrobbled {
+				h.App.Logger.Info().
+					Int("mediaId", payload.MediaId).
+					Int("episode", payload.EpisodeNumber).
+					Float64("progress", payload.Progress).
+					Msg("playback sync: auto-scrobbling episode (>= 85%)")
 
-			// Dispatch to the MAL Dead Letter Queue Scrobbler Worker
-			if b.MalId > 0 && h.App.MalScrobbler != nil {
-				h.App.MalScrobbler.Dispatch(&mal.ScrobbleTarget{
-					MalMediaID:    b.MalId,
-					EpisodeNumber: b.EpisodeNumber,
-					Status:        "watching",
-				})
+				// Dispatch to the MAL Dead Letter Queue Scrobbler Worker
+				if payload.MalId > 0 && h.App.Metadata.MalScrobbler != nil {
+					h.App.Metadata.MalScrobbler.Dispatch(&mal.ScrobbleTarget{
+						MalMediaID:    payload.MalId,
+						EpisodeNumber: payload.EpisodeNumber,
+						Status:        "watching",
+					})
+				}
 			}
 		}
-	}
+	}(b)
 
-	return h.RespondWithData(c, true)
+	return c.JSON(http.StatusAccepted, map[string]bool{"success": true})
 }

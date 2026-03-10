@@ -26,7 +26,6 @@ import {
 import { cn } from "@/components/ui/core/styling"
 import type { Anime_Entry, Anime_Episode, Models_LibraryMedia, Mediastream_StreamType } from "@/api/generated/types"
 
-// @ts-expect-error - Route tree generator not yet executed for this new path
 export const Route = createFileRoute("/media/$seriesId/")({
     component: MediaDetailPage,
 })

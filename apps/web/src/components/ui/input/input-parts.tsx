@@ -9,34 +9,26 @@ import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
 export const InputAnatomy = defineStyleAnatomy({
     root: cva([
         "UI-Input__root",
-        "flex items-center",
-        "w-full rounded-xl",
-        "bg-[--paper] border border-[--border] placeholder-gray-400 dark:placeholder-gray-500",
-        "disabled:cursor-not-allowed",
-        "data-[disable=true]:shadow-none data-[disable=true]:opacity-50",
-        "focus:dark:border-gray-600 focus:ring-[0.5px] focus:ring-inset focus:dark:ring-gray-700",
-        "outline-0",
-        "transition duration-150",
-        "shadow-sm",
+        "flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
     ], {
         variants: {
             size: {
-                sm: "h-8 px-2 py-1 text-sm",
-                md: "h-10 px-3",
-                lg: "h-12 px-4 py-3 text-md",
+                sm: "h-8 px-2 py-1 text-xs",
+                md: "",
+                lg: "h-12 px-4 py-3 text-base",
             },
             intent: {
-                basic: "hover:border-gray-300 dark:hover:border-gray-600",
-                filled: "bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-900 shadow-none",
-                unstyled: "bg-transparent hover:bg-transparent border-0 shadow-none focus:ring-0 rounded-none p-0 text-base",
+                basic: "hover:border-primary/50",
+                filled: "bg-muted hover:bg-muted/80 border-transparent focus-within:bg-background focus-within:border-primary shadow-none",
+                unstyled: "bg-transparent hover:bg-transparent border-0 shadow-none focus-within:ring-0 rounded-none p-0 text-base",
             },
             hasError: {
                 false: null,
-                true: "border-red-500 hover:border-red-200 dark:border-red-500",
+                true: "border-destructive hover:border-destructive/80 focus-within:border-destructive focus-within:ring-destructive",
             },
             isDisabled: {
                 false: null,
-                true: "shadow-none pointer-events-none opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800",
+                true: "shadow-none pointer-events-none opacity-50 cursor-not-allowed bg-muted",
             },
             isReadonly: {
                 false: null,
@@ -123,8 +115,8 @@ export type InputStyling = Omit<VariantProps<typeof InputAnatomy.root>,
 export const InputAddonsAnatomy = defineStyleAnatomy({
     icon: cva([
         "UI-Input__addons--icon",
-        "pointer-events-none absolute inset-y-0 grid place-content-center text-gray-500",
-        "dark:text-gray-300 !z-[1]",
+        "pointer-events-none absolute inset-y-0 grid place-content-center text-muted-foreground",
+        "!z-[1]",
     ], {
         variants: {
             size: { sm: "w-10 text-md", md: "w-12 text-lg", lg: "w-14 text-2xl" },
@@ -138,8 +130,7 @@ export const InputAddonsAnatomy = defineStyleAnatomy({
     }),
     addon: cva([
         "UI-Input__addons--addon",
-        "bg-gray-50 inline-flex items-center flex-none px-3 border border-gray-300 text-gray-800 shadow-sm text-sm sm:text-md",
-        "dark:bg-[--paper] dark:border-[--border] dark:text-gray-300",
+        "bg-muted inline-flex items-center flex-none px-3 border border-border text-foreground shadow-sm text-sm sm:text-md",
     ], {
         variants: {
             size: { sm: "text-sm", md: "text-md", lg: "text-lg" },

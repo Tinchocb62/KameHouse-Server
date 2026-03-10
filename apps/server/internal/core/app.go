@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"kamehouse/internal/api/anilist"
 	"kamehouse/internal/api/mal"
 	"kamehouse/internal/api/metadata_provider"
@@ -161,6 +162,8 @@ type (
 		// Jellyfin integration
 		JellyfinClient *jellyfin.Client
 	}
+
+	App = Antigravity
 )
 
 type AppOption func(*Antigravity)
@@ -237,7 +240,7 @@ func NewAntigravity(configOpts *ConfigOptions, selfupdater *updater.SelfUpdater)
 	}
 
 	// Initialize database connection
-	database, err := db.NewDatabase(cfg.Data.AppDataDir, cfg.Database.Name, logger)
+	database, err := db.NewDatabase(context.Background(), cfg.Data.AppDataDir, cfg.Database.Name, logger)
 	if err != nil {
 		log.Fatalf("app: Failed to initialize database: %v", err)
 	}

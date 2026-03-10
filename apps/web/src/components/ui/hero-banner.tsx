@@ -207,10 +207,10 @@ export function HeroBanner({
                             type="button"
                             onClick={activeItem.onPlay}
                             className={cn(
-                                "inline-flex items-center gap-2 rounded-full bg-orange-500 px-7 py-3.5 text-sm font-bold text-white",
+                                "inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-bold text-primary-foreground",
                                 "shadow-[0_0_20px_rgba(249,115,22,0.45)]",
-                                "transition-all duration-200 hover:bg-orange-400 hover:shadow-[0_0_28px_rgba(249,115,22,0.6)]",
-                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400",
+                                "transition-all duration-200 hover:bg-primary/90 hover:shadow-[0_0_28px_rgba(249,115,22,0.6)]",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/80",
                             )}
                         >
                             <Play className="h-4 w-4 fill-current" />
@@ -257,7 +257,7 @@ export function HeroBanner({
                                 </div>
                                 <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                                     <div
-                                        className="h-full rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"
+                                        className="h-full rounded-full bg-primary shadow-[0_0_8px_rgba(249,115,22,0.5)]"
                                         style={{
                                             width: `${Math.min(100, Math.max(0, activeItem.progress))}%`,
                                         }}

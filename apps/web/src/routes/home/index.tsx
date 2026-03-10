@@ -161,17 +161,17 @@ function useQuickPlay(onFallback: (mediaId: number) => void) {
 
 function ErrorBanner({ message }: { message: string }) {
     return (
-        <div className="flex min-h-screen items-center justify-center bg-black px-6">
+        <div className="flex min-h-screen items-center justify-center bg-background px-6">
             <div className="max-w-md text-center">
-                <AlertTriangle className="mx-auto mb-5 h-12 w-12 text-zinc-300" />
-                <h2 className="mb-3 text-2xl font-semibold uppercase tracking-[0.18em] text-white">
+                <AlertTriangle className="mx-auto mb-5 h-12 w-12 text-muted-foreground" />
+                <h2 className="mb-3 text-2xl font-semibold uppercase tracking-[0.18em] text-foreground">
                     No se pudo cargar la biblioteca
                 </h2>
-                <p className="text-sm leading-6 text-zinc-400">{message}</p>
+                <p className="text-sm leading-6 text-muted-foreground">{message}</p>
                 <button
                     type="button"
                     onClick={() => window.location.reload()}
-                    className="mt-6 rounded-full border border-white/12 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-white/14"
+                    className="mt-6 rounded-full border border-border bg-secondary/50 px-6 py-3 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-secondary"
                 >
                     Reintentar
                 </button>
@@ -182,13 +182,13 @@ function ErrorBanner({ message }: { message: string }) {
 
 function EmptyState() {
     return (
-        <div className="flex min-h-screen items-center justify-center bg-black px-6">
+        <div className="flex min-h-screen items-center justify-center bg-background px-6">
             <div className="max-w-md text-center">
-                <FolderOpen className="mx-auto mb-5 h-12 w-12 text-zinc-300" />
-                <h2 className="mb-3 text-2xl font-semibold uppercase tracking-[0.18em] text-white">
+                <FolderOpen className="mx-auto mb-5 h-12 w-12 text-muted-foreground" />
+                <h2 className="mb-3 text-2xl font-semibold uppercase tracking-[0.18em] text-foreground">
                     Biblioteca vacía
                 </h2>
-                <p className="text-sm leading-6 text-zinc-400">
+                <p className="text-sm leading-6 text-muted-foreground">
                     Aún no hay contenido listo para mostrar. Escanea tus rutas desde configuración
                     y vuelve a cargar la biblioteca.
                 </p>
@@ -208,7 +208,7 @@ function SectionLabel({
 }) {
     return (
         <div className="px-6 md:px-10 lg:px-14">
-            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/6 px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-xl">
+            <div className="inline-flex items-center gap-3 rounded-full border border-border bg-secondary/50 px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground backdrop-blur-xl">
                 <Icon className="h-3.5 w-3.5" />
                 {label}
             </div>
@@ -422,13 +422,13 @@ function HomePage() {
     }
 
     return (
-        <div className="min-h-screen bg-black">
+        <div className="min-h-screen bg-background flex flex-col gap-8 w-full max-w-screen-2xl mx-auto">
             {/* Global dynamic backdrop — reacts to card hovers */}
             <DynamicBackdrop />
 
             {/* ── Hero banner (full-viewport) ────────────────────────────── */}
             <HeroBanner
-                className="-mt-20 md:-mt-24"
+                className="-mt-[53px]"
                 items={heroItems.map((item) => ({
                     ...item,
                     // Override onPlay to try SourcePicker first
@@ -451,7 +451,7 @@ function HomePage() {
             />
 
             {/* ── Swimlane section ──────────────────────────────────────── */}
-            <div className="relative z-10 -mt-20 space-y-14 pb-24">
+            <div className="relative z-10 -mt-20 flex flex-col gap-8 pb-24">
                 <SectionLabel icon={Sparkles} label="Descubrimiento cinematográfico" />
 
                 {/* Continue Watching */}

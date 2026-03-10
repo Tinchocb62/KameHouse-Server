@@ -12,6 +12,8 @@ import (
 	"kamehouse/internal/directstream"
 	discordrpc_presence "kamehouse/internal/discordrpc/presence"
 	"kamehouse/internal/events"
+	"kamehouse/internal/hook"
+	"kamehouse/internal/hook_resolver"
 	"kamehouse/internal/jellyfin"
 	"kamehouse/internal/library/autodownloader"
 	"kamehouse/internal/library/autoscanner"
@@ -78,7 +80,7 @@ func (a *App) initModulesOnce() {
 
 	a.TorrentRepository = torrent.NewRepository(&torrent.NewRepositoryOptions{
 		Logger:              a.Logger,
-		MetadataProviderRef: a.MetadataProviderRef,
+		MetadataProviderRef: a.Metadata.ProviderRef,
 		ExtensionBankRef:    a.ExtensionBankRef,
 	})
 
@@ -121,9 +123,9 @@ func (a *App) initModulesOnce() {
 		Logger:              a.Logger,
 		WSEventManager:      a.WSEventManager,
 		ContinuityManager:   a.ContinuityManager,
-		MetadataProviderRef: a.MetadataProviderRef,
+		MetadataProviderRef: a.Metadata.ProviderRef,
 		DiscordPresence:     a.DiscordPresence,
-		PlatformRef:         a.AnilistPlatformRef,
+		PlatformRef:         a.Metadata.AnilistPlatformRef,
 		RefreshAnimeCollectionFunc: func() {
 			_, _ = a.RefreshAnimeCollection()
 		},
@@ -140,9 +142,9 @@ func (a *App) initModulesOnce() {
 		Logger:              a.Logger,
 		BaseAnimeCache:      anilist.NewBaseAnimeCache(),
 		CompleteAnimeCache:  anilist.NewCompleteAnimeCache(),
-		MetadataProviderRef: a.MetadataProviderRef,
+		MetadataProviderRef: a.Metadata.ProviderRef,
 		TorrentRepository:   a.TorrentRepository,
-		PlatformRef:         a.AnilistPlatformRef,
+		PlatformRef:         a.Metadata.AnilistPlatformRef,
 		WSEventManager:      a.WSEventManager,
 		Database:            a.Database,
 		DirectStreamManager: a.DirectStreamManager,
@@ -157,8 +159,8 @@ func (a *App) initModulesOnce() {
 		Logger:              a.Logger,
 		WSEventManager:      a.WSEventManager,
 		Database:            a.Database,
-		MetadataProviderRef: a.MetadataProviderRef,
-		PlatformRef:         a.AnilistPlatformRef,
+		MetadataProviderRef: a.Metadata.ProviderRef,
+		PlatformRef:         a.Metadata.AnilistPlatformRef,
 		TorrentRepository:   a.TorrentRepository,
 		DirectStreamManager: a.DirectStreamManager,
 	})
@@ -173,7 +175,7 @@ func (a *App) initModulesOnce() {
 		TorrentRepository:       a.TorrentRepository,
 		Database:                a.Database,
 		WSEventManager:          a.WSEventManager,
-		MetadataProviderRef:     a.MetadataProviderRef,
+		MetadataProviderRef:     a.Metadata.ProviderRef,
 		DebridClientRepository:  a.DebridClientRepository,
 		IsOfflineRef:            a.IsOfflineRef(),
 	})
@@ -185,7 +187,8 @@ func (a *App) initModulesOnce() {
 	// |   Predictive Cache  |
 	// +---------------------+
 
-	hook.GlobalHookManager.OnPredictiveCacheEpisodeRequested().Listen(func(event *continuity.PredictiveCacheEpisodeRequestedEvent) {
+	hook.GlobalHookManager.OnPredictiveCacheEpisodeRequested().BindFunc(func(resolver hook_resolver.Resolver) error {
+		event := resolver.(*continuity.PredictiveCacheEpisodeRequestedEvent)
 		a.Logger.Info().Int("mediaId", event.MediaId).Int("episode", event.EpisodeNumber).Msg("app: Received predictive cache request")
 		go func() {
 			// Find rules that match this media ID
@@ -202,10 +205,9 @@ func (a *App) initModulesOnce() {
 			}
 			if len(ruleIDs) > 0 {
 				a.AutoDownloader.RunCheck(context.Background(), false, ruleIDs...)
-			} else {
-				a.Logger.Debug().Int("mediaId", event.MediaId).Msg("app: No active AutoDownloader rules found for predictive cache")
 			}
 		}()
+		return event.Next()
 	})
 
 	// +---------------------+
@@ -214,12 +216,12 @@ func (a *App) initModulesOnce() {
 
 	a.AutoScanner = autoscanner.New(&autoscanner.NewAutoScannerOptions{
 		Database:            a.Database,
-		PlatformRef:         a.AnilistPlatformRef,
+		PlatformRef:         a.Metadata.AnilistPlatformRef,
 		Logger:              a.Logger,
 		WSEventManager:      a.WSEventManager,
 		Enabled:             false, // Will be set in InitOrRefreshModules
 		AutoDownloader:      a.AutoDownloader,
-		MetadataProviderRef: a.MetadataProviderRef,
+		MetadataProviderRef: a.Metadata.ProviderRef,
 		LogsDir:             a.Config.Logs.Dir,
 		OnRefreshCollection: func() {
 			go func() {
@@ -240,7 +242,7 @@ func (a *App) initModulesOnce() {
 		WSEventManager:          a.WSEventManager,
 		TorrentstreamRepository: a.TorrentstreamRepository,
 		DebridClientRepository:  a.DebridClientRepository,
-		PlatformRef:             a.AnilistPlatformRef,
+		PlatformRef:             a.Metadata.AnilistPlatformRef,
 		ServerHost:              a.Config.Server.Host,
 		ServerPort:              a.Config.Server.Port,
 		NativePlayer:            nil,
@@ -257,7 +259,7 @@ func (a *App) initModulesOnce() {
 		TorrentstreamRepository: a.TorrentstreamRepository,
 		DebridClientRepository:  a.DebridClientRepository,
 		DirectStreamManager:     a.DirectStreamManager,
-		PlatformRef:             a.AnilistPlatformRef,
+		PlatformRef:             a.Metadata.AnilistPlatformRef,
 		WSEventManager:          a.WSEventManager,
 		NakamaManager:           a.NakamaManager,
 		NativePlayer:            nil,
@@ -269,7 +271,7 @@ func (a *App) initModulesOnce() {
 	// |   Anime Library     |
 	// +---------------------+
 	a.LibraryExplorer = library_explorer.NewLibraryExplorer(library_explorer.NewLibraryExplorerOptions{
-		PlatformRef: a.AnilistPlatformRef,
+		PlatformRef: a.Metadata.AnilistPlatformRef,
 		Logger:      a.Logger,
 		Database:    a.Database,
 	})
@@ -326,8 +328,8 @@ func (a *App) InitOrRefreshModules() {
 		// Update feature toggles from settings
 		a.FeatureManager.UpdateFromSettings(settings.Library)
 
-		if a.MetadataProviderRef.IsPresent() {
-			a.MetadataProviderRef.Get().SetUseFallbackProvider(settings.GetLibrary().UseFallbackMetadataProvider)
+		if a.Metadata.ProviderRef.IsPresent() {
+			a.Metadata.ProviderRef.Get().SetUseFallbackProvider(settings.GetLibrary().UseFallbackMetadataProvider)
 		}
 	}
 
@@ -430,7 +432,7 @@ func (a *App) InitOrRefreshModules() {
 			Transmission:        trans,
 			TorrentRepository:   a.TorrentRepository,
 			Provider:            settings.Torrent.Default,
-			MetadataProviderRef: a.MetadataProviderRef,
+			MetadataProviderRef: a.Metadata.ProviderRef,
 		})
 
 		a.TorrentClientRepository.InitActiveTorrentCount(settings.Torrent.ShowActiveTorrentCount, a.WSEventManager)
@@ -644,7 +646,7 @@ func (a *App) InitOrRefreshAnilistData() {
 	a.user = currUser
 
 	// Set username to Anilist platform
-	a.AnilistPlatformRef.Get().SetUsername(currUser.Viewer.Name)
+	a.Metadata.AnilistPlatformRef.Get().SetUsername(currUser.Viewer.Name)
 
 	a.Logger.Info().Msg("app: Authenticated to AniList")
 

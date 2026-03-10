@@ -13,14 +13,14 @@ import { Tooltip, TooltipProps } from "../tooltip"
 export const VerticalMenuAnatomy = defineStyleAnatomy({
     root: cva([
         "UI-VerticalMenu__root",
-        "flex flex-col gap-1",
+        "flex flex-col gap-2 h-full bg-zinc-950/80 backdrop-blur-md border-r border-white/10 p-3",
     ]),
     item: cva([
         "UI-VerticalMenu__item",
-        "group/verticalMenu_item relative flex flex-none items-center w-full font-medium rounded-lg transition cursor-pointer",
-        "hover:text-orange-400 hover:bg-white/5",
-        "focus-visible:bg-white/10 outline-none text-[--muted]",
-        "data-[current=true]:bg-orange-500/10 data-[current=true]:text-orange-500 font-semibold shadow-inner",
+        "group/verticalMenu_item relative flex flex-none items-center w-full font-medium rounded-xl transition-colors duration-200 cursor-pointer overflow-hidden",
+        "text-zinc-400 hover:text-white hover:bg-white/5",
+        "focus-visible:bg-white/10 outline-none",
+        "data-[current=true]:bg-white/10 data-[current=true]:text-white data-[current=true]:font-bold data-[current=true]:shadow-inner",
     ], {
         variants: {
             collapsed: {
@@ -93,10 +93,10 @@ export const VerticalMenuAnatomy = defineStyleAnatomy({
     }),
     itemIcon: cva([
         "UI-VerticalMenu__itemIcon",
-        "flex-shrink-0 mr-3 transition",
-        "text-[--muted] text-xl",
-        "group-hover/verticalMenu_item:text-orange-400", // Item Hover
-        "group-data-[current=true]/verticalMenu_item:text-orange-500 scale-[1.05]", // Item Current
+        "flex-shrink-0 mr-3 transition-colors duration-200",
+        "text-zinc-500 text-xl",
+        "group-hover/verticalMenu_item:text-white", // Item Hover
+        "group-data-[current=true]/verticalMenu_item:text-orange-400", // Item Current
     ], {
         variants: {
             size: {

@@ -184,9 +184,9 @@ func (h *Handler) HandleGetLibraryCollection(c echo.Context) error {
 
 	libraryCollection, err := anime.NewLibraryCollection(c.Request().Context(), &anime.NewLibraryCollectionOptions{
 		Database:            h.App.Database,
-		PlatformRef:         h.App.AnilistPlatformRef,
+		PlatformRef:         h.App.Metadata.AnilistPlatformRef,
 		LocalFiles:          lfs,
-		MetadataProviderRef: h.App.MetadataProviderRef,
+		MetadataProviderRef: h.App.Metadata.ProviderRef,
 	})
 	if err != nil {
 		return h.RespondWithError(c, err)
@@ -204,7 +204,7 @@ func (h *Handler) HandleGetLibraryCollection(c echo.Context) error {
 			h.App.TorrentstreamRepository.HydrateStreamCollection(&torrentstream.HydrateStreamCollectionOptions{
 				Database:            h.App.Database,
 				LibraryCollection:   libraryCollection,
-				MetadataProviderRef: h.App.MetadataProviderRef,
+				MetadataProviderRef: h.App.Metadata.ProviderRef,
 			})
 		}
 	}
@@ -363,7 +363,7 @@ func (h *Handler) HandleGetAnimeCollectionSchedule(c echo.Context) error {
 		return h.RespondWithData(c, ret)
 	}
 
-	animeSchedule, err := h.App.AnilistPlatformRef.Get().GetAnimeAiringSchedule(c.Request().Context())
+	animeSchedule, err := h.App.Metadata.AnilistPlatformRef.Get().GetAnimeAiringSchedule(c.Request().Context())
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
@@ -399,7 +399,7 @@ func (h *Handler) HandleAddUnknownMedia(c echo.Context) error {
 	}
 
 	// Add non-added media entries to AniList collection
-	if err := h.App.AnilistPlatformRef.Get().AddMediaToCollection(c.Request().Context(), b.MediaIds); err != nil {
+	if err := h.App.Metadata.AnilistPlatformRef.Get().AddMediaToCollection(c.Request().Context(), b.MediaIds); err != nil {
 		return h.RespondWithError(c, errors.New("error: Anilist responded with an error, this is most likely a rate limit issue"))
 	}
 
