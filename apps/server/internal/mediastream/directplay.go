@@ -85,5 +85,6 @@ func (r *Repository) ServeEchoDirectPlay(c echo.Context, clientId string) error 
 		return c.NoContent(http.StatusOK)
 	}
 
+	c.Response().Header().Set("Accept-Ranges", "bytes")
 	return c.File(mediaContainer.Filepath)
 }

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { dbzData, type Episode } from "@/lib/dbz-data"
 import { useProgressStore } from "@/lib/store"
 import { useState, useMemo } from "react"
-import { StreamSourceCard, getMockSources, type StreamSource } from "@/components/ui/stream-source-card"
+import { StreamSourceCard, type StreamSource } from "@/components/ui/stream-source-card"
 import { CheckCircle2, Circle, ChevronDown, ChevronRight, Star, Clock, Calendar, ArrowLeft } from "lucide-react"
 import { cn } from "@/components/ui/core/styling"
 
@@ -328,7 +328,7 @@ function DetailPage() {
     const currentEpisode = saga?.episodes[currentIdx]
 
     const sources = useMemo(
-        () => getMockSources(currentEpisode?.title ?? "Episodio"),
+        () => [] as StreamSource[],
         [currentEpisode?.id],
     )
 

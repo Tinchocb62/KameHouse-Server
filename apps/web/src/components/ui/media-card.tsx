@@ -28,6 +28,9 @@ export interface MediaCardProps {
     progressColor?: "white" | "orange"
     /** Intelligence ContentTag — rendered as a tiny bottom label */
     intelligenceTag?: string
+    /** Quick metadata for the hover ribbon */
+    year?: string | number
+    rating?: number
     onClick?: () => void
     className?: string
 }
@@ -44,6 +47,8 @@ export function MediaCard({
     progress,
     progressColor = "orange",
     intelligenceTag,
+    year,
+    rating,
     onClick,
     className,
 }: MediaCardProps) {
@@ -152,9 +157,35 @@ export function MediaCard({
                 </div>
             </div>
 
+            {/* ── Play button overlay (appears on hover) ────────────────── */}
+            <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/0 opacity-0 backdrop-blur-none transition-all duration-300 group-hover/card:bg-black/40 group-hover/card:opacity-100 group-hover/card:backdrop-blur-[1px]">
+                <div className="flex h-12 w-12 transform items-center justify-center rounded-full bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.5)] transition-transform duration-300 group-hover/card:scale-110">
+                    <svg viewBox="0 0 24 24" className="ml-1 h-6 w-6 fill-current" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 5v14l11-7z" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* ── Quick metadata ribbon (appears on hover) ──────────────── */}
+            {(year || rating || badge) && (
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-40 translate-y-3 opacity-0 transition-all duration-300 group-hover/card:translate-y-0 group-hover/card:opacity-100">
+                    <div className="flex items-center justify-between gap-2 bg-black/80 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white/90 backdrop-blur-md">
+                        <div className="flex items-center gap-2">
+                            {year && <span className="rounded-full border border-white/10 px-2 py-0.5">{year}</span>}
+                            {badge && <span className="rounded-full border border-white/10 px-2 py-0.5">{badge}</span>}
+                        </div>
+                        {rating !== undefined && (
+                            <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-orange-200">
+                                {rating.toFixed(1)} ★
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* ── Progress bar ──────────────────────────────────────────── */}
             {progress !== undefined && (
-                <div className="absolute inset-x-0 bottom-0 z-30 h-[3px] bg-white/10">
+                <div className="absolute inset-x-0 bottom-0 z-50 h-[3px] bg-white/10">
                     <div
                         className={cn(
                             "h-full",

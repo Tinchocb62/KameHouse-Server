@@ -6,7 +6,7 @@ import { useListOnlinestreamProviderExtensions } from "@/api/hooks/extensions.ho
 import { LoadingOverlayWithLogo } from "@/components/shared/loading-overlay-with-logo"
 import { SourcePicker } from "@/components/shared/source-picker"
 import { VideoPlayer } from "@/components/video/player"
-import { getMockSources, type StreamSource } from "@/components/ui/stream-source-card"
+import { type StreamSource } from "@/components/ui/stream-source-card"
 import {
     ArrowLeft,
     Star,
@@ -93,7 +93,7 @@ function buildSourcesForEpisode(ep: Anime_Episode, onlineExts?: any[]): RealStre
     }
 
     if (sources.length === 0) {
-        return getMockSources(ep.displayTitle || `Episodio ${ep.episodeNumber}`) as RealStreamSource[]
+        return []
     }
 
     return sources

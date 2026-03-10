@@ -16,6 +16,8 @@ export interface SwimlaneItem {
     aspect?: CardAspect
     /** ContentTag from IntelligenceService — rendered as a bottom label on the card */
     intelligenceTag?: string
+    year?: string | number
+    rating?: number
     onClick: () => void
     /** URL to use as the dynamic home backdrop when this card is hovered */
     backdropUrl?: string
@@ -82,6 +84,8 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
                                 progress={item.progress}
                                 aspect={item.aspect ?? defaultAspect}
                                 intelligenceTag={item.intelligenceTag}
+                                year={item.year}
+                                rating={item.rating}
                                 onClick={item.onClick}
                                 className="motion-reduce:transition-none"
                             />

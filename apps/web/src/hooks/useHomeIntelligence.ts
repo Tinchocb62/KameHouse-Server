@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import type { Anime_LibraryCollectionEntry } from "@/api/generated/types"
 import { create } from "zustand"
+import { getServerBaseUrl } from "@/api/client/server-url"
 
 // ─── Intelligence types (mirrors Go backend) ─────────────────────────────────
 
@@ -32,7 +33,7 @@ export interface CuratedHomeResponse {
 }
 
 async function fetchCuratedHome(): Promise<CuratedHomeResponse> {
-    const url = new URL("/api/v1/home/curated", window.location.origin)
+    const url = new URL(getServerBaseUrl() + "/api/v1/home/curated")
     const res = await fetch(url.toString())
     if (!res.ok) throw new Error("Failed to fetch curated home list")
     const json = (await res.json()) as { data: CuratedHomeResponse }
@@ -71,4 +72,3 @@ export const useIntelligenceStore = create<IntelligenceStore>((set) => ({
         }
     },
 }))
-

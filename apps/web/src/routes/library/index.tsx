@@ -8,6 +8,8 @@ import { Anime_LocalFile, Models_LibraryMedia, Anime_LibraryCollectionEntry } fr
 import { VirtualizedMediaGrid } from "@/components/shared/virtualized-media-grid"
 import { Search } from "lucide-react"
 import { PageHeader } from "@/components/ui/page-header/page-header"
+import { MediaGridSkeleton } from "@/components/shared/media-grid-skeleton"
+import { EmptyState } from "@/components/shared/empty-state"
 
 export const Route = createFileRoute("/library/")({
     component: LibraryPage,
@@ -95,27 +97,30 @@ function LibraryPage() {
                     <div className="flex flex-col gap-6">
                         <TabsContent value="current" className="focus:outline-none focus-visible:ring-0">
                             {libLoading ? (
-                                <div className="py-20 flex justify-center"><div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"/></div>
+                                <MediaGridSkeleton />
                             ) : renderGrid(currentlyWatching, "No estás viendo ninguna serie ahora mismo.")}
                         </TabsContent>
 
                         <TabsContent value="planned" className="focus:outline-none focus-visible:ring-0">
                             {libLoading ? (
-                                <div className="py-20 flex justify-center"><div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"/></div>
+                                <MediaGridSkeleton />
                             ) : renderGrid(planned, "No tienes series planeadas para ver.")}
                         </TabsContent>
 
                         <TabsContent value="completed" className="focus:outline-none focus-visible:ring-0">
                             {libLoading ? (
-                                <div className="py-20 flex justify-center"><div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"/></div>
+                                <MediaGridSkeleton />
                             ) : renderGrid(completed, "Aún no has completado ninguna serie.")}
                         </TabsContent>
 
                         <TabsContent value="local" className="focus:outline-none focus-visible:ring-0">
                             {locLoading ? (
-                                <div className="py-20 flex justify-center"><div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mt-4"/></div>
+                                <MediaGridSkeleton aspect="poster" />
                             ) : (!localData || localData.length === 0) ? (
-                                <div className="text-muted-foreground font-medium py-10 text-center uppercase tracking-widest">No tienes archivos indexados localmente todavía.</div>
+                                <EmptyState
+                                    title="Sin archivos locales"
+                                    message="Todavía no indexas medios locales. Configura una carpeta en Ajustes y vuelve a escanear."
+                                />
                             ) : (
                                 <>
                                     <div 

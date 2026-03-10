@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import * as React from "react"
-import { FaBook, FaCog, FaCompass, FaHome, FaSearch, FaUserCircle } from "react-icons/fa"
+import { FaBook, FaCog, FaHome, FaSearch, FaUserCircle, FaFilm, FaTv } from "react-icons/fa"
 import { cn } from "../core/styling"
 
 interface NavItem {
@@ -11,8 +11,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
     { to: "/home", label: "Inicio", icon: <FaHome className="w-5 h-5 flex-shrink-0" /> },
-    { to: "/discover", label: "Descubrir", icon: <FaCompass className="w-5 h-5 flex-shrink-0" /> },
     { to: "/library", label: "Biblioteca", icon: <FaBook className="w-5 h-5 flex-shrink-0" /> },
+    { to: "/series", label: "Series", icon: <FaTv className="w-5 h-5 flex-shrink-0" /> },
+    { to: "/movies", label: "Películas", icon: <FaFilm className="w-5 h-5 flex-shrink-0" /> },
 ]
 
 const BOTTOM_ITEMS: NavItem[] = [
@@ -40,7 +41,7 @@ export const AppTopNav = React.forwardRef<HTMLElement, AppTopNavProps>((props, r
         >
             <div className="flex items-center justify-between px-6 md:px-10 h-full w-full mx-auto max-w-[2000px]">
                 {/* Logo - Left */}
-                <div className="flex items-center gap-4 w-1/4">
+                <div className="flex items-center gap-4 flex-1">
                     <div className="flex items-center gap-3">
                         <img src="/kamehouse-logo.png" alt="KameHouse" className="h-10 w-10 shrink-0 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" />
                         <span className="hidden lg:block text-sm font-black uppercase tracking-[0.24em] text-white">
@@ -55,7 +56,7 @@ export const AppTopNav = React.forwardRef<HTMLElement, AppTopNavProps>((props, r
                 </div>
 
                 {/* Nav Tabs - Center - Hidden on Mobile */}
-                <nav className="hidden sm:flex items-center justify-center gap-2 w-1/2" aria-label="Navegación principal">
+                <nav className="hidden sm:flex flex-1 items-center justify-center gap-6 md:gap-8" aria-label="Navegación principal">
                     {NAV_ITEMS.map((item) => (
                         <Link
                             key={item.to}
@@ -78,7 +79,7 @@ export const AppTopNav = React.forwardRef<HTMLElement, AppTopNavProps>((props, r
                 </nav>
 
                 {/* User / Actions - Right */}
-                <div className="flex items-center justify-end gap-5 w-1/4">
+                <div className="flex items-center justify-end gap-5 flex-1">
                     {actionButtons ? actionButtons : (
                         <>
                             <button className="text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5">

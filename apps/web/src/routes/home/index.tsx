@@ -42,7 +42,7 @@ function getBackdrop(media: Models_LibraryMedia): string {
     return media.bannerImage || media.posterImage
 }
 
-// Dragon Ball franchise AniList IDs — used to build the dedicated arc swimlane
+// Dragon Ball franchise AniList IDs
 const DRAGON_BALL_IDS = new Set([529, 813, 568, 30694, 6033, 107, 235])
 
 // ─── Map functions ────────────────────────────────────────────────────────────
@@ -67,6 +67,8 @@ function mapEpisodeToSwimlaneItem(
             media.description,
         progress: getProgress(media.id, watchHistory),
         aspect: "wide",
+        year: media.year || undefined,
+        rating: media.score ? media.score / 10 : undefined,
         onClick: () => onNavigate(media.id),
         backdropUrl: episode.episodeMetadata?.image || getBackdrop(media),
     }
@@ -124,12 +126,6 @@ function mapEpisodeToHeroItem(
     }
 }
 
-// ─── Quick Play hook ──────────────────────────────────────────────────────────
-
-/**
- * Fetches resolution sources from /api/v1/resolve/:mediaId and opens the
- * SourcePicker sheet. Falls back to series navigation if the endpoint 404s.
- */
 function useQuickPlay(onFallback: (mediaId: number) => void) {
     const [resolution, setResolution] = React.useState<UnifiedResolutionResponse | null>(null)
     const [isResolving, setIsResolving] = React.useState(false)
@@ -143,7 +139,6 @@ function useQuickPlay(onFallback: (mediaId: number) => void) {
                 const json = (await res.json()) as { data: UnifiedResolutionResponse }
                 setResolution(json.data)
             } catch {
-                // No resolution endpoint yet — fall back to series detail page
                 onFallback(mediaId)
             } finally {
                 setIsResolving(false)
@@ -156,8 +151,6 @@ function useQuickPlay(onFallback: (mediaId: number) => void) {
 
     return { resolution, isResolving, open, close }
 }
-
-// ─── ErrorBanner ─────────────────────────────────────────────────────────────
 
 function ErrorBanner({ message }: { message: string }) {
     return (
@@ -189,27 +182,18 @@ function EmptyState() {
                     Biblioteca vacía
                 </h2>
                 <p className="text-sm leading-6 text-muted-foreground">
-                    Aún no hay contenido listo para mostrar. Escanea tus rutas desde configuración
-                    y vuelve a cargar la biblioteca.
+                    Aún no hay contenido listo para mostrar. Escanea tus rutas desde configuración.
                 </p>
             </div>
         </div>
     )
 }
 
-// ─── Section label ─────────────────────────────────────────────────────────────
-
-function SectionLabel({
-    icon: Icon,
-    label,
-}: {
-    icon: React.ElementType
-    label: string
-}) {
+function SectionLabel({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
     return (
         <div className="px-6 md:px-10 lg:px-14">
             <div className="inline-flex items-center gap-3 rounded-full border border-border bg-secondary/50 px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-foreground backdrop-blur-xl">
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-3.5 w-3.5 text-orange-500" />
                 {label}
             </div>
         </div>
@@ -225,7 +209,6 @@ function HomePage() {
     const { data: intelligenceData, isLoading: isIntelligenceLoading } = useHomeIntelligence()
     const { setBackdropUrl } = useIntelligenceStore()
 
-    // Define handleNavigate first so useQuickPlay can reference it as a fallback
     const handleNavigate = React.useCallback(
         (mediaId: number) => {
             navigate({ to: "/series/$seriesId", params: { seriesId: String(mediaId) } })
@@ -239,7 +222,6 @@ function HomePage() {
     const lists = collection?.lists ?? []
     const continueWatchingEpisodes = collection?.continueWatchingList ?? []
 
-    // Build a fast lookup map: mediaId → entry
     const entriesByMediaId = React.useMemo(() => {
         const map = new Map<number, Anime_LibraryCollectionEntry>()
         for (const list of lists) {
@@ -261,101 +243,54 @@ function HomePage() {
         [entriesByMediaId],
     )
 
-    // ── Continue Watching swimlane items ──────────────────────────────────
+    // ── Sections mapping ──────────────────────────────────────────────────
+
     const continueWatchingItems = React.useMemo(
         () =>
             continueWatchingEpisodes
                 .map((ep) => {
                     const media = resolveEpisodeMedia(ep)
-                    const entry = entriesByMediaId.get(
-                        ep.baseAnime?.id || ep.localFile?.mediaId || 0,
-                    )
+                    const entry = entriesByMediaId.get(ep.baseAnime?.id || ep.localFile?.mediaId || 0)
                     return media
-                        ? mapEpisodeToSwimlaneItem(
-                              ep,
-                              media,
-                              entry?.availabilityType,
-                              watchHistory,
-                              handleNavigate,
-                          )
+                        ? mapEpisodeToSwimlaneItem(ep, media, entry?.availabilityType, watchHistory, handleNavigate)
                         : null
                 })
                 .filter((item): item is SwimlaneItem => item !== null),
         [continueWatchingEpisodes, entriesByMediaId, handleNavigate, resolveEpisodeMedia, watchHistory],
     )
 
-    // ── Dragon Ball Universe swimlane ─────────────────────────────────────
-    // Pulls entries from all intelligence swimlanes that belong to the DB franchise.
-    const dragonBallItems = React.useMemo((): SwimlaneItem[] => {
-        const seen = new Set<number>()
-        const items: SwimlaneItem[] = []
-
-        const sources = [
-            ...(intelligenceData?.swimlanes ?? []).flatMap((l) => l.entries),
-            ...allEntries,
-        ]
-
-        for (const entry of sources) {
-            if (!entry.media) continue
-            const mediaId = entry.mediaId
-            if (seen.has(mediaId) || !DRAGON_BALL_IDS.has(mediaId)) continue
-            seen.add(mediaId)
-
-            const media = entry.media
-            const intel = (entry as IntelligentEntry).intelligence
-            const backdropUrl = media.bannerImage || media.posterImage
-
-            const parts: string[] = []
-            if (media.year) parts.push(String(media.year))
-            if (intel?.arcName) parts.push(intel.arcName)
-
-            items.push({
-                id: `db-${mediaId}`,
-                title: getTitle(media),
-                image: media.posterImage || backdropUrl,
-                subtitle: parts.join(" · "),
-                badge: intel?.tag === "EPIC" ? "Épico 🔥" : media.format,
-                availabilityType: entry.availabilityType as SwimlaneItem["availabilityType"],
-                backdropUrl: backdropUrl || undefined,
-                aspect: "poster",
-                onClick: () => handleNavigate(mediaId),
+    const recentItems = React.useMemo((): SwimlaneItem[] => {
+        return [...allEntries]
+            .sort((a, b) => {
+                const aDate = a.media?.createdAt ? new Date(a.media.createdAt).getTime() : 0
+                const bDate = b.media?.createdAt ? new Date(b.media.createdAt).getTime() : 0
+                return bDate - aDate
             })
-        }
-
-        return items
-    }, [intelligenceData, allEntries, handleNavigate])
-
-    // ── Movies swimlane ───────────────────────────────────────────────────
-    const movieItems = React.useMemo((): SwimlaneItem[] => {
-        const MOVIE_FORMATS = new Set(["MOVIE", "MOVIE_SHORT"])
-        return allEntries
-            .filter((e) => e.media && MOVIE_FORMATS.has(e.media.format ?? ""))
+            .slice(0, 20)
             .map((entry): SwimlaneItem | null => {
                 if (!entry.media) return null
                 const m = entry.media
-                const backdropUrl = m.bannerImage || m.posterImage
                 return {
-                    id: `movie-${entry.mediaId}`,
+                    id: `recent-${entry.mediaId}`,
                     title: getTitle(m),
-                    image: backdropUrl || m.posterImage,
-                    subtitle: m.year ? String(m.year) : undefined,
-                    badge: m.score && m.score >= 80 ? `${(m.score / 10).toFixed(1)} ★` : undefined,
+                    image: m.posterImage || getBackdrop(m),
+                    subtitle: m.year ? String(m.year) : m.format,
+                    badge: m.format,
                     availabilityType: entry.availabilityType as SwimlaneItem["availabilityType"],
-                    backdropUrl: backdropUrl || undefined,
-                    aspect: "wide",
+                    backdropUrl: getBackdrop(m) || undefined,
+                    aspect: "poster",
+                    year: m.year,
+                    rating: m.score ? m.score / 10 : undefined,
                     onClick: () => handleNavigate(entry.mediaId),
                 }
             })
             .filter((x): x is SwimlaneItem => x !== null)
     }, [allEntries, handleNavigate])
 
-    // ── Hero banner items ─────────────────────────────────────────────────
-    // Priority: EPIC-tagged curated entries > Continue Watching > fallback list
     const heroItems = React.useMemo((): HeroBannerItem[] => {
         const items: HeroBannerItem[] = []
         const seen = new Set<number>()
 
-        // 1. EPIC entries from intelligence swimlanes (highest quality heroes)
         if (intelligenceData) {
             for (const lane of intelligenceData.swimlanes) {
                 for (const entry of lane.entries) {
@@ -371,7 +306,6 @@ function HomePage() {
             }
         }
 
-        // 2. Continue Watching episodes
         for (const ep of continueWatchingEpisodes) {
             const media = resolveEpisodeMedia(ep)
             if (!media || seen.has(media.id)) continue
@@ -380,58 +314,27 @@ function HomePage() {
             if (items.length >= 5) break
         }
 
-        // 3. Fallback: first curated swimlane
-        if (intelligenceData && items.length < 3) {
-            const firstLane = intelligenceData.swimlanes[0]
-            for (const entry of firstLane?.entries ?? []) {
-                if (!entry.media || seen.has(entry.mediaId)) continue
-                seen.add(entry.mediaId)
-                const item = mapEntryToHeroItem(entry as IntelligentEntry, watchHistory, handleNavigate)
-                if (item) items.push(item)
-                if (items.length >= 5) break
-            }
-        }
-
         return items
-    }, [
-        continueWatchingEpisodes,
-        handleNavigate,
-        resolveEpisodeMedia,
-        intelligenceData,
-        watchHistory,
-    ])
+    }, [continueWatchingEpisodes, handleNavigate, resolveEpisodeMedia, intelligenceData, watchHistory])
 
     const isLoading = isCollectionLoading || isContinuityLoading || isIntelligenceLoading
 
     if (isLoading) return <LoadingOverlayWithLogo />
 
-    if (error) {
-        return (
-            <ErrorBanner
-                message={
-                    error instanceof Error
-                        ? error.message
-                        : "Se produjo un error al conectar con el servidor."
-                }
-            />
-        )
-    }
+    if (error) return <ErrorBanner message={error instanceof Error ? error.message : "Error de conexión."} />
 
     if (allEntries.length === 0 && (!intelligenceData || intelligenceData.swimlanes.length === 0)) {
         return <EmptyState />
     }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col gap-8 w-full max-w-screen-2xl mx-auto">
-            {/* Global dynamic backdrop — reacts to card hovers */}
+        <div className="min-h-screen bg-background flex flex-col gap-8 w-full max-w-screen-2xl mx-auto overflow-x-hidden">
             <DynamicBackdrop />
 
-            {/* ── Hero banner (full-viewport) ────────────────────────────── */}
             <HeroBanner
                 className="-mt-[53px]"
                 items={heroItems.map((item) => ({
                     ...item,
-                    // Override onPlay to try SourcePicker first
                     onPlay: () => {
                         if (item.mediaId) openSourcePicker(item.mediaId)
                         else item.onPlay()
@@ -439,95 +342,78 @@ function HomePage() {
                 }))}
             />
 
-            {/* ── SourcePicker sheet — resolves on hero Quick Play ─────── */}
             <SourcePicker
                 response={resolution}
                 onSelect={(source: MediaSource) => {
                     closeSourcePicker()
-                    // TODO: pipe source.urlPath to the media player
                     window.open(source.urlPath, "_blank")
                 }}
                 onClose={closeSourcePicker}
             />
 
-            {/* ── Swimlane section ──────────────────────────────────────── */}
-            <div className="relative z-10 -mt-20 flex flex-col gap-8 pb-24">
-                <SectionLabel icon={Sparkles} label="Descubrimiento cinematográfico" />
-
-                {/* Continue Watching */}
+            <div className="relative z-10 -mt-20 flex flex-col gap-10 pb-24">
+                {/* 1. Continue Watching (Focus) */}
                 {continueWatchingItems.length > 0 && (
-                    <Swimlane
-                        title="Continuar viendo"
-                        items={continueWatchingItems}
-                        defaultAspect="wide"
-                        onHover={setBackdropUrl}
-                    />
-                )}
-
-                {/* Intelligence-curated lanes from the backend */}
-                {intelligenceData?.swimlanes.map((lane) => (
-                    <SmartSwimlane
-                        key={lane.id}
-                        lane={lane}
-                        onNavigate={(id) => handleNavigate(Number(id))}
-                    />
-                ))}
-
-                {/* Dragon Ball Universe — dedicated arc lane */}
-                {dragonBallItems.length > 0 && (
-                    <>
-                        <SectionLabel icon={Zap} label="Universo Dragon Ball" />
+                    <div className="space-y-4">
+                        <SectionLabel icon={Zap} label="Continuar viendo" />
                         <Swimlane
-                            title="Universo Dragon Ball"
-                            items={dragonBallItems}
-                            defaultAspect="poster"
-                            onHover={setBackdropUrl}
-                        />
-                    </>
-                )}
-
-                {/* Movies — standalone films only */}
-                {movieItems.length > 0 && (
-                    <>
-                        <SectionLabel icon={Clapperboard} label="Películas" />
-                        <Swimlane
-                            title="Películas"
-                            items={movieItems}
+                            title="Continuar viendo"
+                            items={continueWatchingItems}
                             defaultAspect="wide"
                             onHover={setBackdropUrl}
                         />
-                    </>
+                    </div>
                 )}
 
-                {/* All local entries (online discovery) */}
-                {allEntries.length > 0 && (
-                    <>
-                        <SectionLabel icon={Globe2} label="Tu colección" />
+                {/* 2. Recently Added */}
+                {recentItems.length > 0 && (
+                    <div className="space-y-4">
+                        <SectionLabel icon={Sparkles} label="Novedades en tu biblioteca" />
                         <Swimlane
-                            title="Tu colección completa"
-                            items={allEntries
-                                .slice(0, 30)
-                                .map((entry): SwimlaneItem | null => {
-                                    if (!entry.media) return null
-                                    const m = entry.media
-                                    return {
-                                        id: `all-${entry.mediaId}`,
-                                        title: getTitle(m),
-                                        image: m.posterImage || getBackdrop(m),
-                                        subtitle: m.year ? String(m.year) : m.format,
-                                        badge: m.format,
-                                        availabilityType:
-                                            entry.availabilityType as SwimlaneItem["availabilityType"],
-                                        backdropUrl: getBackdrop(m) || undefined,
-                                        aspect: "poster",
-                                        onClick: () => handleNavigate(entry.mediaId),
-                                    }
-                                })
-                                .filter((x): x is SwimlaneItem => x !== null)}
+                            title="Añadidos recientemente"
+                            items={recentItems}
                             defaultAspect="poster"
                             onHover={setBackdropUrl}
                         />
-                    </>
+                    </div>
+                )}
+
+                {/* 3. Curated Sagas / Intelligence */}
+                {intelligenceData?.swimlanes.map((lane) => (
+                    <div key={lane.id} className="space-y-4">
+                        <SectionLabel 
+                            icon={lane.type === "epic_moments" ? Zap : Clapperboard} 
+                            label={lane.title} 
+                        />
+                        <SmartSwimlane
+                            lane={lane}
+                            onNavigate={(id) => handleNavigate(Number(id))}
+                        />
+                    </div>
+                ))}
+
+                {/* 4. Full Collection Fallback */}
+                {allEntries.length > 0 && (
+                    <div className="space-y-4 opacity-80 hover:opacity-100 transition-opacity">
+                        <SectionLabel icon={Globe2} label="Explorar colección completa" />
+                        <Swimlane
+                            title="Tu colección"
+                            items={allEntries.slice(0, 40).map((entry) => ({
+                                id: `coll-${entry.mediaId}`,
+                                title: getTitle(entry.media!),
+                                image: entry.media!.posterImage || getBackdrop(entry.media!),
+                                subtitle: entry.media!.year ? String(entry.media!.year) : entry.media!.format,
+                                badge: entry.media!.format,
+                                year: entry.media!.year,
+                                rating: entry.media!.score ? entry.media!.score / 10 : undefined,
+                                onClick: () => handleNavigate(entry.mediaId),
+                                backdropUrl: getBackdrop(entry.media!),
+                                aspect: "poster"
+                            }))}
+                            defaultAspect="poster"
+                            onHover={setBackdropUrl}
+                        />
+                    </div>
                 )}
             </div>
         </div>

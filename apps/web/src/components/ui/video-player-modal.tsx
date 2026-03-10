@@ -116,6 +116,7 @@ export function VideoPlayerModal({
     const progressBarRef = useRef<HTMLDivElement>(null)
     const progressInputRef = useRef<HTMLInputElement>(null)
     const currentTimeRef = useRef(0)
+    const completionSentRef = useRef(false)
 
     // Status
     const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
@@ -437,6 +438,12 @@ export function VideoPlayerModal({
             // Marathon triggers — buckets to 1 s, no re-render on every RAF tick
             checkPlaybackTriggers(time, dur)
 
+            if (!completionSentRef.current && dur > 0 && time / dur >= 0.9) {
+                completionSentRef.current = true
+                saveContinuity(dur, dur)
+                telemetry.reportProgress(dur, true)
+            }
+
             // Playback telemetry
             telemetry.reportProgress(time, false)
         }
@@ -467,6 +474,7 @@ export function VideoPlayerModal({
 
         return () => {
             saveContinuity(video.currentTime, video.duration)
+            telemetry.reportProgress(video.currentTime, true)
             if (lsKey) localStorage.setItem(lsKey, String(video.currentTime))
             if (posInterval) clearInterval(posInterval)
             video.removeEventListener('timeupdate', updateTime)
@@ -986,3 +994,6 @@ export function VideoPlayerModal({
         </div>
     )
 }
+
+
+

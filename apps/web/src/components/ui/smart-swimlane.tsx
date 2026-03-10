@@ -121,6 +121,8 @@ export const SmartSwimlane = React.memo(function SmartSwimlane({ lane, onNavigat
                 availabilityType: entry.availabilityType as SwimlaneItem["availabilityType"],
                 backdropUrl: backdropUrl ?? undefined,
                 intelligenceTag: intel?.tag,
+                year: media?.year,
+                rating: intel?.rating,
                 onClick: () => onNavigate(String(entry.mediaId)),
                 // Slot intelligence badge as an overlay via renderOverlay
                 // (MediaCard bubbles the group-hover, so we can't easily inject

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { getServerBaseUrl } from "../client/server-url"
+import { getServerBaseUrl } from "@/api/client/server-url"
 
 export interface TorrentioStreamResult {
     name: string

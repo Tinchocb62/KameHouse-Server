@@ -91,7 +91,7 @@ export const dbzData: Series[] = [
         title: "Dragon Ball GT",
         description: "Goku es convertido en niño por un deseo accidental de Pilaf y debe viajar por el universo.",
         year: "1996",
-        image: "https://artworks.thetvdb.com/banners/posters/73111-1.jpg",
+        image: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx225-bT41PZ2Wf6GZ.png",
         episodesCount: 64,
         sagas: [
             {
@@ -104,6 +104,15 @@ export const dbzData: Series[] = [
                 ]
             }
         ]
+    },
+    {
+        id: "dbkai-tfc",
+        title: "Dragon Ball Kai: The Final Chapters",
+        description: "La remasterización en HD y sin relleno de la climática saga de Majin Buu.",
+        year: "2014",
+        image: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20655-aXWdgbvUu82U.png",
+        episodesCount: 61,
+        sagas: []
     },
     {
         id: "dbs",
@@ -125,5 +134,23 @@ export const dbzData: Series[] = [
                 ]
             }
         ]
+    },
+    {
+        id: "dbkai-ultimate",
+        title: "Dragon Ball Kai Ultimate 2.0",
+        description: "Edición definitiva creada por SeldionDB (339 episodios). Remasterización sin relleno, corrección de color y banda sonora adaptada. InfoHash: 747d16330de709d715efae8081267bca1567751",
+        year: "2023",
+        image: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5877-npeXmXm4vG0L.png",
+        episodesCount: 339,
+        sagas: []
+    },
+    {
+        id: "db-daima",
+        title: "Dragon Ball Daima",
+        description: "Por una conspiración, Goku y sus amigos son re-convertidos en niños. Para solucionarlo, viajan a un mundo desconocido.",
+        year: "2024",
+        image: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx170133-KccU0g2G3VzF.jpg",
+        episodesCount: 20,
+        sagas: []
     }
 ]

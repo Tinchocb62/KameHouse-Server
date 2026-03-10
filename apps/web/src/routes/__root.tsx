@@ -7,6 +7,7 @@ import { createStore } from "jotai"
 import React from "react"
 import { AppLayout, AppLayoutContent } from "@/components/ui/app-layout/app-layout"
 import { AppTopNav, AppBottomNav } from "@/components/ui/app-layout/app-topnav"
+import { CommandPalette } from "@/components/ui/search/command-palette"
 import { AnimatePresence } from "motion/react"
 import { useRouterState } from "@tanstack/react-router"
 import { PageTransition } from "@/components/shared/page-transition"
@@ -24,6 +25,7 @@ export const Route = createRootRouteWithContext<{
              */
             <AppLayout>
                 <AppTopNav />
+                <CommandPalette />
                 <AppLayoutContent>
                     <AnimatePresence mode="wait">
                         <PageTransition transitionKey={routerState.location.pathname} className="flex-1 max-w-screen-2xl mx-auto px-4 md:px-8 py-6">
