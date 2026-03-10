@@ -10,9 +10,6 @@ import { GenerateSW } from "workbox-webpack-plugin"
 
 const { publicVars } = loadEnv({ prefixes: ["SEA_"] })
 
-const isElectronDesktop = process.env.SEA_PUBLIC_DESKTOP === "electron"
-const distPath = isElectronDesktop ? "out-denshi" : "out"
-
 export default defineConfig({
     plugins: [
         pluginReact(),
@@ -47,7 +44,17 @@ export default defineConfig({
                     const wasmModernSource = path.resolve(__dirname, "node_modules/jassub/dist/wasm/jassub-worker-modern.wasm")
                     fs.copyFileSync(wasmSource, path.join(outDir, "jassub-worker.wasm"))
                     fs.copyFileSync(wasmModernSource, path.join(outDir, "jassub-worker-modern.wasm"))
-                    console.log("Finished transpiling")
+                    console.log("Finished transpiling jassub")
+
+                    // Transpile custom service worker
+                    buildSync({
+                        entryPoints: [path.resolve(__dirname, "src/sw.ts")],
+                        outfile: path.resolve(__dirname, "public/sw-custom.js"),
+                        bundle: true,
+                        format: "iife",
+                        minify: process.env.NODE_ENV === "production"
+                    })
+                    console.log("Finished transpiling sw-custom.js")
                 }
             },
         },
@@ -82,7 +89,7 @@ export default defineConfig({
         cleanDistPath: true,
         sourceMap: !!process.env.RSDOCTOR,
         distPath: {
-            root: distPath,
+            root: "out",
         },
         filename: {
             js: "[name].[contenthash:8].js",
@@ -125,6 +132,7 @@ export default defineConfig({
                 process.env.NODE_ENV === 'production' && new GenerateSW({
                     clientsClaim: true,
                     skipWaiting: true,
+                    importScripts: ['/sw-custom.js'],
                     maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
                     navigateFallback: "/index.html",
                     runtimeCaching: [

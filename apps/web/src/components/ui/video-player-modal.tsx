@@ -220,7 +220,7 @@ export function VideoPlayerModal({
     // Audio tracks — seeded from the trackInfo prop; HLS streams also auto-detect
     // them from the manifest via AUDIO_TRACKS_UPDATED (see HLS effect below).
     const [audioTracks, setAudioTracks] = useState<AudioTrack[]>(trackInfo?.audioTracks ?? [])
-    const [activeAudioIndex, setActiveAudioIndex] = useState<number>(0)
+    const [activeAudioIndex, setActiveAudioIndex] = useState<number>(trackInfo?.audioTracks?.find((t) => t.default)?.index ?? 0)
 
     // Subtitle tracks — always sourced from the trackInfo prop (MKV container metadata).
     const [subtitleTracks] = useState<SubtitleTrack[]>(trackInfo?.subtitleTracks ?? [])
@@ -378,6 +378,14 @@ export function VideoPlayerModal({
                     // Prefer trackInfo (has codec/channels); fall back to HLS discovery.
                     if (trackInfo?.audioTracks && trackInfo.audioTracks.length > 0) return
                     setAudioTracks(hlsTracks)
+                    const defaultTrack = hlsTracks.find((t) => t.default) || hlsTracks[0]
+                    if (defaultTrack && !trackInfo?.audioTracks?.length) {
+                        setActiveAudioIndex(defaultTrack.index)
+                    }
+                })
+
+                hls.on(Hls.Events.AUDIO_TRACK_LOADED, (_evt, data) => {
+                    setActiveAudioIndex(data.id)
                 })
             } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
                 video.src = streamUrl

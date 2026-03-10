@@ -20,7 +20,7 @@ export function CommandPalette() {
     }, [])
 
     return (
-        <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ label: "Search Command Palette" }}>
             <CommandInput
                 placeholder="Search series, movies, or discover..."
                 value={query}
@@ -35,9 +35,9 @@ export function CommandPalette() {
                     <>
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup heading={isSearchActive ? "Search Results" : "Trending Now"}>
-                            {results?.map((result) => (
+                            {results?.map((result: any) => (
                                 <CommandItem key={result.id} value={result.title?.userPreferred || ""} onSelect={() => setOpen(false)}>
-                                    <Link to={`/series/${result.id}`} className="flex w-full items-center gap-3">
+                                    <Link to="/series/$seriesId" params={{ seriesId: result.id.toString() }} className="flex w-full items-center gap-3">
                                         <div
                                             className="h-10 w-8 flex-shrink-0 cursor-pointer rounded-sm bg-cover bg-center shadow-lg transition-transform hover:scale-110"
                                             style={{ backgroundImage: `url(${result.coverImage?.large})` }}

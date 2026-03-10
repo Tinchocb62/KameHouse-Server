@@ -40,7 +40,7 @@ export function useGlobalSearch() {
     return {
         query,
         setQuery,
-        results: isSearchActive ? searchResults?.results || [] : recentAnime?.results || [],
+        results: isSearchActive ? searchResults?.Page?.media || [] : recentAnime?.Page?.airingSchedules?.map(s => s.media).filter(Boolean) || [],
         isLoading: isSearchActive ? isSearchLoading : isRecentLoading,
         isSearchActive,
     }

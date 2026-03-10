@@ -27,7 +27,7 @@ func startApp(embeddedLogo []byte) (*core.App, core.KameHouseFlags, *updater.Sel
 	selfupdater := updater.NewSelfUpdater()
 
 	// Create the app instance
-	app := core.NewApp(&core.ConfigOptions{
+	app := core.NewAntigravity(&core.ConfigOptions{
 		Flags:        flags,
 		EmbeddedLogo: embeddedLogo,
 	}, selfupdater)

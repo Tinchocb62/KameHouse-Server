@@ -1,17 +1,15 @@
 /// <reference lib="webworker" />
 declare const self: ServiceWorkerGlobalScope;
 
-import { clientsClaim } from 'workbox-core';
-import { precacheAndRoute } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
-clientsClaim();
-
-// Precache assets injected by Webpack/Vite
-precacheAndRoute(self.__WB_MANIFEST || []);
+// SPA Navigation Fallback
+// This ensures that when the user visits /movies or /series/123 while offline,
+// the Service Worker serves the cached /index.html instead of a 404.
+// Note: In GenerateSW, navigateFallback works natively, but we keep this as extra protection if custom caching takes over.
 
 // 1. WebAssembly Decoder Modules (High Priority, Immutable Cache)
 // Essential for WebTorrent or advanced demuxing. We cache these aggressively.

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Modal } from "@/components/ui/modal"
 import { useGlobalSearch } from "@/hooks/use-global-search"
 import { useAnimeEntryManualMatch } from "@/api/hooks/anime_entries.hooks"
 import { useState } from "react"
@@ -33,16 +33,14 @@ export function ManualMatchModal({ isOpen, onClose, directoryPath, currentMediaI
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl bg-[#0B0B0F] text-white border-white/10">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold">Fix Match</DialogTitle>
-                    <DialogDescription className="text-white/60">
-                        Search for the correct series or movie to link it to your local files.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="mt-4 space-y-4">
+        <Modal 
+            open={isOpen} 
+            onOpenChange={onClose} 
+            title="Fix Match" 
+            description="Search for the correct series or movie to link it to your local files."
+            contentClass="max-w-2xl bg-[#0B0B0F] text-white border-white/10"
+        >
+            <div className="mt-4 space-y-4">
                     <input
                         type="text"
                         placeholder="Search AniList..."
@@ -61,7 +59,7 @@ export function ManualMatchModal({ isOpen, onClose, directoryPath, currentMediaI
                                 No results found.
                             </div>
                         ) : (
-                            results?.map((result) => (
+                            results?.map((result: any) => (
                                 <div
                                     key={result.id}
                                     className="flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-3 transition hover:bg-white/10"
@@ -96,7 +94,6 @@ export function ManualMatchModal({ isOpen, onClose, directoryPath, currentMediaI
                         )}
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+        </Modal>
     )
 }

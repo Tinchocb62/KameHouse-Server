@@ -66,7 +66,7 @@ func RefreshAnilistCatalogCacheJob(c *JobCtx) {
 
 		// Fetch from AniList
 		ret, err := anilist.ListAnimeM(
-			shared_platform.NewCacheLayer(c.App.AnilistClientRef),
+			shared_platform.NewCacheLayer(c.App.Metadata.AnilistClientRef),
 			&q.page,
 			nil,
 			&q.perPage,

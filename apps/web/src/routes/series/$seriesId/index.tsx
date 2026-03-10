@@ -1,17 +1,12 @@
 import React from "react"
 import { createFileRoute } from "@tanstack/react-router"
-import { dbzData, type Series } from "@/lib/dbz-data"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { FaPlay } from "react-icons/fa"
 import { EmptyState } from "@/components/shared/empty-state"
 import { ManualMatchModal } from "@/components/shared/manual-match-modal"
-
-type SeriesWithVisuals = Series & {
-    bannerImage?: string
-    backdropUrl?: string
-    coverImage?: string
-    genres?: string[]
-}
+import { useGetAnimeEntry } from "@/api/hooks/anime_entries.hooks"
+import { Anime_Episode } from "@/api/generated/types"
+import { Loader2 } from "lucide-react"
 
 export const Route = createFileRoute("/series/$seriesId/")({
     component: SeriesDetailPage,
@@ -19,9 +14,19 @@ export const Route = createFileRoute("/series/$seriesId/")({
 
 function SeriesDetailPage() {
     const { seriesId } = Route.useParams()
-    const series = dbzData.find((item) => item.id === seriesId) as SeriesWithVisuals | undefined
+    const { data: entry, isLoading } = useGetAnimeEntry(seriesId)
 
-    if (!series) {
+    const [isMatchModalOpen, setIsMatchModalOpen] = React.useState(false)
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-[#0B0B0F] flex items-center justify-center">
+                <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+            </div>
+        )
+    }
+
+    if (!entry || !entry.media) {
         return (
             <div className="min-h-screen bg-[#0B0B0F] text-white flex items-center justify-center px-6">
                 <EmptyState
@@ -32,38 +37,45 @@ function SeriesDetailPage() {
         )
     }
 
-    const heroBackdrop = series.bannerImage ?? series.backdropUrl ?? series.image
-    const coverImage = series.coverImage ?? series.image
-    const genres = series.genres ?? ["Shonen", "Action", "Adventure"]
-
-    const [isMatchModalOpen, setIsMatchModalOpen] = React.useState(false)
+    const heroBackdrop = entry.media.bannerImage || entry.media.posterImage || ""
+    const coverImage = entry.media.posterImage || ""
+    const genres = entry.media.genres || ["Anime"]
+    const title = entry.media.titleRomaji || entry.media.titleEnglish || "Título Desconocido"
+    const year = entry.media.year?.toString() || ""
+    const synopsis = entry.media.description || "Sin descripción disponible."
+    const episodesCount = entry.media.totalEpisodes || entry.episodes?.length || 0
 
     return (
         <div className="min-h-screen bg-[#0B0B0F] text-white pb-16">
             <HeroSection
                 backdropUrl={heroBackdrop}
                 coverUrl={coverImage}
-                title={series.title}
-                year={series.year}
+                title={title}
+                year={year}
                 genres={genres}
-                synopsis={series.description}
-                episodesCount={series.episodesCount}
+                synopsis={synopsis}
+                episodesCount={episodesCount}
                 onFixMatchClick={() => setIsMatchModalOpen(true)}
             />
 
-            <EpisodesSection seriesTitle={series.title} fallbackThumb={heroBackdrop} sagas={series.sagas} />
+            <EpisodesSection 
+                seriesTitle={title} 
+                fallbackThumb={heroBackdrop} 
+                episodes={entry.episodes || []} 
+            />
 
             <ManualMatchModal
                 isOpen={isMatchModalOpen}
                 onClose={() => setIsMatchModalOpen(false)}
-                currentMediaId={parseInt(series.id)}
-                directoryPath={`/mock/path/${series.id}`} // En un caso real esto vendria de la metadata de Anime_Entry
+                currentMediaId={parseInt(seriesId)}
+                directoryPath={entry.libraryData?.sharedPath || ""}
             />
         </div>
     )
 }
 
 interface HeroSectionProps {
+    // ... same hero props
     backdropUrl: string
     coverUrl: string
     title: string
@@ -102,14 +114,12 @@ function HeroSection({ backdropUrl, coverUrl, title, year, genres, synopsis, epi
 
                     <div className="flex flex-1 flex-col gap-5 pb-4">
                         <div className="flex flex-wrap items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-white/80">
-                            <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">{year}</span>
+                            {year && <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1">{year}</span>}
                             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{episodesCount} episodios</span>
-                            <span className="rounded-full border border-orange-500/40 bg-orange-500/15 px-3 py-1 text-orange-200">HDR</span>
+                            <span className="rounded-full border border-orange-500/40 bg-orange-500/15 px-3 py-1 text-orange-200">1080p</span>
                         </div>
 
-                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight drop-shadow-[0_10px_40px_rgba(0,0,0,0.65)]">
-                            {title}
-                        </h1>
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight drop-shadow-[0_10px_40px_rgba(0,0,0,0.65)]" dangerouslySetInnerHTML={{ __html: title }}></h1>
 
                         <div className="flex flex-wrap gap-2">
                             {genres.map((genre) => (
@@ -122,9 +132,7 @@ function HeroSection({ backdropUrl, coverUrl, title, year, genres, synopsis, epi
                             ))}
                         </div>
 
-                        <p className="max-w-4xl text-base sm:text-lg text-white/85 leading-relaxed line-clamp-4">
-                            {synopsis}
-                        </p>
+                        <p className="max-w-4xl text-base sm:text-lg text-white/85 leading-relaxed line-clamp-4" dangerouslySetInnerHTML={{ __html: synopsis }}></p>
 
                         <div className="flex flex-wrap items-center gap-3 pt-2">
                             <button className="inline-flex items-center gap-2 rounded-full bg-orange-500 px-6 py-3 text-sm font-bold uppercase tracking-[0.22em] text-white shadow-[0_10px_30px_rgba(249,115,22,0.4)] transition hover:translate-y-[-1px] hover:shadow-[0_15px_40px_rgba(249,115,22,0.5)]">
@@ -137,7 +145,7 @@ function HeroSection({ backdropUrl, coverUrl, title, year, genres, synopsis, epi
                                 onClick={onFixMatchClick}
                                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white/50 transition hover:border-white/20 hover:text-white"
                             >
-                                Fix Match
+                                Corregir Metadatos
                             </button>
                         </div>
                     </div>
@@ -150,50 +158,62 @@ function HeroSection({ backdropUrl, coverUrl, title, year, genres, synopsis, epi
 interface EpisodesSectionProps {
     seriesTitle: string
     fallbackThumb: string
-    sagas: Series["sagas"]
+    episodes: Anime_Episode[]
 }
 
-function EpisodesSection({ seriesTitle, fallbackThumb, sagas }: EpisodesSectionProps) {
+function EpisodesSection({ seriesTitle, fallbackThumb, episodes }: EpisodesSectionProps) {
+    if (!episodes || episodes.length === 0) return null
+
+    // Grouping episodes by season if applicable
+    const groupedEpisodes = episodes.reduce((acc, ep) => {
+        const key = ep.seasonNumber || 1
+        if (!acc[key]) acc[key] = []
+        acc[key].push(ep)
+        return acc
+    }, {} as Record<number, Anime_Episode[]>)
+
     return (
         <section className="relative z-[1] -mt-10 space-y-10 px-6 sm:px-10 lg:px-16">
-            {sagas.map((saga) => (
-                <div key={saga.id} className="space-y-5">
+            {Object.entries(groupedEpisodes).map(([seasonNum, seasonEpisodes]) => (
+                <div key={seasonNum} className="space-y-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="space-y-1">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Saga</p>
-                            <h2 className="text-2xl font-black">{saga.title}</h2>
-                            <p className="text-sm text-white/60 max-w-2xl">{saga.description}</p>
+                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Temporada</p>
+                            <h2 className="text-2xl font-black">{seasonNum}</h2>
                         </div>
                         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
-                            {saga.episodes.length} episodios
+                            {seasonEpisodes.length} episodios
                         </span>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {saga.episodes.map((episode) => {
-                            const thumb = (episode as { thumbnailUrl?: string }).thumbnailUrl ?? saga.image ?? fallbackThumb
+                        {seasonEpisodes.map((episode) => {
+                            const thumb = episode.episodeMetadata?.image || fallbackThumb
+                            const length = episode.episodeMetadata?.length || 24
+                            
                             return (
                                 <article
-                                    key={episode.id}
+                                    key={episode.episodeNumber}
                                     className="group overflow-hidden rounded-2xl border border-white/8 bg-white/5 shadow-[0_18px_40px_rgba(0,0,0,0.4)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
+                                    title={episode.localFile?.path}
                                 >
                                     <div className="relative aspect-video overflow-hidden">
                                         <DeferredImage
                                             src={thumb}
-                                            alt={`${seriesTitle} episodio ${episode.number}`}
+                                            alt={`${seriesTitle} episodio ${episode.episodeNumber}`}
                                             className="h-full w-full"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-70" />
                                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.08),transparent_45%)] opacity-60" />
                                         <div className="absolute top-2 left-2 rounded-full border border-white/20 bg-black/70 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-white/90">
-                                            E{episode.number}
+                                            E{episode.episodeNumber}
                                         </div>
                                         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-white/80">
-                                            <span className="rounded-full bg-white/10 px-2 py-1">HD</span>
-                                            <span className="rounded-full bg-white/10 px-2 py-1">Sub â€¢ Latam</span>
+                                            <span className="rounded-full bg-white/10 px-2 py-1">{episode.isDownloaded ? "Local" : "Online"}</span>
+                                            {episode.fileMetadata?.aniDBEpisode && <span className="rounded-full bg-white/10 px-2 py-1">AniDB: {episode.fileMetadata.aniDBEpisode}</span>}
                                         </div>
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-orange-300/70 bg-orange-500/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(249,115,22,0.35)] scale-95 group-hover:scale-100 transition-transform duration-300">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-orange-300/70 bg-orange-500/80 backdrop-blur-xl shadow-[0_10px_30px_rgba(249,115,22,0.35)] scale-95 group-hover:scale-100 transition-transform duration-300 cursor-pointer">
                                                 <FaPlay className="h-4 w-4 text-white ml-0.5" />
                                             </div>
                                         </div>
@@ -201,20 +221,18 @@ function EpisodesSection({ seriesTitle, fallbackThumb, sagas }: EpisodesSectionP
 
                                     <div className="flex flex-col gap-1 p-4">
                                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
-                                            Episodio {episode.number}
+                                            {episode.displayTitle || `Episodio ${episode.episodeNumber}`}
                                         </p>
                                         <h3 className="text-base font-bold leading-tight line-clamp-2 text-white">
-                                            {episode.title}
+                                            {episode.episodeTitle || "Sin título"}
                                         </h3>
-                                        {episode.description && (
-                                            <p className="text-sm text-white/70 line-clamp-2">
-                                                {episode.description}
-                                            </p>
+                                        {episode.episodeMetadata?.summary && (
+                                            <p className="text-sm text-white/70 line-clamp-2" dangerouslySetInnerHTML={{ __html: episode.episodeMetadata.summary }}></p>
                                         )}
                                         <div className="mt-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60">
-                                            <span>24 min</span>
+                                            <span>{length} min</span>
                                             <button className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/80 transition hover:border-orange-400 hover:text-orange-200">
-                                                Reproducir
+                                                Visualizar
                                             </button>
                                         </div>
                                     </div>

@@ -138,9 +138,8 @@ export function useUpdateAnimeEntryProgress(id: Nullish<string | number>, episod
             return { previousEntry }
         },
         onError: (_err, _newProgress, context) => {
-            const ctx = context as { previousEntry?: Anime_Entry } | undefined
-            if (ctx?.previousEntry && id) {
-                queryClient.setQueryData<Anime_Entry>([API_ENDPOINTS.ANIME_ENTRIES.GetAnimeEntry.key, String(id)], ctx.previousEntry)
+            if (context?.previousEntry && id) {
+                queryClient.setQueryData<Anime_Entry>([API_ENDPOINTS.ANIME_ENTRIES.GetAnimeEntry.key, String(id)], context.previousEntry)
             }
         },
         onSettled: async () => {

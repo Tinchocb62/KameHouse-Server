@@ -1,33 +1,61 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState, useMemo, memo } from "react"
 import { FaPlay, FaSearch, FaFilter } from "react-icons/fa"
-import { dbzMovies, type DbzMovie } from "@/lib/dbz-movies"
 import { EmptyState } from "@/components/shared/empty-state"
+import { useGetLibraryCollection } from "@/api/hooks/anime_collection.hooks"
+import { Anime_LibraryCollectionEntry } from "@/api/generated/types"
+import { Loader2 } from "lucide-react"
 
 export const Route = createFileRoute("/movies/")({
     component: MoviesPage,
 })
 
-// ─── Sagas available for filtering ───────────────────────────────────────────
-
-const ALL_SAGAS = Array.from(new Set(dbzMovies.map((m) => m.saga))).sort()
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function MoviesPage() {
     const [search, setSearch] = useState("")
-    const [activeSaga, setActiveSaga] = useState<string | null>(null)
+    const [activeGenre, setActiveGenre] = useState<string | null>(null)
+
+    const { data: collection, isLoading } = useGetLibraryCollection()
+
+    const allMovies = useMemo(() => {
+        if (!collection?.lists) return []
+        
+        const rawMovies = collection.lists.flatMap(list => list.entries || []).filter(entry => entry.media?.format === "MOVIE")
+        // Deduplicate movies that might appear in multiple lists (e.g. Planning, Completed)
+        const unique = new Map<number, NonNullable<typeof rawMovies[0]>>()
+        rawMovies.forEach(m => {
+            if (m.mediaId) unique.set(m.mediaId, m)
+        })
+        return Array.from(unique.values())
+    }, [collection])
+
+    const ALL_GENRES = useMemo(() => {
+        const genres = new Set<string>()
+        allMovies.forEach(m => {
+            m.media?.genres?.forEach(g => genres.add(g))
+        })
+        return Array.from(genres).sort()
+    }, [allMovies])
 
     const filtered = useMemo(() => {
-        return dbzMovies.filter((m) => {
-            const matchesSaga = activeSaga ? m.saga === activeSaga : true
+        return allMovies.filter((m) => {
+            const media = m.media
+            if (!media) return false
+
+            const matchesGenre = activeGenre ? media.genres?.includes(activeGenre) : true
+            
+            const title = media.titleRomaji || media.titleEnglish || media.titleOriginal || ""
+            const desc = media.description || ""
+
             const matchesSearch = search
-                ? m.title.toLowerCase().includes(search.toLowerCase()) ||
-                m.description.toLowerCase().includes(search.toLowerCase())
+                ? title.toLowerCase().includes(search.toLowerCase()) ||
+                  desc.toLowerCase().includes(search.toLowerCase())
                 : true
-            return matchesSaga && matchesSearch
+
+            return matchesGenre && matchesSearch
         })
-    }, [search, activeSaga])
+    }, [search, activeGenre, allMovies])
 
     return (
         <div className="flex-1 w-full flex flex-col min-h-screen bg-[#0B0B0F] text-white overflow-y-auto pb-24">
@@ -45,10 +73,10 @@ function MoviesPage() {
                     </p>
                     <h1 className="text-5xl md:text-6xl font-black leading-none text-white mb-4">
                         PELÍCULAS
-                        <span className="block text-orange-500 text-3xl md:text-4xl mt-1">Universo Dragon Ball </span>
+                        <span className="block text-orange-500 text-3xl md:text-4xl mt-1">Biblioteca Local </span>
                     </h1>
                     <p className="text-gray-400 max-w-xl text-base font-medium">
-                        {dbzMovies.length} películas · Desde 1987 hasta 2022
+                        {isLoading ? "Cargando..." : `${allMovies.length} películas`}
                     </p>
                 </div>
             </div>
@@ -58,7 +86,7 @@ function MoviesPage() {
                 <div className="max-w-7xl mx-auto px-6 md:px-14 py-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
 
                     {/* Search */}
-                    <div className="relative flex-1 max-w-sm">
+                    <div className="relative flex-1 max-w-sm w-full">
                         <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input
                             id="movies-search"
@@ -70,20 +98,20 @@ function MoviesPage() {
                         />
                     </div>
 
-                    {/* Saga filter pills */}
+                    {/* Genre filter pills */}
                     <div className="flex flex-wrap gap-2 items-center">
                         <FaFilter className="text-gray-500 w-4 h-4 flex-shrink-0" />
                         <FilterPill
                             label="Todo"
-                            active={activeSaga === null}
-                            onClick={() => setActiveSaga(null)}
+                            active={activeGenre === null}
+                            onClick={() => setActiveGenre(null)}
                         />
-                        {ALL_SAGAS.map((s) => (
+                        {ALL_GENRES.slice(0, 10).map((g) => (
                             <FilterPill
-                                key={s}
-                                label={s}
-                                active={activeSaga === s}
-                                onClick={() => setActiveSaga(activeSaga === s ? null : s)}
+                                key={g}
+                                label={g}
+                                active={activeGenre === g}
+                                onClick={() => setActiveGenre(activeGenre === g ? null : g)}
                             />
                         ))}
                     </div>
@@ -92,15 +120,19 @@ function MoviesPage() {
 
             {/* ── Grid ── */}
             <div className="max-w-7xl mx-auto px-6 md:px-14 pt-10">
-                {filtered.length === 0 ? (
+                {isLoading ? (
+                    <div className="flex h-64 items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                    </div>
+                ) : filtered.length === 0 ? (
                     <EmptyState
                         title="Sin resultados"
                         message="Intenta con otro filtro o búsqueda"
                     />
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                        {filtered.map((movie) => (
-                            <MovieCard key={movie.id} movie={movie} />
+                        {filtered.map((entry) => (
+                            <MovieCard key={entry.mediaId} entry={entry} />
                         ))}
                     </div>
                 )}
@@ -122,25 +154,27 @@ const FilterPill = memo(function FilterPill({
                 : "bg-white/5 text-gray-400 border-white/10 hover:border-orange-500/40 hover:text-orange-400"
                 }`}
         >
-            {label.replace("Dragon Ball ", "DB ")}
+            {label}
         </button>
     )
 })
 
 // ─── Movie card ───────────────────────────────────────────────────────────────
 
-const MovieCard = memo(function MovieCard({ movie }: { movie: DbzMovie }) {
+const MovieCard = memo(function MovieCard({ entry }: { entry: Anime_LibraryCollectionEntry }) {
     const navigate = useNavigate()
     const [imgError, setImgError] = useState(false)
+    const movie = entry.media
 
     const handlePlay = () => {
-        // Future: navigate({ to: "/player", search: { movieId: movie.id } })
-        navigate({ to: "/series" })
+        navigate({ to: "/series/$seriesId", params: { seriesId: entry.mediaId.toString() } })
     }
+
+    if (!movie) return null
 
     return (
         <div
-            id={`movie-card-${movie.id}`}
+            id={`movie-card-${entry.mediaId}`}
             className="group relative flex flex-col cursor-pointer"
             onClick={handlePlay}
         >
@@ -148,8 +182,8 @@ const MovieCard = memo(function MovieCard({ movie }: { movie: DbzMovie }) {
             <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-white/5 shadow-lg">
                 {!imgError ? (
                     <img
-                        src={movie.image}
-                        alt={movie.title}
+                        src={movie.posterImage}
+                        alt={movie.titleRomaji || movie.titleEnglish || "Unknown"}
                         onError={() => setImgError(true)}
                         className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500 ease-out"
                         loading="lazy"
@@ -170,24 +204,28 @@ const MovieCard = memo(function MovieCard({ movie }: { movie: DbzMovie }) {
                     </div>
                 </div>
 
-                {/* Duration badge */}
-                <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded text-xs font-bold text-white">
-                    {movie.duration}
-                </div>
+                {/* Score badge */}
+                {movie.score > 0 && (
+                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded text-xs font-bold text-white">
+                        ★ {(movie.score / 10).toFixed(1)}
+                    </div>
+                )}
 
                 {/* Year badge */}
-                <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500/80 backdrop-blur-sm rounded text-xs font-black text-white">
-                    {movie.year}
-                </div>
+                {movie.year > 0 && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500/80 backdrop-blur-sm rounded text-xs font-black text-white">
+                        {movie.year}
+                    </div>
+                )}
             </div>
 
             {/* Info */}
             <div className="mt-2.5 px-0.5">
-                <p className="text-white font-bold text-sm leading-tight line-clamp-2 group-hover:text-orange-400 transition-colors duration-200">
-                    {movie.title}
+                <p className="text-white font-bold text-sm leading-tight line-clamp-2 group-hover:text-orange-400 transition-colors duration-200" title={movie.titleRomaji || movie.titleEnglish}>
+                    {movie.titleRomaji || movie.titleEnglish || "Unknown Title"}
                 </p>
                 <p className="text-xs text-orange-500/70 font-semibold mt-1 truncate">
-                    {movie.saga}
+                    {movie.genres?.[0] || "Anime"}
                 </p>
             </div>
         </div>

@@ -1,6 +1,0 @@
-src/components/ui/directory-selector.tsx(67,25): error TS2322: Type '"basic"' is not assignable to type '"warning" | "alert" | "gray" | "white" | "primary" | "primary-outline" | "primary-subtle" | "primary-glass" | "primary-link" | "primary-basic" | "warning-outline" | "warning-subtle" | ... 25 more ... | undefined'.
-src/components/ui/directory-selector.tsx(89,32): error TS2339: Property 'Directories' does not exist on type 'DirectorySelectorResponse'.
-src/components/ui/directory-selector.tsx(89,52): error TS2339: Property 'Directories' does not exist on type 'DirectorySelectorResponse'.
-src/components/ui/directory-selector.tsx(91,35): error TS2339: Property 'Directories' does not exist on type 'DirectorySelectorResponse'.
-src/components/ui/directory-selector.tsx(91,52): error TS7006: Parameter 'dir' implicitly has an 'any' type.
-src/components/ui/directory-selector.tsx(112,25): error TS2322: Type '"basic"' is not assignable to type '"warning" | "alert" | "gray" | "white" | "primary" | "primary-outline" | "primary-subtle" | "primary-glass" | "primary-link" | "primary-basic" | "warning-outline" | "warning-subtle" | ... 25 more ... | undefined'.

@@ -1,8 +1,0 @@
-src/components/shared/directory-selector.tsx(195,45): error TS2339: Property 'fullPath' does not exist on type 'DirectoryInfo'.
-src/components/shared/directory-selector.tsx(197,64): error TS2339: Property 'fullPath' does not exist on type 'DirectoryInfo'.
-src/components/shared/directory-selector.tsx(200,72): error TS2339: Property 'folderName' does not exist on type 'DirectoryInfo'.
-src/components/shared/directory-selector.tsx(206,35): error TS2339: Property 'content' does not exist on type 'DirectorySelectorResponse'.
-src/components/shared/directory-selector.tsx(210,31): error TS2339: Property 'content' does not exist on type 'DirectorySelectorResponse'.
-src/components/shared/directory-selector.tsx(210,43): error TS7006: Parameter 'folder' implicitly has an 'any' type.
-src/components/ui/directory-selector.tsx(67,25): error TS2322: Type '"basic"' is not assignable to type '"warning" | "alert" | "gray" | "white" | "primary" | "primary-outline" | "primary-subtle" | "primary-glass" | "primary-link" | "primary-basic" | "warning-outline" | "warning-subtle" | ... 25 more ... | undefined'.
-src/components/ui/directory-selector.tsx(112,25): error TS2322: Type '"basic"' is not assignable to type '"warning" | "alert" | "gray" | "white" | "primary" | "primary-outline" | "primary-subtle" | "primary-glass" | "primary-link" | "primary-basic" | "warning-outline" | "warning-subtle" | ... 25 more ... | undefined'.
