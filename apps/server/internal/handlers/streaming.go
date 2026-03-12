@@ -1,68 +1,30 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"kamehouse/internal/database/db"
+	"kamehouse/internal/mediastream/transcoder"
+	"kamehouse/internal/mediastream/videofile"
 	"kamehouse/internal/streaming"
 
 	"github.com/labstack/echo/v4"
 )
 
-// HandleStreamingPlay
-//
-//	@summary Orchestrates streaming playback
-//	@desc Returns direct URL or HLS master URL based on client capabilities
-//	@returns streaming.OrchestratorResult
-//	@route /api/v1/media/:id/play [GET]
-func (h *Handler) HandleStreamingPlay(c echo.Context) error {
-	mediaIdStr := c.Param("id")
-	mediaId, err := strconv.Atoi(mediaIdStr)
-	if err != nil {
-		return h.RespondWithError(c, fmt.Errorf("invalid media ID"))
-	}
-
-	userAgent := c.Request().Header.Get("User-Agent")
-
-	// Create a dummy client profile (Web Browser Default)
-	// Usually parsed from User-Agent or explicitly requested
-	clientProfile := &streaming.ClientProfile{
-		Name:            "Web Browser",
-		SupportedVideo:  []string{"h264"},
-		SupportedAudio:  []string{"aac", "mp3"},
-		SupportedFormat: []string{"mp4", "webm"},
-	}
-
-	if strings.Contains(userAgent, "KameHouseApp") {
-		// Native apps support MKV and HEVC usually
-		clientProfile.SupportedVideo = append(clientProfile.SupportedVideo, "hevc", "h265")
-		clientProfile.SupportedFormat = append(clientProfile.SupportedFormat, "mkv", "matroska")
-	}
-
-	result, err := h.App.StreamOrchestrator.Orchestrate(c.Request().Context(), mediaId, clientProfile)
-	if err != nil {
-		return h.RespondWithError(c, err)
-	}
-
-	return h.RespondWithData(c, result)
-}
-
-// HandleStreamingDirect
-//
-//	@summary Serves media directly
-//	@route /api/v1/media/:id/direct [GET]
-func (h *Handler) HandleStreamingDirect(c echo.Context) error {
-	mediaIdStr := c.Param("id")
-	mediaId, err := strconv.Atoi(mediaIdStr)
+// HandleMasterPlaylist responds to GET /api/v1/stream/:id/master.m3u8
+func (h *Handler) HandleMasterPlaylist(c echo.Context) error {
+	idStr := c.Param("id")
+	mediaId, err := strconv.Atoi(idStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid media ID")
 	}
 
+	// 1. Fetch from DB
 	lfs, _, err := db.GetLocalFiles(h.App.Database)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get local files")
@@ -76,38 +38,90 @@ func (h *Handler) HandleStreamingDirect(c echo.Context) error {
 		}
 	}
 
-	if targetFile == "" || !fileExists(targetFile) {
+	if targetFile == "" {
 		return echo.NewHTTPError(http.StatusNotFound, "media file not found")
 	}
 
-	return c.File(targetFile)
+	// Extract info (or fetch from cache)
+	extractor := videofile.NewMediaInfoExtractor(h.App.FileCacher, h.App.Logger)
+	info, _ := extractor.GetInfo("ffmpeg", targetFile) // fallback safe
+
+	// Dummy client profile - in prod this comes from headers/query
+	clientProfile := &streaming.ClientProfile{
+		Name:            "Web Browser",
+		SupportedVideo:  []string{"h264"},
+		SupportedAudio:  []string{"aac", "mp3"},
+		SupportedFormat: []string{"mp4", "webm"},
+	}
+	if strings.Contains(c.Request().Header.Get("User-Agent"), "KameHouseApp") {
+		clientProfile.SupportedVideo = append(clientProfile.SupportedVideo, "hevc", "h265")
+		clientProfile.SupportedFormat = append(clientProfile.SupportedFormat, "mkv", "matroska")
+	}
+
+	// 2. Decision Engine
+	decision := streaming.EvaluatePlayback(info, *clientProfile)
+
+	if decision.Method == streaming.DirectPlay {
+		return c.File(targetFile) // Zero-copy native serve
+	}
+
+	// 3. Setup Transcode/DirectStream directories
+	outDir := filepath.Join(os.TempDir(), "kamehouse", "transcodes", idStr)
+	os.MkdirAll(outDir, 0755)
+	playlistPath := filepath.Join(outDir, "index.m3u8")
+
+	// 4. Start FFmpeg if playlist doesn't exist
+	if _, err := os.Stat(playlistPath); os.IsNotExist(err) {
+		builder := transcoder.NewFFmpegBuilder()
+		args := builder.BuildForHLS(transcoder.PlaybackMethod(decision.Method), targetFile, outDir)
+		
+		pm := transcoder.NewFFmpegProcess(h.App.Logger)
+		if err := pm.StartTranscode(c.Request().Context(), args); err != nil {
+			h.App.Logger.Error().Err(err).Msg("ffmpeg start failed")
+			return echo.NewHTTPError(500, "ffmpeg init failed")
+		}
+
+		// Polling wait for the first playlist chunk to appear
+		deadline := time.Now().Add(10 * time.Second)
+		for time.Now().Before(deadline) {
+			if _, err := os.Stat(playlistPath); err == nil {
+				break
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+	}
+
+	return c.File(playlistPath) // Zero-copy serve via OS net pipe
 }
 
-// HandleStreamingHLS
-//
-//	@summary Serves transcoded HLS segments
-//	@route /api/v1/media/:id/hls/* [GET]
-func (h *Handler) HandleStreamingHLS(c echo.Context) error {
-	mediaIdStr := c.Param("id")
-	fileToken := c.Param("*") // "master.m3u8" or "segment_000.ts"
+// HandleHlsSegment responds to GET /api/v1/stream/:id/:file
+func (h *Handler) HandleHlsSegment(c echo.Context) error {
+	id, file := c.Param("id"), c.Param("file")
+	if strings.Contains(file, "..") {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid path")
+	}
 
-	// /tmp/kamehouse_transcodes/{id}/{file}
-	targetFile := filepath.Join("/tmp/kamehouse_transcodes", mediaIdStr, fileToken)
-
-	if !fileExists(targetFile) {
+	targetPath := filepath.Join(os.TempDir(), "kamehouse", "transcodes", id, file)
+	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
 		return echo.NewHTTPError(http.StatusNotFound, "segment not found")
 	}
 
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Access-Control-Allow-Origin", "*")
-
-	return c.File(targetFile)
+	return c.File(targetPath)
 }
 
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
+// StopStreamSession responds to DELETE /api/v1/stream/:id
+func (h *Handler) StopStreamSession(c echo.Context) error {
+	id := c.Param("id")
+	if strings.Contains(id, "..") { return echo.NewHTTPError(http.StatusBadRequest, "invalid id") }
+
+	// Removes the entire temporary directory.
+	// Note: Active transcoding processes attached to client Context will be killed automatically
+	// when the client terminates the HTTP connection requesting the master playlist or segments stream.
+	dir := filepath.Join(os.TempDir(), "kamehouse", "transcodes", id)
+	os.RemoveAll(dir)
+	
+	h.App.Logger.Info().Str("mediaId", id).Msg("stream session cleaned up")
+	return c.NoContent(http.StatusOK)
 }

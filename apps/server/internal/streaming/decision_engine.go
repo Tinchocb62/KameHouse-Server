@@ -7,6 +7,7 @@ import (
 
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models/dto"
+	msTranscoder "kamehouse/internal/mediastream/transcoder"
 	"kamehouse/internal/mediastream/videofile"
 	"kamehouse/internal/util/filecache"
 
@@ -19,6 +20,7 @@ type StreamOrchestrator struct {
 	db                 *db.Database
 	mediaInfoExtractor *videofile.MediaInfoExtractor
 	transcoder         *FfmpegTranscoder
+	hwProbe            *msTranscoder.HwProbeResult
 }
 
 type StreamingOptions struct {
@@ -31,16 +33,31 @@ type OrchestratorResponse struct {
 	PlayURL  string   `json:"playUrl"`
 }
 
+// NewStreamOrchestrator builds a ready-to-use orchestrator.
+// Hardware acceleration is probed once at startup and wired into the transcoder.
 func NewStreamOrchestrator(database *db.Database, logger *zerolog.Logger, cache *filecache.Cacher, opts *StreamingOptions) *StreamOrchestrator {
 	ffmpegPath := "ffmpeg"
 	if opts != nil && opts.FfmpegPath != "" {
 		ffmpegPath = opts.FfmpegPath
 	}
+
+	// Probe HW accel once at process startup (result is cached in sync.Once).
+	hwProbe := msTranscoder.ProbeHardwareAccel(ffmpegPath, logger)
+
+	sem := NewSemaphore(MaxTranscodeSessions)
+	trans := NewTranscoder(ffmpegPath, sem, logger)
+
+	// Wire best HW accel into the transcoder (nil = CPU libx264 fallback).
+	if hwProbe != nil && hwProbe.Best != nil {
+		trans.WithHwAccel(hwProbe.Best)
+	}
+
 	return &StreamOrchestrator{
 		logger:             logger,
 		db:                 database,
 		mediaInfoExtractor: videofile.NewMediaInfoExtractor(cache, logger),
-		transcoder:         NewTranscoder(ffmpegPath, logger),
+		transcoder:         trans,
+		hwProbe:            hwProbe,
 	}
 }
 
@@ -70,7 +87,7 @@ func (o *StreamOrchestrator) HandleRequest(ctx context.Context, mediaId string, 
 
 	info, infoErr := o.mediaInfoExtractor.GetInfo(o.transcoder.FfmpegPath, targetFile.GetNormalizedPath())
 	if infoErr != nil {
-		o.logger.Warn().Err(infoErr).Msg("streaming: media info extraction failed — forcing TRANSCODE fallback")
+		o.logger.Warn().Err(infoErr).Msg("streaming: media info extraction failed — forcing Transcode fallback")
 	}
 
 	decision := EvaluatePlayback(info, clientProfile)
@@ -78,17 +95,40 @@ func (o *StreamOrchestrator) HandleRequest(ctx context.Context, mediaId string, 
 	o.logger.Info().
 		Str("method", string(decision.Method)).
 		Str("reason", decision.Reason).
+		Bool("burnSubs", decision.NeedsSubtitleBurn).
 		Str("mediaId", mediaId).
 		Msg("streaming: orchestration decision")
 
+	// Attach HW accel info to logs when transcoding
+	if decision.Method != DirectPlay && o.hwProbe != nil && o.hwProbe.Best != nil {
+		o.logger.Info().
+			Str("hwAccel", o.hwProbe.Best.Name).
+			Str("encoder", o.hwProbe.Best.Encoder).
+			Msg("streaming: using hardware acceleration")
+	}
+
 	var playURL string
-	if decision.Method == DirectPlay {
+	switch decision.Method {
+
+	case DirectPlay:
+		// No FFmpeg — serve the file directly.
 		playURL = fmt.Sprintf("/api/v1/media/%s/direct", mediaId)
-	} else {
-		// Async FFmpeg HLS session — non-blocking: caller receives the m3u8 URL immediately.
+
+	case DirectStream:
+		// Remux-only: container changes, streams are copied.
+		// Non-blocking: caller gets the m3u8 URL immediately; FFmpeg starts async.
+		go func() {
+			if _, err := o.transcoder.StartDirectStreamSession(ctx, mediaId, targetFile.GetNormalizedPath(), decision.NeedsSubtitleBurn); err != nil {
+				o.logger.Error().Err(err).Str("mediaId", mediaId).Msg("streaming: DirectStream session failed")
+			}
+		}()
+		playURL = fmt.Sprintf("/api/v1/media/%s/hls/master.m3u8", mediaId)
+
+	default: // Transcode
+		// Full re-encode to HLS with HW accel when available.
 		go func() {
 			if _, err := o.transcoder.StartSession(ctx, mediaId, targetFile.GetNormalizedPath()); err != nil {
-				o.logger.Error().Err(err).Str("mediaId", mediaId).Msg("streaming: transcode session failed")
+				o.logger.Error().Err(err).Str("mediaId", mediaId).Msg("streaming: Transcode session failed")
 			}
 		}()
 		playURL = fmt.Sprintf("/api/v1/media/%s/hls/master.m3u8", mediaId)

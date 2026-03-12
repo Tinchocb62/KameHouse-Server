@@ -3,6 +3,7 @@ package handlers
 import (
 	"kamehouse/internal/events"
 	"net/http"
+	"strconv"
 
 	"github.com/goccy/go-json"
 	"github.com/gorilla/websocket"
@@ -17,7 +18,10 @@ var (
 	}
 )
 
-// webSocketEventHandler creates a new websocket handler for real-time event communication
+// webSocketEventHandler creates a new websocket handler for real-time event communication.
+// The route is registered BEFORE the auth middleware group so the HTTP→WS upgrade
+// is never blocked by a missing Authorization header (browsers can't send one during WS connect).
+// Clients that need auth send their token via ?token=<value> as a query parameter instead.
 func (h *Handler) webSocketEventHandler(c echo.Context) error {
 	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
@@ -25,15 +29,23 @@ func (h *Handler) webSocketEventHandler(c echo.Context) error {
 	}
 	defer ws.Close()
 
-	// Get connection ID from query parameter
+	// Client identity — passed as query parameters since WS browsers can't set custom headers.
 	id := c.QueryParam("id")
 	if id == "" {
 		id = "0"
 	}
 
+	// Optional bearer token via ?token=<value>  (browser WS API cannot set Authorization headers).
+	// Currently stored for tracing; apply additional auth checks here if/when required.
+	token := c.QueryParam("token")
+	logCtx := h.App.Logger.Debug().Str("id", id)
+	if token != "" {
+		logCtx = logCtx.Str("tokenLen", strconv.Itoa(len(token)))
+	}
+	logCtx.Msg("ws: Client connected")
+
 	// Add connection to manager
 	h.App.WSEventManager.AddConn(id, ws)
-	h.App.Logger.Debug().Str("id", id).Msg("ws: Client connected")
 
 	for {
 		_, msg, err := ws.ReadMessage()

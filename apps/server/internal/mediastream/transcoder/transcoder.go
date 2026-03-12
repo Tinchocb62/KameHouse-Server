@@ -260,3 +260,67 @@ func (t *Transcoder) GetAudioSegment(
 	}
 	return stream.GetAudioSegment(ctx, audio, segment)
 }
+
+// ─── FFmpeg Builder ─────────────────────────────────────────────────────────
+
+// PlaybackMethod defines the stream processing required.
+type PlaybackMethod string
+
+const (
+	DirectStream PlaybackMethod = "DIRECT_STREAM"
+	Transcode    PlaybackMethod = "TRANSCODE"
+)
+
+// FFmpegBuilder uses the Builder pattern to generate FFmpeg CLI arguments.
+type FFmpegBuilder struct {
+	global []string
+	video  []string
+	audio  []string
+	output []string
+}
+
+// NewFFmpegBuilder initializes an empty builder.
+func NewFFmpegBuilder() *FFmpegBuilder {
+	return &FFmpegBuilder{
+		global: make([]string, 0, 8),
+		video:  make([]string, 0, 8),
+		audio:  make([]string, 0, 8),
+		output: make([]string, 0, 16),
+	}
+}
+
+// WithHardwareAccel hooks into NVENC/VAAPI/QSV profiles.
+// TODO: Implement mapping to -hwaccel cuda/vaapi etc.
+func (b *FFmpegBuilder) WithHardwareAccel(profile string) *FFmpegBuilder {
+	return b
+}
+
+// BuildForHLS assembles the final argument slice optimized for HLS streaming.
+func (b *FFmpegBuilder) BuildForHLS(decision PlaybackMethod, inputFile, outputDir string) []string {
+	b.global = append(b.global, "-y", "-i", inputFile)
+
+	if decision == DirectStream {
+		b.video = append(b.video, "-c:v", "copy")
+		b.audio = append(b.audio, "-c:a", "copy")
+	} else {
+		b.video = append(b.video, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-maxrate", "5M", "-bufsize", "10M")
+		b.audio = append(b.audio, "-c:a", "aac")
+	}
+
+	b.output = append(b.output,
+		"-f", "hls",
+		"-hls_time", "3",
+		"-hls_playlist_type", "event",
+		"-hls_segment_type", "mpegts",
+		"-hls_list_size", "0",
+		"-hls_segment_filename", filepath.Join(outputDir, "%04d.ts"),
+		filepath.Join(outputDir, "index.m3u8"),
+	)
+
+	args := make([]string, 0, len(b.global)+len(b.video)+len(b.audio)+len(b.output))
+	args = append(args, b.global...)
+	args = append(args, b.video...)
+	args = append(args, b.audio...)
+	args = append(args, b.output...)
+	return args
+}

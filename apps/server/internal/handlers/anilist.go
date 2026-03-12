@@ -356,9 +356,14 @@ func (h *Handler) HandleAnilistListAnime(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	if p.Page == nil || p.PerPage == nil {
-		*p.Page = 1
-		*p.PerPage = 20
+	// Guard: avoid nil dereference when client omits page/perPage
+	if p.Page == nil {
+		defaultPage := 1
+		p.Page = &defaultPage
+	}
+	if p.PerPage == nil {
+		defaultPerPage := 20
+		p.PerPage = &defaultPerPage
 	}
 
 	isAdult := false
@@ -505,9 +510,14 @@ func (h *Handler) HandleAnilistListRecentAiringAnime(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	if p.Page == nil || p.PerPage == nil {
-		*p.Page = 1
-		*p.PerPage = 50
+	// Guard: avoid nil dereference when client omits page/perPage
+	if p.Page == nil {
+		defaultPage := 1
+		p.Page = &defaultPage
+	}
+	if p.PerPage == nil {
+		defaultPerPage := 50
+		p.PerPage = &defaultPerPage
 	}
 
 	cacheKey := fmt.Sprintf("%v-%v-%v-%v-%v-%v-%v", p.Page, p.Search, p.PerPage, p.AiringAtGreater, p.AiringAtLesser, p.NotYetAired, p.Sort)

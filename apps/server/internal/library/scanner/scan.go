@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -92,10 +91,7 @@ func (a *ScannerAgent) StartDebouncer(ctx context.Context) {
 
 // NewScannerAgent instantiates a new concurrent scanner pipeline with telemetry.
 func NewScannerAgent(rootDir string, opts ...ScannerAgentOptions) *ScannerAgent {
-	workers := runtime.NumCPU()
-	if workers < 4 {
-		workers = 4
-	}
+	workers := defaultWorkers(0) // resolves to NumCPU*2, clamped to [4,16]
 
 	agent := &ScannerAgent{
 		rootDir:  rootDir,
@@ -128,77 +124,55 @@ func (a *ScannerAgent) Scan(ctx context.Context) error {
 	}
 
 	// STAGE 2 & 3: Parallel Processing & Atomic Writes
-	jobs := make(chan string, len(paths))
-	results := make(chan MediaMatch, len(paths))
-	var wg sync.WaitGroup
+	// WorkerPool caps goroutines to a.config.Workers (default NumCPU*2, max 16).
+	var (
+		mu         sync.Mutex
+		allResults []MediaMatch
+	)
 
-	maxWorkers := runtime.NumCPU() * 2
-	if maxWorkers < 4 {
-		maxWorkers = 4
-	}
-
-	// Spawn fixed Fan-Out worker pool bounds
-	for i := 0; i < maxWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for path := range jobs {
-				select {
-				case <-ctx.Done():
-					results <- MediaMatch{} // Push empty on cancellation
-				default:
-					results <- a.processPath(ctx, path)
-				}
+	pool := NewWorkerPool(ctx, a.config.Workers)
+	for _, path := range paths {
+		path := path // capture
+		pool.Submit(func(ctx context.Context) {
+			match := a.processPath(ctx, path)
+			if match.OriginalPath == "" {
+				return
 			}
-		}()
-	}
-
-	// Fan-Out path supplier
-	for _, p := range paths {
-		jobs <- p
-	}
-	close(jobs)
-
-	// Single synchronisation anchor for Fan-In
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var allResults []MediaMatch
-	for match := range results {
-		if match.OriginalPath != "" {
+			mu.Lock()
 			allResults = append(allResults, match)
-		}
+			mu.Unlock()
+		})
 	}
+	pool.Wait()
 
-	totalProcessed := 0
 	batches := lo.Chunk(allResults, a.config.BatchSize)
 
+	totalProcessed := 0
 	for _, batchResults := range batches {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 
-		// Single SQLite Transaction for the entire batch to evade WAL contention
-		if len(batchResults) > 0 {
-			tx := a.database.Gorm().Begin()
-			for _, m := range batchResults {
-				// Production upsert simulation wrapping atomic boundary
-				err := tx.Exec(`
-					INSERT INTO local_files (path, updated_at) VALUES (?, ?)
-					ON CONFLICT(path) DO UPDATE SET updated_at = excluded.updated_at
-				`, m.OriginalPath, time.Now()).Error
-				if err != nil && a.logger != nil {
-					a.logger.Warn().Err(err).Str("path", m.OriginalPath).Msg("Batch insert skip")
-				}
-			}
-			tx.Commit()
+		if len(batchResults) == 0 {
+			continue
+		}
 
-			totalProcessed += len(batchResults)
-			if a.logger != nil {
-				a.logger.Info().Int("flushed", len(batchResults)).Int("total", totalProcessed).Msg("ScannerAgent: Batch committed")
+		// Single SQLite Transaction for the entire batch to evade WAL contention
+		tx := a.database.Gorm().Begin()
+		for _, m := range batchResults {
+			err := tx.Exec(`
+				INSERT INTO local_files (path, updated_at) VALUES (?, ?)
+				ON CONFLICT(path) DO UPDATE SET updated_at = excluded.updated_at
+			`, m.OriginalPath, time.Now()).Error
+			if err != nil && a.logger != nil {
+				a.logger.Warn().Err(err).Str("path", m.OriginalPath).Msg("Batch insert skip")
 			}
+		}
+		tx.Commit()
+
+		totalProcessed += len(batchResults)
+		if a.logger != nil {
+			a.logger.Info().Int("flushed", len(batchResults)).Int("total", totalProcessed).Msg("ScannerAgent: Batch committed")
 		}
 	}
 

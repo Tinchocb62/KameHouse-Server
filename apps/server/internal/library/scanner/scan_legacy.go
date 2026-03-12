@@ -174,14 +174,13 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 	paths := make([]string, 0)
 	mu := sync.Mutex{}
 	logMu := sync.Mutex{}
-	wg := sync.WaitGroup{}
 
-	wg.Add(len(libraryPaths))
-
-	// Get local files from all directories
+	// Bounded WorkerPool for directory-level file collection.
+	// 1 goroutine-per-directory was unbounded on large setups; cap at NumCPU.
+	dirPool := NewWorkerPool(ctx, len(libraryPaths))
 	for i, dirPath := range libraryPaths {
-		go func(dirPath string, i int) {
-			defer wg.Done()
+		i, dirPath := i, dirPath // capture
+		dirPool.Submit(func(_ context.Context) {
 			retrievedPaths, err := filesystem.GetMediaFilePathsFromDirS(dirPath)
 			if err != nil {
 				scn.Logger.Error().Msgf("scanner: An error occurred while retrieving local files from directory: %s", err)
@@ -211,10 +210,9 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 				}
 				mu.Unlock()
 			}
-		}(dirPath, i)
+		})
 	}
-
-	wg.Wait()
+	dirPool.Wait()
 
 	if scn.ScanLogger != nil {
 		scn.ScanLogger.logger.Info().

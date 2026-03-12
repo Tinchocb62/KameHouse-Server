@@ -19,7 +19,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -117,78 +116,52 @@ func (s *MediaScanner) RunScan(ctx context.Context, mode ScanMode) (ScanResult, 
 	s.logf(zerolog.InfoLevel, "scanner: %d files queued", len(paths))
 
 	// Stage 2: Parallel parse (habari tokeniser + NFO reading)
+	// WorkerPool honours opts.Workers (user-configurable); falls back to defaultWorkers().
 	dirPaths := s.opts.LibraryDirs
-	maxWorkers := runtime.NumCPU() * 2
-	if maxWorkers < 4 {
-		maxWorkers = 4
-	}
 
-	jobs := make(chan string, len(paths))
-	results := make(chan *dto.LocalFile, len(paths))
-
-	var wg sync.WaitGroup
-	for i := 0; i < maxWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for path := range jobs {
-				if ctx.Err() != nil {
-					results <- nil
-					continue
-				}
-
-				var lf *dto.LocalFile
-				for _, d := range dirPaths {
-					if strings.HasPrefix(path, d) {
-						lf = dto.NewLocalFile(path, d)
-						break
-					}
-				}
-				if lf == nil {
-					lf = dto.NewLocalFile(path, filepath.Dir(path))
-				}
-
-				// NFO Parsing Logic (Jellyfin/Kodi compatible)
-				nfoPath := findNfoForFile(path, dirPaths)
-				if nfoPath != "" {
-					if nfo, err := ParseNfoFile(nfoPath); err == nil && nfo != nil {
-						if nfo.ID > 0 {
-							lf.MediaId = nfo.ID
-						} else if nfo.TmdbId > 0 {
-							lf.MediaId = -nfo.TmdbId
-						}
-
-						// Explicit Season/Episode overriding logic
-						if nfo.Season > 0 || nfo.Episode > 0 {
-							if lf.ParsedData == nil {
-								lf.ParsedData = &dto.LocalFileParsedData{}
-							}
-							lf.ParsedData.Season = strconv.Itoa(nfo.Season)
-							lf.ParsedData.Episode = strconv.Itoa(nfo.Episode)
-						}
-					}
-				}
-				results <- lf
-			}
-		}()
-	}
-
-	for _, p := range paths {
-		jobs <- p
-	}
-	close(jobs)
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
+	var mu sync.Mutex
 	valid := make([]*dto.LocalFile, 0, len(paths))
-	for lf := range results {
-		if lf != nil {
+
+	pool := NewWorkerPool(ctx, s.opts.Workers)
+	for _, p := range paths {
+		p := p // capture
+		pool.Submit(func(ctx context.Context) {
+			var lf *dto.LocalFile
+			for _, d := range dirPaths {
+				if strings.HasPrefix(p, d) {
+					lf = dto.NewLocalFile(p, d)
+					break
+				}
+			}
+			if lf == nil {
+				lf = dto.NewLocalFile(p, filepath.Dir(p))
+			}
+
+			// NFO Parsing Logic (Jellyfin/Kodi compatible)
+			nfoPath := findNfoForFile(p, dirPaths)
+			if nfoPath != "" {
+				if nfo, err := ParseNfoFile(nfoPath); err == nil && nfo != nil {
+					if nfo.ID > 0 {
+						lf.MediaId = nfo.ID
+					} else if nfo.TmdbId > 0 {
+						lf.MediaId = -nfo.TmdbId
+					}
+					if nfo.Season > 0 || nfo.Episode > 0 {
+						if lf.ParsedData == nil {
+							lf.ParsedData = &dto.LocalFileParsedData{}
+						}
+						lf.ParsedData.Season = strconv.Itoa(nfo.Season)
+						lf.ParsedData.Episode = strconv.Itoa(nfo.Episode)
+					}
+				}
+			}
+
+			mu.Lock()
 			valid = append(valid, lf)
-		}
+			mu.Unlock()
+		})
 	}
+	pool.Wait()
 
 	// Stage 3: Bayesian identity resolution (optional — requires media catalog)
 	if s.opts.Agent != nil && s.opts.Agent.mediaContainer != nil {

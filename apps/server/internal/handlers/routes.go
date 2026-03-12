@@ -129,6 +129,7 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 
 	v1 := e.Group("/api/v1")
 	v1.GET("/events", h.webSocketEventHandler)
+	v1.GET("/ws", h.webSocketEventHandler) // alias consumed by the web/native clients
 
 	//
 	// Auth middleware
@@ -364,9 +365,9 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	// Playback Manager
 	//
 	
-	v1.GET("/media/:id/play", h.HandleStreamingPlay)
-	v1.GET("/media/:id/direct", h.HandleStreamingDirect)
-	v1.GET("/media/:id/hls/*", h.HandleStreamingHLS)
+	v1.GET("/stream/:id/master.m3u8", h.HandleMasterPlaylist)
+	v1.GET("/stream/:id/:file", h.HandleHlsSegment)
+	v1.DELETE("/stream/:id", h.StopStreamSession)
 	//
 	// Playlists
 	//

@@ -37,10 +37,7 @@ func NewDatabase(ctx context.Context, appDataDir, dbName string, logger *zerolog
 		sqlitePath = filepath.Join(appDataDir, dbName+".db")
 	}
 
-	// PRAGMA optimizations for WAL mode.
-	// _txlock=immediate: writers queue instead of returning SQLITE_BUSY immediately.
-	// _busy_timeout=10000: additional 10s fallback for any remaining contention.
-	dsn := sqlitePath + "?_busy_timeout=10000&_journal_mode=WAL&_synchronous=NORMAL&_cache_size=2000&_foreign_keys=on&_txlock=immediate"
+	dsn := sqlitePath + "?_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL"
 
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: gormlogger.New(
@@ -65,13 +62,10 @@ func NewDatabase(ctx context.Context, appDataDir, dbName string, logger *zerolog
 		return nil, fmt.Errorf("failed to obtain underlying sql.DB: %w", err)
 	}
 
-	// SQLite allows only ONE writer at a time even in WAL mode.
-	// MaxOpenConns(1) serializes writes and eliminates "database is locked" errors.
-	// Reads are handled by the single connection pool via GORM's read-sharing.
+	// Connection Pooling Configuration
 	sqlDB.SetMaxOpenConns(1)
 	sqlDB.SetMaxIdleConns(1)
-	sqlDB.SetConnMaxLifetime(30 * time.Minute)
-	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	// Block and verify connection availability using the startup context timeout
 	if err := sqlDB.PingContext(ctx); err != nil {

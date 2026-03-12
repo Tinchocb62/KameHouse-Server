@@ -1,6 +1,7 @@
 package parallel
 
 import (
+	"context"
 	"kamehouse/internal/util/limiter"
 	"sync"
 
@@ -49,7 +50,7 @@ func EachTaskL[T any](collection []T, rl *limiter.Limiter, task func(item T, ind
 		wg.Add(1)
 		go func(_item T, _i int) {
 			defer wg.Done()
-			rl.Wait()
+			rl.Wait(context.Background())
 			task(_item, _i)
 		}(item, i)
 	}
