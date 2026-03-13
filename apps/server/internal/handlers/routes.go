@@ -508,6 +508,8 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	v1DirectStream.GET("/stream/*", echo.WrapHandler(h.HandleDirectstreamGetStream()))
 	v1DirectStream.HEAD("/stream/*", echo.WrapHandler(h.HandleDirectstreamGetStream()))
 	v1DirectStream.GET("/att/:filename", h.HandleDirectstreamGetAttachments)
+	// Resolve a local file by its stable SHA-256-derived ID (emitted by SourcePriorityEngine)
+	v1DirectStream.GET("/local", h.HandleDirectstreamGetLocalFileByID)
 
 	//
 	// VideoCore

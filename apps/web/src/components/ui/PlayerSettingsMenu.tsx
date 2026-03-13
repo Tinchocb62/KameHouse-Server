@@ -27,8 +27,9 @@ import { cn } from "@/components/ui/core/styling"
 import { IoSettingsSharp } from "react-icons/io5"
 import { FaCheck, FaVolumeUp, FaClosedCaptioning } from "react-icons/fa"
 import { MdSubtitles } from "react-icons/md"
-import { Loader2 } from "lucide-react"
+import { Loader2, Folder, Zap, Layers } from "lucide-react"
 import type { AudioTrack, SubtitleTrack } from "./track-types"
+import type { EpisodeSource } from "@/api/types/unified.types"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -53,6 +54,17 @@ export interface PlayerSettingsMenuProps {
     activeSubtitleIndex: number | null
     /** Called when the user picks a subtitle track (or "Off"). */
     onSelectSubtitle: (track: SubtitleTrack | null) => void
+
+    // ── Source Switcher ──
+    /**
+     * All resolved episode sources from `EpisodeSourcesResponse`.
+     * When provided, a "Fuente / Calidad" section is rendered.
+     */
+    sources?: EpisodeSource[]
+    /** URL of the currently active source — used to highlight the active row. */
+    currentSourceUrl?: string
+    /** Called when the user selects a different source. */
+    onSourceChange?: (source: EpisodeSource) => void
 
     // ── Loading indicator ──
     /** True while a subtitle file is being fetched from the backend. */
@@ -153,6 +165,9 @@ export function PlayerSettingsMenu({
     subtitleTracks,
     activeSubtitleIndex,
     onSelectSubtitle,
+    sources = [],
+    currentSourceUrl,
+    onSourceChange,
     isLoadingSubtitle = false,
     className,
 }: PlayerSettingsMenuProps) {
@@ -190,7 +205,8 @@ export function PlayerSettingsMenu({
 
     const hasAudio = audioTracks.length > 0
     const hasSubs = subtitleTracks.length > 0
-    const hasAnything = hasAudio || hasSubs
+    const hasSources = sources.length > 0
+    const hasAnything = hasAudio || hasSubs || hasSources
 
     // Format a language code for display, e.g. "jpn" → "JPN"
     const langLabel = (lang: string) => lang.toUpperCase().slice(0, 3)
@@ -331,6 +347,45 @@ export function PlayerSettingsMenu({
                                     )
                                 })}
                             </Section>
+                        )}
+
+                        {/* ── Source / Quality switcher ───────────────────── */}
+                        {hasSources && (
+                            <>
+                                {(hasAudio || hasSubs) && (
+                                    <div className="mx-3 my-1 h-px bg-white/5" />
+                                )}
+                                <Section
+                                    icon={<Layers className="w-3.5 h-3.5" />}
+                                    title="Fuente / Calidad"
+                                >
+                                    {sources.map((src, idx) => {
+                                        const isLocal = src.type === "local"
+                                        const label = isLocal
+                                            ? `Local\u2014${src.quality && src.quality !== "unknown" ? src.quality : "Original"}`
+                                            : `Stream\u2014${src.quality !== "unknown" ? src.quality : src.title}`
+                                        const sub = isLocal
+                                            ? (src.path?.split(/[\\/\\\\]/).pop())
+                                            : src.title
+                                        const isActive = currentSourceUrl
+                                            ? src.url === currentSourceUrl
+                                            : idx === 0
+
+                                        return (
+                                            <TrackRow
+                                                key={src.url || idx}
+                                                label={label}
+                                                sublabel={sub}
+                                                isActive={isActive}
+                                                onClick={() => {
+                                                    onSourceChange?.(src)
+                                                    setIsOpen(false)
+                                                }}
+                                            />
+                                        )
+                                    })}
+                                </Section>
+                            </>
                         )}
                     </div>
 

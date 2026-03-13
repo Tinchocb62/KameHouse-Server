@@ -348,6 +348,26 @@ func (e *Entry) hydrateEntryEpisodeData(
 		}
 	}
 
+	// NEW LOGIC: Pad missing canonical episodes for the frontend
+	if animeMetadata != nil && animeMetadata.Episodes != nil {
+		for _, epMeta := range animeMetadata.Episodes {
+			// Only pad main episodes and specials (Season 0 or Season 1/2) that have an episode number
+			if epMeta.EpisodeNumber > 0 {
+				seasonNum := epMeta.SeasonNumber
+				if strings.HasPrefix(epMeta.Episode, "S") {
+					seasonNum = 0
+				} else if seasonNum == 0 {
+					seasonNum = 1 // Default main season
+				}
+
+				key := fmt.Sprintf("%d-%d", seasonNum, epMeta.EpisodeNumber)
+				if _, exists := groupedFiles[key]; !exists {
+					groupedFiles[key] = []*LocalFile{} // Empty slice for missing episode
+				}
+			}
+		}
+	}
+
 	p := pool.NewWithResults[*Episode]()
 	for key, lfs := range groupedFiles {
 		lfs := lfs
@@ -356,8 +376,23 @@ func (e *Entry) hydrateEntryEpisodeData(
 		episodeTarget, _ := strconv.Atoi(keyParts[1])
 
 		p.Go(func() *Episode {
-			// Select highest quality or first file as primary
-			primaryLf := lfs[0]
+			var primaryLf *LocalFile
+			var isDownloaded bool
+			var aniDBEpStr string
+
+			if len(lfs) > 0 {
+				primaryLf = lfs[0]
+				isDownloaded = true
+				// Override Episode Number in metadata if it was expanded from range
+				primaryLf.Metadata.Episode = episodeTarget
+			} else {
+				isDownloaded = false
+				if seasonTarget == 0 {
+					aniDBEpStr = "S" + strconv.Itoa(episodeTarget)
+				} else {
+					aniDBEpStr = strconv.Itoa(episodeTarget)
+				}
+			}
 
 			var libEp *models.LibraryEpisode
 			if libraryEpisodes != nil {
@@ -367,17 +402,14 @@ func (e *Entry) hydrateEntryEpisodeData(
 				}
 			}
 
-			// Override Episode Number in metadata if it was expanded from range
-			primaryLf.Metadata.Episode = episodeTarget
-
 			ep := NewEpisode(&NewEpisodeOptions{
 				LocalFile:            primaryLf,
 				MetadataWrapper:      amw,
-				OptionalAniDBEpisode: "",
+				OptionalAniDBEpisode: aniDBEpStr,
 				AnimeMetadata:        animeMetadata,
 				Media:                e.Media,
 				ProgressOffset:       progressOffset,
-				IsDownloaded:         true,
+				IsDownloaded:         isDownloaded,
 				MetadataProvider:     metadataProviderRef.Get(),
 				LibraryEpisode:       libEp,
 			})

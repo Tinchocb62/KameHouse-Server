@@ -64,6 +64,55 @@ func (h *Handler) HandleDirectstreamGetStream() http.Handler {
 	return h.App.DirectStreamManager.ServeEchoStream()
 }
 
+// HandleDirectstreamGetLocalFileByID
+//
+//	@summary Stream a local file identified by its stable ID.
+//	@desc Resolves the local file whose GetStableID() matches the `id` query param,
+//	      then initiates playback through the DirectStreamManager.
+//	@route /api/v1/directstream/local [GET]
+func (h *Handler) HandleDirectstreamGetLocalFileByID(c echo.Context) error {
+	id := c.QueryParam("id")
+	if id == "" {
+		return h.RespondWithError(c, fmt.Errorf("missing required query param: id"))
+	}
+
+	clientId, ok := c.Get("KameHouse-Client-Id").(string)
+	if !ok || clientId == "" {
+		clientId = "anonymous"
+	}
+
+	lfs, _, err := db.GetLocalFiles(h.App.Database)
+	if err != nil {
+		return h.RespondWithError(c, err)
+	}
+
+	var matched *string
+	for _, lf := range lfs {
+		if lf == nil {
+			continue
+		}
+		if lf.GetStableID() == id {
+			p := lf.Path
+			matched = &p
+			break
+		}
+	}
+
+	if matched == nil {
+		return c.JSON(404, map[string]string{"error": "local file not found for id: " + id})
+	}
+
+	if err := h.App.DirectStreamManager.PlayLocalFile(c.Request().Context(), directstream.PlayLocalFileOptions{
+		ClientId:   clientId,
+		Path:       *matched,
+		LocalFiles: lfs,
+	}); err != nil {
+		return h.RespondWithError(c, err)
+	}
+
+	return c.JSON(200, map[string]string{"status": "ok", "path": *matched})
+}
+
 func (h *Handler) HandleDirectstreamGetAttachments(c echo.Context) error {
 	return h.App.DirectStreamManager.ServeEchoAttachments(c)
 }

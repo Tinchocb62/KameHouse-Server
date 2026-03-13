@@ -3,6 +3,8 @@ package dto
 import (
 	"bytes"
 	"cmp"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"kamehouse/internal/util"
 	"kamehouse/internal/util/comparison"
@@ -90,6 +92,15 @@ func (f *LocalFile) GetNormalizedPath() string {
 
 func (f *LocalFile) GetPath() string {
 	return f.Path
+}
+
+// GetStableID returns a deterministic, short SHA-256-based ID derived from the
+// normalized path. It is safe to embed in URLs and remains stable across
+// server restarts as long as the file path does not change.
+// Format: first 16 hex chars of SHA-256(normalizedPath) — collision probability ~1 in 10^19.
+func (f *LocalFile) GetStableID() string {
+	h := sha256.Sum256([]byte(f.GetNormalizedPath()))
+	return hex.EncodeToString(h[:])[:16]
 }
 
 func (f *LocalFile) HasSamePath(path string) bool {

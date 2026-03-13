@@ -22,6 +22,7 @@ export const ButtonAnatomy = defineStyleAnatomy({
                 "primary-glass": "text-primary-foreground border border-white/10 bg-black/40 backdrop-blur-md hover:bg-white/10 hover:border-white/30",
                 "primary-link": "shadow-none text-primary border-transparent bg-transparent hover:underline",
                 "primary-basic": "shadow-none text-primary border-transparent bg-transparent hover:bg-primary/10 active:bg-primary/20",
+                "primary-glow": "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:scale-105 active:scale-95",
 
                 "warning": "text-primary-foreground bg-orange-500 hover:bg-orange-600 active:bg-orange-700",
                 "warning-outline": "text-orange-500 border border-orange-500/50 bg-transparent hover:bg-orange-500/10",
@@ -29,6 +30,7 @@ export const ButtonAnatomy = defineStyleAnatomy({
                 "warning-glass": "text-orange-400 border border-orange-500/20 bg-orange-500/10 backdrop-blur-md hover:bg-orange-500/20",
                 "warning-link": "shadow-none text-orange-400 border-transparent bg-transparent hover:underline",
                 "warning-basic": "shadow-none text-orange-400 border-transparent bg-transparent hover:bg-orange-500/10",
+                "warning-glow": "bg-orange-500 text-white hover:bg-orange-600 hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:scale-105 active:scale-95",
 
                 "success": "text-primary-foreground bg-green-500 hover:bg-green-600 active:bg-green-700",
                 "success-outline": "text-green-500 border border-green-500/50 bg-transparent hover:bg-green-500/10",
@@ -36,6 +38,7 @@ export const ButtonAnatomy = defineStyleAnatomy({
                 "success-glass": "text-green-400 border border-green-500/20 bg-green-500/10 backdrop-blur-md hover:bg-green-500/20",
                 "success-link": "shadow-none text-green-400 border-transparent bg-transparent hover:underline",
                 "success-basic": "shadow-none text-green-400 border-transparent bg-transparent hover:bg-green-500/10",
+                "success-glow": "bg-green-500 text-white hover:bg-green-600 hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:scale-105 active:scale-95",
 
                 "alert": "bg-destructive text-destructive-foreground hover:bg-destructive/90",
                 "alert-outline": "text-destructive border border-destructive/50 bg-transparent hover:bg-destructive/10",

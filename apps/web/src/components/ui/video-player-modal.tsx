@@ -23,6 +23,7 @@ import { useJassub } from "@/hooks/useJassub"
 import { PlayerSettingsMenu } from "@/components/ui/PlayerSettingsMenu"
 import { TimelineHeatmap, type InsightNode } from "@/components/ui/timeline-heatmap"
 import type { AudioTrack, SubtitleTrack, StreamTrackInfo } from "@/components/ui/track-types"
+import type { EpisodeSource } from "@/api/types/unified.types"
 import { useAppStore } from "@/lib/store"
 
 export interface VideoPlayerModalProps {
@@ -36,7 +37,14 @@ export interface VideoPlayerModalProps {
     isExternalStream?: boolean
     trackInfo?: StreamTrackInfo
     onClose: () => void
-    // ── Marathon Mode ────────────────────────────────────────────────────────
+    // ── Source Switcher ──────────────────────────────────────────────────────────────────────
+    /**
+     * All resolved episode sources from `EpisodeSourcesResponse`.
+     * When provided, renders a Source/Quality section in the settings gear menu
+     * and enables mid-playback switching while preserving currentTime.
+     */
+    episodeSources?: EpisodeSource[]
+    // ── Marathon Mode ───────────────────────────────────────────────────────────────────
     /** When true, automatically skips intro and transitions to next episode. */
     marathonMode?: boolean
     /** Called when the player reaches outro start in marathon mode, or the user clicks "Next". */
@@ -103,6 +111,7 @@ export function VideoPlayerModal({
     episodeNumber,
     isExternalStream = false,
     trackInfo,
+    episodeSources = [],
     onClose,
     marathonMode = false,
     onNextEpisode,
@@ -114,6 +123,11 @@ export function VideoPlayerModal({
     const videoRef = useRef<HTMLVideoElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const hlsRef = useRef<Hls | null>(null)
+
+    // Active stream URL state — seeded from prop, mutated by source switching.
+    // Driving HLS from state (not the raw prop) lets us switch sources mid-playback.
+    const [activeStreamUrl, setActiveStreamUrl] = useState(streamUrl)
+    const pendingSeekRef = useRef<number | null>(null)
 
     // DOM Refs to bypass React State loop during high-frequency time updates
     const timeTextRef = useRef<HTMLSpanElement>(null)
@@ -140,9 +154,24 @@ export function VideoPlayerModal({
     const setIsFullscreen = useAppStore(state => state.setFullscreen)
     const currentQuality = useAppStore(state => state.currentQuality)
 
-    // Visibility
-    const [isControlsVisible, setIsControlsVisible] = useState(true)
+    // Visibility — DOM-ref driven to break the React re-render cycle on mousemove.
+    // We mutate opacity/pointer-events directly instead of calling setState.
+    const controlsContainerRef = useRef<HTMLDivElement>(null)
+    const controlsVisibleRef = useRef(true)
     const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+    const setControlsVisible = useCallback((visible: boolean) => {
+        controlsVisibleRef.current = visible
+        const el = controlsContainerRef.current
+        if (!el) return
+        if (visible) {
+            el.style.opacity = "1"
+            el.style.pointerEvents = "auto"
+        } else {
+            el.style.opacity = "0"
+            el.style.pointerEvents = "none"
+        }
+    }, [])
 
     // Touch / double-tap skip
     const lastTapRef = useRef<{ time: number; x: number } | null>(null)
@@ -341,40 +370,92 @@ export function VideoPlayerModal({
         return () => { document.body.style.overflow = "" }
     }, [])
 
-    // HLS Logic
+    // ── HLS / Direct-play lifecycle ────────────────────────────────────────────────────
+    // This effect is the SOLE owner of HLS.js instances.  Every time
+    // `activeStreamUrl` changes (initial load OR source-switch), it:
+    //   1. Destroys the previous HLS instance (if any)
+    //   2. Aborts all pending network requests via removeAttribute + load()
+    //   3. Boots a new session for the incoming URL
+    // ───────────────────────────────────────────────────────────────────
     useEffect(() => {
         const video = videoRef.current
-        if (!video) return
+        if (!video || !activeStreamUrl) return
+
+        // ───────────────────────────────────────────────────────────────────
+        // STEP 0 — Tear down any previous HLS session BEFORE setting status.
+        // This guarantees old segment downloads are aborted synchronously.
+        // ───────────────────────────────────────────────────────────────────
+        if (hlsRef.current) {
+            hlsRef.current.destroy()
+            hlsRef.current = null
+        }
+        // Standard browser API to fully abort all pending resource loads:
+        // Setting src='' is NOT enough in Chrome — it cancels JS but leaves
+        // the resource fetch running. removeAttribute + load() does the job.
+        video.removeAttribute("src")
+        video.load()
 
         setStatus("loading")
-        const isHls = streamType === "transcode" || streamType === "optimized"
 
-        if (isHls) {
+        // ───────────────────────────────────────────────────────────────────
+        // STEP 1 — Detect whether this URL needs HLS.js.
+        // Use both streamType AND the URL itself so that source-switched
+        // torrentio m3u8 URLs are always served via HLS, even if the
+        // player was opened originally with streamType="direct".
+        // ───────────────────────────────────────────────────────────────────
+        const isHlsStream =
+            streamType === "transcode" ||
+            streamType === "optimized" ||
+            activeStreamUrl.includes(".m3u8") ||
+            activeStreamUrl.includes("/manifest") ||
+            activeStreamUrl.includes("master.m3u8")
+
+        if (isHlsStream) {
             if (Hls.isSupported()) {
-                const hls = new Hls({ startLevel: -1, enableWorker: true, lowLatencyMode: false })
+                const hls = new Hls({
+                    startLevel: -1,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    // Limit back buffer to 90 s to reduce RAM on long streams
+                    backBufferLength: 90,
+                })
                 hlsRef.current = hls
-                hls.loadSource(streamUrl)
+                hls.loadSource(activeStreamUrl)
                 hls.attachMedia(video)
+
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     setStatus("ready")
-                    video.play().catch(() => { })
+                    video.play().catch(() => {})
                 })
+
+                // ── Error handling with recovery ────────────────────────────
+                // Non-fatal errors: attempt one automatic recovery.
+                // Fatal errors: destroy and surface to user.
+                let mediaRecoveryAttempted = false
                 hls.on(Hls.Events.ERROR, (_evt, data) => {
                     if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                if (!mediaRecoveryAttempted) {
+                                    mediaRecoveryAttempted = true
+                                    hls.recoverMediaError()
+                                    return
+                                }
+                                break
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                // Stalled segment: restart loading from current position
+                                hls.startLoad()
+                                return
+                        }
+                        // Unrecoverable
                         setStatus("error")
                         setErrorMsg(`Error HLS: ${data.details}`)
                         hls.destroy()
+                        hlsRef.current = null
                     }
                 })
-                /**
-                 * AUDIO_TRACKS_UPDATED fires after the manifest is parsed and
-                 * whenever the available audio tracks change. We map HLS.js
-                 * AudioTrack objects → our AudioTrack interface and merge them
-                 * with any tracks already provided via the trackInfo prop.
-                 *
-                 * HLS.js AudioTrack fields:
-                 *   { id, name, lang, default, ... }
-                 */
+
+                // Audio track discovery from HLS manifest
                 hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_evt, data) => {
                     const hlsTracks: AudioTrack[] = data.audioTracks.map((t, idx) => ({
                         index: idx,
@@ -382,7 +463,6 @@ export function VideoPlayerModal({
                         title: t.name ?? t.lang ?? `Track ${idx + 1}`,
                         default: t.default ?? idx === 0,
                     }))
-                    // Prefer trackInfo (has codec/channels); fall back to HLS discovery.
                     if (trackInfo?.audioTracks && trackInfo.audioTracks.length > 0) return
                     setAudioTracks(hlsTracks)
                     const defaultTrack = hlsTracks.find((t) => t.default) || hlsTracks[0]
@@ -394,41 +474,51 @@ export function VideoPlayerModal({
                 hls.on(Hls.Events.AUDIO_TRACK_LOADED, (_evt, data) => {
                     setActiveAudioIndex(data.id)
                 })
+
             } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                video.src = streamUrl
+                // Safari — native HLS support
+                video.src = activeStreamUrl
                 video.addEventListener("canplay", () => setStatus("ready"), { once: true })
-                video.play().catch(() => { })
+                video.play().catch(() => {})
             } else {
                 setStatus("error")
-                setErrorMsg("Navegador no soportado.")
+                setErrorMsg("Navegador no soportado para streams HLS.")
             }
         } else {
-            video.src = streamUrl
+            // Direct MP4 / MKV / WebM playback
+            video.src = activeStreamUrl
             video.addEventListener("canplay", () => setStatus("ready"), { once: true })
             video.addEventListener("error", () => {
                 setStatus("error")
                 setErrorMsg("Fallo al reproducir archivo directo.")
             }, { once: true })
-            video.play().catch(() => { })
+            video.play().catch(() => {})
         }
 
-        // ── localStorage resume position — written every 5 s ─────────────
+        // ── Seek restore on load ─────────────────────────────────────────
         const lsKey = mediaId ? `player-pos-${mediaId}-${episodeNumber ?? 0}` : null
-        if (lsKey) {
-            const saved = localStorage.getItem(lsKey)
-            // Restore saved position once metadata is available
-            // Priority: initialProgressSeconds (backend continuity) > LocalStorage memory
-            video.addEventListener("loadedmetadata", () => {
-                const targetTime = (initialProgressSeconds && initialProgressSeconds > 0) 
-                    ? initialProgressSeconds 
-                    : (saved ? Number(saved) : 0)
+        const saved = lsKey ? localStorage.getItem(lsKey) : null
 
-                if (targetTime > 10 && targetTime < (video.duration - 5)) {
-                    video.currentTime = targetTime
-                }
-            }, { once: true })
+        const handleLoadedMetadata = () => {
+            // Priority 1: source-switch position restore
+            if (pendingSeekRef.current !== null) {
+                const t = pendingSeekRef.current
+                pendingSeekRef.current = null
+                video.currentTime = t
+                video.play().catch(() => {})
+                return
+            }
+            // Priority 2: backend continuity resume
+            const targetTime = (initialProgressSeconds && initialProgressSeconds > 0)
+                ? initialProgressSeconds
+                : (saved ? Number(saved) : 0)
+            if (targetTime > 10 && targetTime < (video.duration - 5)) {
+                video.currentTime = targetTime
+            }
         }
+        video.addEventListener("loadedmetadata", handleLoadedMetadata, { once: true })
 
+        // ── Periodic localStorage position save ───────────────────────────
         const posInterval = lsKey
             ? setInterval(() => {
                 if (videoRef.current && !videoRef.current.paused) {
@@ -437,6 +527,7 @@ export function VideoPlayerModal({
             }, 5000)
             : null
 
+        // ── DOM-ref time/progress updates (no React state) ───────────────────
         const updateTime = () => {
             const time = video.currentTime
             const dur = video.duration || 0
@@ -452,53 +543,79 @@ export function VideoPlayerModal({
                 progressInputRef.current.value = time.toString()
             }
 
-            // Marathon triggers — buckets to 1 s, no re-render on every RAF tick
             checkPlaybackTriggers(time, dur)
 
             if (!completionSentRef.current && dur > 0 && time / dur >= 0.9) {
                 completionSentRef.current = true
                 saveContinuity(dur, dur)
             }
-
-            // Playback telemetry
         }
         const updateDuration = () => setDuration(video.duration)
         const onPlay = () => {
             setIsPlaying(true)
-            // Flash the center play icon
             if (centerFlashTimerRef.current) clearTimeout(centerFlashTimerRef.current)
             setCenterFlash("play")
             centerFlashTimerRef.current = setTimeout(() => setCenterFlash(null), 600)
         }
         const onPause = () => {
             setIsPlaying(false)
-            if (video.duration > 0) {
-                saveContinuity(video.currentTime, video.duration)
-            }
-            // Flash the center pause icon
+            if (video.duration > 0) saveContinuity(video.currentTime, video.duration)
             if (centerFlashTimerRef.current) clearTimeout(centerFlashTimerRef.current)
             setCenterFlash("pause")
             centerFlashTimerRef.current = setTimeout(() => setCenterFlash(null), 600)
         }
 
-        video.addEventListener('timeupdate', updateTime)
-        video.addEventListener('loadedmetadata', updateDuration)
-        video.addEventListener('play', onPlay)
-        video.addEventListener('pause', onPause)
+        video.addEventListener("timeupdate", updateTime)
+        video.addEventListener("loadedmetadata", updateDuration)
+        video.addEventListener("play", onPlay)
+        video.addEventListener("pause", onPause)
 
+        // ───────────────────────────────────────────────────────────────────
+        // CLEANUP  — runs before next effect invocation OR on unmount.
+        // Order matters: destroy HLS FIRST, then abort video pipeline.
+        // ───────────────────────────────────────────────────────────────────
         return () => {
-            saveContinuity(video.currentTime, video.duration)
+            // 1. Save continuity before we lose currentTime
+            if (video.duration > 0) saveContinuity(video.currentTime, video.duration)
             if (lsKey) localStorage.setItem(lsKey, String(video.currentTime))
+
+            // 2. Stop the interval and event listeners
             if (posInterval) clearInterval(posInterval)
-            video.removeEventListener('timeupdate', updateTime)
-            video.removeEventListener('loadedmetadata', updateDuration)
-            video.removeEventListener('play', onPlay)
-            video.removeEventListener('pause', onPause)
-            hlsRef.current?.destroy()
-            hlsRef.current = null
-            video.src = ""
+            video.removeEventListener("timeupdate", updateTime)
+            video.removeEventListener("loadedmetadata", updateDuration)
+            video.removeEventListener("loadedmetadata", handleLoadedMetadata)
+            video.removeEventListener("play", onPlay)
+            video.removeEventListener("pause", onPause)
+
+            // 3. HLS.js teardown — cancels all pending XHR/fetch segment requests
+            if (hlsRef.current) {
+                hlsRef.current.destroy()
+                hlsRef.current = null
+            }
+
+            // 4. Abort the browser-level media pipeline (not redundant with hls.destroy!).
+            //    removeAttribute + load() is the W3C-spec way to release media resources
+            //    and stop any native decode pipeline. This prevents audio ghost playback
+            //    in SPAs when the component is re-mounted with a new source.
+            video.pause()
+            video.removeAttribute("src")
+            video.load()
         }
-    }, [streamUrl, streamType, saveContinuity, mediaId, episodeNumber])
+    }, [activeStreamUrl, streamType, saveContinuity, mediaId, episodeNumber])
+
+    // ── Source-switch handler ─────────────────────────────────────────────────────
+    // Preserves the current playback position when the user picks a different source.
+    const handleSourceSwitch = useCallback((newSource: EpisodeSource) => {
+        const video = videoRef.current
+        // Capture current playback position before the URL change triggers a reload.
+        const capturedTime = video?.currentTime ?? 0
+        pendingSeekRef.current = capturedTime > 1 ? capturedTime : null
+
+        // Updating activeStreamUrl will re-run the HLS/direct-play useEffect, which
+        // destroys the old session and boots the new one. Once `loadedmetadata` fires,
+        // we restore the captured position via pendingSeekRef.
+        setActiveStreamUrl(newSource.url)
+    }, [])
 
     // ── Audio track selection handler ─────────────────────────────────────────
     const handleSelectAudio = useCallback((track: AudioTrack) => {
@@ -618,23 +735,22 @@ export function VideoPlayerModal({
     const lastMouseMovedRef = useRef<number>(0)
     const showControlsTemporarily = useCallback(() => {
         const now = Date.now()
-        // Throttle to max 1 update per 200ms to avoid DOM trashing on mouse move
         if (now - lastMouseMovedRef.current < 200) return
         lastMouseMovedRef.current = now
 
-        setIsControlsVisible(true)
+        setControlsVisible(true)
         if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
         timeoutRef.current = setTimeout(() => {
             if (videoRef.current && !videoRef.current.paused) {
-                setIsControlsVisible(false)
+                setControlsVisible(false)
             }
         }, 3000)
-    }, [])
+    }, [setControlsVisible])
 
     const handleMouseLeave = () => {
         if (videoRef.current && !videoRef.current.paused) {
-            setIsControlsVisible(false)
+            setControlsVisible(false)
         }
         if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
@@ -856,13 +972,17 @@ export function VideoPlayerModal({
                 </div>
             </div>
 
-            {/* UI Overlay — Cinematic VOD Style */}
-            <div className="absolute inset-0 pointer-events-none z-[10]">
+            {/* UI Overlay — Cinematic VOD Style. Ref-driven visibility (no React state re-renders on mousemove). */}
+            <div
+                ref={controlsContainerRef}
+                className="absolute inset-0 pointer-events-none z-[10] transition-opacity duration-300"
+                style={{ opacity: 1 }}
+            >
                 {/* Top Bar — Gradient Mask */}
                 <div className={cn(
                     "absolute top-0 inset-x-0 pt-6 pb-24 px-6 md:px-10 flex flex-col md:flex-row md:items-start justify-between pointer-events-auto bg-gradient-to-b from-black/70 to-transparent",
                     "transition-all duration-300 ease-out",
-                    isControlsVisible || !isPlaying ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"
+                    "opacity-100 translate-y-0"
                 )}>
                     <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                         <button
@@ -912,7 +1032,7 @@ export function VideoPlayerModal({
                     "absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl flex flex-col gap-2 pointer-events-auto select-none",
                     "bg-black/50 backdrop-blur-2xl border border-white/10 rounded-full px-6 py-4 shadow-2xl",
                     "transition-all duration-300 ease-out",
-                    isControlsVisible || !isPlaying ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+                    "opacity-100 translate-y-0"
                 )}>
                     
                     {/* Minimalist Expanding Progress Timeline */}
@@ -995,6 +1115,9 @@ export function VideoPlayerModal({
                                 activeSubtitleIndex={activeSubtitleIndex}
                                 onSelectSubtitle={handleSelectSubtitle}
                                 isLoadingSubtitle={isJassubLoading}
+                                sources={episodeSources}
+                                currentSourceUrl={activeStreamUrl}
+                                onSourceChange={handleSourceSwitch}
                             />
 
                             <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="text-zinc-400 hover:text-white transition-colors flex items-center justify-center p-2">

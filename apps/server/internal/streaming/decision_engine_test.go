@@ -1,15 +1,16 @@
 package streaming
 
 import (
+	"kamehouse/internal/database/models/dto"
 	"sort"
 	"testing"
 )
 
 func TestSourcePriorityEngine(t *testing.T) {
-	sources := []MediaSource{
-		{Type: "torrentio", Priority: 3, Title: "P2P Stream"},
-		{Type: "torrentio", Priority: 2, Title: "Debrid Stream"},
-		{Type: "local", Priority: 1, Title: "Local File"},
+	sources := []dto.EpisodeSource{
+		{Type: dto.SourceTypeTorrentio, Priority: 3, Title: "P2P Stream"},
+		{Type: dto.SourceTypeTorrentio, Priority: 2, Title: "Debrid Stream"},
+		{Type: dto.SourceTypeLocal, Priority: 1, Title: "Local File"},
 	}
 
 	// Test the sorting logic from ResolveEpisodeSources

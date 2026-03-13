@@ -37,7 +37,25 @@ export interface MediaCardProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function MediaCard({
+const MediaCardCompare = (
+    prevProps: Readonly<MediaCardProps>,
+    nextProps: Readonly<MediaCardProps>
+): boolean => {
+    return (
+        prevProps.artwork === nextProps.artwork &&
+        prevProps.title === nextProps.title &&
+        prevProps.subtitle === nextProps.subtitle &&
+        prevProps.progress === nextProps.progress &&
+        prevProps.availabilityType === nextProps.availabilityType &&
+        prevProps.badge === nextProps.badge &&
+        prevProps.rating === nextProps.rating &&
+        prevProps.year === nextProps.year &&
+        prevProps.intelligenceTag === nextProps.intelligenceTag &&
+        prevProps.className === nextProps.className
+    )
+}
+
+export const MediaCard = React.memo(function MediaCard({
     artwork,
     title,
     subtitle,
@@ -197,4 +215,4 @@ export function MediaCard({
             )}
         </div>
     )
-}
+}, MediaCardCompare)

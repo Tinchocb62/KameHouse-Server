@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"kamehouse/internal/api/anizip"
 	"kamehouse/internal/database/db"
@@ -14,6 +15,7 @@ import (
 	msTranscoder "kamehouse/internal/mediastream/transcoder"
 	"kamehouse/internal/mediastream/videofile"
 	"kamehouse/internal/onlinestream/providers/torrentio"
+	"kamehouse/internal/util/cache"
 	"kamehouse/internal/util/filecache"
 
 	"github.com/rs/zerolog"
@@ -155,22 +157,42 @@ func (o *StreamOrchestrator) Orchestrate(ctx context.Context, mediaId int, clien
 	return o.HandleRequest(ctx, strconv.Itoa(mediaId), profile)
 }
 
-// Priority constants for MediaSource. Lower = higher priority.
+// Priority constants for sources. Lower = higher priority.
 const (
 	PriorityLocal   = 1 // Direct local file — zero network cost
 	PriorityDebrid  = 2 // Debrid-cached torrent — fast HTTP, near-instant
 	PriorityTorrent = 3 // Raw P2P magnet — seeders variable
 )
 
-// MediaSource is the canonical, transport-agnostic descriptor for a single
-// playable source returned by the decision engine.
-type MediaSource struct {
-	Type     string `json:"type"`     // "local" | "torrentio"
-	URL      string `json:"url"`      // Remote URL or direct-play HTTP path
-	Path     string `json:"path"`     // Absolute filesystem path (local sources only)
-	Quality  string `json:"quality"`  // e.g. "1080p", "4K", "unknown"
-	Priority int    `json:"priority"` // PriorityLocal < PriorityDebrid < PriorityTorrent
-	Title    string `json:"title"`    // Human-readable label shown in the UI badge
+// SourcePriorityEngine is responsible for unifying local and online media sources.
+type SourcePriorityEngine struct {
+	logger      *zerolog.Logger
+	database    *db.Database
+	// anizipCache stores AniZip media mappings to avoid repeated HTTP calls per request.
+	anizipCache *anizip.Cache
+	// remoteCache stores Torrentio results per imdbID-season-episode to avoid redundant remote requests.
+	remoteCache *cache.Cache[[]dto.EpisodeSource]
+}
+
+// Global instance to persist cache across requests (typically you'd attach it to core.App,
+// but for simplicity it's scoped here if used statically).
+var defaultSourceEngine *SourcePriorityEngine
+var once sync.Once
+
+// GetSourcePriorityEngine returns a singleton instance.
+func GetSourcePriorityEngine(logger *zerolog.Logger, database *db.Database) *SourcePriorityEngine {
+	once.Do(func() {
+		defaultSourceEngine = &SourcePriorityEngine{
+			logger:      logger,
+			database:    database,
+			anizipCache: anizip.NewCache(),
+			remoteCache: cache.NewCache[[]dto.EpisodeSource](2 * time.Hour),
+		}
+	})
+	// Keep logger/db references up to date in case they change
+	defaultSourceEngine.logger = logger
+	defaultSourceEngine.database = database
+	return defaultSourceEngine
 }
 
 
@@ -180,23 +202,21 @@ type MediaSource struct {
 // The function ALWAYS returns whatever partial results were gathered even when
 // one goroutine fails — callers should not treat a non-nil error as fatal if
 // len(sources) > 0.
-func ResolveEpisodeSources(
+func (e *SourcePriorityEngine) ResolveEpisodeSources(
 	ctx context.Context,
-	logger *zerolog.Logger,
-	database *db.Database,
 	mediaId int,
 	episodeNum int,
-) ([]MediaSource, error) {
+) (*dto.EpisodeSourcesResponse, error) {
 	var (
 		mu      sync.Mutex
-		sources []MediaSource
+		sources []dto.EpisodeSource
 	)
 
 	g, gCtx := errgroup.WithContext(ctx)
 
-	// ── Goroutine 1: Local Files ──────────────────────────────────────────────
+	// ── Goroutine 1: Local Files (Always fresh) ──────────────────────────────
 	g.Go(func() error {
-		lfs, _, err := db.GetLocalFiles(database)
+		lfs, _, err := db.GetLocalFiles(e.database)
 		if err != nil {
 			return fmt.Errorf("local files query: %w", err)
 		}
@@ -210,10 +230,11 @@ func ResolveEpisodeSources(
 			}
 
 			normalizedPath := lf.GetNormalizedPath()
+			stableID := lf.GetStableID()
 			mu.Lock()
-			sources = append(sources, MediaSource{
-				Type:     "local",
-				URL:      "/api/v1/directstream/stream/" + normalizedPath,
+			sources = append(sources, dto.EpisodeSource{
+				Type:     dto.SourceTypeLocal,
+				URL:      "/api/v1/directstream/local?id=" + stableID,
 				Path:     normalizedPath,
 				Quality:  inferQualityFromPath(normalizedPath),
 				Priority: PriorityLocal,
@@ -225,48 +246,69 @@ func ResolveEpisodeSources(
 		return nil
 	})
 
-	// ── Goroutine 2: Torrentio / Debrid ──────────────────────────────────────
+	// ── Goroutine 2: Torrentio / Debrid (Cached, with timeout) ──────────────
 	g.Go(func() error {
-		mapping, err := anizip.FetchAniZipMedia("anilist", mediaId)
+		// 5-second hard deadline: if AniZip or Torrentio is slow/down, local
+		// catalogue still loads instantly and this goroutine is cancelled cleanly.
+		remoteCtx, cancelRemote := context.WithTimeout(gCtx, 5*time.Second)
+		defer cancelRemote()
+
+		// Cached anizip lookup — avoids one HTTP call per episode rendered
+		mapping, err := anizip.FetchAniZipMediaC("anilist", mediaId, e.anizipCache)
 		if err != nil || mapping == nil || mapping.Mappings == nil {
 			// Non-fatal: local sources may still satisfy the request
-			logger.Warn().Err(err).Int("mediaId", mediaId).
+			e.logger.Warn().Err(err).Int("mediaId", mediaId).
 				Msg("decision_engine: anizip mapping unavailable — skipping torrentio tier")
 			return nil
 		}
 
 		imdbID := mapping.Mappings.ImdbID
 		if imdbID == "" {
-			logger.Warn().Int("mediaId", mediaId).
+			e.logger.Warn().Int("mediaId", mediaId).
 				Msg("decision_engine: no IMDB ID in anizip mapping — cannot query torrentio")
 			return nil
 		}
 
-		provider := torrentio.NewProvider(logger)
-		streams, err := provider.GetSourcesForEpisode(gCtx, imdbID, 1, episodeNum)
+		// Check memory cache
+		cacheKey := fmt.Sprintf("%s-%d-%d", imdbID, 1, episodeNum)
+		if cachedSources, found := e.remoteCache.Get(cacheKey); found {
+			mu.Lock()
+			sources = append(sources, cachedSources...)
+			mu.Unlock()
+			return nil
+		}
+
+		provider := torrentio.NewProvider(e.logger)
+		streams, err := provider.GetSourcesForEpisode(remoteCtx, imdbID, 1, episodeNum)
 		if err != nil {
 			// Non-fatal: partial results are better than nothing
-			logger.Warn().Err(err).Str("imdbID", imdbID).
+			e.logger.Warn().Err(err).Str("imdbID", imdbID).
 				Msg("decision_engine: torrentio fetch failed")
 			return nil
 		}
 
-		mu.Lock()
-		defer mu.Unlock()
+		var remoteSources []dto.EpisodeSource
 		for _, s := range streams {
 			priority := PriorityTorrent
 			if s.IsDebrid {
 				priority = PriorityDebrid
 			}
-			sources = append(sources, MediaSource{
-				Type:     "torrentio",
+			remoteSources = append(remoteSources, dto.EpisodeSource{
+				Type:     dto.SourceTypeTorrentio,
 				URL:      s.MagnetURI,
-				Path:     "",
 				Quality:  s.Quality,
 				Priority: priority,
 				Title:    s.ReleaseGroup,
 			})
 		}
+
+		if len(remoteSources) > 0 {
+			e.remoteCache.Set(cacheKey, remoteSources)
+		}
+
+		mu.Lock()
+		sources = append(sources, remoteSources...)
+		mu.Unlock()
 		return nil
 	})
 
@@ -275,14 +317,23 @@ func ResolveEpisodeSources(
 	// deliberately swallow goroutine-level errors above (returning nil) so that
 	// partial successes are always surfaced to the caller.
 	if err := g.Wait(); err != nil {
-		logger.Error().Err(err).Msg("decision_engine: unexpected errgroup error")
+		e.logger.Error().Err(err).Msg("decision_engine: unexpected errgroup error")
 	}
 
 	sort.Slice(sources, func(i, j int) bool {
 		return sources[i].Priority < sources[j].Priority
 	})
+	
+	playSource := dto.SourceType("")
+	if len(sources) > 0 {
+		playSource = sources[0].Type
+	}
 
-	return sources, nil
+	return &dto.EpisodeSourcesResponse{
+		EpisodeNumber: episodeNum,
+		Sources:       sources,
+		PlaySource:    playSource,
+	}, nil
 }
 
 // inferQualityFromPath extracts a quality label from the file path.

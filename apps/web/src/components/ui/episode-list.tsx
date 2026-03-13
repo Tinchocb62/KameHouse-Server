@@ -26,7 +26,9 @@ import * as React from "react"
 import { cn } from "@/components/ui/core/styling"
 import { FaPlay } from "react-icons/fa"
 import { BsClock } from "react-icons/bs"
-import { Star, Folder, Zap } from "lucide-react"
+import { Star, Folder, Zap, Layers } from "lucide-react"
+import { useEpisodeSources, usePrefetchEpisodeSources } from "@/api/hooks/useEpisodeSources"
+import { useWindowVirtualizer } from "@tanstack/react-virtual"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -61,6 +63,12 @@ export interface Episode {
     isFiller?: boolean
     /** True if a local media file is available. False implies cloud/stremio. */
     hasLocalFile?: boolean
+    /**
+     * AniList media ID — required to resolve sources from the unified engine.
+     * When provided, the card fetches `EpisodeSourcesResponse` and renders
+     * dynamic source badges (LOCAL / STREAM / LOCAL+STREAM).
+     */
+    mediaId?: number
 }
 
 export interface Saga {
@@ -166,7 +174,121 @@ function EpisodeThumbnail({ url, episodeNumber, title }: EpisodeThumbnailProps) 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EpisodeCard — single row in the list
+// SourceBadge — dynamic source availability indicator
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface SourceBadgeProps {
+    hasLocal: boolean
+    hasStream: boolean
+}
+
+/**
+ * Renders one of three badge variants based on resolved source availability:
+ * ● Both local + stream → amber "LOCAL + STREAM"
+ * ● Only local         → green  "LOCAL"
+ * ● Only stream        → blue   "STREAM"
+ * ● Neither            → null
+ */
+function SourceBadge({ hasLocal, hasStream }: SourceBadgeProps) {
+    if (!hasLocal && !hasStream) return null
+
+    if (hasLocal && hasStream) {
+        return (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold tracking-wide bg-amber-500/10 text-amber-400">
+                <Layers className="w-3 h-3" />
+                <span>LOCAL + STREAM</span>
+            </div>
+        )
+    }
+
+    if (hasLocal) {
+        return (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold tracking-wide bg-green-500/10 text-green-400">
+                <Folder className="w-3 h-3" />
+                <span>LOCAL</span>
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold tracking-wide bg-blue-500/10 text-blue-400">
+            <Zap className="w-3 h-3 fill-current" />
+            <span>STREAM</span>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EpisodeGrid — windowed episode list using window scroll
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface EpisodeGridProps {
+    episodes: Episode[]
+    saga: Saga
+    onPlay?: (episode: Episode, saga: Saga) => void
+}
+
+function EpisodeGrid({ episodes, saga, onPlay }: EpisodeGridProps) {
+    const listRef = React.useRef<HTMLUListElement>(null)
+
+    const virtualizer = useWindowVirtualizer({
+        count: episodes.length,
+        // Estimated row height: lg thumbnail height (146px) + padding. 
+        // Auto-corrects via measureElement.
+        estimateSize: () => 148,
+        overscan: 5,
+        scrollMargin: listRef.current?.offsetTop ?? 0,
+    })
+
+    const items = virtualizer.getVirtualItems()
+
+    return (
+        <ul
+            ref={listRef}
+            role="list"
+            aria-label={`Episodios de ${saga.title}`}
+            style={{
+                height: `${virtualizer.getTotalSize()}px`,
+                position: "relative",
+                width: "100%",
+            }}
+        >
+            {items.map((virtualRow) => {
+                const episode = episodes[virtualRow.index]
+                if (!episode) return null
+
+                return (
+                    <li
+                        key={virtualRow.key}
+                        data-index={virtualRow.index}
+                        ref={virtualizer.measureElement}
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            transform: `translateY(${
+                                virtualRow.start - virtualizer.options.scrollMargin
+                            }px)`,
+                            contentVisibility: "auto",
+                            containIntrinsicSize: "auto 148px",
+                            paddingBottom: "4px"
+                        }}
+                    >
+                        <EpisodeCardContent
+                            episode={episode}
+                            saga={saga}
+                            onPlay={onPlay}
+                        />
+                    </li>
+                )
+            })}
+        </ul>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EpisodeCardContent — visual content for a virtualized row
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface EpisodeCardProps {
@@ -175,132 +297,116 @@ interface EpisodeCardProps {
     onPlay?: (episode: Episode, saga: Saga) => void
 }
 
-function EpisodeCard({ episode, saga, onPlay }: EpisodeCardProps) {
-    const { isEpic, isFiller, hasLocalFile } = episode
+function EpisodeCardContent({ episode, saga, onPlay }: EpisodeCardProps) {
+    const { isEpic, isFiller } = episode
+    const prefetch = usePrefetchEpisodeSources()
+
+    const { data: sourcesData } = useEpisodeSources(
+        episode.mediaId ? { mediaId: episode.mediaId, epNum: episode.number } : null,
+    )
+
+    const { hasLocal, hasStream } = React.useMemo(() => {
+        if (sourcesData) {
+            return {
+                hasLocal: sourcesData.sources.some((s) => s.type === "local"),
+                hasStream: sourcesData.sources.some((s) => s.type === "torrentio"),
+            }
+        }
+        return { hasLocal: !!episode.hasLocalFile, hasStream: !episode.hasLocalFile && episode.hasLocalFile !== undefined }
+    }, [sourcesData, episode.hasLocalFile])
+
+    const handleMouseEnter = React.useCallback(() => {
+        if (episode.mediaId) {
+            prefetch({ mediaId: episode.mediaId, epNum: episode.number })
+        }
+    }, [episode.mediaId, episode.number, prefetch])
 
     return (
-        <li>
-            <div
-                role="button"
-                tabIndex={0}
-                aria-label={`Reproducir episodio ${episode.number}: ${episode.title}`}
-                onClick={() => onPlay?.(episode, saga)}
-                onKeyDown={(e) => e.key === "Enter" && onPlay?.(episode, saga)}
-                className={cn(
-                    "group flex items-start lg:items-center gap-4 md:gap-6 p-3 lg:p-4 rounded-2xl cursor-pointer",
-                    "transition-all duration-300 active:scale-[0.98]",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
-                    // Base hover: Glass background lift
-                    "hover:bg-zinc-800/40 hover:backdrop-blur-xl border border-transparent hover:border-white/5",
-                    "hover:shadow-2xl hover:-translate-y-0.5",
-                    // Epic styling
-                    isEpic && "border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10 shadow-[0_0_15px_rgba(234,179,8,0.05)] hover:shadow-[0_0_30px_rgba(234,179,8,0.15)]",
-                    // Filler styling
-                    isFiller && "opacity-50 grayscale hover:grayscale-0 hover:opacity-100",
-                    // Default active background
-                    !isEpic && "active:bg-zinc-800/60"
-                )}
-            >
-                {/* Thumbnail */}
-                <EpisodeThumbnail
-                    url={episode.thumbnailUrl}
-                    episodeNumber={episode.number}
-                    title={episode.title}
-                />
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onPlay?.(episode, saga)}
+            onKeyDown={(e) => e.key === "Enter" && onPlay?.(episode, saga)}
+            onMouseEnter={handleMouseEnter}
+            className={cn(
+                "group flex items-start lg:items-center gap-4 md:gap-6 p-3 lg:p-4 rounded-2xl cursor-pointer",
+                "transition-all duration-300 active:scale-[0.98]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+                "hover:bg-zinc-800/40 hover:backdrop-blur-xl border border-transparent hover:border-white/5",
+                "hover:shadow-2xl hover:-translate-y-0.5",
+                isEpic && "border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10 shadow-[0_0_15px_rgba(234,179,8,0.05)] hover:shadow-[0_0_30px_rgba(234,179,8,0.15)]",
+                isFiller && "opacity-50 grayscale hover:grayscale-0 hover:opacity-100",
+                !isEpic && "active:bg-zinc-800/60"
+            )}
+        >
+            <EpisodeThumbnail
+                url={episode.thumbnailUrl}
+                episodeNumber={episode.number}
+                title={episode.title}
+            />
 
-                {/* Text content */}
-                <div className="flex flex-col gap-1 min-w-0 flex-1 pt-0.5">
-                    {/* Episode number + title */}
-                    <div className="flex items-baseline gap-2 flex-wrap pb-1">
-                        <span className={cn(
-                            "text-xs font-black tabular-nums shrink-0",
-                            isEpic ? "text-yellow-500" : "text-zinc-500"
-                        )}>
-                            {episode.number}.
+            <div className="flex flex-col gap-1 min-w-0 flex-1 pt-0.5">
+                <div className="flex items-baseline gap-2 flex-wrap pb-1">
+                    <span className={cn(
+                        "text-xs font-black tabular-nums shrink-0",
+                        isEpic ? "text-yellow-500" : "text-zinc-500"
+                    )}>
+                        {episode.number}.
+                    </span>
+                    <h3 className={cn(
+                        "text-sm md:text-base font-semibold leading-snug line-clamp-1 transition-colors",
+                        isEpic ? "text-yellow-100 group-hover:text-yellow-50" : "text-zinc-200 group-hover:text-white"
+                    )}>
+                        {episode.title}
+                    </h3>
+
+                    {isEpic && (
+                        <span className="inline-flex items-center text-yellow-500 shrink-0 ml-1" title="Episodio Épico">
+                            <Star className="w-3.5 h-3.5 fill-current" />
                         </span>
-                        <h3 className={cn(
-                            "text-sm md:text-base font-semibold leading-snug line-clamp-1 transition-colors",
-                            isEpic ? "text-yellow-100 group-hover:text-yellow-50" : "text-zinc-200 group-hover:text-white"
-                        )}>
-                            {episode.title}
-                        </h3>
-                        
-                        {/* Intelligence badges */}
-                        {isEpic && (
-                            <span className="inline-flex items-center text-yellow-500 shrink-0 ml-1" title="Episodio Épico">
-                                <Star className="w-3.5 h-3.5 fill-current" />
+                    )}
+                    {isFiller && (
+                        <span className="inline-flex items-center text-zinc-400 shrink-0 ml-1" title="Episodio de Relleno">
+                            (Relleno)
+                        </span>
+                    )}
+                </div>
+
+                {episode.synopsis && (
+                    <p className="text-zinc-400 text-xs md:text-sm leading-relaxed line-clamp-2 mt-1">
+                        {episode.synopsis}
+                    </p>
+                )}
+
+                {(episode.durationMin !== undefined || episode.airDate) && (
+                    <div className="flex items-center gap-2 mt-0.5">
+                        {episode.durationMin !== undefined && (
+                            <span className="flex items-center gap-1 text-zinc-500 text-xs font-medium">
+                                <BsClock className="w-2.5 h-2.5" />
+                                {episode.durationMin}m
                             </span>
                         )}
-                        {isFiller && (
-                            <span className="inline-flex items-center text-zinc-400 shrink-0 ml-1" title="Episodio de Relleno">
-                                (Relleno)
+                        {episode.airDate && episode.durationMin !== undefined && (
+                            <span className="text-zinc-700 text-[10px]">·</span>
+                        )}
+                        {episode.airDate && (
+                            <span className="text-zinc-600 text-xs">{episode.airDate}</span>
+                        )}
+                    </div>
+                )}
+
+                <div className="flex items-center justify-between mt-2">
+                    <div>
+                        {episode.watched && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-white/10 text-zinc-400">
+                                Visto
                             </span>
                         )}
                     </div>
-
-                    {/* Synopsis */}
-                    {episode.synopsis && (
-                        <p className="text-zinc-400 text-xs md:text-sm leading-relaxed line-clamp-2 mt-1">
-                            {episode.synopsis}
-                        </p>
-                    )}
-
-                    {/* Runtime + air date */}
-                    {(episode.durationMin !== undefined || episode.airDate) && (
-                        <div className="flex items-center gap-2 mt-0.5">
-                            {episode.durationMin !== undefined && (
-                                <span className="flex items-center gap-1 text-zinc-500 text-xs font-medium">
-                                    <BsClock className="w-2.5 h-2.5" />
-                                    {episode.durationMin}m
-                                </span>
-                            )}
-                            {episode.airDate && episode.durationMin !== undefined && (
-                                <span className="text-zinc-700 text-[10px]">·</span>
-                            )}
-                            {episode.airDate && (
-                                <span className="text-zinc-600 text-xs">
-                                    {episode.airDate}
-                                </span>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Tags row */}
-                    <div className="flex items-center justify-between mt-2">
-                        {/* Left: Watched pill */}
-                        <div>
-                            {episode.watched && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-white/10 text-zinc-400">
-                                    Visto
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Right: Hybrid Source Indicator */}
-                        {hasLocalFile !== undefined && (
-                            <div className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold tracking-wide",
-                                hasLocalFile 
-                                    ? "bg-green-500/10 text-green-400" 
-                                    : "bg-blue-500/10 text-blue-400"
-                            )}>
-                                {hasLocalFile ? (
-                                    <>
-                                        <Folder className="w-3 h-3" />
-                                        <span>LOCAL</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Zap className="w-3 h-3 fill-current" />
-                                        <span>NUBE / STREMIO</span>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <SourceBadge hasLocal={hasLocal} hasStream={hasStream} />
                 </div>
             </div>
-        </li>
+        </div>
     )
 }
 
@@ -342,7 +448,6 @@ function SagaTabs({ sagas, activeSagaId, onSelect }: SagaTabsProps) {
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
                         )}
                     >
-                        {/* White underline pill for active tab */}
                         {isActive && (
                             <span
                                 aria-hidden
@@ -350,7 +455,6 @@ function SagaTabs({ sagas, activeSagaId, onSelect }: SagaTabsProps) {
                             />
                         )}
                         {saga.title}
-                        {/* Episode count badge */}
                         <span
                             className={cn(
                                 "ml-1.5 text-[10px] font-bold tabular-nums",
@@ -370,20 +474,6 @@ function SagaTabs({ sagas, activeSagaId, onSelect }: SagaTabsProps) {
 // EpisodeList — main export
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * EpisodeList
- *
- * Displays a horizontal saga-tab bar and a vertical list of episode cards for
- * the currently selected saga. Designed for the Media Details page.
- *
- * @example
- * ```tsx
- * <EpisodeList
- *   sagas={animeData.sagas}
- *   onPlayEpisode={(ep, saga) => openPlayer(ep, saga)}
- * />
- * ```
- */
 export function EpisodeList({
     sagas,
     defaultSagaId,
@@ -406,16 +496,17 @@ export function EpisodeList({
 
     return (
         <div className={cn("flex flex-col gap-4", className)}>
-            {/* ── Saga tabs ───────────────────────────────────── */}
             {sagas.length > 1 && (
                 <SagaTabs
                     sagas={sagas}
                     activeSagaId={activeSagaId}
-                    onSelect={setActiveSagaId}
+                    onSelect={(id) => {
+                        window.scrollTo({ top: 0, behavior: "instant" })
+                        setActiveSagaId(id)
+                    }}
                 />
             )}
 
-            {/* ── Section header ──────────────────────────────── */}
             <div className="flex items-center gap-3">
                 <h2 className="text-sm font-bold text-zinc-300 uppercase tracking-widest">
                     {activeSaga?.title}
@@ -425,17 +516,15 @@ export function EpisodeList({
                 </span>
             </div>
 
-            {/* ── Episode list ────────────────────────────────── */}
-            <ul className="flex flex-col gap-1" role="list" aria-label={`Episodios de ${activeSaga?.title}`}>
-                {activeSaga?.episodes.map((episode) => (
-                    <EpisodeCard
-                        key={episode.id}
-                        episode={episode}
-                        saga={activeSaga}
-                        onPlay={onPlayEpisode}
-                    />
-                ))}
-            </ul>
+            {activeSaga && (
+                <EpisodeGrid
+                    key={activeSaga.id}
+                    episodes={activeSaga.episodes}
+                    saga={activeSaga}
+                    onPlay={onPlayEpisode}
+                />
+            )}
         </div>
     )
 }
+
