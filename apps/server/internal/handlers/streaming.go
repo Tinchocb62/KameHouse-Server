@@ -125,3 +125,47 @@ func (h *Handler) StopStreamSession(c echo.Context) error {
 	h.App.Logger.Info().Str("mediaId", id).Msg("stream session cleaned up")
 	return c.NoContent(http.StatusOK)
 }
+
+// HandleGetEpisodeSources responds to GET /api/v1/streaming/:mediaId/episode/:epNum/sources.
+// It runs the Source Priority Engine and returns a sorted []MediaSource with the top
+// playback source pre-selected in the playSource field.
+func (h *Handler) HandleGetEpisodeSources(c echo.Context) error {
+	mediaId, err := strconv.Atoi(c.Param("mediaId"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid parameters"})
+	}
+
+	epNum, err := strconv.Atoi(c.Param("epNum"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid parameters"})
+	}
+
+	sources, err := streaming.ResolveEpisodeSources(
+		c.Request().Context(),
+		h.App.Logger,
+		h.App.Database,
+		mediaId,
+		epNum,
+	)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	if len(sources) == 0 {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "No sources available"})
+	}
+
+	// sources is pre-sorted by Priority (Local=1, Debrid=2, Torrent=3).
+	// playSource surfaces the best-available source type as a badge hint for the UI.
+	playSource := sources[0].Type
+
+	return c.JSON(http.StatusOK, struct {
+		Episode    int                    `json:"episode"`
+		Sources    []streaming.MediaSource `json:"sources"`
+		PlaySource string                 `json:"playSource"`
+	}{
+		Episode:    epNum,
+		Sources:    sources,
+		PlaySource: playSource,
+	})
+}

@@ -64,4 +64,8 @@ type StreamResult struct {
 	// MagnetURI is a ready-to-use magnet link constructed from InfoHash and
 	// common public trackers
 	MagnetURI string `json:"magnetUri"`
+	// IsDebrid is true when the stream is served through a debrid provider
+	// (Real-Debrid, AllDebrid, Premiumize, etc.) rather than a raw P2P magnet.
+	// Detected by scanning the Name/Title for service-specific badge strings.
+	IsDebrid bool `json:"isDebrid"`
 }

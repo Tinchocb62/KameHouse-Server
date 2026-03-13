@@ -382,6 +382,7 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	v1.GET("/stream/:id/master.m3u8", h.HandleMasterPlaylist)
 	v1.GET("/stream/:id/:file", h.HandleHlsSegment)
 	v1.DELETE("/stream/:id", h.StopStreamSession)
+	v1.GET("/streaming/:mediaId/episode/:epNum/sources", h.HandleGetEpisodeSources)
 	//
 	// Playlists
 	//

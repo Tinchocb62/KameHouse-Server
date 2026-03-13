@@ -113,6 +113,19 @@ func (p *Provider) GetStreams(ctx context.Context, kitsuID int, episode int) ([]
 	return p.GetStreamsForIDs(ctx, []MediaID{id})
 }
 
+// GetSourcesForEpisode is a convenience wrapper for episode queries using an IMDB ID.
+// It maps the IMDb ID to Stremio's standard "series" format (ttXXXXXXX:season:episode).
+func (p *Provider) GetSourcesForEpisode(ctx context.Context, imdbID string, season int, episode int) ([]*StreamResult, error) {
+	stremioID := fmt.Sprintf("%s:%d:%d", imdbID, season, episode)
+	id := MediaID{
+		Kind:         MediaIDIMDB,
+		Value:        imdbID,
+		ResourceType: "series",
+		StremioID:    stremioID,
+	}
+	return p.GetStreamsForIDs(ctx, []MediaID{id})
+}
+
 // GetStreamsForID is the single-ID generic interface.
 func (p *Provider) GetStreamsForID(ctx context.Context, resourceType, stremioID string) ([]*StreamResult, error) {
 	id := MediaID{ResourceType: resourceType, StremioID: stremioID}
@@ -362,6 +375,24 @@ func FilterByReleaseGroup(results []*StreamResult, groups ...string) []*StreamRe
 // ─────────────────────────────────────────────────────────────────────────────
 
 // mapStream converts a canonical extension_repo.Stream into a StreamResult.
+// isDebridStream reports whether a raw Torrentio stream is served via a debrid
+// provider by scanning for service-specific badge strings in Name and Title.
+//
+// Badge reference:
+//   - Real-Debrid: "RD+", "[RD]"
+//   - AllDebrid:   "AD+", "[AD]"
+//   - Premiumize:  "PM+", "[PM]"
+//   - Debrid-Link: "DL+", "[DL]"
+//   - Generic:     "Debrid", "debrid"
+func isDebridStream(name, title string) bool {
+	for _, badge := range []string{"RD+", "[RD]", "AD+", "[AD]", "PM+", "[PM]", "DL+", "[DL]", "Debrid", "debrid"} {
+		if strings.Contains(name, badge) || strings.Contains(title, badge) {
+			return true
+		}
+	}
+	return false
+}
+
 func mapStream(s extension_repo.Stream) *StreamResult {
 	var filename, bingeGroup string
 	if s.BehaviorHints != nil {
@@ -381,6 +412,7 @@ func mapStream(s extension_repo.Stream) *StreamResult {
 		Filename:     filename,
 		BingeGroup:   bingeGroup,
 		MagnetURI:    buildMagnetURI(s.InfoHash, releaseGroup),
+		IsDebrid:     isDebridStream(s.Name, s.Title),
 	}
 }
 
