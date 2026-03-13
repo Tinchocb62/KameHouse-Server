@@ -11,6 +11,25 @@ export interface UIState {
     setSearchQuery: (query: string) => void
 }
 
+// --- Scanner Slice ---
+export interface ScannerState {
+    isScanning: boolean
+    scanProgress: number
+    currentScanningFile: string
+    setScanning: (isScanning: boolean) => void
+    setScanProgress: (progress: number) => void
+    setScanningFile: (file: string) => void
+}
+
+export const createScannerSlice: StateCreator<UIState & PlayerState & ScannerState, [], [], ScannerState> = (set) => ({
+    isScanning: false,
+    scanProgress: 0,
+    currentScanningFile: "",
+    setScanning: (isScanning) => set({ isScanning }),
+    setScanProgress: (scanProgress) => set({ scanProgress }),
+    setScanningFile: (currentScanningFile) => set({ currentScanningFile }),
+})
+
 export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState> = (set) => ({
     sidebarOpen: true,
     activeTheme: "dark",
@@ -44,9 +63,10 @@ export const createPlayerSlice: StateCreator<UIState & PlayerState, [], [], Play
 })
 
 // --- Combined Store ---
-export const useAppStore = create<UIState & PlayerState>()((...a) => ({
+export const useAppStore = create<UIState & PlayerState & ScannerState>()((...a) => ({
     ...createUISlice(...a),
     ...createPlayerSlice(...a),
+    ...createScannerSlice(...a),
 }))
 
 // --- Progress Store (Persisted) ---

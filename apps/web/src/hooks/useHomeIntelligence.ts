@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
-import type { Anime_LibraryCollectionEntry } from "@/api/generated/types"
+import type {
+    Anime_Episode,
+    Anime_LibraryCollectionEntry,
+    Models_LibraryMedia,
+} from "@/api/generated/types"
 import { create } from "zustand"
 import { getServerBaseUrl } from "@/api/client/server-url"
 
@@ -32,6 +36,13 @@ export interface CuratedHomeResponse {
     swimlanes: CuratedSwimlane[]
 }
 
+export interface ContinueWatchingEntry {
+    media: Models_LibraryMedia
+    episode: Anime_Episode
+    progress: number // 0-1
+    isNextEpisode: boolean
+}
+
 async function fetchCuratedHome(): Promise<CuratedHomeResponse> {
     const url = new URL(getServerBaseUrl() + "/api/v1/home/curated")
     const res = await fetch(url.toString())
@@ -40,11 +51,27 @@ async function fetchCuratedHome(): Promise<CuratedHomeResponse> {
     return json.data
 }
 
+async function fetchContinueWatching(): Promise<ContinueWatchingEntry[]> {
+    const url = new URL(getServerBaseUrl() + "/api/v1/home/continue-watching")
+    const res = await fetch(url.toString())
+    if (!res.ok) throw new Error("Failed to fetch continue watching list")
+    const json = (await res.json()) as { data: ContinueWatchingEntry[] }
+    return json.data
+}
+
 export function useHomeIntelligence() {
     return useQuery({
         queryKey: ["home", "curated"],
         queryFn: fetchCuratedHome,
         staleTime: 1000 * 60 * 5, // 5 min
+    })
+}
+
+export function useContinueWatching() {
+    return useQuery({
+        queryKey: ["home", "continue-watching"],
+        queryFn: fetchContinueWatching,
+        staleTime: 1000 * 60 * 2, // 2 min
     })
 }
 

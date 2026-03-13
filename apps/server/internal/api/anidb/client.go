@@ -2,8 +2,16 @@ package anidb
 
 import (
 	"context"
+	"encoding/xml"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
 	"time"
+
+	httputil "kamehouse/internal/util/http"
+	"kamehouse/internal/util/httpclient"
 
 	"go.felesatra.moe/anidb"
 
@@ -11,10 +19,12 @@ import (
 )
 
 type Client struct {
-	client   *anidb.Client
-	logger   *zerolog.Logger
-	username string
-	password string
+	client      *anidb.Client
+	logger      *zerolog.Logger
+	username    string
+	password    string
+	httpClient  *http.Client
+	rateLimiter chan struct{}
 }
 
 type AnimeInfo struct {
@@ -55,15 +65,17 @@ func NewClient(username, password string, logger *zerolog.Logger) *Client {
 	}
 
 	return &Client{
-		client:   client,
-		logger:   logger,
-		username: username,
-		password: password,
+		client:      client,
+		logger:      logger,
+		username:    username,
+		password:    password,
+		httpClient:  httputil.NewFastClient(),
+		rateLimiter: make(chan struct{}, 2),
 	}
 }
 
 func (c *Client) GetAnime(ctx context.Context, aid int) (*AnimeInfo, error) {
-	anime, err := c.client.RequestAnime(aid)
+	anime, err := c.requestAnime(ctx, aid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch anime %d: %w", aid, err)
 	}
@@ -79,6 +91,109 @@ func (c *Client) SearchByTitle(ctx context.Context, title string) ([]SearchResul
 func (c *Client) GetAnimeByTitle(ctx context.Context, title string) (*AnimeInfo, error) {
 	c.logger.Debug().Str("title", title).Msg("anidb: get anime by title not implemented")
 	return nil, fmt.Errorf("get anime by title not implemented")
+}
+
+func (c *Client) requestAnime(ctx context.Context, aid int) (*anidb.Anime, error) {
+	params := url.Values{}
+	params.Set("client", c.client.Name)
+	params.Set("clientver", strconv.Itoa(c.client.Version))
+	params.Set("protover", "1")
+	params.Set("request", "anime")
+	params.Set("aid", strconv.Itoa(aid))
+
+	endpoint := "http://api.anidb.net:9001/httpapi?" + params.Encode()
+	delay := time.Second
+	var lastErr error
+
+	for attempt := 0; attempt < 3; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", "KameHouse/1.0")
+
+		c.rateLimiter <- struct{}{}
+		resp, err := c.httpClient.Do(req)
+		<-c.rateLimiter
+
+		if err != nil {
+			lastErr = err
+		} else if resp != nil {
+			body, readErr := io.ReadAll(resp.Body)
+			resp.Body.Close()
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				if attempt == 2 {
+					lastErr = fmt.Errorf("anidb rate limited")
+					return nil, lastErr
+				}
+				retryAfter, ok := httpclient.ParseRetryAfter(resp.Header, time.Now())
+				if !ok {
+					retryAfter = delay
+					delay *= 2
+				}
+				lastErr = fmt.Errorf("anidb rate limited")
+				sleepWithContext(ctx, retryAfter)
+				continue
+			}
+
+			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+				return nil, fmt.Errorf("anidb status %d", resp.StatusCode)
+			}
+
+			if readErr != nil {
+				lastErr = readErr
+			} else if err := checkAPIError(body); err != nil {
+				return nil, err
+			} else {
+				var anime anidb.Anime
+				if err := xml.Unmarshal(body, &anime); err != nil {
+					return nil, err
+				}
+				return &anime, nil
+			}
+		}
+
+		if attempt < 2 {
+			sleepWithContext(ctx, delay)
+			delay *= 2
+		}
+	}
+
+	return nil, lastErr
+}
+
+func checkAPIError(data []byte) error {
+	var n xml.Name
+	_ = xml.Unmarshal(data, &n)
+	if n.Local != "error" {
+		return nil
+	}
+	var payload struct {
+		Text string `xml:",innerxml"`
+	}
+	if err := xml.Unmarshal(data, &payload); err != nil {
+		return err
+	}
+	return fmt.Errorf("API error %s", payload.Text)
+}
+
+func sleepWithContext(ctx context.Context, d time.Duration) {
+	if d <= 0 {
+		return
+	}
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return
+	case <-timer.C:
+		return
+	}
 }
 
 func (c *Client) convertAnime(a *anidb.Anime) *AnimeInfo {

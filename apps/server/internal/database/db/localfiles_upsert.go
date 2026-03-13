@@ -11,11 +11,11 @@ import (
 // Batch size for CreateInBatches.
 //
 // SQLite's default SQLITE_LIMIT_VARIABLE_NUMBER is 999.
-// models.LocalFiles has 3 columns (id, created_at, updated_at, value) = 4
-// vars per row → 999 / 4 = ~249; we use 200 to stay well within the limit
-// and leave headroom for multi-column ON CONFLICT expressions.
+// models.LocalFiles has ~4 columns (id, created_at, updated_at, value) per row
+// → 999 / 4 = ~249; we use 150 to stay well within the limit and leave
+// headroom for multi-column ON CONFLICT expressions.
 // ─────────────────────────────────────────────────────────────────────────────
-const localFilesBatchSize = 200
+const localFilesBatchSize = 150
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UpsertLocalFiles — single-row blob upsert (legacy/production path).

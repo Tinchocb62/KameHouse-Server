@@ -22,3 +22,29 @@ func (h *Handler) HandleGetHomeCurated(c echo.Context) error {
 
 	return c.JSON(200, NewDataResponse(resp))
 }
+
+// HandleGetContinueWatching returns the "Continue Watching" items for the user.
+func (h *Handler) HandleGetContinueWatching(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	if h.App.Database == nil {
+		return h.JSON(c, 500, NewErrorResponse(errors.New("database not initialized")))
+	}
+
+	// Try to get userID from context (set by auth middleware)
+	// Default to 1 for backward compatibility or guest access if appropriate
+	userID := uint(1)
+	if val := c.Get("user_id"); val != nil {
+		if id, ok := val.(uint); ok {
+			userID = id
+		}
+	}
+
+	svc := anime.NewIntelligenceService(h.App.Database, nil, h.App.Logger)
+	resp, err := svc.GetContinueWatching(ctx, userID)
+	if err != nil {
+		return h.JSON(c, 500, NewErrorResponse(err))
+	}
+
+	return h.JSON(c, 200, NewDataResponse(resp))
+}

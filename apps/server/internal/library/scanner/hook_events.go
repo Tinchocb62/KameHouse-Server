@@ -135,7 +135,7 @@ type ScanLocalFileHydratedEvent struct {
 }
 
 // ScanProgressEvent is emitted rapidly during processing.
-// The frontend uses this to display "Antigravity" concurrent speeds without freezing.
+// The frontend uses this to display "KameHouse" concurrent speeds without freezing.
 type ScanProgressEvent struct {
 	hook_resolver.Event
 	TotalFilesFound int64    `json:"totalFilesFound"`

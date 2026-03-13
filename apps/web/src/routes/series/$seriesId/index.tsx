@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query"
+import React, { useMemo, useState, useEffect, useRef } from "react"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { fetchAnimeEntry, useGetAnimeEntry } from "@/api/hooks/anime_entries.hooks"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { Anime_Episode } from "@/api/generated/types"
@@ -7,20 +10,23 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { MediaActionButtons, EpisodeClientCard } from "./series-interactivity-client"
 
 export const Route = createFileRoute("/series/$seriesId/")({
+    loader: async ({ params: { seriesId } }) => {
+        const queryClient = new QueryClient()
+        await queryClient.prefetchQuery({
+            queryKey: [API_ENDPOINTS.ANIME_ENTRIES.GetAnimeEntry.key, seriesId],
+            queryFn: () => fetchAnimeEntry(seriesId),
+        })
+        return { dehydrateState: dehydrate(queryClient) }
+    },
     component: SeriesDetailPage,
 })
 
-async function SeriesDetailPage() {
+function SeriesDetailPage() {
     const { seriesId } = Route.useParams()
-    const queryClient = new QueryClient()
-
-    await queryClient.prefetchQuery({
-        queryKey: [API_ENDPOINTS.ANIME_ENTRIES.GetAnimeEntry.key, seriesId],
-        queryFn: () => fetchAnimeEntry(seriesId),
-    })
+    const { dehydrateState } = Route.useLoaderData()
 
     return (
-        <HydrationBoundary state={dehydrate(queryClient)}>
+        <HydrationBoundary state={dehydrateState}>
             <SeriesDetailClient seriesId={seriesId} />
         </HydrationBoundary>
     )
@@ -149,41 +155,105 @@ interface EpisodesSectionProps {
 }
 
 function EpisodesSection({ seriesTitle, fallbackThumb, episodes }: EpisodesSectionProps) {
+    // Grouping logic: Season 0 for null/undefined
+    const groupedEpisodes = useMemo(() => {
+        const groups = episodes.reduce((acc, ep) => {
+            const season = ep.seasonNumber ?? 0
+            if (!acc[season]) acc[season] = []
+            acc[season].push(ep)
+            return acc
+        }, {} as Record<number, Anime_Episode[]>)
+        return groups
+    }, [episodes])
+
+    // Numerical sorting of season keys
+    const seasonKeys = useMemo(() => 
+        Object.keys(groupedEpisodes)
+            .map(Number)
+            .sort((a, b) => a - b), 
+        [groupedEpisodes]
+    )
+
+    const [activeSeason, setActiveSeason] = useState<number>(() => seasonKeys[0] ?? 1)
+    const sectionRef = useRef<HTMLElement>(null)
+    
+    // Smooth scroll to section top on season change with offset
+    useEffect(() => {
+        if (activeSeason !== undefined && sectionRef.current) {
+            const offset = 100 
+            const bodyRect = document.body.getBoundingClientRect().top
+            const elementRect = sectionRef.current.getBoundingClientRect().top
+            const elementPosition = elementRect - bodyRect
+            const offsetPosition = elementPosition - offset
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth",
+            })
+        }
+    }, [activeSeason])
+
+    // State synchronization
+    useEffect(() => {
+        if (seasonKeys.length > 0 && !seasonKeys.includes(activeSeason)) {
+            setActiveSeason(seasonKeys[0])
+        }
+    }, [seasonKeys, activeSeason])
+
     if (!episodes || episodes.length === 0) return null
 
-    const groupedEpisodes = episodes.reduce((acc, ep) => {
-        const key = ep.seasonNumber || 1
-        if (!acc[key]) acc[key] = []
-        acc[key].push(ep)
-        return acc
-    }, {} as Record<number, Anime_Episode[]>)
-
     return (
-        <section className="relative z-[1] -mt-10 space-y-10 px-6 sm:px-10 lg:px-16">
-            {Object.entries(groupedEpisodes).map(([seasonNum, seasonEpisodes]) => (
-                <div key={seasonNum} className="space-y-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="space-y-1">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Temporada</p>
-                            <h2 className="text-2xl font-black">{seasonNum}</h2>
-                        </div>
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
-                            {seasonEpisodes.length} episodios
-                        </span>
+        <section ref={sectionRef} className="relative z-[1] -mt-10 space-y-8 px-6 sm:px-10 lg:px-16 pb-20">
+            <Tabs 
+                value={activeSeason.toString()} 
+                onValueChange={(val) => setActiveSeason(parseInt(val))}
+                className="w-full"
+            >
+                <div className="flex flex-col gap-8">
+                    {/* Season Navigation Bar */}
+                    <div className="flex flex-col gap-3">
+                        <p className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white/40 ml-1">Seleccionar Temporada</p>
+                        <ScrollArea orientation="horizontal" className="w-full">
+                            <TabsList className="justify-start gap-3 bg-transparent h-auto p-0 pb-3">
+                                {seasonKeys.map((s) => (
+                                    <TabsTrigger
+                                        key={s}
+                                        value={s.toString()}
+                                        className="h-11 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-6 text-xs font-bold uppercase tracking-widest text-white/60 transition-all hover:bg-white/10 data-[state=active]:border-orange-500/50 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-[0_8px_20px_rgba(249,115,22,0.3)]"
+                                    >
+                                        {s === 0 ? "Especiales" : `Temporada ${s}`}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </ScrollArea>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {seasonEpisodes.map((episode) => (
-                            <EpisodeClientCard
-                                key={episode.episodeNumber}
-                                episode={episode}
-                                seriesTitle={seriesTitle}
-                                fallbackThumb={fallbackThumb}
-                            />
-                        ))}
+                    {/* Episodes Display Area */}
+                    <div className="space-y-6">
+                        <div className="flex items-end justify-between border-b border-white/5 pb-4">
+                            <div className="space-y-1">
+                                <h2 className="text-3xl font-black tracking-tight">
+                                    {activeSeason === 0 ? "Episodios Especiales" : `Temporada ${activeSeason}`}
+                                </h2>
+                                <p className="text-sm font-medium text-white/50 lowercase">
+                                    <span className="text-white font-bold">{groupedEpisodes[activeSeason]?.length || 0}</span> episodios disponibles
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {groupedEpisodes[activeSeason]?.map((episode) => (
+                                <EpisodeClientCard
+                                    key={episode.episodeNumber}
+                                    episode={episode}
+                                    seriesTitle={seriesTitle}
+                                    fallbackThumb={fallbackThumb}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
-            ))}
+            </Tabs>
         </section>
     )
 }

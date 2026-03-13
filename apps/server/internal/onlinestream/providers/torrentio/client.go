@@ -143,7 +143,7 @@ func (c *Client) doHTTP(ctx context.Context, mediaType, stremioID string) (*torr
 	if err != nil {
 		return nil, fmt.Errorf("torrentio: build request: %w", err)
 	}
-	req.Header.Set("User-Agent", "Antigravity/1.0")
+	req.Header.Set("User-Agent", "KameHouse/1.0")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.httpClient.Do(req)

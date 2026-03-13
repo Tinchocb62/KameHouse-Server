@@ -60,13 +60,13 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 func run(ctx context.Context) error {
-	// Initialize robust arguments required by NewAntigravity inside KameHouse.
+	// Initialize robust arguments required by NewKameHouse inside KameHouse.
 	configOpts := &core.ConfigOptions{
 		Flags:        core.KameHouseFlags{Port: 43211, Host: "127.0.0.1", IsDesktopSidecar: true},
 		EmbeddedLogo: embeddedLogo,
 	}
 
-	app := core.NewAntigravity(configOpts, nil)
+	app := core.NewKameHouse(configOpts, nil)
 
 	// Since NewEchoApp returns an unstarted Echo instance, we run it manually
 	// Or use core.RunEchoServer if adapted to take context

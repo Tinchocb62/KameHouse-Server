@@ -507,7 +507,7 @@ func newMediaFetcherTMDB(ctx context.Context, opts *MediaFetcherOptions) (*Media
 					idStr = "tt" + idStr
 				}
 				var media *dto.NormalizedMedia
-				media, err = providerToUse.GetMediaDetails(idStr)
+				media, err = providerToUse.GetMediaDetails(ctx, idStr)
 				if err == nil && media != nil {
 					media.ExplicitProvider = info.ExplicitProvider
 					media.ExplicitID = info.ExplicitID
@@ -520,7 +520,7 @@ func newMediaFetcherTMDB(ctx context.Context, opts *MediaFetcherOptions) (*Media
 
 		// 2. Default Behavior (TMDB First)
 		if len(results) == 0 && err == nil {
-			results, err = opts.TMDBProvider.SearchMedia(query)
+			results, err = opts.TMDBProvider.SearchMedia(ctx, query)
 
 			if err != nil || len(results) == 0 {
 				// Fallback: for movies with compound titles like "Dragon Ball Z - La batalla",
@@ -529,7 +529,7 @@ func newMediaFetcherTMDB(ctx context.Context, opts *MediaFetcherOptions) (*Media
 					if idx := strings.Index(query, " - "); idx > 0 {
 						prefix := strings.TrimSpace(query[:idx])
 						opts.Logger.Debug().Str("originalQuery", query).Str("fallbackQuery", prefix).Msg("media fetcher: Retrying movie search with prefix")
-						results, err = opts.TMDBProvider.SearchMedia(prefix)
+						results, err = opts.TMDBProvider.SearchMedia(ctx, prefix)
 					}
 				}
 
@@ -537,7 +537,7 @@ func newMediaFetcherTMDB(ctx context.Context, opts *MediaFetcherOptions) (*Media
 				if len(results) == 0 {
 					opts.Logger.Debug().Str("query", query).Msg("media fetcher: TMDB returned zero results, falling back to AniList provider")
 					if alProvider, exists := providerMap["anilist"]; exists {
-						results, err = alProvider.SearchMedia(query)
+						results, err = alProvider.SearchMedia(ctx, query)
 					}
 				}
 			}
@@ -622,8 +622,8 @@ func GenerateLocalMetadata(title string) *dto.NormalizedMedia {
 			Romaji:  &title,
 			Native:  &title,
 		},
-		Synonyms:       nil,
-		Format:         lo.ToPtr(dto.MediaFormatTV), // Assume TV mostly
+		Synonyms: nil,
+		Format:   lo.ToPtr(dto.MediaFormatTV), // Assume TV mostly
 		CoverImage: &dto.NormalizedMediaCoverImage{
 			Large:      &posterURL,
 			ExtraLarge: &posterURL,
@@ -632,6 +632,6 @@ func GenerateLocalMetadata(title string) *dto.NormalizedMedia {
 		Status:         lo.ToPtr(dto.MediaStatusFinished),
 		MetadataStatus: &metadataStatus,
 		Episodes:       lo.ToPtr(1000), // Arbitrary high count
-		Description:    &synopsis, // Inject synthetic synopsis here
+		Description:    &synopsis,      // Inject synthetic synopsis here
 	}
 }

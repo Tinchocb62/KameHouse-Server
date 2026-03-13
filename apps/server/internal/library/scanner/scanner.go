@@ -27,6 +27,7 @@ import (
 
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models/dto"
+	"kamehouse/internal/events"
 	"kamehouse/internal/library/scanner/video_analyzer"
 
 	"github.com/rs/zerolog"
@@ -70,14 +71,16 @@ type MediaScannerOptions struct {
 	Agent       *ScannerAgent // for Bayesian identity resolution
 	Workers     int           // CRC32 goroutine pool size (default 4)
 	EventHub    EventBroadcaster
+	Dispatcher  events.Dispatcher
 }
 
 // MediaScanner is named intentionally to avoid collision with the production
 // Scanner struct declared in scan_legacy.go.
 type MediaScanner struct {
-	opts         MediaScannerOptions
-	fingerprints sync.Map // path → uint32 CRC32; FastScan delta filter
-	running      atomic.Bool
+	opts            MediaScannerOptions
+	EventDispatcher events.Dispatcher
+	fingerprints    sync.Map // path → uint32 CRC32; FastScan delta filter
+	running         atomic.Bool
 }
 
 // NewMediaScanner constructs a ready-to-use MediaScanner.
@@ -85,7 +88,10 @@ func NewMediaScanner(opts MediaScannerOptions) *MediaScanner {
 	if opts.Workers <= 0 {
 		opts.Workers = 4
 	}
-	return &MediaScanner{opts: opts}
+	return &MediaScanner{
+		opts:            opts,
+		EventDispatcher: opts.Dispatcher,
+	}
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -101,6 +107,17 @@ func (s *MediaScanner) RunScan(ctx context.Context, mode ScanMode) (ScanResult, 
 	start := time.Now()
 	result := ScanResult{Mode: mode}
 	s.logf(zerolog.InfoLevel, "scanner: Starting %s", modeName(mode))
+
+	if s.EventDispatcher != nil {
+		s.EventDispatcher.Publish(events.Event{
+			Topic: "library.scan",
+			Payload: map[string]any{
+				"status":    "START",
+				"timestamp": time.Now(),
+				"mode":      modeName(mode),
+			},
+		})
+	}
 
 	// Stage 1: Walk
 	paths, walkErrs := s.walk(ctx, mode)
@@ -122,10 +139,26 @@ func (s *MediaScanner) RunScan(ctx context.Context, mode ScanMode) (ScanResult, 
 	var mu sync.Mutex
 	valid := make([]*dto.LocalFile, 0, len(paths))
 
+	var processed atomic.Int32
+	total := int32(len(paths))
+
 	pool := NewWorkerPool(ctx, s.opts.Workers)
 	for _, p := range paths {
 		p := p // capture
 		pool.Submit(func(ctx context.Context) {
+			curr := processed.Add(1)
+			if s.EventDispatcher != nil {
+				s.EventDispatcher.Publish(events.Event{
+					Topic: "library.scan",
+					Payload: map[string]any{
+						"status":  "PROCESSING",
+						"current": int(curr),
+						"total":   int(total),
+						"file":    filepath.Base(p),
+					},
+				})
+			}
+
 			var lf *dto.LocalFile
 			for _, d := range dirPaths {
 				if strings.HasPrefix(p, d) {
@@ -206,6 +239,18 @@ func (s *MediaScanner) RunScan(ctx context.Context, mode ScanMode) (ScanResult, 
 		"scanner: %s done — %d files, %d unmatched, %d errors in %v",
 		modeName(mode), len(valid), result.Unmatched, result.Errors, result.Duration,
 	)
+
+	if s.EventDispatcher != nil {
+		s.EventDispatcher.Publish(events.Event{
+			Topic: "library.scan",
+			Payload: map[string]any{
+				"status":           "FINISH",
+				"total_processed":  len(valid),
+				"duration_seconds": result.Duration.Seconds(),
+			},
+		})
+	}
+
 	return result, nil
 }
 

@@ -32,6 +32,7 @@ type Account struct {
 
 type WatchHistory struct {
 	BaseModel
+	AccountID     uint    `gorm:"column:account_id;uniqueIndex:idx_media_episode" json:"accountId"`
 	MediaID       int     `gorm:"column:media_id;uniqueIndex:idx_media_episode" json:"mediaId"`
 	EpisodeNumber int     `gorm:"column:episode_number;uniqueIndex:idx_media_episode" json:"episodeNumber"`
 	CurrentTime   float64 `gorm:"column:current_time" json:"currentTime"`

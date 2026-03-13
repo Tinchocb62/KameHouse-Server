@@ -21,9 +21,14 @@ func NewFFmpegProcess(logger *zerolog.Logger) *FFmpegProcess {
 }
 
 // StartTranscode begins an FFmpeg process asynchronously. It is bound to the provided context,
-// meaning cancellation will strictly terminate the subprocess (preventing resource leaks).
+// meaning cancellation will strictly terminate the subprocess and its entire process group,
+// preventing resource leaks and zombie processes.
 func (p *FFmpegProcess) StartTranscode(ctx context.Context, args []string) error {
 	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
+
+	// Assign the process to its own process group so that SIGKILL can target
+	// the entire tree (ffmpeg may spawn worker sub-processes).
+	setPgid(cmd)
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -34,7 +39,9 @@ func (p *FFmpegProcess) StartTranscode(ctx context.Context, args []string) error
 		return fmt.Errorf("ffmpeg failed to start: %w", err)
 	}
 
-	// Async logger scanning line-by-line without buffering the whole output
+	p.logger.Info().Int("pid", cmd.Process.Pid).Msg("ffmpeg: process started")
+
+	// Async logger: scan stderr line-by-line without buffering the whole output.
 	go func() {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
@@ -45,13 +52,34 @@ func (p *FFmpegProcess) StartTranscode(ctx context.Context, args []string) error
 		}
 	}()
 
-	// Lifecycle monitor: wait on completion or context cancellation to reap the zombie
+	// Lifecycle monitor: watches for context cancellation and reaps the process.
 	go func() {
-		err := cmd.Wait()
-		if err != nil && ctx.Err() == nil {
-			p.logger.Warn().Err(err).Msg("ffmpeg exited unexpectedly")
-		} else {
-			p.logger.Info().Msg("ffmpeg transcode finished or cancelled cleanly")
+		waitDone := make(chan error, 1)
+
+		// Wait for FFmpeg in a nested goroutine so that we can also react to
+		// context cancellation while the process is still running.
+		go func() {
+			waitDone <- cmd.Wait()
+		}()
+
+		select {
+		case err := <-waitDone:
+			// Process finished on its own — log the result.
+			if err != nil && ctx.Err() == nil {
+				p.logger.Warn().Err(err).Msg("ffmpeg: exited unexpectedly")
+			} else {
+				p.logger.Info().Msg("ffmpeg: transcode finished cleanly")
+			}
+
+		case <-ctx.Done():
+			// Context was cancelled (client disconnect, explicit stop, or timeout).
+			// Kill the entire process group so no orphan children are left behind.
+			p.logger.Warn().Int("pid", cmd.Process.Pid).Msg("ffmpeg: context cancelled — terminating process group")
+			killProcessGroup(cmd)
+
+			// Drain waitDone to reap the zombie after the kill.
+			<-waitDone
+			p.logger.Info().Msg("ffmpeg: process group terminated and reaped")
 		}
 	}()
 

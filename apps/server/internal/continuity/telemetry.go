@@ -86,13 +86,15 @@ func (tm *TelemetryManager) flush() {
 	// Parse keys back and run bulk DB Upsert outside the mutex payload
 	var records []models.WatchHistory
 	for key, seconds := range localBatch {
-		// Expects key format: "mediaId:episodeNumber:duration"
+		// Expects key format: "userId:mediaId:episodeNumber:duration"
+		var userID uint
 		var mediaId, epNum int
 		var duration float64
-		fmt.Sscanf(key, "%d:%d:%f", &mediaId, &epNum, &duration)
+		fmt.Sscanf(key, "%d:%d:%d:%f", &userID, &mediaId, &epNum, &duration)
 
 		if mediaId > 0 {
 			records = append(records, models.WatchHistory{
+				AccountID:     userID,
 				MediaID:       mediaId,
 				EpisodeNumber: epNum,
 				CurrentTime:   float64(seconds),

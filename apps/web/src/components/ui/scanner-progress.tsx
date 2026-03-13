@@ -13,12 +13,13 @@ import { ProgressBar } from "@/components/ui/progress-bar"
 import { queryClient } from "@/app/client-providers"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { AlertTriangle, Loader2 } from "lucide-react"
 
 export function ScannerProgress() {
     const [progress, setProgress] = useState(0)
     const [currentFile, setCurrentFile] = useState("")
     const [isScanning, setIsScanning] = useState(false)
+    const [isRateLimited, setIsRateLimited] = useState(false)
 
     // Reuse the exact same WS URL derivation as websocket-provider.tsx
     const wsUrl = useMemo(() => {
@@ -43,7 +44,6 @@ export function ScannerProgress() {
         if (eventType === "scan_progress") {
             if (!isScanning) setIsScanning(true)
             
-            // Assume the payload has percentage and currentFile (or similar names)
             const payload = msg.payload || msg
             if (typeof payload.percentage === "number") {
                 setProgress(payload.percentage)
@@ -51,9 +51,15 @@ export function ScannerProgress() {
             if (typeof payload.currentFile === "string" || typeof payload.file === "string") {
                 setCurrentFile(payload.currentFile || payload.file)
             }
-        } 
+        }
+        else if (eventType === "scan_status") {
+            const payload = msg.payload || msg
+            const status: string = payload.status ?? payload.message ?? ""
+            setIsRateLimited(status === "PAUSED_RATE_LIMIT")
+        }
         else if (eventType === "scan_complete") {
             setIsScanning(false)
+            setIsRateLimited(false)
             setProgress(100)
             toast.success("Escaneo completado exitosamente.")
             
@@ -78,15 +84,22 @@ export function ScannerProgress() {
             <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
             
             <div className="flex items-center gap-4 mb-3 relative z-10">
-                <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+                {isRateLimited
+                    ? <AlertTriangle className="w-5 h-5 text-yellow-500 animate-pulse shrink-0" />
+                    : <Loader2 className="w-5 h-5 text-orange-500 animate-spin shrink-0" />
+                }
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white mb-0.5 flex justify-between">
                         <span>Escaneando Biblioteca...</span>
                         <span className="text-orange-400">{Math.round(progress)}%</span>
                     </p>
-                    <p className="text-xs text-gray-400 font-mono truncate" title={currentFile}>
-                        {currentFile || "Buscando archivos..."}
-                    </p>
+                    {isRateLimited ? (
+                        <span className="text-yellow-500 font-medium text-xs">Rate limit reached. Waiting for API...</span>
+                    ) : (
+                        <p className="text-xs text-gray-400 font-mono truncate" title={currentFile}>
+                            {currentFile || "Buscando archivos..."}
+                        </p>
+                    )}
                 </div>
             </div>
             
@@ -94,7 +107,7 @@ export function ScannerProgress() {
                 <ProgressBar 
                     progress={progress} 
                     className="h-2 bg-black/50" 
-                    color="bg-orange-500"
+                    color={isRateLimited ? "bg-yellow-500 animate-pulse" : "bg-orange-500"}
                 />
             </div>
         </div>

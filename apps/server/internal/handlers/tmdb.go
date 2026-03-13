@@ -32,7 +32,7 @@ func (h *Handler) HandleTMDBSearch(c echo.Context) error {
 	}
 
 	client := tmdb.NewClient(b.BearerToken) // uses default es-ES language
-	results, err := client.SearchTV(b.Query)
+	results, err := client.SearchTV(c.Request().Context(), b.Query)
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
@@ -67,7 +67,7 @@ func (h *Handler) HandleTMDBGetDetails(c echo.Context) error {
 	client := tmdb.NewClient(b.BearerToken) // uses default es-ES language
 
 	// Get alternative titles
-	altTitles, _ := client.GetTVAlternativeTitles(b.TVID)
+	altTitles, _ := client.GetTVAlternativeTitles(c.Request().Context(), b.TVID)
 
 	return h.RespondWithData(c, map[string]interface{}{
 		"tvId":              b.TVID,

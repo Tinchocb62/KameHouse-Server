@@ -168,5 +168,5 @@ func RunEchoServer(app *App, e *echo.Echo) {
 	}()
 
 	time.Sleep(100 * time.Millisecond)
-	app.Logger.Info().Msg("app: Antigravity started at " + app.Config.GetServerURI())
+	app.Logger.Info().Msg("app: KameHouse started at " + app.Config.GetServerURI())
 }

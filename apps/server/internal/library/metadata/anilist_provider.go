@@ -2,11 +2,12 @@ package metadata
 
 import (
 	"context"
+	"strconv"
+
 	"kamehouse/internal/api/anilist"
 	"kamehouse/internal/database/models/dto"
 	"kamehouse/internal/library/anime"
 	"kamehouse/internal/util/result"
-	"strconv"
 )
 
 type AniListProvider struct {
@@ -29,14 +30,14 @@ func (p *AniListProvider) GetName() string {
 	return "AniList"
 }
 
-func (p *AniListProvider) SearchMedia(query string) ([]*dto.NormalizedMedia, error) {
+func (p *AniListProvider) SearchMedia(ctx context.Context, query string) ([]*dto.NormalizedMedia, error) {
 	cacheKey := "search_" + query
 	if cached, ok := p.cache.Get(cacheKey); ok {
 		return cached.([]*dto.NormalizedMedia), nil
 	}
 
 	res, err := p.client.ListAnime(
-		context.Background(),
+		ctx,
 		nil,    // page
 		&query, // search
 		nil,    // perPage
@@ -60,11 +61,15 @@ func (p *AniListProvider) SearchMedia(query string) ([]*dto.NormalizedMedia, err
 		}
 	}
 
+	if len(results) == 0 {
+		return nil, ErrNotFound
+	}
+
 	p.cache.Set(cacheKey, results)
 	return results, nil
 }
 
-func (p *AniListProvider) GetMediaDetails(id string) (*dto.NormalizedMedia, error) {
+func (p *AniListProvider) GetMediaDetails(ctx context.Context, id string) (*dto.NormalizedMedia, error) {
 	cacheKey := "details_" + id
 	if cached, ok := p.cache.Get(cacheKey); ok {
 		return cached.(*dto.NormalizedMedia), nil
@@ -75,13 +80,13 @@ func (p *AniListProvider) GetMediaDetails(id string) (*dto.NormalizedMedia, erro
 		return nil, err
 	}
 
-	res, err := p.client.BaseAnimeByID(context.Background(), &idInt)
+	res, err := p.client.BaseAnimeByID(ctx, &idInt)
 	if err != nil {
 		return nil, err
 	}
 
 	if res == nil || res.Media == nil {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 
 	normalized := anime.NewNormalizedMedia(res.Media)

@@ -42,6 +42,7 @@ type (
 		scanning            atomic.Bool
 		onRefreshCollection func()
 		animeCollection     *anilist.AnimeCollection
+		eventDispatcher     events.Dispatcher
 	}
 	NewAutoScannerOptions struct {
 		Database            *db.Database
@@ -54,6 +55,7 @@ type (
 		MetadataProviderRef *util.Ref[metadata_provider.Provider]
 		LogsDir             string
 		OnRefreshCollection func()
+		EventDispatcher     events.Dispatcher
 	}
 )
 
@@ -79,6 +81,7 @@ func New(opts *NewAutoScannerOptions) *AutoScanner {
 		metadataProviderRef: opts.MetadataProviderRef,
 		logsDir:             opts.LogsDir,
 		onRefreshCollection: opts.OnRefreshCollection,
+		eventDispatcher:     opts.EventDispatcher,
 	}
 }
 
@@ -265,6 +268,7 @@ func (as *AutoScanner) scan() {
 		ConfigAsString:       as.settings.ScannerConfig,
 		AnimeCollection:      as.animeCollection,
 		UseTMDB:              settings.Library.ScannerProvider == "tmdb",
+		EventDispatcher:      as.eventDispatcher,
 	}
 
 	allLfs, err := sc.Scan(context.Background())

@@ -68,7 +68,8 @@ export const enum WSEvents {
     HIDE_INDEFINITE_LOADER = "hide-indefinite-loader",
     NAKAMA_ONLINE_STREAM_EVENT = "nakama-online-stream-event",
     NAKAMA_ONLINE_STREAM_CLIENT_EVENT = "nakama-online-stream-client-event",
-    PLAYLIST = "playlist"
+    PLAYLIST = "playlist",
+    LIBRARY_SCAN = "library.scan",
 }
 
 export const enum WebviewEvents {
@@ -85,6 +86,13 @@ export interface ScanProgressDetailedPayload {
     message: string
 }
 
+export interface ScannerMessage {
+    status: "START" | "PROCESSING" | "FINISH"
+    current?: number
+    total?: number
+    file?: string
+}
+
 export type WebSocketMessage =
     | { type: WSEvents.SCAN_PROGRESS; payload: number }
     | { type: WSEvents.SCAN_PROGRESS_DETAILED; payload: ScanProgressDetailedPayload }
@@ -94,5 +102,6 @@ export type WebSocketMessage =
     | { type: WSEvents.LIBRARY_WATCHER_FILE_REMOVED; payload: string }
     | { type: WSEvents.AUTO_SCAN_STARTED; payload: null }
     | { type: WSEvents.AUTO_SCAN_COMPLETED; payload: null }
+    | { type: WSEvents.LIBRARY_SCAN; payload: ScannerMessage }
     | { type: Omit<string, WSEvents>; payload: unknown } // Catch-all for unmapped events
 

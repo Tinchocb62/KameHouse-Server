@@ -236,7 +236,7 @@ func (c *StremioAddonClient) get(ctx context.Context, url string) ([]byte, error
 	if err != nil {
 		return nil, &AddonError{AddonName: c.name, URL: url, Cause: err}
 	}
-	req.Header.Set("User-Agent", "Antigravity/1.0")
+	req.Header.Set("User-Agent", "KameHouse/1.0")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.httpClient.Do(req)

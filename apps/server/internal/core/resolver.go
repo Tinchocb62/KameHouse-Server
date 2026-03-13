@@ -157,7 +157,7 @@ func (r *UnifiedResolver) getLocalSources(mediaID int, episode int) []MediaSourc
 			Type:       SourceTypeLocal,
 			Quality:    quality,
 			Resolution: res,
-			Provider:   "Antigravity",
+			Provider:   "KameHouse",
 			Seeders:    0,
 			Rank:       0, // Highest priority
 		})

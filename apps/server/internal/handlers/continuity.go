@@ -27,7 +27,13 @@ func (h *Handler) HandleUpdateContinuityWatchHistoryItem(c echo.Context) error {
 
 	// Zero-Latency Telemetry Dispatch
 	if h.App.ContinuityManager.TelemetryManager != nil {
-		key := fmt.Sprintf("%d:%d:%f", b.Options.MediaId, b.Options.EpisodeNumber, b.Options.Duration)
+		userID := uint(1)
+		if val := c.Get("user_id"); val != nil {
+			if id, ok := val.(uint); ok {
+				userID = id
+			}
+		}
+		key := fmt.Sprintf("%d:%d:%d:%f", userID, b.Options.MediaId, b.Options.EpisodeNumber, b.Options.Duration)
 		h.App.ContinuityManager.TelemetryManager.UpdateProgress(key, int(b.Options.CurrentTime))
 	}
 

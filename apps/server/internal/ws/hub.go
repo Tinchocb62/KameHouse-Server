@@ -1,9 +1,12 @@
 package ws
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
+
+	"kamehouse/internal/events"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -46,6 +49,8 @@ type Hub struct {
 
 	register   chan *Client
 	unregister chan *Client
+
+	eventDispatcher events.Dispatcher
 }
 
 var upgrader = websocket.Upgrader{
@@ -54,19 +59,35 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// NewHub creates a new WebSocket Hub and starts its run loop.
-func NewHub() *Hub {
+// NewHub creates a new WebSocket Hub with an optional event dispatcher and starts its run loop.
+// ctx controls the lifetime of the internal event bridge goroutine.
+func NewHub(ctx context.Context, dispatcher events.Dispatcher) *Hub {
 	h := &Hub{
-		clients:    make(map[*Client]bool),
-		register:   make(chan *Client, 8),
-		unregister: make(chan *Client, 8),
+		clients:         make(map[*Client]bool),
+		register:        make(chan *Client, 8),
+		unregister:      make(chan *Client, 8),
+		eventDispatcher: dispatcher,
 	}
-	go h.run()
+	go h.run(ctx)
 	return h
 }
 
+// EventDispatcher returns the internal bus used by the Hub.
+func (h *Hub) EventDispatcher() events.Dispatcher {
+	return h.eventDispatcher
+}
+
 // run is the single goroutine that mutates the clients map, eliminating lock contention.
-func (h *Hub) run() {
+// It also bridges the internal EventDispatcher to the WebSocket Broadcast path.
+func (h *Hub) run(ctx context.Context) {
+	// Subscribe to the global topic so any module can reach all WS clients
+	// by publishing an Event with Topic == "global".
+	var eventCh chan events.Event
+	if h.eventDispatcher != nil {
+		eventCh = h.eventDispatcher.Subscribe("global")
+		defer h.eventDispatcher.Unsubscribe("global", eventCh)
+	}
+
 	for {
 		select {
 		case c := <-h.register:
@@ -81,6 +102,19 @@ func (h *Hub) run() {
 				close(c.send) // signals writePump to exit
 			}
 			h.mu.Unlock()
+
+		case e, ok := <-eventCh:
+			if !ok {
+				// dispatcher closed the channel — stop listening
+				eventCh = nil
+				continue
+			}
+			// Forward internal event to all connected WS clients.
+			// Broadcast is already non-blocking (evicts laggy clients).
+			h.Broadcast(e.Topic, e.Payload)
+
+		case <-ctx.Done():
+			return
 		}
 	}
 }

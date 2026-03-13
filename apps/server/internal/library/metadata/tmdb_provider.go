@@ -1,11 +1,14 @@
 package metadata
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"kamehouse/internal/api/tmdb"
-	"kamehouse/internal/database/models/dto"
 	"strconv"
 	"strings"
+
+	"kamehouse/internal/api/tmdb"
+	"kamehouse/internal/database/models/dto"
 )
 
 // TMDBProvider implements the Provider interface using TMDB as the metadata source.
@@ -33,8 +36,8 @@ func NewTMDBProviderWithClient(client *tmdb.Client) *TMDBProvider {
 }
 
 // GetTVSeason fetches the details of a specific TV season, including its episodes.
-func (p *TMDBProvider) GetTVSeason(tvID int, seasonNumber int) (tmdb.TVSeasonDetails, error) {
-	return p.client.GetTVSeason(tvID, seasonNumber)
+func (p *TMDBProvider) GetTVSeason(ctx context.Context, tvID int, seasonNumber int) (tmdb.TVSeasonDetails, error) {
+	return p.client.GetTVSeason(ctx, tvID, seasonNumber)
 }
 
 func (p *TMDBProvider) GetProviderID() string {
@@ -47,11 +50,11 @@ func (p *TMDBProvider) GetName() string {
 
 // SearchMedia searches TMDB for anime matching the query.
 // It searches both TV and Movies and returns NormalizedMedia results.
-func (p *TMDBProvider) SearchMedia(query string) ([]*dto.NormalizedMedia, error) {
+func (p *TMDBProvider) SearchMedia(ctx context.Context, query string) ([]*dto.NormalizedMedia, error) {
 	var results []*dto.NormalizedMedia
 
 	// Search TV shows first (most anime are TV series)
-	tvResults, tvErr := p.client.SearchTV(query)
+	tvResults, tvErr := p.client.SearchTV(ctx, query)
 	if tvErr == nil {
 		for _, r := range tvResults {
 			nm := tmdbTVResultToNormalizedMedia(r)
@@ -60,7 +63,7 @@ func (p *TMDBProvider) SearchMedia(query string) ([]*dto.NormalizedMedia, error)
 	}
 
 	// Also search movies
-	movieResults, movieErr := p.client.SearchMovie(query)
+	movieResults, movieErr := p.client.SearchMovie(ctx, query)
 	if movieErr == nil {
 		for _, r := range movieResults {
 			nm := tmdbMovieResultToNormalizedMedia(r)
@@ -70,57 +73,57 @@ func (p *TMDBProvider) SearchMedia(query string) ([]*dto.NormalizedMedia, error)
 
 	if len(results) == 0 {
 		// Report the most relevant error
-		if tvErr != nil {
+		if tvErr != nil && !errors.Is(tvErr, ErrNotFound) {
 			return nil, fmt.Errorf("no results found for query %q: TV search: %w", query, tvErr)
 		}
-		if movieErr != nil {
+		if movieErr != nil && !errors.Is(movieErr, ErrNotFound) {
 			return nil, fmt.Errorf("no results found for query %q: Movie search: %w", query, movieErr)
 		}
-		return nil, fmt.Errorf("no results found for query: %s", query)
+		return nil, ErrNotFound
 	}
 
 	return results, nil
 }
 
 // GetMediaDetails fetches full details for a specific TMDB media.
-func (p *TMDBProvider) GetMediaDetails(id string) (*dto.NormalizedMedia, error) {
+func (p *TMDBProvider) GetMediaDetails(ctx context.Context, id string) (*dto.NormalizedMedia, error) {
 	if strings.HasPrefix(id, "-") {
 		numID, err := strconv.Atoi(id)
 		if err == nil {
 			if numID <= -1000000 {
 				// Movie
 				realID := -(numID + 1000000)
-				movieRes, err := p.client.GetMovieDetails(strconv.Itoa(realID))
+				movieRes, err := p.client.GetMovieDetails(ctx, strconv.Itoa(realID))
 				if err == nil {
 					return tmdbMovieResultToNormalizedMedia(movieRes), nil
 				}
 			} else {
 				// TV
 				realID := -numID
-				tvRes, err := p.client.GetTVDetails(strconv.Itoa(realID))
+				tvRes, err := p.client.GetTVDetails(ctx, strconv.Itoa(realID))
 				if err == nil {
 					return tmdbTVResultToNormalizedMedia(tvRes), nil
 				}
 			}
-			return nil, fmt.Errorf("could not find TMDB media with mapped ID %s", id)
+			return nil, ErrNotFound
 		}
 	}
 
 	// Try TV first
-	tvRes, err := p.client.GetTVDetails(id)
+	tvRes, err := p.client.GetTVDetails(ctx, id)
 	if err == nil {
 		nm := tmdbTVResultToNormalizedMedia(tvRes)
 		return nm, nil
 	}
 
 	// Try Movie next
-	movieRes, err := p.client.GetMovieDetails(id)
+	movieRes, err := p.client.GetMovieDetails(ctx, id)
 	if err == nil {
 		nm := tmdbMovieResultToNormalizedMedia(movieRes)
 		return nm, nil
 	}
 
-	return nil, fmt.Errorf("could not find TMDB media with ID %s as TV or Movie", id)
+	return nil, ErrNotFound
 }
 
 // GetClient returns the underlying TMDB client for direct API access.
@@ -185,15 +188,17 @@ func tmdbTVResultToNormalizedMedia(r tmdb.SearchResult) *dto.NormalizedMedia {
 	}
 
 	return &dto.NormalizedMedia{
-		ID:          -tmdbId, // Negative ID to avoid collision with AniList IDs
-		TmdbId:      &tmdbId,
-		Title:       title,
-		Synonyms:    synonyms,
-		Format:      format,
-		Year:        year,
-		StartDate:   startDate,
-		CoverImage:  coverImage,
-		BannerImage: bannerImage,
+		ID:               -tmdbId, // Negative ID to avoid collision with AniList IDs
+		TmdbId:           &tmdbId,
+		ExplicitProvider: "tmdb",
+		ExplicitID:       strconv.Itoa(tmdbId),
+		Title:            title,
+		Synonyms:         synonyms,
+		Format:           format,
+		Year:             year,
+		StartDate:        startDate,
+		CoverImage:       coverImage,
+		BannerImage:      bannerImage,
 	}
 }
 
@@ -247,14 +252,16 @@ func tmdbMovieResultToNormalizedMedia(r tmdb.SearchResult) *dto.NormalizedMedia 
 	}
 
 	return &dto.NormalizedMedia{
-		ID:          -(tmdbId + 1000000), // Offset to avoid collisions with TV IDs
-		TmdbId:      &tmdbId,
-		Title:       title,
-		Format:      format,
-		Year:        year,
-		StartDate:   startDate,
-		CoverImage:  coverImage,
-		BannerImage: bannerImage,
+		ID:               -(tmdbId + 1000000), // Offset to avoid collisions with TV IDs
+		TmdbId:           &tmdbId,
+		ExplicitProvider: "tmdb",
+		ExplicitID:       strconv.Itoa(tmdbId),
+		Title:            title,
+		Format:           format,
+		Year:             year,
+		StartDate:        startDate,
+		CoverImage:       coverImage,
+		BannerImage:      bannerImage,
 	}
 }
 

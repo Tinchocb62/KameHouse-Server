@@ -13,6 +13,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { AlertTriangle, FolderOpen, Sparkles, Zap, Globe2, Clapperboard } from "lucide-react"
 import * as React from "react"
 import {
+    useContinueWatching,
     useHomeIntelligence,
     useIntelligenceStore,
     type IntelligentEntry,
@@ -207,6 +208,7 @@ function HomePage() {
     const { data, isLoading: isCollectionLoading, error } = useGetLibraryCollection()
     const { data: watchHistory, isLoading: isContinuityLoading } = useGetContinuityWatchHistory()
     const { data: intelligenceData, isLoading: isIntelligenceLoading } = useHomeIntelligence()
+    const { data: cwData, isLoading: isCwLoading } = useContinueWatching()
     const { setBackdropUrl } = useIntelligenceStore()
 
     const handleNavigate = React.useCallback(
@@ -247,16 +249,17 @@ function HomePage() {
 
     const continueWatchingItems = React.useMemo(
         () =>
-            continueWatchingEpisodes
-                .map((ep) => {
-                    const media = resolveEpisodeMedia(ep)
-                    const entry = entriesByMediaId.get(ep.baseAnime?.id || ep.localFile?.mediaId || 0)
-                    return media
-                        ? mapEpisodeToSwimlaneItem(ep, media, entry?.availabilityType, watchHistory, handleNavigate)
-                        : null
-                })
-                .filter((item): item is SwimlaneItem => item !== null),
-        [continueWatchingEpisodes, entriesByMediaId, handleNavigate, resolveEpisodeMedia, watchHistory],
+            (cwData || [])
+                .map((entry) => {
+                    return mapEpisodeToSwimlaneItem(
+                        entry.episode,
+                        entry.media,
+                        entriesByMediaId.get(entry.media.id)?.availabilityType,
+                        watchHistory,
+                        handleNavigate,
+                    )
+                }),
+        [cwData, entriesByMediaId, handleNavigate, watchHistory],
     )
 
     const recentItems = React.useMemo((): SwimlaneItem[] => {
@@ -317,7 +320,7 @@ function HomePage() {
         return items
     }, [continueWatchingEpisodes, handleNavigate, resolveEpisodeMedia, intelligenceData, watchHistory])
 
-    const isLoading = isCollectionLoading || isContinuityLoading || isIntelligenceLoading
+    const isLoading = isCollectionLoading || isContinuityLoading || isIntelligenceLoading || isCwLoading
 
     if (isLoading) return <LoadingOverlayWithLogo />
 

@@ -341,7 +341,7 @@ func (h *Handler) HandleFetchAnimeEntrySuggestions(c echo.Context) error {
 		return h.RespondWithError(c, errors.New("metadata provider is not configured"))
 	}
 
-	res, err := provider.SearchMedia(title)
+	res, err := provider.SearchMedia(c.Request().Context(), title)
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
@@ -460,7 +460,7 @@ func (h *Handler) HandleAnimeEntryManualMatch(c echo.Context) error {
 	if provider == nil {
 		return h.RespondWithError(c, errors.New("metadata provider is not configured"))
 	}
-	nm, err := provider.GetMediaDetails(strconv.Itoa(b.MediaId))
+	nm, err := provider.GetMediaDetails(c.Request().Context(), strconv.Itoa(b.MediaId))
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}

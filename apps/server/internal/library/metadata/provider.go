@@ -1,6 +1,14 @@
 package metadata
 
-import "kamehouse/internal/database/models/dto"
+import (
+	"context"
+	"errors"
+
+	"kamehouse/internal/database/models/dto"
+)
+
+// ErrNotFound is returned by providers when no matching results are found.
+var ErrNotFound = errors.New("metadata: not found")
 
 // Provider represents a generic source of media metadata (AniList, TMDb, TVDB, etc.)
 type Provider interface {
@@ -11,8 +19,8 @@ type Provider interface {
 	GetName() string
 
 	// SearchMedia performs a search query and returns a list of normalized media results
-	SearchMedia(query string) ([]*dto.NormalizedMedia, error)
+	SearchMedia(ctx context.Context, query string) ([]*dto.NormalizedMedia, error)
 
 	// GetMediaDetails fetches the full details for a specific media ID
-	GetMediaDetails(id string) (*dto.NormalizedMedia, error)
+	GetMediaDetails(ctx context.Context, id string) (*dto.NormalizedMedia, error)
 }

@@ -2,7 +2,6 @@
 
 import React, { useRef, useState, useEffect } from "react"
 import { useWindowVirtualizer } from "@tanstack/react-virtual"
-import { MediaCard } from "@/components/ui/media-card"
 import { MediaCardInteractive } from "@/components/shared/MediaCardInteractive.client"
 import { Anime_LibraryCollectionEntry, Models_LibraryMedia } from "@/api/generated/types"
 
@@ -31,17 +30,10 @@ const MemoizedCard = React.memo(({ entry }: { entry: Anime_LibraryCollectionEntr
     return (
         <div className="w-full flex justify-center px-2 md:px-3">
             <div className="relative w-full max-w-[220px]">
-                <MediaCard
-                    title={getTitle(media)}
-                    artwork={media.posterImage || media.bannerImage || "https://placehold.co/220x330/1A1A1A/FFFFFF?text=Sin+Poster"}
-                    badge={media.format || undefined}
-                    aspect="poster"
-                    progress={progress > 0 ? progress : undefined}
-                    className="w-full"
-                />
                 <MediaCardInteractive
                     id={media.id || 0}
                     title={getTitle(media)}
+                    posterUrl={media.posterImage || media.bannerImage || undefined}
                     year={year}
                     rating={rating}
                     badge={media.format || undefined}

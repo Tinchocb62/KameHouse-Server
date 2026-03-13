@@ -67,7 +67,7 @@ type (
 		MalScrobbler       *mal.MalScrobblerWorker
 	}
 
-	Antigravity struct {
+	KameHouse struct {
 		// Core
 		Config   *Config
 		Database *db.Database
@@ -177,32 +177,32 @@ type (
 		JellyfinClient *jellyfin.Client
 	}
 
-	App = Antigravity
+	App = KameHouse
 )
 
-type AppOption func(*Antigravity)
+type AppOption func(*KameHouse)
 
-func WithConfig(cfg *Config) AppOption            { return func(a *Antigravity) { a.Config = cfg } }
-func WithLogger(logger *zerolog.Logger) AppOption { return func(a *Antigravity) { a.Logger = logger } }
-func WithDatabase(db *db.Database) AppOption      { return func(a *Antigravity) { a.Database = db } }
+func WithConfig(cfg *Config) AppOption            { return func(a *KameHouse) { a.Config = cfg } }
+func WithLogger(logger *zerolog.Logger) AppOption { return func(a *KameHouse) { a.Logger = logger } }
+func WithDatabase(db *db.Database) AppOption      { return func(a *KameHouse) { a.Database = db } }
 func WithWSEventManager(ws *events.WSEventManager) AppOption {
-	return func(a *Antigravity) { a.WSEventManager = ws }
+	return func(a *KameHouse) { a.WSEventManager = ws }
 }
-func WithFlags(flags KameHouseFlags) AppOption { return func(a *Antigravity) { a.Flags = flags } }
+func WithFlags(flags KameHouseFlags) AppOption { return func(a *KameHouse) { a.Flags = flags } }
 func WithSelfUpdater(u *updater.SelfUpdater) AppOption {
-	return func(a *Antigravity) { a.SelfUpdater = u }
+	return func(a *KameHouse) { a.SelfUpdater = u }
 }
-func WithHookManager(hm hook.Manager) AppOption { return func(a *Antigravity) { a.HookManager = hm } }
+func WithHookManager(hm hook.Manager) AppOption { return func(a *KameHouse) { a.HookManager = hm } }
 func WithFileCacher(fc *filecache.Cacher) AppOption {
-	return func(a *Antigravity) { a.FileCacher = fc }
+	return func(a *KameHouse) { a.FileCacher = fc }
 }
 
-func (a *Antigravity) GetJellyfinClient() *jellyfin.Client {
+func (a *KameHouse) GetJellyfinClient() *jellyfin.Client {
 	return a.JellyfinClient
 }
 
 // NewApp creates a new server instance
-func NewAntigravity(configOpts *ConfigOptions, selfupdater *updater.SelfUpdater) *App {
+func NewKameHouse(configOpts *ConfigOptions, selfupdater *updater.SelfUpdater) *App {
 
 	// Initialize logger with predefined format
 	logger := util.NewLogger()
@@ -395,7 +395,7 @@ func NewAntigravity(configOpts *ConfigOptions, selfupdater *updater.SelfUpdater)
 
 	discordPresence := discordrpc_presence.New(nil, logger)
 
-	var provisionalApp *Antigravity
+	var provisionalApp *KameHouse
 
 	videoCore := videocore.New(videocore.NewVideoCoreOptions{
 		WsEventManager:             wsEventManager,
@@ -441,7 +441,7 @@ func NewAntigravity(configOpts *ConfigOptions, selfupdater *updater.SelfUpdater)
 	}
 
 	// Create the main app instance with initialized components
-	app := &Antigravity{
+	app := &KameHouse{
 		Config:         cfg,
 		Flags:          configOpts.Flags,
 		FeatureManager: NewFeatureManager(logger, configOpts.Flags),
@@ -454,7 +454,7 @@ func NewAntigravity(configOpts *ConfigOptions, selfupdater *updater.SelfUpdater)
 		},
 		LocalManager:                  localManager,
 		WSEventManager:                wsEventManager,
-		WSHub:                         ws.NewHub(),
+		WSHub:                         ws.NewHub(context.Background(), events.NewDispatcher()),
 		AnilistCacheDir:               anilistCacheDir,
 		Logger:                        logger,
 		Version:                       constants.Version,
@@ -550,25 +550,25 @@ func NewAntigravity(configOpts *ConfigOptions, selfupdater *updater.SelfUpdater)
 	return app
 }
 
-func (a *Antigravity) IsOffline() bool {
+func (a *KameHouse) IsOffline() bool {
 	return a.isOfflineRef.Get()
 }
 
-func (a *Antigravity) IsOfflineRef() *util.Ref[bool] {
+func (a *KameHouse) IsOfflineRef() *util.Ref[bool] {
 	return a.isOfflineRef
 }
 
-func (a *Antigravity) AddCleanupFunction(f func()) {
+func (a *KameHouse) AddCleanupFunction(f func()) {
 	a.Cleanups = append(a.Cleanups, f)
 }
-func (a *Antigravity) AddOnRefreshAnilistCollectionFunc(key string, f func()) {
+func (a *KameHouse) AddOnRefreshAnilistCollectionFunc(key string, f func()) {
 	if key == "" {
 		return
 	}
 	a.OnRefreshAnilistCollectionFuncs.Set(key, f)
 }
 
-func (a *Antigravity) Cleanup(ctx context.Context) {
+func (a *KameHouse) Cleanup(ctx context.Context) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)

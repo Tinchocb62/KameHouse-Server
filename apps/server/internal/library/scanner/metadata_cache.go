@@ -2,6 +2,9 @@ package scanner
 
 import (
 	"context"
+	"errors"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -10,6 +13,7 @@ import (
 	librarymetadata "kamehouse/internal/library/metadata"
 	"kamehouse/internal/util/limiter"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -87,9 +91,19 @@ func (c *metadataFetchCache) FetchOnce(
 		}
 
 		var result *dto.NormalizedMedia
+		orderedProviders := orderProviders(providers)
+		if len(orderedProviders) == 0 {
+			return nil, nil
+		}
 
-		for _, provider := range providers {
+		log.Debug().
+			Str("title", title).
+			Strs("providers", orderedProviderIDs(orderedProviders)).
+			Msg("metadata cache: provider order")
+
+		for _, provider := range orderedProviders {
 			var searchRes []*dto.NormalizedMedia
+			providerID := strings.ToLower(provider.GetProviderID())
 
 			// Exponential back-off for HTTP 429 from the external provider.
 			retryErr := retryWithBackoff(ctx, 3, func() error {
@@ -100,11 +114,40 @@ func (c *metadataFetchCache) FetchOnce(
 						return err
 					}
 				}
-				searchRes, err = provider.SearchMedia(title)
+				searchRes, err = provider.SearchMedia(ctx, title)
+				if err != nil && errors.Is(err, librarymetadata.ErrNotFound) {
+					return nil
+				}
 				return err
 			})
 			if retryErr != nil || len(searchRes) == 0 {
 				continue // try next provider
+			}
+
+			if providerID == "tmdb" || providerID == "anidb" {
+				best, score := pickBestCandidate(title, searchRes)
+				if best == nil || score < 0.75 {
+					continue
+				}
+				if providerID == "tmdb" {
+					if best.TmdbId == nil {
+						continue
+					}
+					anilistID, err := mapAniListIDFromTMDB(ctx, *best.TmdbId)
+					if err != nil || anilistID <= 0 {
+						continue
+					}
+					best.ID = anilistID
+				} else {
+					anidbID := best.ID
+					anilistID, err := mapAniListIDFromAniDB(ctx, anidbID)
+					if err != nil || anilistID <= 0 {
+						continue
+					}
+					best.ID = anilistID
+				}
+				result = best
+				break
 			}
 
 			result = searchRes[0]
@@ -138,6 +181,212 @@ func (c *metadataFetchCache) Clear() {
 		c.cache.Delete(k)
 		return true
 	})
+}
+
+var providerOrder = []string{"tmdb", "anidb", "anilist"}
+
+func orderProviders(providers []librarymetadata.Provider) []librarymetadata.Provider {
+	byID := make(map[string]librarymetadata.Provider, len(providers))
+	for _, p := range providers {
+		if p == nil {
+			continue
+		}
+		byID[strings.ToLower(p.GetProviderID())] = p
+	}
+
+	ordered := make([]librarymetadata.Provider, 0, len(providers))
+	seen := make(map[string]struct{}, len(providers))
+	for _, id := range providerOrder {
+		if p, ok := byID[id]; ok {
+			ordered = append(ordered, p)
+			seen[id] = struct{}{}
+		}
+	}
+
+	for id, p := range byID {
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		ordered = append(ordered, p)
+	}
+
+	return ordered
+}
+
+func orderedProviderIDs(providers []librarymetadata.Provider) []string {
+	out := make([]string, 0, len(providers))
+	for _, p := range providers {
+		if p == nil {
+			continue
+		}
+		out = append(out, strings.ToLower(p.GetProviderID()))
+	}
+	return out
+}
+
+func pickBestCandidate(query string, candidates []*dto.NormalizedMedia) (*dto.NormalizedMedia, float64) {
+	bestScore := 0.0
+	var best *dto.NormalizedMedia
+	for _, c := range candidates {
+		score := confidenceScore(query, c)
+		if score > bestScore {
+			bestScore = score
+			best = c
+		}
+	}
+	return best, bestScore
+}
+
+func confidenceScore(query string, media *dto.NormalizedMedia) float64 {
+	if media == nil {
+		return 0
+	}
+	queryNorm := normalizeTitle(stripYear(query))
+	if queryNorm == "" {
+		return 0
+	}
+
+	candidates := candidateTitles(media)
+	best := 0.0
+	for _, t := range candidates {
+		if t == "" {
+			continue
+		}
+		score := dice(queryNorm, normalizeTitle(t))
+		if score > best {
+			best = score
+		}
+	}
+
+	// Penalize year mismatch if a year exists in the query and media has a year.
+	queryYear := extractYearMetadata(query)
+	mediaYear := getMediaYear(media)
+	if queryYear > 0 && mediaYear > 0 && queryYear != mediaYear {
+		best *= 0.6
+	}
+
+	return best
+}
+
+func candidateTitles(media *dto.NormalizedMedia) []string {
+	out := make([]string, 0, 8)
+	if media.Title != nil {
+		if media.Title.Romaji != nil {
+			out = append(out, *media.Title.Romaji)
+		}
+		if media.Title.English != nil {
+			out = append(out, *media.Title.English)
+		}
+		if media.Title.Native != nil {
+			out = append(out, *media.Title.Native)
+		}
+		if media.Title.UserPreferred != nil {
+			out = append(out, *media.Title.UserPreferred)
+		}
+	}
+	for _, s := range media.Synonyms {
+		if s != nil {
+			out = append(out, *s)
+		}
+	}
+	return out
+}
+
+func getMediaYear(media *dto.NormalizedMedia) int {
+	if media == nil {
+		return 0
+	}
+	if media.Year != nil && *media.Year > 0 {
+		return *media.Year
+	}
+	if media.StartDate != nil && media.StartDate.Year != nil {
+		return *media.StartDate.Year
+	}
+	return 0
+}
+
+var reYearMetadata = regexp.MustCompile(`\b((?:19|20)\d{2})\b`)
+
+func extractYearMetadata(s string) int {
+	if loc := reYearMetadata.FindStringSubmatch(s); len(loc) > 1 {
+		if y, err := strconv.Atoi(loc[1]); err == nil {
+			return y
+		}
+	}
+	return 0
+}
+
+func stripYear(s string) string {
+	if reYearMetadata.MatchString(s) {
+		return strings.TrimSpace(reYearMetadata.ReplaceAllString(s, ""))
+	}
+	return s
+}
+
+func normalizeTitle(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if s == "" {
+		return ""
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	lastSpace := false
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			lastSpace = false
+			continue
+		}
+		if !lastSpace {
+			b.WriteByte(' ')
+			lastSpace = true
+		}
+	}
+	return strings.TrimSpace(b.String())
+}
+
+func dice(a, b string) float64 {
+	if a == "" || b == "" {
+		return 0
+	}
+	if a == b {
+		return 1
+	}
+	ba := bigrams(a)
+	bb := bigrams(b)
+	if len(ba) == 0 || len(bb) == 0 {
+		if strings.Contains(a, b) || strings.Contains(b, a) {
+			return 0.85
+		}
+		return 0
+	}
+	used := make(map[int]bool, len(bb))
+	intersection := 0
+	for _, x := range ba {
+		for i, y := range bb {
+			if used[i] {
+				continue
+			}
+			if x == y {
+				intersection++
+				used[i] = true
+				break
+			}
+		}
+	}
+	return (2.0 * float64(intersection)) / float64(len(ba)+len(bb))
+}
+
+func bigrams(s string) []string {
+	runes := []rune(s)
+	if len(runes) < 2 {
+		return nil
+	}
+	out := make([]string, 0, len(runes)-1)
+	for i := 0; i < len(runes)-1; i++ {
+		out = append(out, string(runes[i:i+2]))
+	}
+	return out
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

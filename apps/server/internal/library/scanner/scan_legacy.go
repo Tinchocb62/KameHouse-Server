@@ -68,6 +68,8 @@ type Scanner struct {
 	AnimeCollection *anilist.AnimeCollection
 	// TMDB mode: use folder structure + TMDB instead of AniList
 	UseTMDB bool
+
+	EventDispatcher events.Dispatcher
 }
 
 // Scan will scan the directory and return a list of dto.LocalFile.
@@ -86,6 +88,16 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 		cancelTelemetry()
 		telemetry.Close()
 	}()
+
+	if scn.EventDispatcher != nil {
+		scn.EventDispatcher.Publish(events.Event{
+			Topic: "library.scan",
+			Payload: map[string]any{
+				"status":    "START",
+				"timestamp": time.Now(),
+			},
+		})
+	}
 
 	telemetry.Send(events.EventScanProgress, 0)
 	telemetry.Send(events.EventScanStatus, "Retrieving local files...")
@@ -321,6 +333,18 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 	for lf := range results {
 		if lf != nil {
 			localFiles = append(localFiles, lf)
+
+			if scn.EventDispatcher != nil {
+				scn.EventDispatcher.Publish(events.Event{
+					Topic: "library.scan",
+					Payload: map[string]any{
+						"status":  "PROCESSING",
+						"current": len(localFiles),
+						"total":   len(paths),
+						"file":    lf.Name,
+					},
+				})
+			}
 		}
 	}
 
@@ -396,6 +420,16 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 		}
 		hook.GlobalHookManager.OnScanCompleted().Trigger(completedEvent)
 		localFiles = completedEvent.LocalFiles
+
+		if scn.EventDispatcher != nil {
+			scn.EventDispatcher.Publish(events.Event{
+				Topic: "library.scan",
+				Payload: map[string]any{
+					"status":          "FINISH",
+					"total_processed": len(localFiles),
+				},
+			})
+		}
 
 		return localFiles, nil
 	}
@@ -521,12 +555,23 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 		}
 	}
 
+	providers := scn.MetadataProviders
+	if len(providers) == 0 {
+		if tmdbProvider != nil {
+			providers = append(providers, tmdbProvider)
+		}
+		providers = append(providers, librarymetadata.NewAniDBProvider("", scn.Logger))
+		if scn.PlatformRef != nil && !scn.PlatformRef.IsAbsent() {
+			providers = append(providers, librarymetadata.NewAniListProvider(scn.PlatformRef.Get().GetAnilistClient()))
+		}
+	}
+
 	mf, err := NewMediaFetcher(ctx, &MediaFetcherOptions{
 		Enhanced:                   scn.Enhanced,
 		EnhanceWithOfflineDatabase: scn.EnhanceWithOfflineDatabase,
 		PlatformRef:                scn.PlatformRef,
 		MetadataProviderRef:        scn.MetadataProviderRef,
-		MetadataProviders:          scn.MetadataProviders,
+		MetadataProviders:          providers,
 		LocalFiles:                 localFiles,
 		CompleteAnimeCache:         completeAnimeCache,
 		Logger:                     scn.Logger,
@@ -798,7 +843,7 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 					tmdbSeasonFetched[positiveTmdbId] = true
 
 					for seasonNum := 0; seasonNum <= 50; seasonNum++ {
-						seasonDetails, err := tmdbProvider.GetTVSeason(positiveTmdbId, seasonNum)
+						seasonDetails, err := tmdbProvider.GetTVSeason(ctx, positiveTmdbId, seasonNum)
 						if err != nil {
 							if strings.Contains(err.Error(), "404") && seasonNum > 0 {
 								break

@@ -151,6 +151,7 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 
 	// Curated home swimlanes driven by backend intelligence
 	v1.GET("/home/curated", h.HandleGetHomeCurated)
+	v1.GET("/home/continue-watching", h.HandleGetContinueWatching)
 
 	// Unified stream resolver (Local → Torrentio priority chain)
 	v1.GET("/resolver/streams", h.HandleResolveStreams)

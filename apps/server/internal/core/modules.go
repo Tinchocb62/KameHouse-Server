@@ -234,6 +234,7 @@ func (a *App) initModulesOnce() {
 				_, _ = a.RefreshAnimeCollection()
 			}()
 		},
+		EventDispatcher: a.WSHub.EventDispatcher(), // Assuming WSHub gives access to it, or passing it directly
 	})
 
 	// This is run in a goroutine

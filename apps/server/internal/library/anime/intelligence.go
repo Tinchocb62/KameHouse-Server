@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
+	"kamehouse/internal/database/models/dto"
 	"sync"
 
 	"github.com/rs/zerolog"
@@ -281,6 +282,113 @@ type CuratedSwimlane struct {
 // CuratedHomeResponse is returned by GetCuratedSwimlanes.
 type CuratedHomeResponse struct {
 	Swimlanes []*CuratedSwimlane `json:"swimlanes"`
+}
+
+// ContinueWatchingEntry is now replaced by dto.ContinueWatchingItem.
+// We keep the aliases for backward compatibility if needed, but the core logic
+// will use the official DTO.
+
+// GetContinueWatching returns a list of media the user is currently watching,
+// suggesting the next episode if the current one is almost finished.
+func (s *IntelligenceService) GetContinueWatching(ctx context.Context, userID uint) ([]dto.ContinueWatchingItem, error) {
+	var history []models.WatchHistory
+
+	// Get the latest watch history for each media for this specific user
+	// ordered by most recent update
+	subQuery := s.db.Gorm().
+		Select("media_id, MAX(updated_at) as latest").
+		Table("watch_histories").
+		Where("account_id = ?", userID).
+		Group("media_id")
+
+	if err := s.db.Gorm().
+		Table("watch_histories").
+		Joins("JOIN (?) as latest_history ON watch_histories.media_id = latest_history.media_id AND watch_histories.updated_at = latest_history.latest", subQuery).
+		Where("account_id = ?", userID).
+		Order("updated_at DESC").
+		Limit(20).
+		Find(&history).Error; err != nil {
+		return nil, err
+	}
+
+	// Load all local files to check existence for next episodes
+	// Note: In a large library, this should be optimized to pull only files for relevant MediaIDs.
+	allLocalFiles, _, err := db.GetLocalFiles(s.db)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a map for quick lookup: mediaId -> episodeNumber -> bool
+	fileMap := make(map[int]map[int]bool)
+	for _, lf := range allLocalFiles {
+		if lf.MediaId == 0 {
+			continue
+		}
+		if _, ok := fileMap[lf.MediaId]; !ok {
+			fileMap[lf.MediaId] = make(map[int]bool)
+		}
+		fileMap[lf.MediaId][lf.Metadata.Episode] = true
+	}
+
+	items := make([]dto.ContinueWatchingItem, 0, len(history))
+
+	for _, h := range history {
+		progress := 0.0
+		if h.Duration > 0 {
+			progress = h.CurrentTime / h.Duration
+		}
+
+		var media models.LibraryMedia
+		if err := s.db.Gorm().First(&media, h.MediaID).Error; err != nil {
+			continue
+		}
+
+		var currentEpisode models.LibraryEpisode
+		if err := s.db.Gorm().Where("library_media_id = ? AND episode_number = ?", h.MediaID, h.EpisodeNumber).First(&currentEpisode).Error; err != nil {
+			continue
+		}
+
+		item := dto.ContinueWatchingItem{
+			Media:           &media,
+			Episode:         &currentEpisode,
+			Progress:        progress,
+			LastPlaybackPos: h.CurrentTime,
+			IsNextEpisode:   false,
+		}
+
+		// If finished (>=90%), try to find the next episode
+		if progress >= 0.9 {
+			var nextEpisode models.LibraryEpisode
+			// Try next episode in same season
+			err := s.db.Gorm().Where("library_media_id = ? AND season_number = ? AND episode_number = ?",
+				h.MediaID, currentEpisode.SeasonNumber, currentEpisode.EpisodeNumber+1).First(&nextEpisode).Error
+
+			if err != nil {
+				// Try first episode of next season
+				err = s.db.Gorm().Where("library_media_id = ? AND season_number = ? AND episode_number = 1",
+					h.MediaID, currentEpisode.SeasonNumber+1).First(&nextEpisode).Error
+			}
+
+			if err == nil {
+				// Verify LocalFile exists for the next episode
+				if hasFile := fileMap[int(h.MediaID)][nextEpisode.EpisodeNumber]; hasFile {
+					item.Episode = &nextEpisode
+					item.Progress = 0
+					item.IsNextEpisode = true
+				} else {
+					// series is "finished" in terms of local availability
+					continue
+				}
+			} else {
+				// no next episode found in library_episodes, truly finished
+				continue
+			}
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
 }
 
 // GetCuratedSwimlanes returns the four curated home swimlanes.

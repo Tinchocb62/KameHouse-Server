@@ -2,20 +2,19 @@ package tmdb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math"
+	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
-
-	"kamehouse/internal/util/httpclient"
-
-	"github.com/rs/zerolog/log"
 )
 
-const (
-	baseURL    = "https://api.themoviedb.org/3"
-	maxRetries = 3
-)
+const maxRetries = 3
+
+var baseURL = "https://api.themoviedb.org/3"
 
 // Client handles TMDb API requests with caching using the new EdgeHTTPClient.
 type Client struct {
@@ -113,21 +112,17 @@ type TVSeasonDetails struct {
 }
 
 // GetTVSeason fetches the details of a specific TV season, including its episodes.
-func (c *Client) GetTVSeason(tvID int, seasonNumber int) (TVSeasonDetails, error) {
+func (c *Client) GetTVSeason(ctx context.Context, tvID int, seasonNumber int) (TVSeasonDetails, error) {
 	cacheKey := fmt.Sprintf("tv_season:%d:%d:%s", tvID, seasonNumber, c.language)
 	if cached, ok := c.cache.Load(cacheKey); ok {
 		return cached.(TVSeasonDetails), nil
 	}
 
-	c.rateLimiter <- struct{}{}
-	defer func() { <-c.rateLimiter }()
-
 	params := url.Values{}
 	params.Set("language", c.language)
 	params.Set("api_key", c.bearerToken)
 
-	edge := httpclient.NewEdgeClient[TVSeasonDetails](baseURL, 10*time.Second, &log.Logger)
-	resp, err := edge.Execute(context.Background(), "GET", fmt.Sprintf("/tv/%d/season/%d?%s", tvID, seasonNumber, params.Encode()), nil)
+	resp, err := executeWithRetry[TVSeasonDetails](ctx, c, fmt.Sprintf("/tv/%d/season/%d?%s", tvID, seasonNumber, params.Encode()))
 	if err != nil {
 		return TVSeasonDetails{}, fmt.Errorf("tmdb get tv season: %w", err)
 	}
@@ -138,14 +133,11 @@ func (c *Client) GetTVSeason(tvID int, seasonNumber int) (TVSeasonDetails, error
 
 // SearchTV searches for anime TV shows on TMDb.
 // It filters results to animation genre (16) and Japanese origin when possible.
-func (c *Client) SearchTV(query string) ([]SearchResult, error) {
+func (c *Client) SearchTV(ctx context.Context, query string) ([]SearchResult, error) {
 	// Check cache
 	if cached, ok := c.cache.Load("tv:" + query); ok {
 		return cached.([]SearchResult), nil
 	}
-
-	c.rateLimiter <- struct{}{}        // acquire
-	defer func() { <-c.rateLimiter }() // release
 
 	params := url.Values{}
 	params.Set("query", query)
@@ -153,8 +145,7 @@ func (c *Client) SearchTV(query string) ([]SearchResult, error) {
 	params.Set("page", "1")
 	params.Set("api_key", c.bearerToken)
 
-	edge := httpclient.NewEdgeClient[SearchResponse](baseURL, 10*time.Second, &log.Logger)
-	resp, err := edge.Execute(context.Background(), "GET", "/search/tv?"+params.Encode(), nil)
+	resp, err := executeWithRetry[SearchResponse](ctx, c, "/search/tv?"+params.Encode())
 	if err != nil {
 		return nil, fmt.Errorf("tmdb search tv: %w", err)
 	}
@@ -193,14 +184,11 @@ func (c *Client) SearchTV(query string) ([]SearchResult, error) {
 }
 
 // SearchMovie searches for anime movies on TMDb.
-func (c *Client) SearchMovie(query string) ([]SearchResult, error) {
+func (c *Client) SearchMovie(ctx context.Context, query string) ([]SearchResult, error) {
 	// Check cache
 	if cached, ok := c.cache.Load("movie:" + query); ok {
 		return cached.([]SearchResult), nil
 	}
-
-	c.rateLimiter <- struct{}{}
-	defer func() { <-c.rateLimiter }()
 
 	params := url.Values{}
 	params.Set("query", query)
@@ -208,8 +196,7 @@ func (c *Client) SearchMovie(query string) ([]SearchResult, error) {
 	params.Set("page", "1")
 	params.Set("api_key", c.bearerToken)
 
-	edge := httpclient.NewEdgeClient[SearchResponse](baseURL, 10*time.Second, &log.Logger)
-	resp, err := edge.Execute(context.Background(), "GET", "/search/movie?"+params.Encode(), nil)
+	resp, err := executeWithRetry[SearchResponse](ctx, c, "/search/movie?"+params.Encode())
 	if err != nil {
 		return nil, fmt.Errorf("tmdb search movie: %w", err)
 	}
@@ -239,20 +226,16 @@ func (c *Client) SearchMovie(query string) ([]SearchResult, error) {
 }
 
 // GetTVAlternativeTitles gets all alternative titles for a TV show.
-func (c *Client) GetTVAlternativeTitles(tvID int) ([]AlternativeTitle, error) {
+func (c *Client) GetTVAlternativeTitles(ctx context.Context, tvID int) ([]AlternativeTitle, error) {
 	cacheKey := fmt.Sprintf("tv_alt:%d", tvID)
 	if cached, ok := c.cache.Load(cacheKey); ok {
 		return cached.([]AlternativeTitle), nil
 	}
 
-	c.rateLimiter <- struct{}{}
-	defer func() { <-c.rateLimiter }()
-
 	params := url.Values{}
 	params.Set("api_key", c.bearerToken)
 
-	edge := httpclient.NewEdgeClient[AlternativeTitlesResponse](baseURL, 10*time.Second, &log.Logger)
-	resp, err := edge.Execute(context.Background(), "GET", fmt.Sprintf("/tv/%d/alternative_titles?%s", tvID, params.Encode()), nil)
+	resp, err := executeWithRetry[AlternativeTitlesResponse](ctx, c, fmt.Sprintf("/tv/%d/alternative_titles?%s", tvID, params.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("tmdb get tv alternative titles: %w", err)
 	}
@@ -263,7 +246,7 @@ func (c *Client) GetTVAlternativeTitles(tvID int) ([]AlternativeTitle, error) {
 
 // GetAllTitlesForResult returns all known titles for a search result,
 // including the main name, original name, and all alternative titles.
-func (c *Client) GetAllTitlesForResult(result SearchResult) []string {
+func (c *Client) GetAllTitlesForResult(ctx context.Context, result SearchResult) []string {
 	titles := make([]string, 0, 10)
 
 	// Add main titles
@@ -281,7 +264,7 @@ func (c *Client) GetAllTitlesForResult(result SearchResult) []string {
 	}
 
 	// Fetch alternative titles
-	altTitles, err := c.GetTVAlternativeTitles(result.ID)
+	altTitles, err := c.GetTVAlternativeTitles(ctx, result.ID)
 	if err == nil {
 		for _, alt := range altTitles {
 			if alt.Title != "" {
@@ -306,13 +289,12 @@ func (c *Client) GetAllTitlesForResult(result SearchResult) []string {
 // doRequest was removed. EdgeHTTPClient handles all request logic natively securely.
 
 // GetTVDetails fetches a specific TV show by ID and returns it as a SearchResult for mapping.
-func (c *Client) GetTVDetails(id string) (SearchResult, error) {
+func (c *Client) GetTVDetails(ctx context.Context, id string) (SearchResult, error) {
 	params := url.Values{}
 	params.Set("language", c.language)
 	params.Set("api_key", c.bearerToken)
 
-	edge := httpclient.NewEdgeClient[SearchResult](baseURL, 10*time.Second, &log.Logger)
-	resp, err := edge.Execute(context.Background(), "GET", fmt.Sprintf("/tv/%s?%s", id, params.Encode()), nil)
+	resp, err := executeWithRetry[SearchResult](ctx, c, fmt.Sprintf("/tv/%s?%s", id, params.Encode()))
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("tmdb get tv details: %w", err)
 	}
@@ -320,15 +302,78 @@ func (c *Client) GetTVDetails(id string) (SearchResult, error) {
 }
 
 // GetMovieDetails fetches a specific Movie by ID and returns it as a SearchResult for mapping.
-func (c *Client) GetMovieDetails(id string) (SearchResult, error) {
+func (c *Client) GetMovieDetails(ctx context.Context, id string) (SearchResult, error) {
 	params := url.Values{}
 	params.Set("language", c.language)
 	params.Set("api_key", c.bearerToken)
 
-	edge := httpclient.NewEdgeClient[SearchResult](baseURL, 10*time.Second, &log.Logger)
-	resp, err := edge.Execute(context.Background(), "GET", fmt.Sprintf("/movie/%s?%s", id, params.Encode()), nil)
+	resp, err := executeWithRetry[SearchResult](ctx, c, fmt.Sprintf("/movie/%s?%s", id, params.Encode()))
 	if err != nil {
 		return SearchResult{}, fmt.Errorf("tmdb get movie details: %w", err)
 	}
 	return *resp, nil
+}
+
+func executeWithRetry[T any](ctx context.Context, c *Client, endpoint string) (*T, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+	var lastErr error
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", baseURL+endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Accept", "application/json")
+
+		c.rateLimiter <- struct{}{}
+		resp, err := client.Do(req)
+		<-c.rateLimiter
+
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			resp.Body.Close()
+
+			var waitTime time.Duration
+			if retryAfter, err := strconv.Atoi(resp.Header.Get("Retry-After")); err == nil {
+				waitTime = time.Duration(retryAfter) * time.Second
+			} else {
+				waitTime = time.Duration(math.Pow(2, float64(attempt))) * time.Second
+			}
+
+			select {
+			case <-time.After(waitTime):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+
+			lastErr = fmt.Errorf("rate limited")
+			continue
+		}
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			resp.Body.Close()
+			return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+
+		var result T
+		err = json.NewDecoder(resp.Body).Decode(&result)
+		resp.Body.Close()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &result, nil
+	}
+
+	return nil, lastErr
 }
