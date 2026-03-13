@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import React from "react"
 import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query"
 import { fetchLibraryCollection } from "@/api/hooks/anime_collection.hooks"
-import { LibraryClientGrid } from "./library-client-grid"
+import { LibraryClientGrid } from "./-library-client-grid"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 
 export const Route = createFileRoute("/library/")({

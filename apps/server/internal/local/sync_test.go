@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"kamehouse/internal/api/anilist"
@@ -20,15 +21,15 @@ func testSetupManager(t *testing.T) (Manager, *anilist.AnimeCollection, *anilist
 
 	logger := util.NewLogger()
 
-	database, err := db.NewDatabase(test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
+	database, err := db.NewDatabase(context.Background(), test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
 	require.NoError(t, err)
 	anilistClient := anilist.NewAnilistClient(test_utils.ConfigData.Provider.AnilistJwt, "")
 	extensionBankRef := util.NewRef(extension.NewUnifiedBank())
 	anilistPlatform := anilist_platform.NewAnilistPlatform(util.NewRef[anilist.AnilistClient](anilistClient), extensionBankRef, logger, database)
 	anilistPlatform.SetUsername(test_utils.ConfigData.Provider.AnilistUsername)
-	animeCollection, err := anilistPlatform.GetAnimeCollection(t.Context(), true)
+	animeCollection, err := anilistPlatform.GetAnimeCollection(context.Background(), true)
 	require.NoError(t, err)
-	mangaCollection, err := anilistPlatform.GetMangaCollection(t.Context(), true)
+	mangaCollection, err := anilistPlatform.GetMangaCollection(context.Background(), true)
 	require.NoError(t, err)
 
 	manager := GetMockManager(t, database)

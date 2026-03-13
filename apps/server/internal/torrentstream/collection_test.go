@@ -1,6 +1,7 @@
 package torrentstream
 
 import (
+	"context"
 	"kamehouse/internal/api/anilist"
 	"kamehouse/internal/api/metadata_provider"
 	"kamehouse/internal/database/db"
@@ -24,7 +25,7 @@ func TestStreamCollection(t *testing.T) {
 	test_utils.SetTwoLevelDeep()
 	test_utils.InitTestProvider(t, test_utils.Anilist())
 
-	database, err := db.NewDatabase(test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, util.NewLogger())
+	database, err := db.NewDatabase(context.Background(), test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, util.NewLogger())
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -33,7 +34,7 @@ func TestStreamCollection(t *testing.T) {
 	anilistClient := anilist.TestGetMockAnilistClient()
 	anilistPlatform := anilist_platform.NewAnilistPlatform(util.NewRef(anilistClient), util.NewRef(extension.NewUnifiedBank()), logger, database)
 	anilistPlatform.SetUsername(test_utils.ConfigData.Provider.AnilistUsername)
-	animeCollection, err := anilistPlatform.GetAnimeCollection(t.Context(), false)
+	animeCollection, err := anilistPlatform.GetAnimeCollection(context.Background(), false)
 	require.NoError(t, err)
 	require.NotNil(t, animeCollection)
 
@@ -71,7 +72,7 @@ func TestStreamCollection(t *testing.T) {
 		Progress: lo.ToPtr(4), // Mock progress
 	})
 
-	libraryCollection, err := anime.NewLibraryCollection(t.Context(), &anime.NewLibraryCollectionOptions{
+	libraryCollection, err := anime.NewLibraryCollection(context.Background(), &anime.NewLibraryCollectionOptions{
 		Database:            database,
 		LocalFiles:          lfs,
 		PlatformRef:         util.NewRef(anilistPlatform),

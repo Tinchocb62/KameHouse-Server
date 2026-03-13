@@ -62,9 +62,8 @@ func NewDatabase(ctx context.Context, appDataDir, dbName string, logger *zerolog
 		return nil, fmt.Errorf("failed to obtain underlying sql.DB: %w", err)
 	}
 
-	// Connection Pooling Configuration
-	sqlDB.SetMaxOpenConns(1)
-	sqlDB.SetMaxIdleConns(1)
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	// Block and verify connection availability using the startup context timeout

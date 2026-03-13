@@ -1,6 +1,7 @@
 package chapter_downloader
 
 import (
+	"context"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/events"
 	hibikemanga "kamehouse/internal/extension/hibike/manga"
@@ -18,7 +19,7 @@ func TestQueue(t *testing.T) {
 	tempDir := t.TempDir()
 
 	logger := util.NewLogger()
-	database, err := db.NewDatabase(tempDir, test_utils.ConfigData.Database.Name, logger)
+	database, err := db.NewDatabase(context.Background(), tempDir, test_utils.ConfigData.Database.Name, logger)
 	if err != nil {
 		t.Fatalf("Failed to create database: %v", err)
 	}

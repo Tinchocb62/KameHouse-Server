@@ -4,6 +4,7 @@ import (
 	"kamehouse/internal/core"
 	util "kamehouse/internal/util/proxies"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -22,9 +23,21 @@ type Handler struct {
 }
 
 func InitRoutes(app *core.App, e *echo.Echo) {
+	allowedOriginsStr := os.Getenv("KAMEHOUSE_CORS_ALLOWED_ORIGINS")
+	var allowedOrigins []string
+	if allowedOriginsStr != "" {
+		for _, o := range strings.Split(allowedOriginsStr, ",") {
+			allowedOrigins = append(allowedOrigins, strings.TrimSpace(o))
+		}
+	} else if os.Getenv("DEV_MODE") == "true" {
+		allowedOrigins = []string{"*"}
+	} else {
+		allowedOrigins = []string{"http://localhost", "http://127.0.0.1"}
+	}
+
 	// CORS — includes byte-range headers required by the web video player
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
+		AllowOrigins: allowedOrigins,
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions, http.MethodHead},
 		AllowHeaders: []string{
 			"Origin", "Content-Type", "Accept", "Cookie", "Authorization",

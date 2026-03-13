@@ -7,7 +7,7 @@ import { fetchAnimeEntry, useGetAnimeEntry } from "@/api/hooks/anime_entries.hoo
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { Anime_Episode } from "@/api/generated/types"
 import { EmptyState } from "@/components/shared/empty-state"
-import { MediaActionButtons, EpisodeClientCard } from "./series-interactivity-client"
+import { MediaActionButtons, EpisodeClientCard } from "./-series-interactivity-client"
 
 export const Route = createFileRoute("/series/$seriesId/")({
     loader: async ({ params: { seriesId } }) => {
@@ -89,7 +89,7 @@ interface HeroSectionProps {
     episodesCount: number
 }
 
-function HeroSection({ seriesId, directoryPath, backdropUrl, coverUrl, title, year, genres, synopsis, episodesCount }: HeroSectionProps) {
+const HeroSection = React.memo(({ seriesId, directoryPath, backdropUrl, coverUrl, title, year, genres, synopsis, episodesCount }: HeroSectionProps) => {
     return (
         <section className="relative isolate overflow-hidden">
             <div className="absolute inset-0">
@@ -146,7 +146,7 @@ function HeroSection({ seriesId, directoryPath, backdropUrl, coverUrl, title, ye
             </div>
         </section>
     )
-}
+})
 
 interface EpisodesSectionProps {
     seriesTitle: string
@@ -154,7 +154,7 @@ interface EpisodesSectionProps {
     episodes: Anime_Episode[]
 }
 
-function EpisodesSection({ seriesTitle, fallbackThumb, episodes }: EpisodesSectionProps) {
+const EpisodesSection = React.memo(({ seriesTitle, fallbackThumb, episodes }: EpisodesSectionProps) => {
     // Grouping logic: Season 0 for null/undefined
     const groupedEpisodes = useMemo(() => {
         const groups = episodes.reduce((acc, ep) => {
@@ -256,4 +256,4 @@ function EpisodesSection({ seriesTitle, fallbackThumb, episodes }: EpisodesSecti
             </Tabs>
         </section>
     )
-}
+})

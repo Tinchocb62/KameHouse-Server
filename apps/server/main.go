@@ -4,10 +4,12 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -38,31 +40,24 @@ func main() {
 	}
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-		}
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
 
 func run(ctx context.Context) error {
+	portStr := os.Getenv("KAMEHOUSE_PORT")
+	portStrVal := 43211
+	if portStr != "" {
+		if p, err := strconv.Atoi(portStr); err == nil {
+			portStrVal = p
+		}
+	}
+	hostStr := os.Getenv("KAMEHOUSE_HOST")
+	if hostStr == "" {
+		hostStr = "127.0.0.1"
+	}
+
 	// Initialize robust arguments required by NewKameHouse inside KameHouse.
 	configOpts := &core.ConfigOptions{
-		Flags:        core.KameHouseFlags{Port: 43211, Host: "127.0.0.1", IsDesktopSidecar: true},
+		Flags:        core.KameHouseFlags{Port: portStrVal, Host: hostStr, IsDesktopSidecar: true},
 		EmbeddedLogo: embeddedLogo,
 	}
 
@@ -73,11 +68,13 @@ func run(ctx context.Context) error {
 	e := core.NewEchoApp(app, &WebFS)
 	handlers.InitRoutes(app, e)
 
+	addr := fmt.Sprintf("%s:%d", hostStr, portStrVal)
+
 	// Start server concurrently
 	errCh := make(chan error, 1)
 	go func() {
-		app.Logger.Info().Msg("server listening on :43211")
-		errCh <- e.Start(":43211")
+		app.Logger.Info().Msg(fmt.Sprintf("server listening on %s", addr))
+		errCh <- e.Start(addr)
 	}()
 
 	// Block for shutdown signal or fatal error

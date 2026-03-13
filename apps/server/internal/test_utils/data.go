@@ -102,7 +102,16 @@ func AnilistMutation() FlagFunc {
 }
 func MyAnimeList() FlagFunc {
 	return func() bool {
-		return ConfigData.Flags.EnableMalTests
+		f := ConfigData.Flags.EnableMalTests
+		if !f {
+			fmt.Println("skipping mal tests")
+			return false
+		}
+		if ConfigData.Provider.MalJwt == "" {
+			fmt.Println("skipping mal tests, no mal jwt")
+			return false
+		}
+		return true
 	}
 }
 func MyAnimeListMutation() FlagFunc {

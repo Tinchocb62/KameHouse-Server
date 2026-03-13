@@ -1,6 +1,7 @@
 package library_explorer
 
 import (
+	"context"
 	"fmt"
 	"kamehouse/internal/api/anilist"
 	"kamehouse/internal/database/db"
@@ -17,7 +18,7 @@ func TestLibraryExplorer_LogFileTreeStructure(t *testing.T) {
 
 	logger := util.NewLogger()
 
-	database, err := db.NewDatabase(test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
+	database, err := db.NewDatabase(context.Background(), test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}

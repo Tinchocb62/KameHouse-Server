@@ -30,18 +30,42 @@ export function AppErrorBoundary({ error, reset, resetErrorBoundary }: AppErrorB
         if (reset) {
             reset()
         }
+        
+        // Detect chunk loading errors (Failed to fetch dynamically imported module)
+        const isChunkLoadError = error?.message?.toLowerCase().includes("failed to fetch dynamically imported module") || 
+                                 error?.name === "ChunkLoadError" ||
+                                 error?.message?.toLowerCase().includes("import");
+        
+        if (isChunkLoadError) {
+            window.location.reload();
+            return;
+        }
+
         router.invalidate()
         queryClient.invalidateQueries()
     }
 
+    const isChunkLoadError = error?.message?.toLowerCase().includes("failed to fetch dynamically imported module") || 
+                             error?.name === "ChunkLoadError" ||
+                             error?.message?.toLowerCase().includes("import");
+
     return (
         <LuffyError
-            title="Client side error"
+            title={isChunkLoadError ? "Actualización disponible" : "Error en el cliente"}
             reset={handleReset}
         >
-            <p className="text-[--muted]">
-                {(error as Error)?.message || "An unexpected error occurred."}
+            <p className="text-[#a1a1aa] mb-2 leading-relaxed text-sm">
+                {isChunkLoadError 
+                    ? "La aplicación ha sido actualizada. Haz click para recargar y obtener la última versión." 
+                    : "Ha ocurrido un error inesperado en la interfaz que impidió cargar el módulo."}
             </p>
+            {!isChunkLoadError && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-md text-left overflow-hidden">
+                    <p className="text-red-400 font-mono text-xs truncate max-w-sm">
+                        {(error as Error)?.message || "Unknown Error"}
+                    </p>
+                </div>
+            )}
         </LuffyError>
     )
 }

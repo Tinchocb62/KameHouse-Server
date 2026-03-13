@@ -17,7 +17,7 @@ func TestSmartSearch(t *testing.T) {
 
 	anilistClient := anilist.TestGetMockAnilistClient()
 	logger := util.NewLogger()
-	database, err := db.NewDatabase(test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
+	database, err := db.NewDatabase(context.Background(), test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestSmartSearch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
 
-			media, err := anilistPlatform.GetAnime(t.Context(), tt.mediaId)
+			media, err := anilistPlatform.GetAnime(context.Background(), tt.mediaId)
 			if err != nil {
 				t.Fatalf("could not fetch media id %d", tt.mediaId)
 			}

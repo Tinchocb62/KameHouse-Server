@@ -1,6 +1,7 @@
 package extension_playground
 
 import (
+	"context"
 	"kamehouse/internal/api/anilist"
 	"kamehouse/internal/api/metadata_provider"
 	"kamehouse/internal/database/db"
@@ -19,7 +20,7 @@ func TestGojaAnimeTorrentProvider(t *testing.T) {
 	test_utils.InitTestProvider(t, test_utils.Anilist())
 
 	logger := util.NewLogger()
-	database, _ := db.NewDatabase(test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
+	database, _ := db.NewDatabase(context.Background(), test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
 
 	anilistClient := anilist.TestGetMockAnilistClient()
 	anilistClientRef := util.NewRef(anilistClient)

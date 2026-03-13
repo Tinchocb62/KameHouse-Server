@@ -1,6 +1,7 @@
 package torrent_analyzer
 
 import (
+	"context"
 	"kamehouse/internal/api/anilist"
 	"kamehouse/internal/api/metadata_provider"
 	"kamehouse/internal/database/db"
@@ -18,7 +19,7 @@ func TestSelectFilesFromSeason(t *testing.T) {
 	test_utils.InitTestProvider(t, test_utils.Anilist())
 
 	logger := util.NewLogger()
-	database, err := db.NewDatabase(test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
+	database, err := db.NewDatabase(context.Background(), test_utils.ConfigData.Path.DataDir, test_utils.ConfigData.Database.Name, logger)
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -84,7 +85,7 @@ func TestSelectFilesFromSeason(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Get media
-			media, err := anilistPlatform.GetAnimeWithRelations(t.Context(), tt.mediaId)
+			media, err := anilistPlatform.GetAnimeWithRelations(context.Background(), tt.mediaId)
 			if err != nil {
 				t.Fatal("expected result, got error:", err.Error())
 			}

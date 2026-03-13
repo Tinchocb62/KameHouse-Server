@@ -1,6 +1,6 @@
 module kamehouse
 
-go 1.26.0
+go 1.24.0
 
 require (
 	fyne.io/systray v1.12.0
@@ -28,6 +28,7 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/hekmon/transmissionrpc/v3 v3.0.0
 	github.com/huin/goupnp v1.3.0
 	github.com/imroc/req/v3 v3.57.0
@@ -61,7 +62,6 @@ require (
 require (
 	github.com/anacrolix/btree v0.0.0-20251201064447-d86c3fa41bd8 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	golang.org/x/crypto v0.47.0 // indirect
 )

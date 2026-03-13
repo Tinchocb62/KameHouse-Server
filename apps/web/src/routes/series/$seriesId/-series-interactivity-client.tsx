@@ -6,13 +6,13 @@ import { ManualMatchModal } from "@/components/shared/manual-match-modal"
 import { Anime_Entry, Anime_Episode } from "@/api/generated/types"
 import { DeferredImage } from "@/components/shared/deferred-image"
 
-export function MediaActionButtons({ 
+export const MediaActionButtons = React.memo(({ 
     seriesId, 
     directoryPath 
 }: { 
     seriesId: string
     directoryPath: string 
-}) {
+}) => {
     const [isMatchModalOpen, setIsMatchModalOpen] = React.useState(false)
 
     return (
@@ -40,9 +40,9 @@ export function MediaActionButtons({
             />
         </>
     )
-}
+})
 
-export function EpisodeClientCard({
+export const EpisodeClientCard = React.memo(({
     episode,
     seriesTitle,
     fallbackThumb,
@@ -50,7 +50,7 @@ export function EpisodeClientCard({
     episode: Anime_Episode
     seriesTitle: string
     fallbackThumb: string
-}) {
+}) => {
     const thumb = episode.episodeMetadata?.image || fallbackThumb
     const length = episode.episodeMetadata?.length || 24
 
@@ -100,4 +100,4 @@ export function EpisodeClientCard({
             </div>
         </article>
     )
-}
+})

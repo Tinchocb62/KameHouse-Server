@@ -25,7 +25,7 @@ function SeriesPage() {
                             onMouseEnter={() => setHoveredId(series.id)}
                             onMouseLeave={() => setHoveredId(null)}
                             onClick={() => navigate({ to: `/series/${series.id}` })}
-                            className={`relative h-full rounded-[16px] cursor-pointer overflow-hidden transition-all duration-[250ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]
+                            className={`relative h-full rounded-[16px] cursor-pointer overflow-hidden transition-all duration-\\[250ms\\] ease-\\[cubic-bezier(0.25\\,0.1\\,0.25\\,1)\\]
                                 ${isHovered ? "w-full md:w-[60%] z-10 shadow-2xl scale-[1.02]" : isAnyHovered ? "w-full md:w-[10%] opacity-40 blur-sm" : "w-full md:w-[25%]"}
                                 bg-ui-surface border-2 border-[rgba(255,255,255,0.05)]
                             `}
@@ -33,7 +33,7 @@ function SeriesPage() {
                             <img
                                 src={series.image}
                                 alt={series.title}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-[5s] ease-out"
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-\\[5s\\] ease-out"
                                 style={{ transform: isHovered ? "scale(1.05)" : "scale(1)" }}
                             />
                             {/* Gradient Overlay */}
