@@ -14,7 +14,7 @@ const (
 	ClearFileCacheMediastreamVideoFilesEndpoint        = "FILECACHE-clear-file-cache-mediastream-video-files"
 	CreateAutoDownloaderProfileEndpoint                = "AUTO-DOWNLOADER-create-auto-downloader-profile"
 	CreateAutoDownloaderRuleEndpoint                   = "AUTO-DOWNLOADER-create-auto-downloader-rule"
-	CreatePlaylistEndpoint                             = "PLAYLIST-create-playlist"
+
 	CustomSourceListAnimeEndpoint                      = "CUSTOM-SOURCE-custom-source-list-anime"
 	CustomSourceListMangaEndpoint                      = "CUSTOM-SOURCE-custom-source-list-manga"
 	DebridAddTorrentsEndpoint                          = "DEBRID-debrid-add-torrents"
@@ -36,7 +36,7 @@ const (
 	DeleteLogsEndpoint                                 = "STATUS-delete-logs"
 	DeleteMangaDownloadedChaptersEndpoint              = "MANGA-DOWNLOAD-delete-manga-downloaded-chapters"
 	DeleteMediaMetadataParentEndpoint                  = "METADATA-delete-media-metadata-parent"
-	DeletePlaylistEndpoint                             = "PLAYLIST-delete-playlist"
+
 	DirectorySelectorEndpoint                          = "DIRECTORY-SELECTOR-directory-selector"
 	DirectstreamConvertSubsEndpoint                    = "DIRECTSTREAM-directstream-convert-subs"
 	DirectstreamPlayLocalFileEndpoint                  = "DIRECTSTREAM-directstream-play-local-file"
@@ -115,8 +115,7 @@ const (
 	GetOnlineStreamEpisodeListEndpoint                 = "ONLINESTREAM-get-online-stream-episode-list"
 	GetOnlineStreamEpisodeSourceEndpoint               = "ONLINESTREAM-get-online-stream-episode-source"
 	GetOnlinestreamMappingEndpoint                     = "ONLINESTREAM-get-onlinestream-mapping"
-	GetPlaylistEpisodesEndpoint                        = "PLAYLIST-get-playlist-episodes"
-	GetPlaylistsEndpoint                               = "PLAYLIST-get-playlists"
+
 	GetPluginSettingsEndpoint                          = "EXTENSIONS-get-plugin-settings"
 	GetRawAnilistMangaCollectionEndpoint               = "MANGA-get-raw-anilist-manga-collection"
 	GetRawAnimeCollectionEndpoint                      = "ANILIST-get-raw-anime-collection"
@@ -178,15 +177,15 @@ const (
 	OpenAnimeEntryInExplorerEndpoint                   = "ANIME-ENTRIES-open-anime-entry-in-explorer"
 	OpenInExplorerEndpoint                             = "EXPLORER-open-in-explorer"
 	PlaybackAutoPlayNextEpisodeEndpoint                = "PLAYBACK-MANAGER-playback-auto-play-next-episode"
-	PlaybackCancelCurrentPlaylistEndpoint              = "PLAYBACK-MANAGER-playback-cancel-current-playlist"
+
 	PlaybackCancelManualTrackingEndpoint               = "PLAYBACK-MANAGER-playback-cancel-manual-tracking"
 	PlaybackGetNextEpisodeEndpoint                     = "PLAYBACK-MANAGER-playback-get-next-episode"
 	PlaybackPlayNextEpisodeEndpoint                    = "PLAYBACK-MANAGER-playback-play-next-episode"
 	PlaybackPlayRandomVideoEndpoint                    = "PLAYBACK-MANAGER-playback-play-random-video"
 	PlaybackPlayVideoEndpoint                          = "PLAYBACK-MANAGER-playback-play-video"
-	PlaybackPlaylistNextEndpoint                       = "PLAYBACK-MANAGER-playback-playlist-next"
+
 	PlaybackStartManualTrackingEndpoint                = "PLAYBACK-MANAGER-playback-start-manual-tracking"
-	PlaybackStartPlaylistEndpoint                      = "PLAYBACK-MANAGER-playback-start-playlist"
+
 	PlaybackSyncCurrentProgressEndpoint                = "PLAYBACK-MANAGER-playback-sync-current-progress"
 	PopulateFillerDataEndpoint                         = "METADATA-populate-filler-data"
 	PreloadMediastreamMediaContainerEndpoint           = "MEDIASTREAM-preload-mediastream-media-container"
@@ -250,7 +249,7 @@ const (
 	UpdateLocalFileDataEndpoint                        = "LOCALFILES-update-local-file-data"
 	UpdateLocalFilesEndpoint                           = "LOCALFILES-update-local-files"
 	UpdateMangaProgressEndpoint                        = "MANGA-update-manga-progress"
-	UpdatePlaylistEndpoint                             = "PLAYLIST-update-playlist"
+
 	UpdateThemeEndpoint                                = "THEME-update-theme"
 	VideoCoreInSightGetCharacterDetailsEndpoint        = "VIDEOCORE-video-core-in-sight-get-character-details"
 )

@@ -6,6 +6,7 @@ import { createRootRouteWithContext, Outlet, redirect } from "@tanstack/react-ro
 import React from "react"
 import { AppLayout, AppLayoutContent } from "@/components/ui/app-layout/app-layout"
 import { AppTopNav, AppBottomNav } from "@/components/ui/app-layout/app-topnav"
+import { AppSidebar } from "@/components/ui/app-layout/app-sidebar"
 import { CommandPalette } from "@/components/ui/search/command-palette"
 import { AnimatePresence } from "motion/react"
 import { useRouterState } from "@tanstack/react-router"
@@ -25,6 +26,7 @@ export const Route = createRootRouteWithContext<{
             <AppLayout>
                 <WebsocketProvider>
                     <AppTopNav />
+                    <AppSidebar />
                     <CommandPalette />
                     <AppLayoutContent>
                         <AnimatePresence mode="wait">

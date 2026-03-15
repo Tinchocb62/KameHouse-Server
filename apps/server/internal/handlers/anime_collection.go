@@ -26,26 +26,13 @@ import (
 //	@returns anime.LibraryCollection
 func (h *Handler) HandleGetLibraryCollection(c echo.Context) error {
 
-	// Bypassing AniList and using Jellyfin natively if enabled
-	if h.App.Settings.GetLibrary() != nil && h.App.Settings.Jellyfin != nil && h.App.Settings.Jellyfin.Enabled {
-		jellyfinCollection, err := h.getJellyfinLibraryCollection(c)
-		if err != nil {
-			return h.RespondWithError(c, err)
-		}
-		return h.RespondWithData(c, jellyfinCollection)
-	}
-
 	animeCollection, err := h.App.GetAnimeCollection(false)
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
 
 	if animeCollection == nil {
-		animeCollection = &anilist.AnimeCollection{
-			MediaListCollection: &anilist.AnimeCollection_MediaListCollection{
-				Lists: []*anilist.AnimeCollection_MediaListCollection_Lists{},
-			},
-		}
+		animeCollection = &anilist.AnimeCollection{}
 	}
 
 	originalAnimeCollection := animeCollection
@@ -84,12 +71,6 @@ func (h *Handler) HandleGetLibraryCollection(c echo.Context) error {
 	}
 
 	return h.RespondWithData(c, libraryCollection)
-}
-
-// getJellyfinLibraryCollection is a temporary placeholder to build a LibraryCollection
-// natively from the Jellyfin backend server, bypassing AniList completely.
-func (h *Handler) getJellyfinLibraryCollection(c echo.Context) (*anime.LibraryCollection, error) {
-	return nil, errors.New("Jellyfin logic removed")
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------

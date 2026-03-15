@@ -314,7 +314,6 @@ func (e *SourcePriorityEngine) ResolveEpisodeSources(
 		sources = append(sources, remoteSources...)
 		mu.Unlock() */
 		return nil
-		return nil
 	})
 
 	// ── Collect & sort ───────────────────────────────────────────────────────

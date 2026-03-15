@@ -66,14 +66,6 @@ type Config struct {
 	Experimental struct {
 		MainServerTorrentStreaming bool `mapstructure:"mainServerTorrentStreaming"`
 	} `mapstructure:"experimental"`
-	Jellyfin struct {
-		Enabled      bool     `mapstructure:"enabled"`
-		ServerURL    string   `mapstructure:"serverUrl"`
-		ApiKey       string   `mapstructure:"apiKey"`
-		Username     string   `mapstructure:"username"`
-		Password     string   `mapstructure:"password"`
-		LibraryPaths []string `mapstructure:"libraryPaths"`
-	} `mapstructure:"jellyfin"`
 }
 
 type ConfigOptions struct {
@@ -199,7 +191,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("offline.dir", "$KAMEHOUSE_DATA_DIR/offline")
 	v.SetDefault("offline.assetDir", "$KAMEHOUSE_DATA_DIR/offline/assets")
 	v.SetDefault("extensions.dir", "$KAMEHOUSE_DATA_DIR/extensions")
-	v.SetDefault("jellyfin.enabled", false)
 }
 
 func initAppDataDir(defined string, logger *zerolog.Logger) (string, string, error) {
@@ -252,18 +243,6 @@ func validateConfig(cfg *Config) error {
 		}
 		if cfg.Server.Tls.KeyPath == "" || !filepath.IsAbs(cfg.Server.Tls.KeyPath) {
 			return errors.New("server.tls.keyPath must be an absolute path when TLS is enabled")
-		}
-	}
-
-	if cfg.Jellyfin.Enabled {
-		if cfg.Jellyfin.ServerURL == "" {
-			return errors.New("jellyfin.serverUrl cannot be empty when Jellyfin is enabled")
-		}
-		if !isValidURL(cfg.Jellyfin.ServerURL) {
-			return errors.New("jellyfin.serverUrl must be a valid HTTP/HTTPS URL")
-		}
-		if cfg.Jellyfin.ApiKey == "" && (cfg.Jellyfin.Username == "" || cfg.Jellyfin.Password == "") {
-			return errors.New("jellyfin requires either apiKey or username/password")
 		}
 	}
 
@@ -395,11 +374,4 @@ localDir = "$KAMEHOUSE_DATA_DIR/manga-local"
 
 [extensions]
 dir = "$KAMEHOUSE_DATA_DIR/extensions"
-
-[jellyfin]
-enabled = false
-serverUrl = ""
-apiKey = ""
-username = ""
-password = ""
 `

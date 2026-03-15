@@ -18,7 +18,6 @@ import (
 	"kamehouse/internal/library_explorer"
 	"kamehouse/internal/mediastream"
 	"kamehouse/internal/platforms/shared_platform"
-	"kamehouse/internal/playlist"
 	"kamehouse/internal/streaming"
 	"kamehouse/internal/torrent_clients/qbittorrent"
 	"kamehouse/internal/torrent_clients/torrent_client"
@@ -195,20 +194,6 @@ func (a *App) initModulesOnce() {
 
 	// This is run in a goroutine
 	a.AutoScanner.Start()
-
-	// +---------------------+
-	// |      Playlist       |
-	// +---------------------+
-
-	a.PlaylistManager = playlist.NewManager(&playlist.NewManagerOptions{
-		TorrentstreamRepository: a.TorrentstreamRepository,
-		DebridClientRepository:  a.DebridClientRepository,
-		DirectStreamManager:     a.DirectStreamManager,
-		PlatformRef:             a.Metadata.AnilistPlatformRef,
-		WSEventManager:          a.WSEventManager,
-		Database:                a.Database,
-		Logger:                  a.Logger,
-	})
 
 	// +---------------------+
 	// |   Anime Library     |

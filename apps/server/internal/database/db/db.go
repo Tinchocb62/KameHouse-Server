@@ -132,8 +132,6 @@ func migrateTables(ctx context.Context, db *gorm.DB) error {
 		&models.AutoDownloaderItem{},
 		&models.SilencedMediaEntry{},
 		&models.Theme{},
-		&models.PlaylistEntry{},
-		&models.Playlist{},
 		&models.ChapterDownloadQueueItem{},
 		&models.TorrentstreamSettings{},
 		&models.TorrentstreamHistory{},

@@ -83,32 +83,6 @@ func (h *Handler) HandlePlaybackAutoPlayNextEpisode(c echo.Context) error {
 	return respondNotImplemented(c)
 }
 
-// HandlePlaybackStartPlaylist
-//
-//	@summary starts playing a playlist.
-//	@route /api/v1/playback-manager/start-playlist [POST]
-//	@returns bool
-func (h *Handler) HandlePlaybackStartPlaylist(c echo.Context) error {
-	return respondNotImplemented(c)
-}
-
-// HandlePlaybackCancelCurrentPlaylist
-//
-//	@summary ends the current playlist.
-//	@route /api/v1/playback-manager/cancel-playlist [POST]
-//	@returns bool
-func (h *Handler) HandlePlaybackCancelCurrentPlaylist(c echo.Context) error {
-	return respondNotImplemented(c)
-}
-
-// HandlePlaybackPlaylistNext
-//
-//	@summary moves to the next item in the current playlist.
-//	@route /api/v1/playback-manager/playlist-next [POST]
-//	@returns bool
-func (h *Handler) HandlePlaybackPlaylistNext(c echo.Context) error {
-	return respondNotImplemented(c)
-}
 
 // HandlePlaybackStartManualTracking
 //

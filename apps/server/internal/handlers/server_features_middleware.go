@@ -56,13 +56,8 @@ func (h *Handler) FeaturesMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			{"/api/v1/anilist/cache-layer/status", h.App.FeatureManager.IsDisabled(core.RefreshMetadata), UpdateMethods, Empty},
 			{"/api/v1/library/scan", h.App.FeatureManager.IsDisabled(core.RefreshMetadata), UpdateMethods, []string{"/api/v1/library/scan", "/api/v1/library/scan-summaries"}},
 			{"/api/v1/manga/refetch-chapter-containers", h.App.FeatureManager.IsDisabled(core.RefreshMetadata), UpdateMethods, Empty},
-			// playlists
-			{"/api/v1/playlist", h.App.FeatureManager.IsDisabled(core.ManagePlaylist), UpdateMethods, Empty},
-			{"/api/v1/playback-manager/start-playlist", h.App.FeatureManager.IsDisabled(core.ManagePlaylist), UpdateMethods, Empty},
-			{"/api/v1/playback-manager/playlist-next", h.App.FeatureManager.IsDisabled(core.ManagePlaylist), UpdateMethods, Empty},
-			{"/api/v1/playback-manager/cancel-playlist", h.App.FeatureManager.IsDisabled(core.ManagePlaylist), UpdateMethods, Empty},
 			// playback
-			{"/api/v1/playback-manager", h.App.FeatureManager.IsDisabled(core.WatchingLocalAnime), UpdateMethods, []string{"/api/v1/playback-manager/start-playlist", "/api/v1/playback-manager/playlist-next", "/api/v1/playback-manager/cancel-playlist"}},
+			{"/api/v1/playback-manager", h.App.FeatureManager.IsDisabled(core.WatchingLocalAnime), UpdateMethods, Empty},
 			{"/api/v1/media-player/start", h.App.FeatureManager.IsDisabled(core.WatchingLocalAnime), UpdateMethods, Empty},
 			// torrent client / auto downloader
 			{"/api/v1/torrent/search", h.App.FeatureManager.IsDisabled(core.ManageAutoDownloader), UpdateMethods, Empty},

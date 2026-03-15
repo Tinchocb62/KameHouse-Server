@@ -1,4 +1,4 @@
-package troubleshooter
+package simulated_platform
 
 import (
 	"context"

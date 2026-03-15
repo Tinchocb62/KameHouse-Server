@@ -21,7 +21,6 @@ type LibraryMedia struct {
 	PosterImage string `gorm:"column:poster_image" json:"posterImage"` // Path or URL
 	BannerImage string `gorm:"column:banner_image" json:"bannerImage"` // Path or URL
 
-	JellyfinItemId string `gorm:"-" json:"jellyfinItemId,omitempty"`
 	TmdbId         int    `gorm:"column:tmdb_id" json:"tmdbId"`
 
 	SeasonNumber int       `gorm:"column:season_number" json:"seasonNumber"`

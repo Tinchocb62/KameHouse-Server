@@ -23,8 +23,7 @@ import (
 	"kamehouse/internal/platforms/anilist_platform"
 	"kamehouse/internal/platforms/offline_platform"
 	"kamehouse/internal/platforms/platform"
-	simulated_platform "kamehouse/internal/platforms/simulated_platform"
-	"kamehouse/internal/playlist"
+	"kamehouse/internal/platforms/simulated_platform"
 	"kamehouse/internal/report"
 	"kamehouse/internal/streaming"
 	"kamehouse/internal/torrent_clients/torrent_client"
@@ -140,8 +139,6 @@ type (
 		isOfflineRef       *util.Ref[bool]
 		ServerPasswordHash string
 
-		// Features
-		PlaylistManager *playlist.Manager
 		LibraryExplorer *library_explorer.LibraryExplorer
 
 		// Show this version's tour on the frontend

@@ -20,7 +20,7 @@ type WSEventManagerInterface interface {
 	SubscribeToClientNativePlayerEvents(id string) *ClientEventSubscriber
 	SubscribeToClientVideoCoreEvents(id string) *ClientEventSubscriber
 	SubscribeToClientNakamaEvents(id string) *ClientEventSubscriber
-	SubscribeToClientPlaylistEvents(id string) *ClientEventSubscriber
+
 	SubscribeToTorrentTelemetryEvents(id string) *ClientEventSubscriber
 	UnsubscribeFromClientEvents(id string)
 }
@@ -58,7 +58,7 @@ type (
 		clientNativePlayerEventSubscribers *result.Map[string, *ClientEventSubscriber]
 		clientVideoCoreEventSubscribers    *result.Map[string, *ClientEventSubscriber]
 		nakamaEventSubscribers             *result.Map[string, *ClientEventSubscriber]
-		playlistEventSubscribers           *result.Map[string, *ClientEventSubscriber]
+
 		torrentTelemetrySubscribers        *result.Map[string, *ClientEventSubscriber]
 	}
 
@@ -96,7 +96,7 @@ func NewWSEventManager(logger *zerolog.Logger) *WSEventManager {
 		clientNativePlayerEventSubscribers: result.NewMap[string, *ClientEventSubscriber](),
 		clientVideoCoreEventSubscribers:    result.NewMap[string, *ClientEventSubscriber](),
 		nakamaEventSubscribers:             result.NewMap[string, *ClientEventSubscriber](),
-		playlistEventSubscribers:           result.NewMap[string, *ClientEventSubscriber](),
+
 		torrentTelemetrySubscribers:        result.NewMap[string, *ClientEventSubscriber](),
 	}
 	GlobalWSEventManager = &GlobalWSEventManagerWrapper{
@@ -271,8 +271,7 @@ func (m *WSEventManager) OnClientEvent(event *WebsocketClientEvent) {
 		m.clientVideoCoreEventSubscribers.Range(onEvent)
 	case NakamaEventType:
 		m.nakamaEventSubscribers.Range(onEvent)
-	case PlaylistEvent:
-		m.playlistEventSubscribers.Range(onEvent)
+
 	// We could define TorrentTelemetryEventType if clients stream telemetry upstream
 	// case TorrentTelemetryEventType:
 	// 	m.torrentTelemetrySubscribers.Range(onEvent)
@@ -313,13 +312,7 @@ func (m *WSEventManager) SubscribeToClientNakamaEvents(id string) *ClientEventSu
 	return subscriber
 }
 
-func (m *WSEventManager) SubscribeToClientPlaylistEvents(id string) *ClientEventSubscriber {
-	subscriber := &ClientEventSubscriber{
-		Channel: make(chan *WebsocketClientEvent, 100),
-	}
-	m.playlistEventSubscribers.Set(id, subscriber)
-	return subscriber
-}
+
 
 func (m *WSEventManager) SubscribeToTorrentTelemetryEvents(id string) *ClientEventSubscriber {
 	subscriber := &ClientEventSubscriber{
@@ -345,7 +338,7 @@ func (m *WSEventManager) UnsubscribeFromClientEvents(id string) {
 			if !ok {
 				subscriber, ok = m.nakamaEventSubscribers.Get(id)
 				if !ok {
-					// Fallback to telemetry or playlist
+					// Fallback to telemetry
 					subscriber, ok = m.torrentTelemetrySubscribers.Get(id)
 				}
 			}

@@ -527,16 +527,6 @@ func (vc *VideoCore) ShowMessage(message string, milliseconds int) {
 	})
 }
 
-// PlayPlaylistEpisode sends a play-episode command to the video player.
-// which is "next", "previous", or the AniDB episode ID.
-func (vc *VideoCore) PlayPlaylistEpisode(which string) {
-	state, ok := vc.GetPlaybackState()
-	if !ok {
-		return
-	}
-	vc.sendPlayerEventTo(state.ClientId, string(ServerEventPlayPlaylistEpisode), which)
-}
-
 // SendInSightData sends InSight data for a playback session.
 func (vc *VideoCore) SendInSightData(data *InSightData) {
 	state, ok := vc.GetPlaybackState()
@@ -666,31 +656,6 @@ func (vc *VideoCore) GetTextTracks() (ret []*VideoTextTrack, ok bool) {
 		<-time.After(5 * time.Second)
 	}(cancel)
 	vc.sendPlayerEventTo(state.ClientId, string(ServerEventGetTextTracks), nil)
-	<-done
-	return ret, ret != nil
-}
-
-// GetPlaylist sends a get-playlist request to the video player and returns the playlist state.
-func (vc *VideoCore) GetPlaylist() (ret *VideoPlaylistState, ok bool) {
-	state, ok := vc.GetPlaybackState()
-	if !ok {
-		return nil, false
-	}
-	done := make(chan struct{})
-	cancel := vc.RegisterEventCallback(func(e VideoEvent) bool {
-		switch event := e.(type) {
-		case *VideoPlaylistEvent:
-			ret = event.Playlist
-			close(done)
-			return false // stop
-		}
-		return true // keep listening
-	})
-	go func(cancel func()) {
-		defer cancel()
-		<-time.After(5 * time.Second)
-	}(cancel)
-	vc.sendPlayerEventTo(state.ClientId, string(ServerEventGetPlaylist), nil)
 	<-done
 	return ret, ret != nil
 }
@@ -944,13 +909,6 @@ func (vc *VideoCore) listenToClientEvents() {
 						vc.PushEvent(&SubtitleFileUploadedEvent{
 							Filename: payload.Filename,
 							Content:  payload.Content,
-						})
-					}
-				case PlayerEventVideoPlaylist:
-					payload := &clientVideoPlaylistPayload{}
-					if err := playerEvent.UnmarshalAs(payload); err == nil {
-						vc.PushEvent(&VideoPlaylistEvent{
-							Playlist: &payload.Playlist,
 						})
 					}
 				case PlayerEventVideoTextTracks:

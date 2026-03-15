@@ -57,7 +57,6 @@ type Settings struct {
 	Discord        *DiscordSettings        `gorm:"embedded" json:"discord"`
 	Notifications  *NotificationSettings   `gorm:"embedded" json:"notifications"`
 	Nakama         *NakamaSettings         `gorm:"embedded;embeddedPrefix:nakama_" json:"nakama"`
-	Jellyfin       *JellyfinSettings       `gorm:"embedded" json:"jellyfin"`
 	Mediastream    *MediastreamSettings    `gorm:"-" json:"mediastream"`
 	Torrentstream  *TorrentstreamSettings  `gorm:"-" json:"torrentstream"`
 	Debrid         *DebridSettings         `gorm:"-" json:"debrid"`
@@ -127,7 +126,6 @@ type LibrarySettings struct {
 	DisableTorrentStreaming         bool         `gorm:"column:disable_torrent_streaming" json:"disableTorrentStreaming"`
 	DisableDebridService            bool         `gorm:"column:disable_debrid_service" json:"disableDebridService"`
 	DisableTorrentProvider          bool         `gorm:"column:disable_torrent_provider" json:"disableTorrentProvider"`
-	DisableJellyfin                 bool         `gorm:"column:disable_jellyfin" json:"disableJellyfin"`
 	ScannerUseLegacyMatching        bool         `gorm:"column:scanner_use_legacy_matching" json:"scannerUseLegacyMatching"`
 }
 
@@ -342,12 +340,6 @@ type DebridSettings struct {
 	StreamPreferredResolution    string `gorm:"column:stream_preferred_resolution" json:"streamPreferredResolution"`
 }
 
-type JellyfinSettings struct {
-	Enabled   bool   `gorm:"column:jellyfin_enabled" json:"enabled"`
-	ServerURL string `gorm:"column:jellyfin_server_url" json:"serverUrl"`
-	ApiKey    string `gorm:"column:jellyfin_api_key" json:"apiKey"`
-}
-
 type ChapterDownloadQueueItem struct {
 	BaseModel
 	MediaID       int    `json:"mediaId"`
@@ -362,17 +354,6 @@ type DebridTorrentItem struct {
 	TorrentItemID string `json:"torrentItemId"`
 	Destination   string `json:"destination"`
 	Provider      string `json:"provider"`
-}
-
-type Playlist struct {
-	BaseModel
-	Name  string `gorm:"column:name" json:"name"`
-	Value []byte `gorm:"column:value" json:"value"`
-}
-
-type PlaylistEntry struct {
-	BaseModel
-	Name string `json:"name"`
 }
 
 type GhostAssociatedMedia struct {

@@ -7,7 +7,7 @@ const (
 	VideoCoreEventType    WebsocketClientEventType = "videocore"
 	NakamaEventType       WebsocketClientEventType = "nakama"
 	PluginEvent           WebsocketClientEventType = "plugin"
-	PlaylistEvent         WebsocketClientEventType = "playlist"
+
 )
 
 type WebsocketClientEvent struct {
@@ -37,7 +37,7 @@ const (
 	PlaybackManagerProgressPlaybackState       = "playback-manager-progress-playback-state"        // Dispatches the current playback state
 	PlaybackManagerProgressUpdated             = "playback-manager-progress-updated"               // Signals that the progress has been updated
 	PlaybackManagerRealTimePulse               = "playback-manager-realtime-pulse"                 // Optimistic sync broadcast for zero-latency handoff
-	PlaybackManagerPlaylistState               = "playback-manager-playlist-state"                 // Dispatches the current playlist state
+
 	PlaybackManagerManualTrackingPlaybackState = "playback-manager-manual-tracking-playback-state" // Dispatches the current playback state
 	PlaybackManagerManualTrackingStopped       = "playback-manager-manual-tracking-stopped"        // The manual tracking has been stopped
 

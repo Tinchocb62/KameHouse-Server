@@ -107,7 +107,8 @@ func (h *Handler) VideoProxy(c echo.Context) (err error) {
 	needsRewrite := false         // Flag to check if we actually need to rewrite
 	baseURL, _ := url2.Parse(url) // Base URL for resolving relative paths
 
-	if listType == m3u8.MEDIA {
+	switch listType {
+	case m3u8.MEDIA:
 		mediaPl := playlist.(*m3u8.MediaPlaylist)
 
 		for _, segment := range mediaPl.Segments {
@@ -164,7 +165,7 @@ func (h *Handler) VideoProxy(c echo.Context) (err error) {
 		buffer := mediaPl.Encode()
 		modifiedPlaylistBytes = buffer.Bytes()
 
-	} else if listType == m3u8.MASTER {
+	case m3u8.MASTER:
 		// Rewrite URIs in Master playlists
 		masterPl := playlist.(*m3u8.MasterPlaylist)
 
@@ -194,7 +195,7 @@ func (h *Handler) VideoProxy(c echo.Context) (err error) {
 		buffer := masterPl.Encode()
 		modifiedPlaylistBytes = buffer.Bytes()
 
-	} else {
+	default:
 		// Unknown type, pass through
 		modifiedPlaylistBytes = bodyBytes
 	}

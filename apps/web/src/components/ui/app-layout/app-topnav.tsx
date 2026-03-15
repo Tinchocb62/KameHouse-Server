@@ -101,12 +101,12 @@ export const AppTopNav = React.forwardRef<HTMLElement, AppTopNavProps>((props, r
                             >
                                 <FaSearch className="w-5 h-5" />
                             </button>
-                            <button 
-                                onClick={handleThemeToggle}
+                            <Link 
+                                to="/settings"
                                 className="text-zinc-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"
                             >
                                 <FaCog className="w-5 h-5" />
-                            </button>
+                            </Link>
                             <button 
                                 onClick={() => setSidebarOpen(true)}
                                 className="text-zinc-300 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5"

@@ -25,7 +25,6 @@ const (
 	ViewLogs FeatureKey = "ViewLogs"
 	// UpdateSettings allows updating the settings.
 	UpdateSettings FeatureKey = "UpdateSettings"
-	ManagePlaylist FeatureKey = "ManagePlaylist"
 	// ManageLocalAnimeLibrary encompasses all updates to the local anime library.
 	//	- Refreshing library, update local files, opening directory etc.
 	ManageLocalAnimeLibrary FeatureKey = "ManageLocalAnimeLibrary"
@@ -56,6 +55,7 @@ const (
 	ManageHomeScreen  FeatureKey = "ManageHomeScreen"
 	OpenInExplorer    FeatureKey = "OpenInExplorer"
 	PluginTray        FeatureKey = "PluginTray"
+	ManageMangaReaders FeatureKey = "ManageMangaReaders"
 	ManageNakama      FeatureKey = "ManageNakama"
 	ManageDebrid      FeatureKey = "ManageDebrid"
 	Proxy             FeatureKey = "Proxy"
@@ -63,7 +63,6 @@ const (
 	PushRequests      FeatureKey = "PushRequests"
 	// v3.6+ Service toggle keys
 	TorrentProvider FeatureKey = "TorrentProvider"
-	JellyfinService FeatureKey = "JellyfinService"
 )
 
 func NewFeatureManager(logger *zerolog.Logger, flags KameHouseFlags) *FeatureManager {
@@ -79,7 +78,7 @@ func NewFeatureManager(logger *zerolog.Logger, flags KameHouseFlags) *FeatureMan
 			ViewSettings,
 			ViewLogs,
 			UpdateSettings,
-			ManagePlaylist,
+			ManageMangaReaders,
 			ManageLocalAnimeLibrary,
 			ManageAccount,
 			ViewAccount,
@@ -154,7 +153,6 @@ func (m *FeatureManager) UpdateFromSettings(library *models.LibrarySettings) {
 		{library.DisableTorrentStreaming, []FeatureKey{TorrentStreaming}},
 		{library.DisableDebridService, []FeatureKey{DebridStreaming, ManageDebrid}},
 		{library.DisableTorrentProvider, []FeatureKey{TorrentProvider}},
-		{library.DisableJellyfin, []FeatureKey{JellyfinService}},
 	}
 
 	for _, t := range toggles {

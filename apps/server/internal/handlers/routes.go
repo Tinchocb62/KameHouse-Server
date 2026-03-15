@@ -380,16 +380,6 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	v1.DELETE("/stream/:id", h.StopStreamSession)
 	v1.GET("/streaming/:mediaId/episode/:epNum/sources", h.HandleGetEpisodeSources)
 	//
-	// Playlists
-	//
-
-	v1.GET("/playlists", h.HandleGetPlaylists)
-	v1.POST("/playlist", h.HandleCreatePlaylist)
-	v1.PATCH("/playlist", h.HandleUpdatePlaylist)
-	v1.DELETE("/playlist", h.HandleDeletePlaylist)
-	v1.GET("/playlist/episodes/:id", h.HandleGetPlaylistEpisodes)
-
-	//
 	// Playback Manager
 	//
 	v1PlaybackManager := v1.Group("/playback-manager")
@@ -399,9 +389,6 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	v1PlaybackManager.POST("/next-episode", h.HandlePlaybackPlayNextEpisode)
 	v1PlaybackManager.GET("/next-episode", h.HandlePlaybackGetNextEpisode)
 	v1PlaybackManager.POST("/autoplay-next-episode", h.HandlePlaybackAutoPlayNextEpisode)
-	v1PlaybackManager.POST("/start-playlist", h.HandlePlaybackStartPlaylist)
-	v1PlaybackManager.POST("/cancel-playlist", h.HandlePlaybackCancelCurrentPlaylist)
-	v1PlaybackManager.POST("/playlist-next", h.HandlePlaybackPlaylistNext)
 	v1PlaybackManager.POST("/manual-tracking/start", h.HandlePlaybackStartManualTracking)
 	v1PlaybackManager.POST("/manual-tracking/cancel", h.HandlePlaybackCancelManualTracking)
 

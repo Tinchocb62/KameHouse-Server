@@ -43,7 +43,6 @@ const (
 	PlayerEventVideoPlaybackState ClientEventType = "video-playback-state"
 	// Subtitle file was uploaded
 	PlayerEventSubtitleFileUploaded ClientEventType = "subtitle-file-uploaded"
-	PlayerEventVideoPlaylist        ClientEventType = "video-playlist"
 	// Player sent all text tracks
 	PlayerEventVideoTextTracks ClientEventType = "video-text-tracks"
 	// Request to translate text
@@ -135,23 +134,12 @@ type VideoPlaybackInfo struct {
 	LibassFonts                    []*VideoLibassFont    `json:"libassFonts"`
 	VideoSources                   []*VideoSource        `json:"videoSources"`
 	SelectedVideoSource            *int                  `json:"selectedVideoSource"` // index of VideoSource
-	PlaylistExternalEpisodeNumbers []int                 `json:"playlistExternalEpisodeNumbers"`
 	DisableRestoreFromContinuity   *bool                 `json:"disableRestoreFromContinuity"`
 	InitialState                   *VideoInitialState    `json:"initialState"`
 	Media                          *anilist.BaseAnime    `json:"media"`
 	Episode                        *anime.Episode        `json:"episode"`
 	StreamType                     string                `json:"streamType"` // "native" | "hls" | "unknown"
 	IsNakamaWatchParty             bool                  `json:"isNakamaWatchParty,omitempty"`
-}
-
-// VideoPlaylistState holds the state for the video player's playlist and playback.
-type VideoPlaylistState struct {
-	Type            PlaybackType     `json:"type"`
-	Episodes        []*anime.Episode `json:"episodes"`
-	PreviousEpisode *anime.Episode   `json:"previousEpisode,omitempty"`
-	NextEpisode     *anime.Episode   `json:"nextEpisode,omitempty"`
-	CurrentEpisode  *anime.Episode   `json:"currentEpisode"`
-	AnimeEntry      *anime.Entry     `json:"animeEntry,omitempty"`
 }
 
 type (
@@ -177,15 +165,12 @@ type (
 
 // Client event payloads
 type (
-	clientSubtitleFileUploadedPayload struct {
-		Filename string `json:"filename"`
-		Content  string `json:"content"`
-	}
 	clientVideoLoadedPayload struct {
 		State PlaybackState `json:"state"`
 	}
-	clientVideoPlaylistPayload struct {
-		Playlist VideoPlaylistState `json:"playlist"`
+	clientSubtitleFileUploadedPayload struct {
+		Filename string `json:"filename"`
+		Content  string `json:"content"`
 	}
 	clientVideoErrorPayload struct {
 		Error string `json:"error"`
@@ -389,10 +374,6 @@ type (
 		BaseVideoEvent
 		Option string `json:"string"` // name or "off"
 	}
-	VideoPlaylistEvent struct {
-		BaseVideoEvent
-		Playlist *VideoPlaylistState `json:"playlist"`
-	}
 	VideoTextTracksEvent struct {
 		BaseVideoEvent
 		TextTracks []*VideoTextTrack `json:"textTracks"`
@@ -423,7 +404,6 @@ const (
 	ServerEventStartOnlinestreamWatchParty ServerEvent = "start-onlinestream-watch-party"
 	ServerEventGetStatus                   ServerEvent = "get-status"
 	ServerEventShowMessage                 ServerEvent = "show-message"
-	ServerEventPlayPlaylistEpisode         ServerEvent = "play-playlist-episode"
 	ServerEventGetTextTracks               ServerEvent = "get-text-tracks"
 	ServerEventRequestPlayEpisode          ServerEvent = "request-play-episode"
 	ServerEventTranslatedText              ServerEvent = "translated-text"
@@ -437,5 +417,4 @@ const (
 	ServerEventGetAudioTrack           ServerEvent = "get-audio-track"
 	ServerEventGetMediaCaptionTrack    ServerEvent = "get-media-caption-track"
 	ServerEventGetPlaybackState        ServerEvent = "get-playback-state"
-	ServerEventGetPlaylist             ServerEvent = "get-playlist"
 )
