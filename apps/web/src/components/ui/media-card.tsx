@@ -106,13 +106,13 @@ export const MediaCard = React.memo(function MediaCard({
                     "transition-all duration-300",
                     showPopup
                         ? cn(
-                              "z-[100] bg-surface-container backdrop-blur-overlay-xl border border-outline-variant/10 shadow-[0_20px_50px_rgba(0,0,0,0.85)]",
+                              "z-[100] bg-surface-container backdrop-blur-overlay-xl border border-outline-variant/10 shadow-overlay",
                               isPoster
                                   ? "-top-[12%] -left-[12.5%] w-[125%] h-[135%] rounded-container"
                                   : "-top-[15%] -left-[10%] w-[120%] h-[135%] rounded-container"
                           )
                         : cn(
-                              "z-10 w-full h-full bg-surface-container/10 border border-outline-variant/5 hover:border-brand-orange/30 hover:shadow-[0_0_20px_rgba(255,110,58,0.15)] shadow-elevation-2 group cursor-pointer",
+                              "z-10 w-full h-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_10%,transparent)] border border-outline-variant/5 hover:border-brand-orange/30 hover:shadow-[0_0_20px_hsl(var(--brand-orange)/0.15)] shadow-elevation-2 group cursor-pointer",
                               isPoster ? "rounded-xl" : "rounded-container"
                           )
                 )}
@@ -256,7 +256,7 @@ export const MediaCard = React.memo(function MediaCard({
                 {progress !== undefined && (
                     <div className="absolute inset-x-0 bottom-0 z-20 h-1 bg-surface-variant">
                         <div
-                            className="h-full bg-brand-orange shadow-[0_0_8px_rgba(255,110,58,0.5)]"
+                            className="h-full bg-brand-orange shadow-[0_0_8px_hsl(var(--brand-orange)/0.5)]"
                             style={{ width: `${progress}%` }}
                         />
                     </div>

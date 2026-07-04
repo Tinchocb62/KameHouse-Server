@@ -70,16 +70,16 @@ export function PipelineStageCard({ stage, isActive, isDone }: {
             whileHover={{ y: -4, scale: 1.02 }}
             animate={isActive ? {
                 boxShadow: [
-                    "0 0 0 rgba(255, 110, 58, 0)",
-                    "0 0 30px rgba(255, 110, 58, 0.2)",
-                    "0 0 0 rgba(255, 110, 58, 0)"
+                    "0 0 0 transparent",
+                    "0 0 30px var(--glow-secondary)",
+                    "0 0 0 transparent"
                 ],
             } : {}}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className={cn(
                 "relative p-3.5 sm:p-4 rounded-2xl border transition-all duration-500 overflow-hidden group backdrop-blur-[var(--blur-overlay-lg)]",
                 isActive
-                    ? "border-[#ff6e3a]/50 bg-[#ff6e3a]/[0.03] shadow-[0_0_30px_rgba(255,110,58,0.08)]"
+                    ? "border-[#ff6e3a]/50 bg-[#ff6e3a]/[0.03] shadow-brand-secondary"
                     : isDone
                         ? "border-emerald-500/25 bg-emerald-500/[0.02]"
                         : "border-white/5 bg-zinc-950/30 hover:border-white/10 hover:bg-white/[0.015]"
@@ -97,7 +97,7 @@ export function PipelineStageCard({ stage, isActive, isDone }: {
                 <div className={cn(
                     "w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-500 shadow-inner",
                     isActive
-                        ? "text-[#ff6e3a] border-[#ff6e3a]/30 bg-[#ff6e3a]/10 shadow-[0_0_15px_rgba(255,110,58,0.25)]"
+                        ? "text-[#ff6e3a] border-[#ff6e3a]/30 bg-[#ff6e3a]/10 shadow-brand-secondary"
                         : isDone
                             ? "text-[#34d399] border-emerald-500/20 bg-emerald-500/5 shadow-[0_0_10px_rgba(52,211,153,0.15)]"
                             : "text-zinc-500 border-white/5 bg-white/[0.01] group-hover:border-zinc-700"
@@ -118,7 +118,7 @@ export function PipelineStageCard({ stage, isActive, isDone }: {
                 {isActive && (
                     <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden">
                         <motion.div 
-                            className="h-full bg-[#ff6e3a] shadow-[0_0_8px_rgba(255,110,58,0.8)]"
+                            className="h-full bg-[#ff6e3a] shadow-brand-secondary"
                             animate={{ 
                                 x: ["-100%", "200%"],
                             }}
@@ -158,7 +158,7 @@ export function ProgressRing({ progress, size, stroke }: { progress: number; siz
                     strokeDasharray={circumference}
                     animate={{ strokeDashoffset: offset }}
                     transition={{ type: "spring", stiffness: 40, damping: 15 }}
-                    style={{ filter: "drop-shadow(0 0 8px rgba(255,110,58,0.5))" }}
+                    style={{ filter: "drop-shadow(0 0 8px var(--glow-secondary))" }}
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">

@@ -19,7 +19,7 @@ import { useFocusNavigation } from "@/hooks/use-focus-navigation"
 function StatsOverlay({ show, data }: { show: boolean, data: PlayerStats }) {
     if (!show || !data) return null
     return (
-        <div className="absolute top-24 left-10 z-[100] bg-surface-container/95 backdrop-blur-overlay-md p-6 rounded-corner-lg border border-outline-variant text-[10px] font-mono uppercase tracking-[0.2em] text-on-surface-variant space-y-3 pointer-events-none shadow-elevation-3 min-w-[320px]">
+        <div className="absolute top-24 left-10 z-[100] backdrop-blur-overlay-md p-6 rounded-corner-lg border border-outline-variant text-[10px] font-mono uppercase tracking-[0.2em] text-on-surface-variant space-y-3 pointer-events-none shadow-elevation-3 min-w-[320px]" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 95%, transparent)" }}>
             <h4 className="text-on-surface font-black border-b border-outline-variant/50 pb-3 mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -337,7 +337,7 @@ export function PlayerUI(props: PlayerUIProps) {
                 className="skip-indicator-left absolute left-0 top-0 bottom-0 w-[30%] z-[13] pointer-events-none flex items-center justify-center bg-surface-container opacity-0"
                 style={{ clipPath: "ellipse(70% 100% at 0% 50%)" }}
             >
-                <div className="flex flex-col items-center text-white/95 bg-surface/30 px-6 py-4 rounded-2xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5">
+                <div className="flex flex-col items-center text-white/95 px-6 py-4 rounded-2xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 30%, transparent)" }}>
                     <div className="flex [&>*:not(:first-child)]:ml-0.5">
                         <svg className="w-8 h-8 fill-current rotate-180" viewBox="0 0 24 24">
                             <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
@@ -352,7 +352,7 @@ export function PlayerUI(props: PlayerUIProps) {
                 className="skip-indicator-right absolute right-0 top-0 bottom-0 w-[30%] z-[13] pointer-events-none flex items-center justify-center bg-surface-container opacity-0"
                 style={{ clipPath: "ellipse(70% 100% at 100% 50%)" }}
             >
-                <div className="flex flex-col items-center text-white/95 bg-surface/30 px-6 py-4 rounded-2xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5">
+                <div className="flex flex-col items-center text-white/95 px-6 py-4 rounded-2xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 30%, transparent)" }}>
                     <div className="flex [&>*:not(:first-child)]:ml-0.5">
                         <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
                             <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
@@ -365,7 +365,7 @@ export function PlayerUI(props: PlayerUIProps) {
             {/* 2x Speed Hold Indicator */}
             {isHoldSpeedActive && (
                 <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[31] pointer-events-none animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex items-center px-5 py-2.5 rounded-full bg-surface/60 border border-white/10 backdrop-blur-[var(--blur-overlay-sm)] text-white shadow-xl [&>*:not(:first-child)]:ml-2">
+                    <div className="flex items-center px-5 py-2.5 rounded-full border border-white/10 backdrop-blur-[var(--blur-overlay-sm)] text-white shadow-xl [&>*:not(:first-child)]:ml-2" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 60%, transparent)" }}>
                         <svg className="w-3.5 h-3.5 fill-current text-brand-orange animate-pulse" viewBox="0 0 24 24">
                             <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
                         </svg>
@@ -390,7 +390,7 @@ export function PlayerUI(props: PlayerUIProps) {
                 )}
             >
                 {/* Aggressive blur scrim overlay */}
-                <div className="absolute inset-0 z-50 pointer-events-none bg-surface/50 backdrop-blur-[var(--blur-overlay-lg)] saturate-125" />
+                <div className="absolute inset-0 z-50 pointer-events-none backdrop-blur-[var(--blur-overlay-lg)] saturate-125" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 50%, transparent)" }} />
                 
                 {/* Subtle bottom gradient only for extra readability under controls */}
                 <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-black/40 to-transparent" />

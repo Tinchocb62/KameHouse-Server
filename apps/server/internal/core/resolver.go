@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
@@ -102,14 +101,7 @@ func (r *UnifiedResolver) ResolveUnifiedMedia(ctx context.Context, mediaID strin
 // ── Local Sources ────────────────────────────────────────────────────────────
 
 func (r *UnifiedResolver) getLocalSources(mediaID int, episode int) []MediaSource {
-	start := time.Now()
 	lfs, err := db.GetLocalFilesByMediaID(r.db, mediaID)
-	// #region agent log
-	debugLogResolver("resolver.go:getLocalSources", "scoped query", map[string]any{
-		"mediaID": mediaID, "episode": episode, "fileCount": len(lfs),
-		"durationMs": time.Since(start).Milliseconds(), "hypothesisId": "A",
-	})
-	// #endregion
 	if err != nil {
 		return nil
 	}
@@ -192,6 +184,3 @@ func resolveTitle(libMedia *models.LibraryMedia, defaultTitle string) string {
 	}
 }
 
-func debugLogResolver(location, message string, data map[string]any) {
-	// disabled
-}

@@ -81,10 +81,10 @@ export const MovieCard = memo(function MovieCard({
                     !hasLocalFiles && "grayscale opacity-45 group-hover:grayscale-0 group-hover:opacity-100",
                 )}
                 style={{
-                    borderColor: isHovered ? eraConfig.color : "rgba(255,255,255,0.06)",
-                    boxShadow: isHovered 
-                        ? `0 20px 35px -10px rgba(0,0,0,0.85), 0 0 25px ${eraConfig.glow}` 
-                        : "0 10px 25px -10px rgba(0,0,0,0.6)",
+                    borderColor: isHovered ? eraConfig.color : "var(--glass-border-side)",
+                    boxShadow: isHovered
+                        ? `var(--shadow-glass), 0 0 25px ${eraConfig.glow}`
+                        : "var(--shadow-glass)",
                 }}
             >
                 <DeferredImage
@@ -105,7 +105,7 @@ export const MovieCard = memo(function MovieCard({
                 />
  
                 {/* Wear and analog glare textures */}
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.08),transparent)] z-20 pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--glass-border-top),transparent)] z-20 pointer-events-none" />
 
                 {/* Glass sheen sweep */}
                 <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[inherit]">
@@ -163,7 +163,7 @@ export const MovieCard = memo(function MovieCard({
                                     console.error(err);
                                 }
                             }}
-                            className="px-2.5 py-1 rounded-full bg-surface/60 hover:bg-white hover:text-black border border-outline-variant/10 flex items-center gap-1.5 shadow-elevation-5 text-[8px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer"
+                            className="px-2.5 py-1 rounded-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_60%,transparent)] hover:bg-white hover:text-black border border-outline-variant/10 flex items-center gap-1.5 shadow-elevation-5 text-[8px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer"
                         >
                             <Icons.ui.listPlus className="w-2.5 h-2.5" />
                             <span>Cola</span>
@@ -202,7 +202,7 @@ export const MovieCard = memo(function MovieCard({
  
                 {/* Progress bar */}
                 {hasProgress && (
-                    <div className="absolute bottom-0 inset-x-0 h-1 bg-surface/40">
+                    <div className="absolute bottom-0 inset-x-0 h-1" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 40%, transparent)" }}>
                         <div
                             className="h-full transition-all duration-500"
                             style={{ width: `${progressPercent}%`, backgroundColor: eraConfig.color }}

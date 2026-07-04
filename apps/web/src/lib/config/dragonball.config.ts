@@ -1,6 +1,6 @@
 import dbTitles from './db_titles.json'
 import { DRAGON_BALL_SERIES, DRAGON_BALL_SAGAS, SagaDefinition } from './dragonball_sagas'
-import { TMDB_TO_LORE_MOVIE_MAP } from './dragonball_movies_lore'
+import { TMDB_TO_LORE_MOVIE_MAP, DRAGON_BALL_MOVIES_LORE } from './dragonball_movies_lore'
 
 export * from "./dragonball_sagas"
 export * from "./dragonball_movies_lore"
@@ -112,7 +112,22 @@ export function getSeriesEraTheme(tmdbId: number | undefined | null): string | n
         case DRAGON_BALL_SERIES.GT: return "era-dbgt"
         case DRAGON_BALL_SERIES.SUPER: return "era-dbs"
         case DRAGON_BALL_SERIES.DAIMA: return "era-daima"
-        default: return null
     }
+
+    if (tmdbId in TMDB_TO_LORE_MOVIE_MAP) {
+        const loreId = TMDB_TO_LORE_MOVIE_MAP[tmdbId as number];
+        const movieLore = DRAGON_BALL_MOVIES_LORE[loreId];
+        if (movieLore?.seriesContext) {
+            switch (movieLore.seriesContext) {
+                case "original": return "era-db";
+                case "z": return "era-dbz";
+                case "gt": return "era-dbgt";
+                case "super": return "era-dbs";
+                case "daima": return "era-daima";
+            }
+        }
+    }
+
+    return null
 }
 

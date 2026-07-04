@@ -159,7 +159,7 @@ export function DeferredImage(props: DeferredImageProps) {
             {/* Pulse Skeleton: shown only while low-res image is NOT loaded and high-res is NOT loaded */}
             {!isLoaded && !isLowResLoaded && !hasError && isIntersecting && showSkeleton && (
                 <div className="absolute inset-0 z-10 overflow-hidden">
-                    <div className="absolute inset-0 animate-pulse bg-zinc-800/80 backdrop-blur-md" />
+                    <div className="absolute inset-0 animate-pulse bg-zinc-800/80 backdrop-blur-[var(--blur-overlay-md)]" />
                     <Skeleton className="h-full w-full rounded-none bg-transparent opacity-50" />
                 </div>
             )}

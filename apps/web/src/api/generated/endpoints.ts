@@ -279,6 +279,28 @@ export const API_ENDPOINTS = {
             endpoint: "/api/v1/filecache/mediastream/videofiles",
         },
     },
+    INTELLIGENCE: {
+        /**
+         *  @description
+         *  Route get best source for playback.
+         *  Evaluates all available sources (local + Jellyfin) and returns the winner.
+         */
+        GetBestSource: {
+            key: "INTELLIGENCE-get-best-source",
+            methods: ["GET"],
+            endpoint: "/api/v1/intelligence/best-source",
+        },
+        /**
+         *  @description
+         *  Route get intelligence engine stats.
+         *  Returns cache stats and scoring configuration.
+         */
+        GetIntelligenceStats: {
+            key: "INTELLIGENCE-get-intelligence-stats",
+            methods: ["GET"],
+            endpoint: "/api/v1/intelligence/stats",
+        },
+    },
     LIBRARY_EXPLORER: {
         /**
          *  @description
@@ -530,6 +552,36 @@ export const API_ENDPOINTS = {
             methods: ["POST"],
             endpoint: "/api/v1/mediastream/shutdown-transcode",
         },
+        /**
+         *  @description
+         *  Route get episode skip times.
+         *  This gets the saved skip times (OP/ED) for a specific episode of a series.
+         */
+        GetEpisodeSkipTimes: {
+            key: "MEDIASTREAM-get-episode-skip-times",
+            methods: ["GET"],
+            endpoint: "/api/v1/mediastream/skip-times",
+        },
+        /**
+         *  @description
+         *  Route save episode skip times.
+         *  This saves custom skip times for an episode. If applyToSeason is true, it propagates it as default offsets for all other episodes of the same series.
+         */
+        SaveEpisodeSkipTimes: {
+            key: "MEDIASTREAM-save-episode-skip-times",
+            methods: ["POST"],
+            endpoint: "/api/v1/mediastream/skip-times",
+        },
+        /**
+         *  @description
+         *  Route trigger skip times auto-scan.
+         *  This starts a background task using acoustic fingerprinting to detect intro/outro boundaries.
+         */
+        ScanEpisodeSkipTimes: {
+            key: "MEDIASTREAM-scan-episode-skip-times",
+            methods: ["POST"],
+            endpoint: "/api/v1/mediastream/skip-times/scan",
+        },
     },
     METADATA: {
         /**
@@ -657,6 +709,13 @@ export const API_ENDPOINTS = {
             key: "SCAN-SUMMARY-get-scan-summaries",
             methods: ["GET"],
             endpoint: "/api/v1/library/scan-summaries",
+        },
+    },
+    SERIES_DETAILS: {
+        GetSeriesSagas: {
+            key: "SERIES-DETAILS-get-series-sagas",
+            methods: ["GET"],
+            endpoint: "/api/v1/library/anime-entry/{id}/sagas",
         },
     },
     SETTINGS: {

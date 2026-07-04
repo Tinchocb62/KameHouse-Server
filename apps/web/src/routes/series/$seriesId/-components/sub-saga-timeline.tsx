@@ -47,7 +47,7 @@ export function SubSagaTimeline({ items, activeId, onSelect }: SubSagaTimelinePr
             <div className={cn(
               "relative mt-1 flex items-center justify-center shrink-0 w-2.5 h-2.5 rounded-full border transition-all duration-300",
               isActive
-                ? "border-brand-accent bg-brand-accent shadow-[0_0_8px_hsl(var(--brand-accent)/0.7)]"
+                ? "border-brand-accent bg-brand-accent shadow-[0_0_8px_hsl(var(--brand-accent)/0.5)]"
                 : "border-outline-variant/20 bg-surface-container group-hover/subsaga:border-brand-accent group-hover/subsaga:scale-110"
             )}>
               <div className={cn(

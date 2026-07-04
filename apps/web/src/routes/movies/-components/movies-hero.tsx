@@ -86,7 +86,7 @@ export function MoviesHero({
                                 backgroundImage: `url(${getLowResImage(backdropSrc)})`,
                                 backgroundSize: "cover",
                                 backgroundPosition: "center 20%",
-                                filter: "blur(70px) brightness(0.5) saturate(170%)",
+                                filter: "blur(var(--filter-blur-hero-bg)) brightness(0.5) saturate(170%)",
                             }}
                         />
                     )}
@@ -135,8 +135,8 @@ export function MoviesHero({
                 className="absolute inset-0 z-10 pointer-events-none"
                 style={{
                     background: hasBannerImage
-                        ? "linear-gradient(to right, rgba(7,7,10,0.85) 0%, rgba(7,7,10,0.7) 25%, rgba(7,7,10,0.2) 60%, transparent 90%)"
-                        : "linear-gradient(to right, rgba(7,7,10,0.85) 0%, rgba(7,7,10,0.7) 30%, rgba(7,7,10,0.15) 70%, transparent 95%)",
+                        ? "linear-gradient(to right, color-mix(in srgb, var(--bg-primary) 85%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 25%, color-mix(in srgb, var(--bg-primary) 20%, transparent) 60%, transparent 90%)"
+                        : "linear-gradient(to right, color-mix(in srgb, var(--bg-primary) 85%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 30%, color-mix(in srgb, var(--bg-primary) 15%, transparent) 70%, transparent 95%)",
                     WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 15%)",
                     maskImage: "linear-gradient(to top, transparent 0%, black 15%)",
                 }}
@@ -144,12 +144,12 @@ export function MoviesHero({
             {/* Gradient inferior: semi-transparente para fundirse con el fondo Kame House */}
             <div
                 className="absolute inset-x-0 bottom-0 h-40 z-10 pointer-events-none"
-                style={{ background: "linear-gradient(to top, transparent 0%, rgba(7,7,10,0.45) 50%, transparent 100%)" }}
+                style={{ background: "linear-gradient(to top, transparent 0%, color-mix(in srgb, var(--bg-primary) 45%, transparent) 50%, transparent 100%)" }}
             />
             {/* Vignette superior */}
             <div
                 className="absolute inset-x-0 top-0 h-16 z-10 pointer-events-none"
-                style={{ background: "linear-gradient(to bottom, rgba(7,7,10,0.4) 0%, transparent 100%)" }}
+                style={{ background: "linear-gradient(to bottom, color-mix(in srgb, var(--bg-primary) 40%, transparent) 0%, transparent 100%)" }}
             />
 
             {/* Grain */}

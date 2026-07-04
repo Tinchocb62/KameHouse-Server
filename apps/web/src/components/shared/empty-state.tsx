@@ -38,7 +38,7 @@ export function EmptyState({
             {illustration ? (
                 <div className="mb-8 opacity-90">{illustration}</div>
             ) : (
-                <div className="mb-8 flex h-20 w-20 items-center justify-center bg-surface-container/50 border border-white/5 text-white rounded-2xl">
+                <div className="mb-8 flex h-20 w-20 items-center justify-center border border-white/5 text-white rounded-2xl" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 50%, transparent)" }}>
                     {icon ?? <Ghost className="h-10 w-10 animate-pulse-slow" />}
                 </div>
             )}

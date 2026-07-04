@@ -128,7 +128,7 @@ export function PlayerEpisodesSidebar({
                                             )}
 
                                             {/* Dark overlay */}
-                                            <div className="absolute inset-0 bg-surface/20 group-hover:bg-black/0 transition-colors duration-300" />
+                                            <div className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_20%,transparent)] group-hover:bg-black/0 transition-colors duration-300" />
 
                                             {/* Play overlay for current or hover */}
                                             <div className={cn(

@@ -1,0 +1,40 @@
+# KameHouse Configuration
+version = "3.5.0"
+
+[server]
+host = "127.0.0.1"
+port = 43211
+offline = false
+useBinaryPath = true
+password = ""
+
+[server.tls]
+enabled = false
+certPath = "$KAMEHOUSE_DATA_DIR/certs/cert.pem"
+keyPath = "$KAMEHOUSE_DATA_DIR/certs/key.pem"
+
+[database]
+name = "kamehouse"
+
+[web]
+assetDir = "$KAMEHOUSE_DATA_DIR/assets"
+
+[logs]
+dir = "$KAMEHOUSE_DATA_DIR/logs"
+
+[cache]
+dir = "$KAMEHOUSE_DATA_DIR/cache"
+transcodeDir = "$KAMEHOUSE_DATA_DIR/cache/transcode"
+
+[offline]
+dir = "$KAMEHOUSE_DATA_DIR/offline"
+assetDir = "$KAMEHOUSE_DATA_DIR/offline/assets"
+
+[extensions]
+dir = "$KAMEHOUSE_DATA_DIR/extensions"
+
+[metadata]
+tmdbApiKey = ""
+tmdbLanguage = "es-MX"
+fanartApiKey = ""
+omdbApiKey = ""

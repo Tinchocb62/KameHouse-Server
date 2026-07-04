@@ -1,7 +1,7 @@
 import { GettingStarted_Variables } from "@/api/generated/endpoint.types"
 import { z } from "zod"
 
-export const DEFAULT_DOH_PROVIDER = ""
+
 
 export const _gettingStartedSchema = z.object({
     enableTranscode: z.boolean().optional().default(false),
@@ -16,33 +16,21 @@ export const settingsSchema = z.object({
         tmdbApiKey: z.string().optional().default(""),
         tmdbLanguage: z.string().optional().default("es-MX"),
         hideAudienceScore: z.boolean().optional().default(false),
-        autoUpdateProgress: z.boolean().optional().default(false),
-
-        enableOnlinestream: z.boolean().optional().default(false),
-        includeOnlineStreamingInLibrary: z.boolean().optional().default(false),
         disableAnimeCardTrailers: z.boolean().optional().default(false),
-
         enableRichPresence: z.boolean().optional().default(false),
         enableAnimeRichPresence: z.boolean().optional().default(false),
-
-
-        dohProvider: z.string().optional().default(""),
         openWebURLOnStart: z.boolean().optional().default(false),
         refreshLibraryOnStart: z.boolean().optional().default(false),
         richPresenceHideKameHouseRepositoryButton: z.boolean().optional().default(false),
         richPresenceShowPlatformMediaButton: z.boolean().optional().default(false),
         richPresenceShowPlatformProfileButton: z.boolean().optional().default(false),
         richPresenceUseMediaTitleStatus: z.boolean().optional().default(true),
-
         autoPlayNextEpisode: z.boolean().optional().default(true),
         enableWatchContinuity: z.boolean().optional().default(false),
         seriesPaths: z.array(z.string()).optional().default([]),
         moviePaths: z.array(z.string()).optional().default([]),
-        autoSyncOfflineLocalData: z.boolean().optional().default(false),
         scannerMatchingThreshold: z.number().optional().default(0.5),
         scannerMatchingAlgorithm: z.string().optional().default(""),
-        autoSyncToLocalAccount: z.boolean().optional().default(false),
-        autoSaveCurrentMediaOffline: z.boolean().optional().default(false),
         disableCacheLayer: z.boolean().optional().default(false),
         useFallbackMetadataProvider: z.boolean().optional().default(false),
         vcTranslate: z.boolean().optional().default(false),
@@ -53,32 +41,12 @@ export const settingsSchema = z.object({
         scannerConfig: z.string().optional().default(""),
         scannerStrictStructure: z.boolean().optional().default(false),
         scannerProvider: z.string().optional().default("tmdb"),
-        // Service toggles
         disableLocalScanning: z.boolean().optional().default(false),
         primaryMetadataProvider: z.string().optional().default("tmdb"),
         fanartApiKey: z.string().optional().default(""),
         omdbApiKey: z.string().optional().default(""),
     }),
-    mediaPlayer: z.object({
-        host: z.string(),
-        defaultPlayer: z.string(),
-        vlcPort: z.number(),
-        vlcUsername: z.string().optional().default(""),
-        vlcPassword: z.string().optional().default(""),
-        vlcPath: z.string().optional().default(""),
-        mpcPort: z.number(),
-        mpcPath: z.string().optional().default(""),
-        mpvSocket: z.string().optional().default(""),
-        mpvPath: z.string().optional().default(""),
-        mpvArgs: z.string().optional().default(""),
-        iinaSocket: z.string().optional().default(""),
-        iinaPath: z.string().optional().default(""),
-        iinaArgs: z.string().optional().default(""),
-        vcTranslate: z.boolean().optional().default(false),
-        vcTranslateApiKey: z.string().optional().default(""),
-        vcTranslateProvider: z.string().optional().default(""),
-        vcTranslateTargetLanguage: z.string().optional().default(""),
-    }),
+    mediaPlayer: z.object({}),
     mediastream: z.object({
         transcodeEnabled: z.boolean().default(false),
         transcodeHwAccel: z.string().default("cpu"),
@@ -142,95 +110,30 @@ export const gettingStartedSchema = _gettingStartedSchema.extend({
 
 export const getDefaultSettings = (data: z.infer<typeof gettingStartedSchema>): GettingStarted_Variables => ({
     library: {
-        // libraryPath: data.library.libraryPath, // Deprecated in backend schema
-        autoUpdateProgress: true,
         autoScan: false,
         disableAnimeCardTrailers: false,
-
-        enableOnlinestream: data.library.enableOnlinestream,
-        dohProvider: DEFAULT_DOH_PROVIDER,
         openWebURLOnStart: false,
         refreshLibraryOnStart: false,
         autoPlayNextEpisode: true,
         enableWatchContinuity: data.library.enableWatchContinuity,
         seriesPaths: data.library.seriesPaths || [],
         moviePaths: data.library.moviePaths || [],
-        autoSyncOfflineLocalData: false,
-        includeOnlineStreamingInLibrary: false,
         scannerMatchingThreshold: 0,
         scannerMatchingAlgorithm: "",
-        autoSyncToLocalAccount: false,
-        autoSaveCurrentMediaOffline: false,
         useFallbackMetadataProvider: false,
         scannerUseLegacyMatching: false,
         scannerStrictStructure: false,
         scannerProvider: data.library.scannerProvider || "tmdb",
         scannerConfig: "",
         disableLocalScanning: data.library.disableLocalScanning,
-        disableDebridService: true,
         tmdbApiKey: data.library.tmdbApiKey,
         tmdbLanguage: "es-MX",
         primaryMetadataProvider: data.library.primaryMetadataProvider || "tmdb",
         fanartApiKey: data.library.fanartApiKey || "",
         omdbApiKey: data.library.omdbApiKey || "",
-        openSubsApiKey: "",
     },
-    mediaPlayer: {
-        host: data.mediaPlayer.host,
-        defaultPlayer: data.mediaPlayer.defaultPlayer,
-        vlcPort: data.mediaPlayer.vlcPort,
-        vlcUsername: data.mediaPlayer.vlcUsername || "",
-        vlcPassword: data.mediaPlayer.vlcPassword,
-        vlcPath: data.mediaPlayer.vlcPath || "",
-        mpcPort: data.mediaPlayer.mpcPort,
-        mpcPath: data.mediaPlayer.mpcPath || "",
-        mpvSocket: data.mediaPlayer.mpvSocket || "",
-        mpvPath: data.mediaPlayer.mpvPath || "",
-        mpvArgs: "",
-        iinaSocket: data.mediaPlayer.iinaSocket || "",
-        iinaPath: data.mediaPlayer.iinaPath || "",
-        iinaArgs: "",
-        vcTranslate: false,
-        vcTranslateApiKey: "",
-        vcTranslateProvider: "",
-        vcTranslateTargetLanguage: "",
-    },
+    mediaPlayer: {},
     enableTranscode: data.enableTranscode,
 })
 
 
-export function useDefaultSettingsPaths() {
-
-    return {
-        getDefaultVlcPath: (os: string) => {
-            switch (os) {
-                case "windows":
-                    return "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
-                case "linux":
-                    return "/usr/bin/vlc" // Default path for VLC on most Linux distributions
-                case "darwin":
-                    return "/Applications/VLC.app/Contents/MacOS/VLC" // Default path for VLC on macOS
-                default:
-                    return "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
-            }
-        },
-    }
-
-}
-
-export function getDefaultMpvSocket(os: string) {
-    switch (os) {
-        case "windows":
-            return "\\\\.\\pipe\\mpv_ipc"
-        case "linux":
-            return "/tmp/mpv_socket" // Default socket for VLC on most Linux distributions
-        case "darwin":
-            return "/tmp/mpv_socket" // Default socket for VLC on macOS
-        default:
-            return "/tmp/mpv_socket"
-    }
-}
-
-export function getDefaultIinaSocket(_os: string) {
-    return "/tmp/iina_socket"
-}

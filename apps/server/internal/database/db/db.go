@@ -44,7 +44,7 @@ func (db *Database) Gorm() *gorm.DB {
 	return db.gormdb
 }
 
-// NewDatabase inicializa el pool de conexiones SQLite (WAL) y ejecuta la
+// NewDatabase initializes the SQLite connection pool with WAL mode and runs
 // migración de esquema (DDL) de forma síncrona. La migración de datos
 // heredados (DML) se delega a runDataMigrations en segundo plano.
 func NewDatabase(ctx context.Context, appDataDir, dbName string, logger *zerolog.Logger) (*Database, error) {
@@ -64,9 +64,19 @@ func NewDatabase(ctx context.Context, appDataDir, dbName string, logger *zerolog
 		mmapSize = envMmap
 	}
 
-	// _cache_size  → page cache. Reduces repeated I/O.
-	// _mmap_size   → memory-mapped I/O for read-heavy workloads.
-	dsn := fmt.Sprintf("%s?_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL&_cache_size=%s&_mmap_size=%s", sqlitePath, cacheSize, mmapSize)
+	// glebarez/sqlite uses _pragma=name(value) syntax (not mattn/go-sqlite3 style).
+	// All pragmas in the DSN are applied to every connection opened by the pool.
+	//
+	//  journal_mode=WAL        → writers don't block readers; much better concurrency.
+	//  busy_timeout=5000       → wait up to 5 s before returning SQLITE_BUSY.
+	//  synchronous=NORMAL      → fsync only at WAL checkpoints, not every commit.
+	//  cache_size              → per-connection page cache (reduces repeated I/O).
+	//  mmap_size               → memory-mapped I/O for read-heavy workloads.
+	//  journal_size_limit      → caps WAL file growth to 64 MiB.
+	dsn := fmt.Sprintf(
+		"%s?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)&_pragma=cache_size(%s)&_pragma=mmap_size(%s)&_pragma=journal_size_limit(67108864)",
+		sqlitePath, cacheSize, mmapSize,
+	)
 
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: gormlogger.New(
@@ -84,11 +94,6 @@ func NewDatabase(ctx context.Context, appDataDir, dbName string, logger *zerolog
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
-	}
-
-	// Set journal size limit to avoid unbounded WAL growth
-	if err := db.Exec("PRAGMA journal_size_limit = 67108864;").Error; err != nil {
-		logger.Warn().Err(err).Msg("db: Failed to set journal_size_limit")
 	}
 
 	sqlDB, err := db.DB()

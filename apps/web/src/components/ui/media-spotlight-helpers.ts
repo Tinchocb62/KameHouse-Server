@@ -12,10 +12,11 @@ export const ERAS = [
 export type EraId = typeof ERAS[number]["id"]
 
 // Theme colors and glows for each era
-export const ERA_COLOR_MAP: Record<EraId, { primary: string; glow: string; textBrand: string; borderActive: string; ambientGlow1: string; ambientGlow2: string }> = {
+export const ERA_COLOR_MAP: Record<EraId, { primary: string; glow: string; glowStrong: string; textBrand: string; borderActive: string; ambientGlow1: string; ambientGlow2: string }> = {
     db: {
         primary: "from-[#ff6e3a] to-[#ff8c3a]",
-        glow: "rgba(255,110,58,0.25)",
+        glow: "var(--spotlight-glow-db)",
+        glowStrong: "var(--spotlight-border-db)",
         textBrand: "text-[#ff6e3a]",
         borderActive: "border-[#ff6e3a]/40",
         ambientGlow1: "#ff6e3a",
@@ -23,7 +24,8 @@ export const ERA_COLOR_MAP: Record<EraId, { primary: string; glow: string; textB
     },
     dbz: {
         primary: "from-[#f59e0b] to-[#d97706]",
-        glow: "rgba(245,158,11,0.25)",
+        glow: "var(--spotlight-glow-dbz)",
+        glowStrong: "var(--spotlight-border-dbz)",
         textBrand: "text-[#f59e0b]",
         borderActive: "border-[#f59e0b]/40",
         ambientGlow1: "#f59e0b",
@@ -31,7 +33,8 @@ export const ERA_COLOR_MAP: Record<EraId, { primary: string; glow: string; textB
     },
     dbgt: {
         primary: "from-[#e11d48] to-[#be123c]",
-        glow: "rgba(225,29,72,0.25)",
+        glow: "var(--spotlight-glow-dbgt)",
+        glowStrong: "var(--spotlight-border-dbgt)",
         textBrand: "text-[#e11d48]",
         borderActive: "border-[#e11d48]/40",
         ambientGlow1: "#e11d48",
@@ -39,7 +42,8 @@ export const ERA_COLOR_MAP: Record<EraId, { primary: string; glow: string; textB
     },
     dbs: {
         primary: "from-[#0ea5e9] to-[#2563eb]",
-        glow: "rgba(14,165,233,0.25)",
+        glow: "var(--spotlight-glow-dbs)",
+        glowStrong: "var(--spotlight-border-dbs)",
         textBrand: "text-[#0ea5e9]",
         borderActive: "border-[#0ea5e9]/40",
         ambientGlow1: "#0ea5e9",
@@ -47,7 +51,8 @@ export const ERA_COLOR_MAP: Record<EraId, { primary: string; glow: string; textB
     },
     dbdaima: {
         primary: "from-[#22d3ee] to-[#059669]",
-        glow: "rgba(34,211,238,0.25)",
+        glow: "var(--spotlight-glow-daima)",
+        glowStrong: "var(--spotlight-border-daima)",
         textBrand: "text-[#22d3ee]",
         borderActive: "border-[#22d3ee]/40",
         ambientGlow1: "#22d3ee",

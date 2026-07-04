@@ -47,14 +47,14 @@ type ShelvedLocalFiles struct {
 
 type Settings struct {
 	BaseModel
-	Library        LibrarySettings        `json:"library" gorm:"embedded;embeddedPrefix:library_"`
-	MediaPlayer    MediaPlayerSettings    `json:"mediaPlayer" gorm:"embedded;embeddedPrefix:media_player_"`
-	Notifications  NotificationSettings   `json:"notifications" gorm:"embedded;embeddedPrefix:notifications_"`
-	Platform       PlatformSettings       `json:"Platform" gorm:"embedded;embeddedPrefix:platform_"`
+	Library       LibrarySettings      `json:"library" gorm:"embedded;embeddedPrefix:library_"`
+	MediaPlayer   MediaPlayerSettings  `json:"mediaPlayer" gorm:"embedded;embeddedPrefix:media_player_"`
+	Notifications NotificationSettings `json:"notifications" gorm:"embedded;embeddedPrefix:notifications_"`
+	Platform      PlatformSettings     `json:"Platform" gorm:"embedded;embeddedPrefix:platform_"`
 	// Separate tables
-	Mediastream   *MediastreamSettings   `json:"mediastream" gorm:"-"`
-	Theme         *Theme                 `json:"theme" gorm:"-"`
-	Updated       bool                    `gorm:"-" json:"updated"`
+	Mediastream *MediastreamSettings `json:"mediastream" gorm:"-"`
+	Theme       *Theme               `json:"theme" gorm:"-"`
+	Updated     bool                 `gorm:"-" json:"updated"`
 }
 
 type UserAnime struct {
@@ -63,24 +63,16 @@ type UserAnime struct {
 	Status  string
 }
 
-
-
-
 type LibrarySettings struct {
 	SeriesPaths                     LibraryPaths `gorm:"column:series_paths;type:text" json:"seriesPaths"`
 	MoviePaths                      LibraryPaths `gorm:"column:movie_paths;type:text" json:"moviePaths"`
-	AutoUpdateProgress              bool         `gorm:"column:auto_update_progress" json:"autoUpdateProgress"`
 	DisableAnimeCardTrailers        bool         `gorm:"column:disable_anime_card_trailers" json:"disableAnimeCardTrailers"`
-	DOHProvider                     string       `gorm:"column:doh_provider" json:"dohProvider"`
 	OpenWebURLOnStart               bool         `gorm:"column:open_web_url_on_start" json:"openWebURLOnStart"`
 	RefreshLibraryOnStart           bool         `gorm:"column:refresh_library_on_start" json:"refreshLibraryOnStart"`
 	AutoPlayNextEpisode             bool         `gorm:"column:auto_play_next_episode" json:"autoPlayNextEpisode"`
 	EnableWatchContinuity           bool         `gorm:"column:enable_watch_continuity" json:"enableWatchContinuity"`
-	AutoSyncOfflineLocalData        bool         `gorm:"column:auto_sync_offline_local_data" json:"autoSyncOfflineLocalData"`
 	ScannerMatchingThreshold        float64      `gorm:"column:scanner_matching_threshold" json:"scannerMatchingThreshold"`
 	ScannerMatchingAlgorithm        string       `gorm:"column:scanner_matching_algorithm" json:"scannerMatchingAlgorithm"`
-	AutoSyncToLocalAccount          bool         `gorm:"column:auto_sync_to_local_account" json:"autoSyncToLocalAccount"`
-	AutoSaveCurrentMediaOffline     bool         `gorm:"column:auto_save_current_media_offline" json:"autoSaveCurrentMediaOffline"`
 	UseFallbackMetadataProvider     bool         `gorm:"column:use_fallback_metadata_provider" json:"useFallbackMetadataProvider"`
 	PrimaryMetadataProvider         string       `gorm:"column:primary_metadata_provider" json:"primaryMetadataProvider"`
 	TmdbApiKey                      string       `gorm:"column:tmdb_api_key" json:"tmdbApiKey"`
@@ -94,9 +86,6 @@ type LibrarySettings struct {
 	OmdbApiKey                      string       `gorm:"column:omdb_api_key" json:"omdbApiKey"`
 	LastScanAt                      time.Time    `gorm:"column:last_scan_at" json:"lastScanAt"`
 	AutoScan                        bool         `gorm:"-" json:"autoScan"`
-	EnableOnlinestream              bool         `gorm:"-" json:"enableOnlinestream"`
-	IncludeOnlineStreamingInLibrary bool         `gorm:"-" json:"includeOnlineStreamingInLibrary"`
-	DisableDebridService            bool         `gorm:"-" json:"disableDebridService"`
 }
 
 func (s *LibrarySettings) GetAllPaths() []string {
@@ -121,7 +110,7 @@ func (o *LibraryPaths) Scan(src interface{}) error {
 		*o = []string{}
 		return nil
 	}
-	
+
 	str, ok := src.(string)
 	if !ok {
 		b, ok := src.([]byte)
@@ -130,12 +119,12 @@ func (o *LibraryPaths) Scan(src interface{}) error {
 		}
 		str = string(b)
 	}
-	
+
 	if str == "" {
 		*o = []string{}
 		return nil
 	}
-	
+
 	*o = strings.Split(str, ",")
 	return nil
 }
@@ -179,7 +168,6 @@ func (o StringSlice) Value() (driver.Value, error) {
 
 type IntSlice []int
 
-
 func (o *IntSlice) Scan(src interface{}) error {
 	str, ok := src.(string)
 	if !ok {
@@ -204,39 +192,13 @@ func (o IntSlice) Value() (driver.Value, error) {
 	return strings.Join(strs, ","), nil
 }
 
-
-
 type MediaPlayerSettings struct {
-	Default                       string `gorm:"column:default_player" json:"defaultPlayer"`
-	Host                          string `gorm:"column:player_host" json:"host"`
-	VlcUsername                   string `gorm:"column:vlc_username" json:"vlcUsername"`
-	VlcPassword                   string `gorm:"column:vlc_password" json:"vlcPassword"`
-	VlcPort                       int    `gorm:"column:vlc_port" json:"vlcPort"`
-	VlcPath                       string `gorm:"column:vlc_path" json:"vlcPath"`
-	MpcPort                       int    `gorm:"column:mpc_port" json:"mpcPort"`
-	MpcPath                       string `gorm:"column:mpc_path" json:"mpcPath"`
-	MpvSocket                     string `gorm:"column:mpv_socket" json:"mpvSocket"`
-	MpvPath                     string `gorm:"column:mpv_path" json:"mpvPath"`
-	MpvArgs                       string `gorm:"column:mpv_args" json:"mpvArgs"`
-	IinaSocket                    string `gorm:"column:iina_socket" json:"iinaSocket"`
-	IinaPath                      string `gorm:"column:iina_path" json:"iinaPath"`
-	IinaArgs                      string `gorm:"column:iina_args" json:"iinaArgs"`
-	VcTranslate                   bool `gorm:"column:vc_translate" json:"vcTranslate"`
-	VcTranslateProvider           string `gorm:"column:vc_translate_provider" json:"vcTranslateProvider"`
-	VcTranslateApiKey              string `gorm:"column:vc_translate_api_key" json:"vcTranslateApiKey"`
-	VcTranslateTargetLanguage     string `gorm:"column:vc_translate_target_language" json:"vcTranslateTargetLanguage"`
 }
-
-
-
-
-
 
 type ListSyncSettings struct {
 	Automatic bool   `gorm:"column:automatic_sync" json:"automatic"`
 	Origin    string `gorm:"column:sync_origin" json:"origin"`
 }
-
 
 type NotificationSettings struct {
 	DisableNotifications               bool `gorm:"column:disable_notifications" json:"disableNotifications"`
@@ -249,14 +211,10 @@ type PlatformSettings struct {
 	DisableCacheLayer bool `gorm:"column:disable_cache_layer" json:"disableCacheLayer"`
 }
 
-
-
 type ScanSummary struct {
 	BaseModel
 	Value []byte `gorm:"column:value" json:"value"`
 }
-
-
 
 type Theme struct {
 	BaseModel
@@ -264,7 +222,47 @@ type Theme struct {
 	BackgroundColor        string `gorm:"column:background_color" json:"backgroundColor"`
 	AccentColor            string `gorm:"column:accent_color" json:"accentColor"`
 	SidebarBackgroundColor string `gorm:"column:sidebar_background_color" json:"sidebarBackgroundColor"`
+	ThemeEra               string `gorm:"column:theme_era" json:"themeEra"`
 	HomeItems              []byte `gorm:"column:home_items" json:"homeItems"`
+
+	// ── Diseño y Comportamiento ──────────────────────────────────────────
+	AnimeEntryScreenLayout     string `gorm:"column:anime_entry_screen_layout" json:"themeAnimeEntryScreenLayout"`
+	SmallerEpisodeCarouselSize bool   `gorm:"column:smaller_episode_carousel_size" json:"themeSmallerEpisodeCarouselSize"`
+	ExpandSidebarOnHover       bool   `gorm:"column:expand_sidebar_on_hover" json:"themeExpandSidebarOnHover"`
+	DisableSidebarTransparency bool   `gorm:"column:disable_sidebar_transparency" json:"themeDisableSidebarTransparency"`
+	EnableBlurringEffects      bool   `gorm:"column:enable_blurring_effects" json:"themeEnableBlurringEffects"`
+	EnableSidebarGradient      bool   `gorm:"column:enable_sidebar_gradient" json:"themeEnableSidebarGradient"`
+	DisableCarouselAutoScroll  bool   `gorm:"column:disable_carousel_auto_scroll" json:"themeDisableCarouselAutoScroll"`
+	UseLegacyEpisodeCard       bool   `gorm:"column:use_legacy_episode_card" json:"themeUseLegacyEpisodeCard"`
+
+	// ── Pantalla de Biblioteca ───────────────────────────────────────────
+	LibraryScreenBannerType              string `gorm:"column:library_screen_banner_type;default:dynamic" json:"themeLibraryScreenBannerType"`
+	LibraryScreenCustomBannerImage       string `gorm:"column:library_screen_custom_banner_image" json:"themeLibraryScreenCustomBannerImage"`
+	LibraryScreenCustomBannerPosition    string `gorm:"column:library_screen_custom_banner_position;default:50% 50%" json:"themeLibraryScreenCustomBannerPosition"`
+	LibraryScreenCustomBannerOpacity     int    `gorm:"column:library_screen_custom_banner_opacity;default:10" json:"themeLibraryScreenCustomBannerOpacity"`
+	LibraryScreenCustomBackgroundImage   string `gorm:"column:library_screen_custom_background_image" json:"themeLibraryScreenCustomBackgroundImage"`
+	LibraryScreenCustomBackgroundOpacity int    `gorm:"column:library_screen_custom_background_opacity;default:10" json:"themeLibraryScreenCustomBackgroundOpacity"`
+	LibraryScreenCustomBackgroundBlur    string `gorm:"column:library_screen_custom_background_blur;default:none" json:"themeLibraryScreenCustomBackgroundBlur"`
+	DisableLibraryScreenGenreSelector    bool   `gorm:"column:disable_library_screen_genre_selector" json:"themeDisableLibraryScreenGenreSelector"`
+
+	// ── Página de Detalle ────────────────────────────────────────────────
+	MediaPageBannerType               string `gorm:"column:media_page_banner_type;default:default" json:"themeMediaPageBannerType"`
+	MediaPageBannerSize               string `gorm:"column:media_page_banner_size;default:default" json:"themeMediaPageBannerSize"`
+	MediaPageBannerInfoBoxSize        string `gorm:"column:media_page_banner_info_box_size;default:default" json:"themeMediaPageBannerInfoBoxSize"`
+	EnableMediaPageBlurredBackground  bool   `gorm:"column:enable_media_page_blurred_background;default:false" json:"themeEnableMediaPageBlurredBackground"`
+	ShowEpisodeCardAnimeInfo          bool   `gorm:"column:show_episode_card_anime_info;default:true" json:"themeShowEpisodeCardAnimeInfo"`
+	ShowAnimeUnwatchedCount           bool   `gorm:"column:show_anime_unwatched_count;default:true" json:"themeShowAnimeUnwatchedCount"`
+	HideEpisodeCardDescription        bool   `gorm:"column:hide_episode_card_description" json:"themeHideEpisodeCardDescription"`
+	HideDownloadedEpisodeCardFilename bool   `gorm:"column:hide_downloaded_episode_card_filename" json:"themeHideDownloadedEpisodeCardFilename"`
+
+	// ── Ordenación y Listas ──────────────────────────────────────────────
+	ContinueWatchingDefaultSorting       string `gorm:"column:continue_watching_default_sorting;default:LAST_WATCHED_DESC" json:"themeContinueWatchingDefaultSorting"`
+	AnimeLibraryCollectionDefaultSorting string `gorm:"column:anime_library_collection_default_sorting;default:TITLE_ASC" json:"themeAnimeLibraryCollectionDefaultSorting"`
+
+	// ── Avanzado ──────────────────────────────────────────────────────────
+	CustomCSS         string      `gorm:"column:custom_css" json:"themeCustomCSS"`
+	MobileCustomCSS   string      `gorm:"column:mobile_custom_css" json:"themeMobileCustomCSS"`
+	UnpinnedMenuItems StringSlice `gorm:"column:unpinned_menu_items;type:text" json:"themeUnpinnedMenuItems"`
 }
 
 type HomeItem struct {
@@ -275,8 +273,8 @@ type HomeItem struct {
 type MediastreamSettings struct {
 	BaseModel
 	TranscodeEnabled               bool   `gorm:"column:transcode_enabled" json:"transcodeEnabled"`
-	FfmpegPath                      string `gorm:"column:ffmpeg_path" json:"ffmpegPath"`
-	FfprobePath                     string `gorm:"column:ffprobe_path" json:"ffprobePath"`
+	FfmpegPath                     string `gorm:"column:ffmpeg_path" json:"ffmpegPath"`
+	FfprobePath                    string `gorm:"column:ffprobe_path" json:"ffprobePath"`
 	PreTranscodeLibraryDir         string `gorm:"column:pre_transcode_library_dir" json:"preTranscodeLibraryDir"`
 	TranscodeHwAccel               string `gorm:"column:transcode_hw_accel" json:"transcodeHwAccel"`
 	TranscodePreset                string `gorm:"column:transcode_preset" json:"transcodePreset"`
@@ -285,7 +283,6 @@ type MediastreamSettings struct {
 	TranscodeThreads               int    `gorm:"column:transcode_threads" json:"transcodeThreads"`
 	DirectPlayOnly                 bool   `gorm:"column:direct_play_only" json:"directPlayOnly"`
 }
-
 
 type GhostAssociatedMedia struct {
 	BaseModel
@@ -316,8 +313,6 @@ type SilencedMediaEntry struct {
 	BaseModel
 }
 
-
-
 type MediaFiller struct {
 	BaseModel
 	Data          []byte    `json:"data"`
@@ -327,10 +322,6 @@ type MediaFiller struct {
 	LastFetchedAt time.Time `json:"lastFetchedAt"`
 }
 
-
-
-
-
 type UserMediaProgress struct {
 	BaseModel
 	AnonUserId string  `gorm:"column:anon_user_id;uniqueIndex:idx_anon_media" json:"anonUserId"`
@@ -339,8 +330,6 @@ type UserMediaProgress struct {
 	Progress   int     `gorm:"column:progress" json:"progress"`
 	Score      float64 `gorm:"column:score" json:"score"`
 }
-
-
 
 // MediaCollection groups movies or shows that belong to the same TMDB franchise/saga.
 // It is populated automatically when a scanned movie has a non-nil BelongsToCollection
@@ -383,12 +372,11 @@ type EpisodeSkipTime struct {
 // traduce internamente a los IDs específicos de Jellyfin u otras fuentes.
 type MediaIDMapping struct {
 	BaseModel
-	InternalID int    `gorm:"column:internal_id;uniqueIndex" json:"internalId"`
-	TMDBID     int    `gorm:"column:tmdb_id;index" json:"tmdbId,omitempty"`
-	MALID      int    `gorm:"column:mal_id;index" json:"malId,omitempty"`
-	JellyfinID string `gorm:"column:jellyfin_id;index" json:"jellyfinId,omitempty"`
-	MediaType  string `gorm:"column:media_type" json:"mediaType"` // "movie" | "tv"
-	Title      string `gorm:"column:title" json:"title"`
+	InternalID int       `gorm:"column:internal_id;uniqueIndex" json:"internalId"`
+	TMDBID     int       `gorm:"column:tmdb_id;index" json:"tmdbId,omitempty"`
+	MALID      int       `gorm:"column:mal_id;index" json:"malId,omitempty"`
+	JellyfinID string    `gorm:"column:jellyfin_id;index" json:"jellyfinId,omitempty"`
+	MediaType  string    `gorm:"column:media_type" json:"mediaType"` // "movie" | "tv"
+	Title      string    `gorm:"column:title" json:"title"`
 	LastSyncAt time.Time `gorm:"column:last_sync_at" json:"lastSyncAt"`
 }
-

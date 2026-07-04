@@ -44,7 +44,7 @@ export function HeroSection({
                     transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                     className="flex items-center gap-3 mb-4"
                 >
-                    <div className="h-[2px] w-8 bg-primary shadow-[0_0_15px_rgba(249,115,22,0.5)]" />
+                    <div className="h-[2px] w-8 bg-primary shadow-[0_0_15px_hsl(var(--brand-orange)/0.5)]" />
                     <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary/90">{decorationTag}</p>
                 </motion.div>
                 

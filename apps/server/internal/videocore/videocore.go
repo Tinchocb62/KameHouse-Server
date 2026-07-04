@@ -27,7 +27,6 @@ type (
 		wsEventManager              events.WSEventManagerInterface
 		clientPlayerEventSubscriber *events.ClientEventSubscriber
 
-		translatorService *TranslatorService
 
 		continuityManager   *continuity.Manager
 		dynamicProvider *metadata_provider.DynamicProvider
@@ -103,14 +102,6 @@ func (vc *VideoCore) SetSettings(settings *models.Settings) {
 	vc.settings = settings
 	vc.settingsMu.Unlock()
 
-	if vc.translatorService != nil {
-		vc.translatorService.Shutdown()
-	}
-	vc.translatorService = nil
-	if settings.GetMediaPlayer().VcTranslate {
-		vc.logger.Trace().Msgf("videocore: Setting up translator service %s", settings.GetMediaPlayer().VcTranslateProvider)
-		vc.translatorService = NewTranslatorService(vc, settings.GetMediaPlayer().VcTranslateApiKey, settings.GetMediaPlayer().VcTranslateProvider, settings.GetMediaPlayer().VcTranslateTargetLanguage)
-	}
 }
 
 func (vc *VideoCore) Start() {

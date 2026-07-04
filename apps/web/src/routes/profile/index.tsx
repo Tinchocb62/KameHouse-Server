@@ -9,6 +9,7 @@ import { cn } from "@/components/ui/core/styling"
 import { Icons } from "@/components/ui/icons"
 import { PosterCard } from "@/components/ui/poster-card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 export const Route = createFileRoute("/profile/")({
     loader: ({ context }) => {
@@ -33,6 +34,7 @@ function ProfilePage() {
 function ProfileClient() {
     const { data: collection } = useGetLibraryCollection()
     const { data: settings } = useGetSettings()
+    const ts = useThemeSettings()
 
     const stats = React.useMemo(() => {
         if (!collection?.lists) return { series: 0, movies: 0, episodes: 0, hours: 0 }
@@ -63,10 +65,22 @@ function ProfileClient() {
 
     const continueWatching = React.useMemo(() => {
         if (!collection?.lists) return []
+        const sortBy = ts.themeContinueWatchingDefaultSorting
         return collection.lists
             .flatMap(l => l.entries ?? [])
             .filter(e => e.media && (e.listData?.progress || 0) > 0 && (e.listData?.progress || 0) < (e.media.totalEpisodes || 1) * 0.95)
-            .sort((a, b) => ((b.listData as any)?.updatedAt || 0) - ((a.listData as any)?.updatedAt || 0))
+            .sort((a, b) => {
+                if (sortBy === "LAST_WATCHED_ASC") {
+                    return ((a.listData as any)?.updatedAt || 0) - ((b.listData as any)?.updatedAt || 0)
+                }
+                if (sortBy === "TITLE_ASC") {
+                    const at = a.media?.titleEnglish || a.media?.titleRomaji || ""
+                    const bt = b.media?.titleEnglish || b.media?.titleRomaji || ""
+                    return at.localeCompare(bt)
+                }
+                // LAST_WATCHED_DESC (default)
+                return ((b.listData as any)?.updatedAt || 0) - ((a.listData as any)?.updatedAt || 0)
+            })
             .slice(0, 6)
             .map(e => ({
                 artwork: e.media?.bannerImage || e.media?.posterImage || "",

@@ -15,7 +15,7 @@ export function TvNavBar() {
     const { location } = useRouterState()
 
     return (
-        <nav className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-center gap-3 px-8 py-4 bg-surface/95 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/50 shadow-elevation-3">
+        <nav className="fixed bottom-0 inset-x-0 z-50 flex items-center justify-center gap-3 px-8 py-4 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/50 shadow-elevation-3" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 95%, transparent)" }}>
             {TV_NAV_ITEMS.map(({ to, label, Icon }) => {
                 const isActive = location.pathname === to || location.pathname.startsWith(to + "/")
                 return (

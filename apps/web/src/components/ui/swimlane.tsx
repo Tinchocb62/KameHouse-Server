@@ -1,11 +1,11 @@
 import { HorizontalDraggableScroll } from "@/components/ui/horizontal-draggable-scroll"
-import { MediaCard } from "./media-card"
-import { MediaStack } from "./media-stack"
+import { MediaCard, type MediaCardProps } from "./media-card"
 import { motion } from "framer-motion"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/components/ui/core/styling"
 import type { CardAspect } from "@/api/types/intelligence.types"
 import * as React from "react"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 export interface SwimlaneItem {
     id: string
@@ -38,6 +38,70 @@ export interface SwimlaneProps {
     className?: string
 }
 
+interface MediaStackProps extends MediaCardProps {
+    stackCount?: number
+}
+
+function MediaStack({ stackCount = 2, className, ...props }: MediaStackProps) {
+    const stackItems = Array.from({ length: stackCount }).map((_, i) => i + 1)
+    const [isPopupOpen, setIsPopupOpen] = React.useState(false)
+    const isPoster = props.aspect === "poster"
+
+    return (
+        <div className={cn("relative group/stack", className)}>
+            {/* Background stack elements */}
+            {stackItems.map((idx) => (
+                <motion.div
+                    key={idx}
+                    className={cn(
+                        "absolute inset-0 border border-white/5 shadow-2xl overflow-hidden",
+                        "bg-zinc-900/50 backdrop-blur-[var(--blur-overlay-sm)]",
+                        isPoster ? "rounded-xl" : "rounded-2xl"
+                    )}
+                    initial={false}
+                    animate={{
+                        x: isPopupOpen ? 0 : idx * 4,
+                        y: isPopupOpen ? 0 : idx * 4,
+                        scale: isPopupOpen ? 0.95 : 1,
+                        opacity: isPopupOpen ? 0 : 1,
+                    }}
+                    whileHover={{
+                        x: idx * 12,
+                        y: -idx * 4,
+                        rotateZ: idx * 1,
+                        transition: { 
+                            type: "spring", 
+                            stiffness: 300, 
+                            damping: 25,
+                        }
+                    }}
+                    style={{
+                        zIndex: 10 - idx,
+                    }}
+                />
+            ))}
+
+            {/* Main top card */}
+            <motion.div
+                className="relative z-20"
+                whileHover={{
+                    y: -8,
+                    transition: { type: "spring", stiffness: 300, damping: 25 }
+                }}
+            >
+                <MediaCard {...props} onPopupOpenChange={setIsPopupOpen} />
+                
+                {/* Minimalist Series Indicator */}
+                <div className="absolute top-4 right-4 z-30">
+                    <div className="bg-black/60 backdrop-blur-[var(--blur-overlay-sm)] text-white/70 text-[8px] font-black px-2 py-1 rounded-md border border-white/10 uppercase tracking-[0.2em]">
+                        Serie
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    )
+}
+
 const SwimlaneInner = React.memo(function SwimlaneInner({
     title,
     items,
@@ -45,6 +109,8 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
     onHover,
     className,
 }: SwimlaneProps) {
+    const ts = useThemeSettings()
+
     if (items.length === 0) {
         return null
     }
@@ -70,6 +136,7 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
                     scrollAmount={420}
                     safeDisplacement={18}
                     applyRubberBandEffect
+                    autoScroll={!ts.themeDisableCarouselAutoScroll}
                 >
                     {items.map((item, index) => (
                         <motion.div

@@ -1,8 +1,12 @@
-import React from "react"
-import { ScannerDashboard } from "@/components/ui/scanner/ScannerDashboard"
-import { Section, OsToggle } from "../components"
+import React, { Suspense, lazy } from "react"
+import { Section, Card, OsToggle, OsSelect } from "../components"
+import { RangeSlider } from "@/components/settings/range-slider"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
+
+const ScannerDashboard = lazy(() =>
+    import("@/components/ui/scanner/ScannerDashboard").then((m) => ({ default: m.ScannerDashboard }))
+)
 
 interface ScannerTabProps {
     control: Control<SettingsFormValues>
@@ -11,101 +15,75 @@ interface ScannerTabProps {
 export function ScannerTab({ control }: ScannerTabProps) {
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
-
-            {/* Scouter engine parameters */}
-            <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Range slider for scoring threshold */}
+            <Section label="Motor de Emparejamiento">
+                <Card className="divide-y divide-outline-variant/4">
                     <Controller
                         control={control}
                         name="library.scannerMatchingThreshold"
                         render={({ field }) => (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between text-[11px] font-mono font-bold text-on-surface-variant">
-                                    <span>Umbral de Sensibilidad (Scoring Threshold)</span>
-                                    <span className="text-[#ff6e3a] font-bold">{(field.value || 82) / 100} (Dice)</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="50"
-                                    max="95"
-                                    value={field.value || 82}
-                                    onChange={(e) => field.onChange(parseInt(e.target.value))}
-                                    className="w-full h-1.5 bg-surface-container rounded-lg appearance-none cursor-pointer accent-brand-secondary mt-2"
-                                />
-                                <p className="text-[10px] text-on-surface-variant mt-1">Valores altos evitan falsos positivos pero requieren nombres de archivos limpios.</p>
-                            </div>
+                            <RangeSlider
+                                label="Umbral de Sensibilidad (Scoring Threshold)"
+                                description="Valores altos evitan falsos positivos pero requieren nombres de archivos limpios."
+                                min={50}
+                                max={95}
+                                value={field.value || 82}
+                                onChange={field.onChange}
+                                formatValue={(v) => `${(v / 100).toFixed(2)} (Dice)`}
+                            />
                         )}
                     />
-
-                    {/* Scan Frequency */}
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="scan-frequency-select" className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest font-mono">Frecuencia del Escáner en segundo plano</label>
-                        <Controller
-                            control={control}
-                            name="library.scannerProvider"
-                            render={({ field }) => (
-                                <select
-                                    id="scan-frequency-select"
-                                    value={field.value || "manual"}
-                                    onChange={field.onChange}
-                                    className="w-full bg-surface-container border border-outline-variant rounded-xl px-4 py-2.5 text-xs text-on-surface-variant focus:outline-none focus:border-[#ff6e3a]/50 focus:shadow-[0_0_20px_rgba(255,110,58,0.12)] transition-all cursor-pointer [&>option]:bg-[#141418] [&>option]:text-on-surface mt-1.5"
-                                >
-                                    <option value="manual">Solo manual o por Debouncer en tiempo real</option>
-                                    <option value="6h">Cada 6 horas</option>
-                                    <option value="24h">Cada 24 horas</option>
-                                </select>
-                            )}
-                        />
-                    </div>
-                </div>
-
-                <hr className="border-outline-variant" />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Matching Algorithm */}
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="matching-algorithm-select" className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest font-mono">Algoritmo de Emparejamiento</label>
-                        <Controller
-                            control={control}
-                            name="library.scannerMatchingAlgorithm"
-                            render={({ field }) => (
-                                <select
-                                    id="matching-algorithm-select"
-                                    value={field.value || "dice"}
-                                    onChange={field.onChange}
-                                    className="w-full bg-surface-container border border-outline-variant rounded-xl px-4 py-2.5 text-xs text-on-surface-variant focus:outline-none focus:border-[#ff6e3a]/50 focus:shadow-[0_0_20px_rgba(255,110,58,0.12)] transition-all cursor-pointer [&>option]:bg-[#141418] [&>option]:text-on-surface mt-1.5"
-                                >
-                                    <option value="dice">Coeficiente Dice (Recomendado)</option>
-                                    <option value="levenshtein">Distancia de Levenshtein</option>
-                                    <option value="stringMatch">Coincidencia de Cadenas Simple</option>
-                                </select>
-                            )}
-                        />
-                    </div>
-
-                    {/* Fallback Metadata */}
-                    <div className="flex flex-col justify-center pt-2">
-                        <Controller
-                            control={control}
-                            name="library.useFallbackMetadataProvider"
-                            render={({ field }) => (
-                                <OsToggle
-                                    label="Proveedor de Metadatos de Respaldo"
-                                    description="Habilita fuentes de metadatos secundarias si falla la consulta del servidor principal."
-                                    checked={!!field.value}
+                    <Controller
+                        control={control}
+                        name="library.scannerProvider"
+                        render={({ field }) => {
+                            const isTmdb = field.value === "tmdb"
+                            return (
+                                <OsSelect
+                                    label="Proveedor del Escáner"
+                                    description="Fuente de metadatos usada durante el escaneo automático de la biblioteca."
+                                    options={[
+                                        { value: "tmdb", label: "TMDB — series y películas" },
+                                        { value: "anidb", label: "Jikan + AniDB — anime, fallback" },
+                                    ]}
+                                    value={isTmdb ? "tmdb" : "anidb"}
                                     onChange={field.onChange}
                                 />
-                            )}
-                        />
-                    </div>
-                    </div>
-                </div>
+                            )
+                        }}
+                    />
+                    <Controller
+                        control={control}
+                        name="library.scannerUseLegacyMatching"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Matching Legacy"
+                                description="Desactiva el motor de emparejamiento bayesiano y usa el algoritmo anterior."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="library.scannerStrictStructure"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Estructura Estricta de Carpetas"
+                                description="Exige que los archivos sigan una estructura de carpetas predecible para ser indexados."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
+                </Card>
+            </Section>
 
             {/* Scanner Bento Dashboard */}
             <Section label="Diagnóstico en Vivo">
                 <div className="pt-2">
-                    <ScannerDashboard />
+                    <Suspense fallback={<div className="h-40 rounded-container bg-surface-container border border-outline-variant animate-pulse" />}>
+                        <ScannerDashboard />
+                    </Suspense>
                 </div>
             </Section>
         </div>

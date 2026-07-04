@@ -33,6 +33,10 @@ export interface PlayerCoreProps {
     nextStreamUrl?: string
     nextStreamType?: "local" | "online" | "direct" | "transcode" | "optimized"
     streamType?: "local" | "online" | "direct" | "transcode" | "optimized"
+    /** Permite al core pedir un cambio de tipo de stream (ej. direct → transcode
+     *  cuando el usuario elige una pista de audio y el navegador no soporta
+     *  cambiarla nativamente en direct play). */
+    onRequestStreamTypeChange?: (type: "transcode" | "direct") => void
     nextEpisodeTitle?: string
     nextEpisodeNumber?: number
     nextEpisodeImage?: string

@@ -91,6 +91,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         nextStreamUrl,
         nextStreamType,
         streamType,
+        onRequestStreamTypeChange,
     } = props
 
     const { data: statusQuery } = useGetStatus()
@@ -386,22 +387,33 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         setIsJassubActive,
     })
 
+    // Selección de audio pendiente tras un cambio de stream (direct → transcode):
+    // se aplica cuando llega la nueva lista de pistas HLS.
+    const pendingAudioSelectionRef = useRef<AudioTrack | null>(null)
+
     // Auto-select preferred tracks
     const onSelectAudio = useCallback((track: AudioTrack) => {
         if (hlsRef.current) {
             hlsRef.current.audioTrack = track.index
-        } else if (videoRef.current && 'audioTracks' in videoRef.current) {
+        } else if (videoRef.current && 'audioTracks' in videoRef.current && (videoRef.current as HTMLVideoElement & { audioTracks: AudioTrackList }).audioTracks?.length > 0) {
             const video = videoRef.current as HTMLVideoElement & { audioTracks: AudioTrackList }
             const trackList = Array.from(video.audioTracks)
             for (let i = 0; i < trackList.length; i++) {
                 trackList[i].enabled = i === track.index
             }
+        } else if (onRequestStreamTypeChange && (streamType === "direct" || streamType === "local")) {
+            // Direct play: Chromium/WebView2 no soporta la API nativa de
+            // audioTracks, así que cambiar de pista era un no-op silencioso.
+            // Cambiamos a transcode (HLS con renditions de audio) y aplicamos
+            // la pista elegida cuando llegue la nueva lista.
+            pendingAudioSelectionRef.current = track
+            onRequestStreamTypeChange("transcode")
         }
         setActiveAudioIndex(track.index)
         if (track.language) {
             setPreferredAudioLang(track.language)
         }
-    }, [setPreferredAudioLang])
+    }, [setPreferredAudioLang, onRequestStreamTypeChange, streamType])
 
     const onSelectSubtitle = useCallback((track: SubtitleTrack | null) => {
         if (track === null) {
@@ -420,40 +432,69 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         }
     }, [setPreferredSubtitleLang])
 
+    // Guarda: auto-seleccionar UNA sola vez por lista de pistas (por stream).
+    // Este efecto también se re-dispara cuando el usuario cambia de pista
+    // manualmente (activeAudioIndex está en las deps) — sin esta guarda, la
+    // heurística "Latino primero" revertía la selección manual al instante
+    // y el menú de audio parecía no funcionar.
+    const audioAutoSelectedForRef = useRef<AudioTrack[] | null>(null)
     useEffect(() => {
-        if (audioTracks.length > 0) {
-            let preferred: AudioTrack | undefined
+        if (audioTracks.length === 0) return
+        if (audioAutoSelectedForRef.current === audioTracks) return
+        audioAutoSelectedForRef.current = audioTracks
 
+        // Prioridad máxima: pista elegida explícitamente por el usuario antes
+        // de un cambio de stream (direct → transcode). Los índices difieren
+        // entre listas (ffprobe vs renditions HLS), así que se matchea por
+        // título y, si no, por idioma.
+        const pending = pendingAudioSelectionRef.current
+        if (pending) {
+            pendingAudioSelectionRef.current = null
+            const match = audioTracks.find(t => pending.title && t.title === pending.title)
+                ?? audioTracks.find(t => t.language === pending.language)
+            if (match) {
+                if (activeAudioIndex !== match.index) onSelectAudio(match)
+                return
+            }
+        }
+
+        let preferred: AudioTrack | undefined
+
+        preferred = audioTracks.find(t => {
+            const lang = t.language?.toLowerCase() || ""
+            return lang === "spa-lat" || lang === "es-la"
+        })
+        if (!preferred) {
+            preferred = audioTracks.find(t => {
+                const title = t.title?.toLowerCase() || ""
+                return title.includes("latino") || title.includes("latin")
+            })
+        }
+        if (!preferred) {
             preferred = audioTracks.find(t => {
                 const lang = t.language?.toLowerCase() || ""
-                return lang === "spa-lat" || lang === "es-la"
+                return lang === "spa" || lang === "es" || lang.startsWith("es-") || lang.startsWith("spa-")
             })
-            if (!preferred) {
-                preferred = audioTracks.find(t => {
-                    const title = t.title?.toLowerCase() || ""
-                    return title.includes("latino") || title.includes("latin")
-                })
-            }
-            if (!preferred) {
-                preferred = audioTracks.find(t => {
-                    const lang = t.language?.toLowerCase() || ""
-                    return lang === "spa" || lang === "es" || lang.startsWith("es-") || lang.startsWith("spa-")
-                })
-            }
+        }
 
-            if (!preferred) {
-                preferred = audioTracks.find(t => t.language === preferredAudioLang)
-            }
+        if (!preferred) {
+            preferred = audioTracks.find(t => t.language === preferredAudioLang)
+        }
 
-            if (preferred && activeAudioIndex !== preferred.index) {
-                onSelectAudio(preferred)
-            }
+        if (preferred && activeAudioIndex !== preferred.index) {
+            onSelectAudio(preferred)
         }
     }, [audioTracks, preferredAudioLang, activeAudioIndex, onSelectAudio])
 
+    // Misma guarda que el audio: auto-configurar subtítulos UNA vez por lista
+    // de pistas. Sin esto, elegir un subtítulo manualmente con audio doblado
+    // lo apagaba al instante (y desactivarlo lo re-activaba), porque el efecto
+    // se re-dispara con cada cambio de activeSubtitleIndex.
+    const subtitleAutoSelectedForRef = useRef<SubtitleTrack[] | null>(null)
     useEffect(() => {
         const timers: ReturnType<typeof setTimeout>[] = []
-        if (subtitleTracks.length > 0) {
+        if (subtitleTracks.length > 0 && subtitleAutoSelectedForRef.current !== subtitleTracks) {
+            subtitleAutoSelectedForRef.current = subtitleTracks
             const currentAudio = audioTracks.find(t => t.index === activeAudioIndex)
             const currentLang = currentAudio?.language?.toLowerCase() || ""
             const isDubbed = currentAudio && (["spa", "es", "eng"].includes(currentLang) || currentLang.startsWith("spa-") || currentLang.startsWith("es-"))

@@ -4,6 +4,7 @@ import { Icons } from "@/components/ui/icons"
 import type { PremiumEpisode } from "@/api/types/series.types"
 import { cn } from "@/components/ui/core/styling"
 import { useHoverPreload } from "@/hooks/use-hover-preload"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 const listVariants: Variants = {
   hidden: { opacity: 0 },
@@ -31,6 +32,7 @@ export function PremiumEpisodeList({
   onPreload
 }: PremiumEpisodeListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
+  const ts = useThemeSettings()
 
   const { onMouseEnter, onMouseLeave } = useHoverPreload({
     delay: 300,
@@ -61,10 +63,10 @@ export function PremiumEpisodeList({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className={cn(
-            "w-full pl-10 pr-10 py-2.5 rounded-xl text-sm",
-            "bg-white/[0.03] border border-outline-variant/20 text-on-surface placeholder-on-surface-variant/60",
-            "focus:outline-none focus:border-brand-accent/40 focus:ring-1 focus:ring-brand-accent/20",
-            "transition-all duration-200"
+            "w-full pl-10 pr-10 py-2.5 rounded-full text-sm",
+            "bg-white/[0.05] border border-white/10 backdrop-blur-[var(--blur-overlay-sm)] text-on-surface placeholder-on-surface-variant/60",
+            "focus:outline-none focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent/30",
+            "transition-all duration-base ease-smooth-out"
           )}
         />
         {searchQuery && (
@@ -125,27 +127,35 @@ export function PremiumEpisodeList({
             onMouseEnter={() => onMouseEnter(ep.id)}
             onMouseLeave={() => onMouseLeave(ep.id)}
             className={cn(
-              "group flex gap-4 p-3 rounded-2xl transition-all duration-300 cursor-pointer shadow-lg",
+              "group flex gap-4 rounded-2xl cursor-pointer transition-all duration-base ease-smooth-out active:scale-[0.98]",
+              ts.themeUseLegacyEpisodeCard ? "p-2 items-center" : "p-3",
+              "border border-white/[0.06]",
+              !ts.themeUseLegacyEpisodeCard && "shadow-card hover:shadow-elevated hover:-translate-y-0.5",
               "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
               isHighlighted
-                ? "bg-[var(--glass-bg)] backdrop-blur-[var(--blur-overlay-md)] border border-[var(--glass-border)] rounded-2xl hover:bg-[var(--glass-hover)] hover:border-[var(--glass-strong)] transition-all duration-300 !bg-brand-accent/[0.03] !border-brand-accent/20 border-l-[3.5px] !border-l-brand-accent shadow-[0_8px_24px_hsl(var(--brand-accent)/0.04)] hover:!bg-brand-accent/[0.06] hover:!border-brand-accent/30"
-                : "bg-[var(--glass-bg)] backdrop-blur-[var(--blur-overlay-md)] border border-[var(--glass-border)] rounded-2xl hover:bg-[var(--glass-hover)] hover:border-[var(--glass-strong)] transition-all duration-300"
+                ? "bg-brand-accent/[0.08] border-l-[3px] border-l-brand-accent"
+                : "bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/[0.12]"
             )}
           >
           {/* Thumbnail */}
-          <div className="relative w-48 md:w-56 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-surface-container shadow-md">
-            <img 
-              src={ep.thumbnailUrl} 
+          <div className={cn(
+            "relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-surface-container",
+            ts.themeUseLegacyEpisodeCard ? "w-28" : "w-48 md:w-56 shadow-card"
+          )}>
+            <img
+              src={ep.thumbnailUrl}
               alt={ep.title}
-              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-slow ease-smooth-out"
             />
             {/* Play Overlay */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 cursor-pointer">
-              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-[var(--blur-overlay-sm)] flex items-center justify-center border border-white/40">
-                <Icons.media.play className="w-6 h-6 text-white ml-1" fill="currentColor" />
+            {!ts.themeUseLegacyEpisodeCard && (
+              <div className="absolute inset-0 bg-scrim/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-base cursor-pointer">
+                <div className="w-12 h-12 rounded-full glass-liquid flex items-center justify-center">
+                  <Icons.media.play className="w-6 h-6 text-white ml-1" fill="currentColor" />
+                </div>
               </div>
-            </div>
-            
+            )}
+
             {/* Progress/Watched Indicator */}
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-container-high">
               {ep.isWatched && <div className="h-full bg-brand-success w-full" />}
@@ -159,56 +169,58 @@ export function PremiumEpisodeList({
                 <span className="text-on-surface-variant mr-1.5">{ep.number}.</span>
                 {ep.title}
               </h4>
-              
+
               <div className="flex items-center gap-1.5 shrink-0">
                 {/* Saga Badge */}
                 {ep.sagaName && (
-                  <span className="text-[10px] font-sans font-bold uppercase tracking-wide bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-2 py-0.5 rounded-md">
+                  <span className="inline-flex items-center text-label-sm uppercase bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-3 py-1 rounded-full">
                     {ep.sagaName}
                   </span>
                 )}
                 {/* Type Badge */}
                 {ep.episodeType === 'Filler' && (
-                  <span className="text-[10px] font-mono uppercase bg-brand-destructive/10 text-brand-destructive border border-brand-destructive/20 px-2 py-0.5 rounded-md">
-                    Filler
+                  <span className="inline-flex items-center text-label-sm uppercase bg-brand-destructive/15 text-brand-destructive border border-brand-destructive/25 px-3 py-1 rounded-full">
+                    Relleno
                   </span>
                 )}
                 {ep.episodeType === 'Hyped' && (
-                  <span className="text-[10px] font-mono uppercase bg-brand-secondary/15 text-brand-secondary border border-brand-secondary/25 px-2 py-0.5 rounded-md shadow-[0_0_8px_hsl(var(--brand-secondary)/0.2)]">
+                  <span className="inline-flex items-center text-label-sm uppercase bg-brand-secondary/15 text-brand-secondary border border-brand-secondary/25 px-3 py-1 rounded-full shadow-[0_0_8px_hsl(var(--brand-secondary)/0.2)]">
                     Premium
                   </span>
                 )}
               </div>
             </div>
 
-            <p className="text-xs text-on-surface-variant line-clamp-2 mb-2 leading-relaxed">
-              {ep.description}
-            </p>
+            {!ts.themeUseLegacyEpisodeCard && !ts.themeHideEpisodeCardDescription && (
+              <p className="text-xs text-on-surface-variant line-clamp-2 mb-2 leading-relaxed">
+                {ep.description}
+              </p>
+            )}
+
+            {!ts.themeHideDownloadedEpisodeCardFilename && ep.localFilePath && (
+              <p className="text-[9px] font-mono text-on-surface-variant/50 truncate mb-1">
+                {ep.localFilePath.split(/[\\/]/).pop()}
+              </p>
+            )}
 
             {/* Technical Pills & Status */}
-            <div className="flex items-center justify-between mt-auto">
-              <div className="flex items-center gap-1.5">
-                {ep.resolution && (
-                  <span className="text-[9px] font-mono font-medium bg-[var(--glass-bg)] backdrop-blur-[var(--blur-overlay-sm)] border border-[var(--glass-border)] text-on-surface-variant px-2 py-0.5 rounded-md">
-                    {ep.resolution}
-                  </span>
+            {!ts.themeUseLegacyEpisodeCard && (
+              <div className="flex items-center justify-between mt-auto">
+                {ts.themeShowEpisodeCardAnimeInfo && (
+                  <div className="flex items-center gap-1.5">
+                    {[ep.resolution, ep.videoCodec, ep.audioCodec].filter(Boolean).map((spec) => (
+                      <span key={spec as string} className="text-[10px] font-mono font-medium bg-white/[0.06] border border-white/[0.06] text-on-surface-variant px-2 py-0.5 rounded-md uppercase">
+                        {spec}
+                      </span>
+                    ))}
+                  </div>
                 )}
-                {ep.videoCodec && (
-                  <span className="text-[9px] font-mono font-medium bg-[var(--glass-bg)] backdrop-blur-[var(--blur-overlay-sm)] border border-[var(--glass-border)] text-on-surface-variant px-2 py-0.5 rounded-md">
-                    {ep.videoCodec}
-                  </span>
-                )}
-                {ep.audioCodec && (
-                  <span className="text-[9px] font-mono font-medium bg-[var(--glass-bg)] backdrop-blur-[var(--blur-overlay-sm)] border border-[var(--glass-border)] text-on-surface-variant px-2 py-0.5 rounded-md">
-                    {ep.audioCodec}
-                  </span>
-                )}
-              </div>
 
-              <div className="flex items-center justify-center w-6 h-6 rounded-full border border-outline-variant group-hover:border-outline-variant/70 transition-colors">
-                {ep.isWatched && <Icons.ui.check className="w-3.5 h-3.5 text-brand-success" strokeWidth={3} />}
+                <div className="flex items-center justify-center w-6 h-6 rounded-full border border-outline-variant group-hover:border-outline-variant/70 transition-colors ml-auto">
+                  {ep.isWatched && <Icons.ui.check className="w-3.5 h-3.5 text-brand-success" strokeWidth={3} />}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </motion.div>
         )

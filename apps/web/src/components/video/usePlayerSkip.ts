@@ -177,7 +177,7 @@ export function usePlayerSkip({
         autoPlayNextEpisode: false,
         nextStreamUrl: undefined as string | undefined,
         streamType: undefined as string | undefined,
-        preloadStream: ((_: { path: string; streamType: Mediastream_StreamType; audioStreamIndex: number; preferredAudioLang?: string }) => {}) as (vars: { path: string; streamType: Mediastream_StreamType; audioStreamIndex: number; preferredAudioLang?: string }) => void,
+        preloadStream: ((_: { path: string; streamType: Mediastream_StreamType; audioStreamIndex: number; preferredAudioLang: string }) => {}) as (vars: { path: string; streamType: Mediastream_StreamType; audioStreamIndex: number; preferredAudioLang: string }) => void,
         queryClient: undefined as ReturnType<typeof useQueryClient> | undefined,
         clientId: undefined as string | undefined,
         malId: undefined as number | null | undefined,
@@ -614,7 +614,7 @@ export function usePlayerSkip({
                     : "direct"
             ) as Mediastream_StreamType
 
-            cfg.preloadStream({ path: cfg.nextStreamUrl, streamType: resolvedStreamType, audioStreamIndex: 0, preferredAudioLang: cfg.preferredAudioLang })
+            cfg.preloadStream({ path: cfg.nextStreamUrl, streamType: resolvedStreamType, audioStreamIndex: 0, preferredAudioLang: cfg.preferredAudioLang || "" })
 
             cfg.queryClient!.prefetchQuery({
                 queryKey: [API_ENDPOINTS.MEDIASTREAM.RequestMediastreamMediaContainer.key, cfg.nextStreamUrl, resolvedStreamType],

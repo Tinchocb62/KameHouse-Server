@@ -140,7 +140,8 @@ function CollectionDetailPage() {
             {/* Back Button */}
             <button
                 onClick={() => navigate({ to: "/collections" })}
-                className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-surface-container/40 border border-outline-variant/10 backdrop-blur-overlay-md hover:border-on-surface text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 border border-outline-variant/10 backdrop-blur-overlay-md hover:border-on-surface text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 40%, transparent)" }}
             >
                 <ChevronLeft /> Volver a Sagas
             </button>
@@ -247,7 +248,7 @@ function CollectionDetailPage() {
                                 <div className={cn("w-full md:w-1/2 flex justify-end md:pr-12", !isEven && "md:order-3 md:justify-start md:pl-12")}>
                                     <div
                                         className={cn(
-                                            "timeline-card-anim w-full md:max-w-xl group relative border border-outline-variant/10 hover:border-on-surface bg-surface-container/60 hover:bg-surface-container/80 transition-all duration-300 p-6 md:p-8 flex flex-col md:flex-row gap-6 text-left"
+                                            "timeline-card-anim w-full md:max-w-xl group relative border border-outline-variant/10 hover:border-on-surface bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_60%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_80%,transparent)] transition-all duration-300 p-6 md:p-8 flex flex-col md:flex-row gap-6 text-left"
                                         )}
                                     >
                                         {/* Entry Poster */}
@@ -261,14 +262,14 @@ function CollectionDetailPage() {
                                                 
                                                 {/* LOC Badge */}
                                                 {hasLocal && (
-                                                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-surface-container/75 backdrop-blur-overlay-md border border-green-500/40 text-[7px] font-black text-green-400 tracking-wider shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+                                                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded backdrop-blur-overlay-md border border-green-500/40 text-[7px] font-black text-green-400 tracking-wider shadow-[0_0_10px_rgba(34,197,94,0.2)]" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 75%, transparent)" }}>
                                                         LOC
                                                     </div>
                                                 )}
 
                                                 {/* Score Badge */}
                                                 {userScore > 0 && (
-                                                    <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-surface-container/75 backdrop-blur-overlay-md border border-yellow-500/40 text-[7px] font-black text-yellow-500 tracking-wider flex items-center gap-1 shadow-elevation-2">
+                                                    <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded backdrop-blur-overlay-md border border-yellow-500/40 text-[7px] font-black text-yellow-500 tracking-wider flex items-center gap-1 shadow-elevation-2" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 75%, transparent)" }}>
                                                         <Star className="w-2 h-2" />
                                                         <span>{userScore}</span>
                                                     </div>
@@ -302,7 +303,7 @@ function CollectionDetailPage() {
                                                     {isPlanning && (
                                                         <>
                                                             <span>•</span>
-                                                            <span className="flex items-center gap-1 text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded border border-surface-container-high/30">
+                                                            <span className="flex items-center gap-1 text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded border border-[color:color-mix(in_srgb,var(--md-sys-color-surface-container-high)_30%,transparent)]">
                                                                 PLANIFICADO
                                                             </span>
                                                         </>

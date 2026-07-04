@@ -266,7 +266,8 @@ export function PerformanceMonitor() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ type: "spring", stiffness: 380, damping: 26 }}
-                    className="fixed top-6 right-6 z-[9999] w-[350px] bg-surface-container/90 backdrop-blur-overlay-xl border border-outline-variant rounded-corner-lg shadow-elevation-4 p-5 select-none font-sans text-on-surface"
+                    className="fixed top-6 right-6 z-[9999] w-[350px] backdrop-blur-overlay-xl border border-outline-variant rounded-corner-lg shadow-elevation-4 p-5 select-none font-sans text-on-surface"
+                    style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 90%, transparent)" }}
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
@@ -340,7 +341,7 @@ export function PerformanceMonitor() {
                     </div>
 
                     {/* Chart Canvas */}
-                    <div className="bg-surface/40 backdrop-blur-[var(--blur-overlay-sm)] border border-outline-variant/30 rounded-xl p-2 relative h-16 w-full flex items-center justify-center">
+                    <div className="backdrop-blur-[var(--blur-overlay-sm)] border border-outline-variant/30 rounded-xl p-2 relative h-16 w-full flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 40%, transparent)" }}>
                         <canvas ref={canvasRef} width={300} height={48} className="w-full h-full block" />
                         <span className="absolute bottom-1 right-2 text-[7px] text-on-surface-variant/50 font-black tracking-widest uppercase pointer-events-none">HISTORIAL 10s</span>
                     </div>

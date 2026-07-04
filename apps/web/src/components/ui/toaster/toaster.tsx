@@ -15,7 +15,7 @@ export const ToasterAnatomy = defineStyleAnatomy({
         "group-[.toaster]:py-4 group-[.toaster]:px-5 group-[.toaster]:gap-3",
         "group-[.toaster]:text-sm group-[.toaster]:font-medium",
         "group-[.toaster]:rounded-corner-lg group-[.toaster]:border group-[.toaster]:shadow-elevation-3",
-        "group-[.toaster]:bg-surface-container/90 group-[.toaster]:backdrop-blur-[var(--blur-overlay-sm)] group-[.toaster]:border-outline-variant",
+        "group-[.toaster]:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_90%,transparent)] group-[.toaster]:backdrop-blur-[var(--blur-overlay-sm)] group-[.toaster]:border-outline-variant",
         "group-[.toaster]:text-on-surface",
         "group-[.toaster]:transition-all group-[.toaster]:duration-200",
         // Success

@@ -56,8 +56,8 @@ export function CharacterDetailModal({
                     </button>
 
                     {/* Left Column: Avatar & Quick Info */}
-                    <div className="w-full md:w-1/3 p-6 flex flex-col items-center border-b md:border-b-0 md:border-r border-outline-variant/30 shrink-0 bg-surface/30 backdrop-blur-[var(--blur-overlay-sm)]">
-                        <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-brand-orange shadow-[0_0_20px_rgba(255,110,58,0.25)] mb-4 shrink-0">
+                    <div className="w-full md:w-1/3 p-6 flex flex-col items-center border-b md:border-b-0 md:border-r border-outline-variant/30 shrink-0 backdrop-blur-[var(--blur-overlay-sm)]" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 30%, transparent)" }}>
+                        <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-brand-orange shadow-brand-secondary mb-4 shrink-0">
                             {avatarUrl ? (
                                 <img src={avatarUrl} alt={charInfo.name} className="w-full h-full object-cover" />
                             ) : (

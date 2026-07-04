@@ -413,44 +413,18 @@ func cleanSubtitleText(input string) string {
 
 // TranslateContent translates the file content based on saved settings
 func (vc *VideoCore) TranslateContent(ctx context.Context, content string, format int) string {
-	if vc.translatorService == nil {
-		return content
-	}
-	translated, err := vc.translatorService.TranslateContent(ctx, content, format, vc.translatorService.targetLang)
-	if err != nil {
-		vc.logger.Error().Err(err).Msg("videocore: Failed to translate content")
-		return content
-	}
-
-	return translated
+	return content
 }
 
 // TranslateEvent translates the subtitle event based on saved settings
 func (vc *VideoCore) TranslateEvent(ctx context.Context, event *mkvparser.SubtitleEvent) {
-	if vc.translatorService == nil {
-		return
-	}
-	err := vc.translatorService.TranslateEvent(ctx, event, vc.translatorService.targetLang)
-	if err != nil {
-		return
-	}
 }
 
 // TranslateText translates the text based on saved settings
 func (vc *VideoCore) TranslateText(ctx context.Context, text string) string {
-	if vc.translatorService == nil {
-		return text
-	}
-	ret, err := vc.translatorService.TranslateText(ctx, text, vc.translatorService.targetLang)
-	if err != nil {
-		return text
-	}
-	return ret
+	return text
 }
 
 func (vc *VideoCore) GetTranslationTargetLanguage() string {
-	if vc.translatorService == nil {
-		return ""
-	}
-	return vc.translatorService.targetLang
+	return ""
 }

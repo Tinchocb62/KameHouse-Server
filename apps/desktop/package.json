@@ -21,45 +21,12 @@
     "@tauri-apps/plugin-log": "^2.0.0",
     "@tauri-apps/plugin-opener": "^2.0.0",
     "@tauri-apps/plugin-shell": "^2.0.0",
-    "@tauri-apps/plugin-updater": "^2.0.0",
-    "electron-updater": "^6.7.3"
+    "@tauri-apps/plugin-updater": "^2.0.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",
     "typescript": "^5.0.0",
     "eslint": "^9.0.0"
-  },
-  "build": {
-    "appId": "app.kamehouse.desktop",
-    "productName": "KameHouse",
-    "asar": true,
-    "extraResources": [
-      {
-        "from": "binaries",
-        "to": "binaries"
-      }
-    ],
-    "directories": {
-      "buildResources": "assets",
-      "output": "dist"
-    },
-    "files": [
-      "src/**/*",
-      "web/**/*",
-      "assets/**/*",
-      "package.json",
-      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
-      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
-      "!**/node_modules/*.d.ts",
-      "!**/node_modules/.bin",
-      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
-      "!.editorconfig",
-      "!**/._*",
-      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
-      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
-      "!**/{appveyor.yml,.travis.yml,circle.yml}",
-      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
-    ]
   },
   "private": true
 }

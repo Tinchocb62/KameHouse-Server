@@ -101,7 +101,7 @@ export const CharactersTab = React.memo(function CharactersTab({ characters, onS
                     onClick={() => onSelectChar?.(char.node?.name?.full || "")}
                     className="flex flex-col items-center text-center gap-3 group cursor-pointer w-28"
                 >
-                    <div className="w-24 h-24 rounded-full overflow-hidden bg-surface-container/40 border-2 border-outline-variant/5 group-hover:border-brand-secondary/60 group-hover:shadow-[0_0_20px_rgba(255,110,58,0.25)] transition-all duration-700 shadow-elevation-4">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-outline-variant/5 group-hover:border-brand-secondary/60 group-hover:shadow-brand-secondary transition-all duration-700 shadow-elevation-4" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 40%, transparent)" }}>
                         {char.node?.image?.large && (
                             <DeferredImage
                                 src={char.node.image.large}

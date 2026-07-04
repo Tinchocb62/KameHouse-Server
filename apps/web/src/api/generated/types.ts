@@ -490,6 +490,31 @@ export type AudioStreamInfo = {
  * - Filename: media_metadata.go
  * - Package: dto
  * @description
+ *  CharacterDTO represents a key character within a specific saga.
+ */
+export type CharacterDTO = {
+    name: string
+    /**
+     * e.g., "Antagonist", "Defensor"
+     */
+    roleTag: CharacterRole
+    avatarUrl: string
+}
+
+/**
+ * - Filepath: internal/database/models/dto/media_metadata.go
+ * - Filename: media_metadata.go
+ * - Package: dto
+ * @description
+ *  CharacterRole defines the role of a character within a saga.
+ */
+export type CharacterRole = "Protagonist" | "Antagonist" | "Supporting" | "Background"
+
+/**
+ * - Filepath: internal/database/models/dto/media_metadata.go
+ * - Filename: media_metadata.go
+ * - Package: dto
+ * @description
  *  EpisodeType defines the classification of an episode.
  */
 export type EpisodeType = "Canon" | "Filler" | "Hyped"
@@ -578,10 +603,6 @@ export type FileTechnicalInfo = {
      * External .dts/.ac3 files
      */
     externalAudioFiles?: Array<ExternalAudioFile>
-    /**
-     * Available remote subtitles (e.g. OpenSubtitles)
-     */
-    remoteSubtitles?: Array<RemoteSubtitle>
 }
 
 /**
@@ -667,35 +688,32 @@ export type LocalFileParsedData = {
 export type LocalFileType = "main" | "special" | "nc"
 
 /**
- * - Filepath: internal/database/models/dto/localfile.go
- * - Filename: localfile.go
+ * - Filepath: internal/database/models/dto/media_metadata.go
+ * - Filename: media_metadata.go
  * - Package: dto
+ * @description
+ *  SagaDTO represents a story arc or saga within a series.
  */
-export type RemoteSubtitle = {
+export type SagaDTO = {
+    id: string
+    name: string
     /**
-     * e.g. "opensubtitles"
+     * e.g., "1-39"
      */
-    providerId: string
+    episodeRange: string
+    startEp: number
+    endEp: number
+    description: string
     /**
-     * OpenSubtitles file_id for download
+     * True if the entire saga is filler (e.g., Garlic Jr.)
      */
-    fileId: number
-    /**
-     * ISO 639-1 code
-     */
-    language?: string
-    /**
-     * "srt", "ass", etc.
-     */
-    format?: string
-    /**
-     * Popularity signal
-     */
-    downloadCount?: number
-    /**
-     * Release name or episode title
-     */
-    release?: string
+    isFiller: boolean
+    canonStatus: string
+    antagonists?: Array<string>
+    keyEvents?: Array<string>
+    newCharacters?: Array<string>
+    keyCharacters?: Array<CharacterDTO>
+    subSagas?: Array<SubSagaDTO>
 }
 
 /**
@@ -757,6 +775,24 @@ export type ScanSummaryLog = {
     filePath: string
     level: string
     message: string
+}
+
+/**
+ * - Filepath: internal/database/models/dto/media_metadata.go
+ * - Filename: media_metadata.go
+ * - Package: dto
+ * @description
+ *  SubSagaDTO represents a sub-saga or story beat within a saga.
+ */
+export type SubSagaDTO = {
+    id: string
+    name: string
+    /**
+     * e.g., "1-6"
+     */
+    episodeRange: string
+    startEp: number
+    endEp: number
 }
 
 /**
@@ -884,6 +920,61 @@ export type Status = {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Intelligence
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * - Filepath: internal/intelligence/types.go
+ * - Filename: types.go
+ * - Package: intelligence
+ * @description
+ *  MediaCandidate representa un archivo de video candidato para selección.
+ */
+export type MediaCandidate = {
+    filePath: string
+    /**
+     * 2160, 1080, 720, 480
+     */
+    resolution: number
+    /**
+     * "h264", "hevc", "av1"
+     */
+    codec: string
+    /**
+     * bytes/s
+     */
+    bitrate: number
+    /**
+     * ["spa", "eng"]
+     */
+    audioLangs?: Array<string>
+    /**
+     * "aac", "flac", "dts"
+     */
+    audioCodec: string
+    fileSize: number
+    isHDR: boolean
+    /**
+     * "mkv", "mp4", "webm"
+     */
+    container: string
+}
+
+/**
+ * - Filepath: internal/intelligence/types.go
+ * - Filename: types.go
+ * - Package: intelligence
+ * @description
+ *  SelectionResult resultado de la selección inteligente.
+ */
+export type SelectionResult = {
+    winner?: MediaCandidate
+    allCandidates?: Array<MediaCandidate>
+    totalScore: number
+    reason: string
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LibraryExplorer
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -936,27 +1027,6 @@ export type LibraryExplorer_SuperUpdateFileOptions = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Local
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * - Filepath: internal/local/sync.go
- * - Filename: sync.go
- * - Package: local
- */
-export type Local_QueueMediaTask = {
-    mediaId: number
-    image: string
-    title: string
-    type: string
-}
-
-/**
- * - Filepath: internal/local/sync.go
- * - Filename: sync.go
- * - Package: local
- */
-export type Local_QueueState = {
-    animeTasks?: Record<number, Local_QueueMediaTask>
-}
 
 /**
  * - Filepath: internal/local/manager.go
@@ -1288,6 +1358,23 @@ export type MKVParser_VideoTrack = {
  * - Filename: models.go
  * - Package: models
  */
+export type Models_EpisodeSkipTime = {
+    mediaId: number
+    episodeNumber: number
+    opStart: number
+    opEnd: number
+    edOffset: number
+    edEnd: number
+    id: number
+    createdAt?: string
+    updatedAt?: string
+}
+
+/**
+ * - Filepath: internal/database/models/models.go
+ * - Filename: models.go
+ * - Package: models
+ */
 export type Models_GhostAssociatedMedia = {
     path: string
     targetMediaId: number
@@ -1517,18 +1604,13 @@ export type Models_LibrarySeason = {
 export type Models_LibrarySettings = {
     seriesPaths: Models_LibraryPaths
     moviePaths: Models_LibraryPaths
-    autoUpdateProgress: boolean
     disableAnimeCardTrailers: boolean
-    dohProvider: string
     openWebURLOnStart: boolean
     refreshLibraryOnStart: boolean
     autoPlayNextEpisode: boolean
     enableWatchContinuity: boolean
-    autoSyncOfflineLocalData: boolean
     scannerMatchingThreshold: number
     scannerMatchingAlgorithm: string
-    autoSyncToLocalAccount: boolean
-    autoSaveCurrentMediaOffline: boolean
     useFallbackMetadataProvider: boolean
     primaryMetadataProvider: string
     tmdbApiKey: string
@@ -1540,12 +1622,8 @@ export type Models_LibrarySettings = {
     scannerUseLegacyMatching: boolean
     fanartApiKey: string
     omdbApiKey: string
-    openSubsApiKey: string
     lastScanAt?: string
     autoScan: boolean
-    enableOnlinestream: boolean
-    includeOnlineStreamingInLibrary: boolean
-    disableDebridService: boolean
 }
 
 /**
@@ -1567,26 +1645,7 @@ export type Models_MediaMetadataParent = {
  * - Filename: models.go
  * - Package: models
  */
-export type Models_MediaPlayerSettings = {
-    defaultPlayer: string
-    host: string
-    vlcUsername: string
-    vlcPassword: string
-    vlcPort: number
-    vlcPath: string
-    mpcPort: number
-    mpcPath: string
-    mpvSocket: string
-    mpvPath: string
-    mpvArgs: string
-    iinaSocket: string
-    iinaPath: string
-    iinaArgs: string
-    vcTranslate: boolean
-    vcTranslateProvider: string
-    vcTranslateApiKey: string
-    vcTranslateTargetLanguage: string
-}
+export type Models_MediaPlayerSettings = Record<string, never>
 
 /**
  * - Filepath: internal/database/models/models.go
@@ -1649,6 +1708,13 @@ export type Models_Settings = {
 }
 
 /**
+ * - Filepath: ..\internal\database\models\models.go
+ * - Filename: models.go
+ * - Package: models
+ */
+export type Models_StringSlice = Array<string>
+
+/**
  * - Filepath: internal/database/models/models.go
  * - Filename: models.go
  * - Package: models
@@ -1658,7 +1724,37 @@ export type Models_Theme = {
     backgroundColor: string
     accentColor: string
     sidebarBackgroundColor: string
+    themeEra: string
     homeItems?: Array<string>
+    themeAnimeEntryScreenLayout: string
+    themeSmallerEpisodeCarouselSize: boolean
+    themeExpandSidebarOnHover: boolean
+    themeDisableSidebarTransparency: boolean
+    themeEnableBlurringEffects: boolean
+    themeEnableSidebarGradient: boolean
+    themeDisableCarouselAutoScroll: boolean
+    themeUseLegacyEpisodeCard: boolean
+    themeLibraryScreenBannerType: string
+    themeLibraryScreenCustomBannerImage: string
+    themeLibraryScreenCustomBannerPosition: string
+    themeLibraryScreenCustomBannerOpacity: number
+    themeLibraryScreenCustomBackgroundImage: string
+    themeLibraryScreenCustomBackgroundOpacity: number
+    themeLibraryScreenCustomBackgroundBlur: string
+    themeDisableLibraryScreenGenreSelector: boolean
+    themeMediaPageBannerType: string
+    themeMediaPageBannerSize: string
+    themeMediaPageBannerInfoBoxSize: string
+    themeEnableMediaPageBlurredBackground: boolean
+    themeShowEpisodeCardAnimeInfo: boolean
+    themeShowAnimeUnwatchedCount: boolean
+    themeHideEpisodeCardDescription: boolean
+    themeHideDownloadedEpisodeCardFilename: boolean
+    themeContinueWatchingDefaultSorting: string
+    themeAnimeLibraryCollectionDefaultSorting: string
+    themeCustomCSS: string
+    themeMobileCustomCSS: string
+    themeUnpinnedMenuItems: Models_StringSlice
     id: number
     createdAt?: string
     updatedAt?: string
@@ -1801,6 +1897,17 @@ export type PlatformUser = {
  * - Filename: models.go
  * - Package: platform
  */
+export type UnifiedCharacter = {
+    name: string
+    role: string
+    imageUrl: string
+}
+
+/**
+ * - Filepath: internal/platforms/platform/models.go
+ * - Filename: models.go
+ * - Package: platform
+ */
 export type UnifiedCollectionEntry = {
     id: number
     media?: UnifiedMedia
@@ -1845,6 +1952,11 @@ export type UnifiedMedia = {
     collectionId?: number
     collectionName?: string
     runtime?: number
+    studios?: Array<string>
+    demographics?: Array<string>
+    openings?: Array<string>
+    endings?: Array<string>
+    characters?: Array<UnifiedCharacter>
 }
 
 /**

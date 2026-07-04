@@ -33,7 +33,7 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                     {Array.from({ length: 7 }).map((_, i) => (
                         <div
                             key={i}
-                            className="absolute w-3 h-3 bg-brand-orange rounded-full shadow-[0_0_10px_rgba(255,110,58,0.8)]"
+                            className="absolute w-3 h-3 bg-brand-orange rounded-full shadow-[0_0_10px_hsl(var(--brand-orange)/0.8)]"
                             style={{
                                 top: "50%",
                                 left: "50%",

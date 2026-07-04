@@ -30,8 +30,8 @@ const VaulOverlay = React.forwardRef<
         <VaulPrimitive.Overlay
             ref={ref}
             className={cn(
-                "fixed inset-0 z-50 bg-surface/80",
-                ts.enableBlurringEffects && "bg-gray-950/70 backdrop-blur-[var(--blur-overlay-xl)] firefox:backdrop-blur-none",
+                "fixed inset-0 z-50 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_80%,transparent)]",
+                ts.themeEnableBlurringEffects && "bg-gray-950/70 backdrop-blur-[var(--blur-overlay-xl)] firefox:backdrop-blur-none",
                 className)}
             {...props}
         />

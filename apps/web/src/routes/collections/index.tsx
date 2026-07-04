@@ -117,7 +117,7 @@ function CollectionsPage() {
             />
 
             {/* Controls */}
-            <div className="sticky top-0 z-30 bg-surface-container/60 border-b border-outline-variant/5 backdrop-blur-overlay-2xl">
+            <div className="sticky top-0 z-30 border-b border-outline-variant/5 backdrop-blur-overlay-2xl" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 60%, transparent)" }}>
                 <div className="px-8 md:px-16 py-3 flex flex-wrap gap-4 items-center justify-between">
                     {/* Search */}
                     <div className="relative group">
@@ -285,8 +285,9 @@ const CollectionCassette = memo(function CollectionCassette({
 
                     {/* Hover info overlay */}
                     <div 
-                        className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover/item:opacity-100 bg-surface-container/95"
+                        className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover/item:opacity-100"
                         style={{
+                            background: "color-mix(in srgb, var(--md-sys-color-surface-container) 95%, transparent)",
                             transition: "opacity 500ms cubic-bezier(0.16, 1, 0.3, 1)",
                             willChange: "opacity",
                         }}
@@ -381,8 +382,9 @@ function ShelfSkeleton() {
             {Array.from({ length: 5 }).map((_, i) => (
                 <div
                     key={i}
-                    className="shrink-0 rounded-none animate-pulse bg-surface-container/5 border border-outline-variant/5"
+                    className="shrink-0 rounded-none animate-pulse border border-outline-variant/5"
                     style={{
+                        background: "color-mix(in srgb, var(--md-sys-color-surface-container) 5%, transparent)",
                         width: CASSETTE_W,
                         height: CASSETTE_H + ((i * 7) % 21),
                         marginLeft: i !== 0 ? -OVERLAP : 0,

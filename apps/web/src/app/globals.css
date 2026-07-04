@@ -51,9 +51,21 @@
   *::-webkit-scrollbar { display: none; }
 
   html, body {
-    @apply bg-[var(--bg-primary)] text-[var(--md-sys-color-on-surface)] font-sans antialiased;
+    @apply text-[var(--md-sys-color-on-surface)] font-sans antialiased;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* El color base vive SOLO en html (pinta el canvas). El body debe ser
+     transparente: DynamicBackdrop usa z-index negativo (-z-10), y en el orden
+     de pintado CSS las capas negativas quedan DEBAJO del background del body —
+     un body opaco lo taparía por completo (bug histórico: el backdrop nunca
+     se vio). */
+  html {
+    @apply bg-[var(--bg-primary)];
+  }
+  body {
+    background: transparent;
   }
 
   *:focus-visible {
@@ -89,6 +101,41 @@
   }
   .scroll-snap-carousel > * {
     scroll-snap-align: start;
+  }
+
+  /* ─── Hero Scrims (tokenizados — respetan tema amoled/era) ─────────── */
+  .scrim-hero-left {
+    background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--bg-primary) 95%, transparent) 0%,
+      color-mix(in srgb, var(--bg-primary) 78%, transparent) 25%,
+      color-mix(in srgb, var(--bg-primary) 18%, transparent) 65%,
+      transparent 95%
+    );
+  }
+  .scrim-hero-bottom {
+    background: linear-gradient(
+      to top,
+      var(--bg-primary) 0%,
+      color-mix(in srgb, var(--bg-primary) 78%, transparent) 25%,
+      color-mix(in srgb, var(--bg-primary) 38%, transparent) 60%,
+      transparent 100%
+    );
+  }
+  .scrim-hero-bottom-soft {
+    background: linear-gradient(
+      to top,
+      transparent 0%,
+      color-mix(in srgb, var(--bg-primary) 35%, transparent) 50%,
+      transparent 100%
+    );
+  }
+  .scrim-hero-top {
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--bg-primary) 55%, transparent) 0%,
+      transparent 100%
+    );
   }
 
   /* Badge base */
@@ -190,8 +237,57 @@ media-time-range {
 @container (min-width: 1440px) { .swimlane { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @container (min-width: 1920px) { .swimlane { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
 
+/* ─── Sidebar Gradient — degrade fijo de todas las eras Dragon Ball ──── */
+.sidebar-gradient {
+  background: var(--bg-secondary);
+}
+
+[data-sidebar-gradient="true"] .sidebar-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--spotlight-db) 30%, transparent) 0%,
+    color-mix(in srgb, var(--spotlight-dbz) 30%, transparent) 25%,
+    color-mix(in srgb, var(--spotlight-dbgt) 30%, transparent) 50%,
+    color-mix(in srgb, var(--spotlight-dbs) 30%, transparent) 75%,
+    color-mix(in srgb, var(--spotlight-daima) 30%, transparent) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* ─── Safe Area Insets ───────────────────────────────────────────────── */
 .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
 .safe-area-pt { padding-top: env(safe-area-inset-top); }
 .safe-area-pl { padding-left: env(safe-area-inset-left); }
 .safe-area-pr { padding-right: env(safe-area-inset-right); }
+
+/* ─── Surface Glassmorphism ────────────────────────────────────────────── */
+@layer utilities {
+  .bg-surface,
+  .bg-surface-variant,
+  .bg-surface-container,
+  .bg-surface-container-low,
+  .bg-surface-container-high,
+  .bg-surface-container-highest {
+    backdrop-filter: blur(var(--blur-overlay-md));
+    -webkit-backdrop-filter: blur(var(--blur-overlay-md));
+    backdrop-saturate: 150%;
+  }
+
+  /* ─── Flat Mode: remover backdrop-filter de bg-surface* ────── */
+  [data-flat="true"] .bg-surface,
+  [data-flat="true"] .bg-surface-variant,
+  [data-flat="true"] .bg-surface-container,
+  [data-flat="true"] .bg-surface-container-low,
+  [data-flat="true"] .bg-surface-container-high,
+  [data-flat="true"] .bg-surface-container-highest {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-saturate: 1 !important;
+  }
+}
+

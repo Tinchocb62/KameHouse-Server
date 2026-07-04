@@ -29,18 +29,12 @@ func TestSettingsPersistence(t *testing.T) {
 		Library: models.LibrarySettings{
 			SeriesPaths:              []string{"/path/to/series1", "/path/to/series2"},
 			MoviePaths:               []string{"/path/to/movies"},
-			AutoUpdateProgress:       true,
 			ScannerProvider:          "tmdb",
 			PrimaryMetadataProvider:  "tmdb",
 			TmdbApiKey:               "test_tmdb_api_key",
 			ScannerUseLegacyMatching: true,
 		},
 		MediaPlayer: models.MediaPlayerSettings{
-			Default:     "mpv",
-			Host:        "127.0.0.1",
-			VlcPort:     8080,
-			VlcPassword: "vlc_secret_password",
-			MpvPath:     "/usr/bin/mpv",
 		},
 		Notifications: models.NotificationSettings{
 			DisableNotifications:               true,
@@ -85,19 +79,9 @@ func TestSettingsPersistence(t *testing.T) {
 	if len(retrievedSettings.Library.SeriesPaths) != 2 || retrievedSettings.Library.SeriesPaths[0] != "/path/to/series1" {
 		t.Errorf("Series paths not retrieved correctly: %v", retrievedSettings.Library.SeriesPaths)
 	}
-	if retrievedSettings.Library.AutoUpdateProgress != true {
-		t.Errorf("AutoUpdateProgress was not persisted as true")
-	}
+
 	if retrievedSettings.Library.ScannerUseLegacyMatching != true {
 		t.Errorf("ScannerUseLegacyMatching was not persisted as true")
-	}
-
-	// B. Media Player Settings assertions
-	if retrievedSettings.MediaPlayer.Default != "mpv" {
-		t.Errorf("Expected Default player 'mpv', got '%s'", retrievedSettings.MediaPlayer.Default)
-	}
-	if retrievedSettings.MediaPlayer.VlcPassword != "vlc_secret_password" {
-		t.Errorf("Expected VlcPassword 'vlc_secret_password', got '%s'", retrievedSettings.MediaPlayer.VlcPassword)
 	}
 
 	// C. Notification Settings assertions

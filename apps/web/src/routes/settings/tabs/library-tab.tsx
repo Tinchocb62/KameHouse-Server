@@ -7,6 +7,7 @@ interface LibraryTabProps {
     control: Control<SettingsFormValues>
 }
 
+
 export function LibraryTab({ control }: LibraryTabProps) {
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
@@ -63,8 +64,8 @@ export function LibraryTab({ control }: LibraryTabProps) {
                 </div>
             </Section>
 
-            {/* 2. Escáner y Metadatos */}
-            <Section label="Escáner y Metadatos">
+            {/* 2. Escaneo de biblioteca */}
+            <Section label="Escaneo de Biblioteca">
                 <Card className="divide-y divide-outline-variant/4">
                     <Controller
                         control={control}
@@ -102,17 +103,42 @@ export function LibraryTab({ control }: LibraryTabProps) {
                             />
                         )}
                     />
+                </Card>
+            </Section>
+
+            {/* 5. Contenido */}
+            <Section label="Contenido">
+                <Card className="divide-y divide-outline-variant/4">
+                    <Controller
+                        control={control}
+                        name="library.disableAnimeCardTrailers"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Desactivar Trailers en Tarjetas de Anime"
+                                description="Evita la reproducción automática de trailers al pasar el cursor sobre una tarjeta."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
+                </Card>
+            </Section>
+
+            {/* 6. Metadatos */}
+            <Section label="Metadatos">
+                <Card className="divide-y divide-outline-variant/4">
                     <Controller
                         control={control}
                         name="library.tmdbLanguage"
                         render={({ field }) => (
                             <OsSelect
                                 label="Idioma de Metadatos"
-                                description="Idioma preferido para descargar sinopsis, títulos y metadatos desde TMDB."
+                                description="Idioma preferido para descargar sinopsis, títulos y metadatos."
                                 options={[
-                                    { value: "es-MX", label: "Español Latino (Intertrack)" },
+                                    { value: "es-MX", label: "Español Latino" },
+                                    { value: "es-ES", label: "Español (España)" },
+                                    { value: "en-US", label: "Inglés" },
                                     { value: "ja-JP", label: "Japonés" },
-                                    { value: "en-US", label: "Inglés" }
                                 ]}
                                 value={field.value || "es-MX"}
                                 onChange={field.onChange}

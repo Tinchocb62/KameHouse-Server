@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query"
 
 import { useGetLibraryCollection, fetchLibraryCollection } from "@/api/hooks/anime_collection.hooks"
@@ -13,6 +13,9 @@ import { SortOption, getEntryEra } from "./-components/movies-utils"
 import { MoviesHero } from "./-components/movies-hero"
 import { MoviesFilterBar } from "./-components/movies-filter-bar"
 import { MoviesGrid } from "./-components/movies-grid"
+import { LibraryBanner } from "./-components/library-banner"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
+import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 
 export const Route = createFileRoute("/movies/")({
     loader: ({ context }) => {
@@ -46,9 +49,35 @@ function MoviesPage() {
     const [debouncedMovie, setDebouncedMovie] = useState<(Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null>(null)
 
     const navigate = useNavigate()
+    const ts = useThemeSettings()
+
+    // Seed the sort dropdown from Settings → Apariencia → Ordenación (once,
+    // when it first loads) — the closest equivalent this page's sort options support.
+    const appliedDefaultSort = useRef(false)
+    useEffect(() => {
+        if (appliedDefaultSort.current) return
+        const mapped: Record<string, SortOption> = {
+            TITLE_ASC: "alpha",
+            TITLE_DESC: "alpha",
+            YEAR_DESC: "year_desc",
+            SCORE_DESC: "year_asc",
+        }
+        const mappedSort = mapped[ts.themeAnimeLibraryCollectionDefaultSorting]
+        if (mappedSort) {
+            setSortBy(mappedSort)
+            appliedDefaultSort.current = true
+        }
+    }, [ts.themeAnimeLibraryCollectionDefaultSorting])
 
     const { data: collection, isLoading } = useGetLibraryCollection()
     const { data: watchHistory } = useGetContinuityWatchHistory()
+
+    // Set KameHouse backdrop on mount (just like series page does)
+    const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
+    useEffect(() => {
+        setBackdropUrl("/casa-kame-de-dragon-ball-3963.webp")
+        return () => { setBackdropUrl(null) }
+    }, [setBackdropUrl])
 
     // Debounce hover so backdrop doesn't flicker on fast cursor moves
     useEffect(() => {
@@ -136,16 +165,20 @@ function MoviesPage() {
     }, [])
 
     return (
-        <div className="min-h-screen bg-[#07070a]/40 text-white overflow-x-hidden selection:bg-orange-500/20 relative z-10">
+        <div className="min-h-screen text-white overflow-x-hidden selection:bg-orange-500/20 relative z-10" style={{ background: "color-mix(in srgb, var(--bg-primary) 12%, transparent)" }}>
 
 
 
-            <MoviesHero 
-                topFeatured={topFeatured}
-                debouncedMovie={debouncedMovie}
-                activeEraConfig={activeEraConfig}
-                handleMovieClick={handleMovieClick}
-            />
+            {ts.themeLibraryScreenBannerType === "dynamic" || !ts.themeLibraryScreenBannerType ? (
+                <MoviesHero
+                    topFeatured={topFeatured}
+                    debouncedMovie={debouncedMovie}
+                    activeEraConfig={activeEraConfig}
+                    handleMovieClick={handleMovieClick}
+                />
+            ) : (
+                <LibraryBanner />
+            )}
 
             <div className="w-full max-w-[1800px] mx-auto px-6 md:px-12 lg:px-16 mt-12">
                 <div className="flex flex-col lg:flex-row gap-8 min-h-[70vh]">

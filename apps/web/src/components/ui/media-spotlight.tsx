@@ -198,7 +198,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                 />
 
                 {/* Multi-color warm ambient light matching reference image background */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(224,86,0,0.18) 0%, rgba(59,43,207,0.08) 45%, transparent 80%)' }} />
+                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--era-dbz-hex) 18%, transparent) 0%, color-mix(in srgb, var(--era-daima-hex) 8%, transparent) 45%, transparent 80%)' }} />
             </div>
 
             {/* Main content grid: Left Column (Artwork + Info Side-by-Side) & Right Column (Era Selector) */}
@@ -209,9 +209,9 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
 
                     {/* Imagen Hero */}
                     <div
-                        className="md:col-span-7 relative w-full aspect-[4/3] md:aspect-[16/10] rounded-[32px] overflow-hidden border border-white/10 bg-surface-container group/hero shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] transition-all duration-700"
+                        className="md:col-span-7 relative w-full aspect-[4/3] md:aspect-[16/10] rounded-[32px] overflow-hidden border border-white/10 bg-surface-container group/hero transition-all duration-700"
                         style={{
-                            boxShadow: `0 25px 60px -15px rgba(0,0,0,0.9), 0 0 40px -10px ${colors.glow}`
+                            boxShadow: `var(--shadow-glass), 0 0 40px -10px ${colors.glow}`
                         }}
                     >
                         {/* Glass glare reflex */}
@@ -476,7 +476,7 @@ const SpotlightMovieCard = React.memo(function SpotlightMovieCard({
                         : "border-white/5 opacity-100 hover:border-white/20 hover:scale-[1.01]"
             )}
             style={{
-                borderColor: isSelected ? colors.glow.replace('0.25', '0.7') : 'rgba(255, 255, 255, 0.05)',
+                borderColor: isSelected ? colors.glowStrong : 'rgba(255, 255, 255, 0.05)',
                 boxShadow: isSelected ? `0 0 25px -3px ${colors.glow}` : 'none',
                 transition: "all 600ms cubic-bezier(0.16, 1, 0.3, 1)"
             }}

@@ -90,6 +90,7 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
         backendTracks,
         clientId,
         mediaFormat: props.mediaFormat,
+        onRequestStreamTypeChange: setStreamType,
     })
 
     const episodeSources = useMemo<EpisodeSource[]>(() => [

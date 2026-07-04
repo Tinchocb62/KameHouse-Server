@@ -33,6 +33,17 @@
   --blur-popover:  var(--blur-overlay-sm);
   --blur-hero:     var(--blur-overlay-xl);
   --blur-player:   var(--blur-overlay-xl);
+
+  /* ─── Filter blur (para elementos decorativos, NO backdrop-filter) ─── */
+  --filter-blur-hero:    15px;   /* blur en backdrop de héroe */
+  --filter-blur-hero-bg: 70px;   /* blur fuerte en bg de héroe */
+  --filter-blur-orb:     160px;  /* blur en ambient orbs */
+
+  /* ─── Filter blur para DynamicBackdrop (imagen de fondo decorativa) ─── */
+  --filter-blur-ambient-sm: 30px;   /* sutil: listing + KameHouse recognoscible */
+  --filter-blur-ambient-md: 100px;  /* medio: detalle por defecto */
+  --filter-blur-ambient-lg: 110px;  /* fuerte: listing sin KameHouse */
+  --filter-blur-ambient-xl: 140px;  /* máximo: home hero */
 }
 
 /* ─── Clases Utilitarias (solo para overlays) ─────────────────────────────── */
@@ -58,3 +69,94 @@
 .glass-blur      { backdrop-filter: blur(var(--blur-md))  saturate(var(--glass-saturate)); }
 .glass-blur-lg   { backdrop-filter: blur(var(--blur-lg))  saturate(var(--glass-saturate)); }
 .glass-blur-xl   { backdrop-filter: blur(var(--blur-xl))  saturate(var(--glass-saturate)); }
+
+/* ─── Liquid Glass — vidrio en capas con refracción especular estática ─────
+     Solo para overlays destacados (hero scrims, command palette, ítem activo
+     de nav). No reemplaza el glass plano en toda la superficie. ──────────── */
+.glass-liquid {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(20, 20, 28, 0.5) 45%,
+    rgba(20, 20, 28, 0.62) 100%
+  );
+  backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate-cinematic));
+  border-top: 1px solid var(--glass-rim-highlight);
+  border-left: 1px solid var(--glass-rim-cool);
+  border-right: 1px solid var(--glass-rim-warm);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: var(--shadow-glass-liquid);
+}
+
+/* ─── Glass Card — panel de contenido flotando sobre el DynamicBackdrop ────
+     Receta canónica del design system: un solo blur por panel (no por fila).
+     Equivale a: bg-zinc-950/40 + backdrop-blur-overlay-xl + border-white/10
+     + rounded-3xl. Para filas internas usar bg-white/[0.04] sin blur. ────── */
+.glass-card {
+  background: rgba(9, 9, 11, 0.40);
+  backdrop-filter: blur(var(--blur-overlay-xl)) saturate(var(--glass-saturate));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--radius-3xl);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Flat Mode — TODOS los blurs a 0 (cubre utility classes + Tailwind arbitrary).
+   Este bloque vive acá (no en colors.css) porque este archivo se importa
+   DESPUÉS de colors.css en globals.css: el :root de arriba redefine estas
+   mismas variables, y con igual especificidad la regla que carga después
+   gana. Si este override viviera en colors.css, el :root de este archivo
+   lo pisaría silenciosamente.
+   ════════════════════════════════════════════════════════════════════════════ */
+[data-flat="true"] {
+  --blur-overlay-sm:  0px;
+  --blur-overlay-md:  0px;
+  --blur-overlay-lg:  0px;
+  --blur-overlay-xl:  0px;
+  --blur-overlay-2xl: 0px;
+  --blur-xs:          0px;
+  --blur-sm:          0px;
+  --blur-md:          0px;
+  --blur-lg:          0px;
+  --blur-xl:          0px;
+  --blur-card:        0px;
+  --blur-button:      0px;
+  --blur-input:       0px;
+  --blur-navbar:      0px;
+  --blur-sidebar:     0px;
+  --blur-modal:       0px;
+  --blur-popover:     0px;
+  --blur-hero:        0px;
+  --blur-player:      0px;
+
+  /* ─── Saturate a 1 (evita cambios de color residuales) ─── */
+  --glass-saturate:          1;
+  --glass-saturate-subtle:   1;
+  --glass-saturate-strong:   1;
+  --glass-saturate-cinematic: 1;
+
+  /* ─── Filter blur decorativo también a 0 en flat mode ─── */
+  --filter-blur-hero:    0px;
+  --filter-blur-hero-bg: 0px;
+  --filter-blur-orb:     0px;
+  --filter-blur-ambient-sm: 0px;
+  --filter-blur-ambient-md: 0px;
+  --filter-blur-ambient-lg: 0px;
+  --filter-blur-ambient-xl: 0px;
+}
+
+/* ─── .glass-liquid y .glass-card tienen backgrounds hardcodeados (no usan
+   variables), necesitan override directo de background + border. El
+   backdrop-filter se desactiva automáticamente vía --blur-overlay-* = 0px
+   de arriba. ─────────────────────────────────────────────────────────── */
+[data-flat="true"] .glass-liquid {
+  background: var(--bg-secondary);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-flat="true"] .glass-card {
+  background: var(--bg-secondary);
+  border-color: rgba(255, 255, 255, 0.06);
+}

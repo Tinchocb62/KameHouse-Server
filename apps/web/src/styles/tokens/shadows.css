@@ -45,6 +45,11 @@
     0 4px 30px rgba(0, 0, 0, 0.30),
     0 0 0 1px rgba(255, 255, 255, 0.05);
 
+  /* Liquid glass — sombra de contacto (elevación) + highlight interno */
+  --shadow-glass-liquid:
+    0 12px 24px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+
   /* ─── Brand Glows (por era — usan variables dinámicas) ──────────────────── */
   --shadow-brand-primary:   0 8px 24px -4px var(--glow-primary);
   --shadow-brand-secondary: 0 8px 24px -4px var(--glow-secondary);
@@ -77,6 +82,7 @@
 .shadow-player     { box-shadow: var(--shadow-player); }
 .shadow-overlay    { box-shadow: var(--shadow-overlay); }
 .shadow-glass      { box-shadow: var(--shadow-glass); }
+.shadow-glass-liquid { box-shadow: var(--shadow-glass-liquid); }
 
 .shadow-brand-primary   { box-shadow: var(--shadow-brand-primary); }
 .shadow-brand-secondary { box-shadow: var(--shadow-brand-secondary); }
@@ -85,5 +91,5 @@
 .shadow-brand-magic     { box-shadow: var(--shadow-brand-magic); }
 
 /* Glass inner highlights (DEPRECATED - mantener por compatibilidad) */
-.glass-inner        { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
-.glass-inner-strong { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.glass-inner        { box-shadow: inset 0 1px 0 var(--glass-border-top); }
+.glass-inner-strong { box-shadow: inset 0 1px 0 var(--glass-border-strong); }

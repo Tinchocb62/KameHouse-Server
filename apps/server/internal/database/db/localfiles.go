@@ -24,9 +24,6 @@ func GetLocalFiles(d *Database) ([]*dto.LocalFile, uint, error) {
 	localFilesMutex.RLock()
 	if cached, ok := CurrLocalFiles.Get(); ok {
 		localFilesMutex.RUnlock()
-		// #region agent log
-		debugLogLocalFiles("localfiles.go:GetLocalFiles", "cache hit", map[string]any{"count": len(cached), "hypothesisId": "B"})
-		// #endregion
 		return cached, CurrLocalFilesDbId, nil
 	}
 	localFilesMutex.RUnlock()
@@ -59,9 +56,6 @@ func GetLocalFiles(d *Database) ([]*dto.LocalFile, uint, error) {
 
 	lfs := val.([]*dto.LocalFile)
 
-	// #region agent log
-	debugLogLocalFiles("localfiles.go:GetLocalFiles", "cache miss", map[string]any{"count": len(lfs), "hypothesisId": "B"})
-	// #endregion
 	d.Logger.Debug().Int("count", len(lfs)).Msg("db: Local files retrieved from relational storage")
 	return lfs, 0, nil
 }
@@ -144,7 +138,7 @@ func SaveShelvedLocalFiles(db *Database, lfs []*dto.LocalFile) error {
 	}
 
 	// Save the local files
-	ret, err := db.UpsertShelvedLocalFiles(&models.ShelvedLocalFiles{
+	_, err = db.UpsertShelvedLocalFiles(&models.ShelvedLocalFiles{
 		BaseModel: models.BaseModel{
 			ID: 1,
 		},
@@ -152,12 +146,6 @@ func SaveShelvedLocalFiles(db *Database, lfs []*dto.LocalFile) error {
 	})
 	if err != nil {
 		return err
-	}
-
-	// Unmarshal the saved local files
-	var retLfs []*dto.LocalFile
-	if err := json.Unmarshal(ret.Value, &retLfs); err != nil {
-		return nil
 	}
 
 	return nil

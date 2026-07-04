@@ -163,6 +163,7 @@ export function BackgroundMusicPlayer() {
     const togglePlayback = () => {
         const nextState = !bgMusicEnabled
         setBgMusicEnabled(nextState)
+        setUiSoundsEnabled(nextState)
         
         // Immediate toggle feedback
         if (audioRef.current) {
@@ -196,10 +197,10 @@ export function BackgroundMusicPlayer() {
                 onClick={togglePlayback}
                 title={bgMusicEnabled ? "Silenciar música de fondo" : "Activar música de fondo"}
                 className={cn(
-                    "flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 group relative overflow-hidden bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-[var(--blur-overlay-sm)] border border-white/5 hover:border-white/10 active:scale-95 font-bold",
+                    "flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 group relative overflow-hidden bg-surface-container hover:bg-surface-container-high border border-outline-variant active:scale-95 font-bold",
                     bgMusicEnabled && isPlaying && !isVideoActive
-                        ? "!border-brand-orange/25 !bg-brand-orange/[0.05] text-brand-orange shadow-[0_8px_32px_rgba(255,110,58,0.15)]"
-                        : "text-zinc-400 hover:text-brand-orange"
+                        ? "bg-surface-container-high text-on-surface"
+                        : "text-on-surface-variant hover:text-on-surface"
                 )}
             >
                 <AnimatePresence mode="wait">

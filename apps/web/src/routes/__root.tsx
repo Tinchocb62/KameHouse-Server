@@ -30,6 +30,7 @@ import { useGetStatus } from "@/api/hooks/settings.hooks"
 import { GettingStarted } from "@/components/shared/getting-started"
 import { GlobalQueueSidebar } from "@/components/shared/global-queue-sidebar"
 import { startViewTransition } from "@/lib/helpers/transitions"
+import { useApplyCustomTheme, CustomThemeStyles } from "@/lib/theme/apply-custom-theme"
 
 function RootComponent() {
     const routerState = useRouterState()
@@ -38,16 +39,13 @@ function RootComponent() {
     const currentQueueIndex = useAppStore(state => state.currentQueueIndex)
     const setCurrentQueueIndex = useAppStore(state => state.setCurrentQueueIndex)
     const clearQueue = useAppStore(state => state.clearQueue)
-    const activeTheme = useAppStore(state => state.activeTheme)
 
     const sidebarOpen = useAppStore(state => state.sidebarOpen)
     const tvMode = useAppStore(state => state.tvMode)
     useTvDpad()
     const { data: status, isLoading, isError, refetch } = useGetStatus()
 
-    React.useEffect(() => {
-        document.documentElement.dataset.theme = activeTheme || "dark"
-    }, [activeTheme])
+    useApplyCustomTheme()
 
     if (isLoading || !status) {
         return <LoadingOverlayWithLogo isError={isError} refetch={refetch} />
@@ -63,6 +61,7 @@ function RootComponent() {
 
     return (
         <AppLayout>
+            <CustomThemeStyles />
             <DynamicBackdrop />
             <React.Suspense fallback={null}>
                 <PerformanceMonitor />
@@ -85,7 +84,8 @@ function RootComponent() {
                         onClick={() => useAppStore.getState().setSidebarOpen(true)}
                         tabIndex={sidebarOpen ? -1 : 0}
                         aria-hidden={sidebarOpen ? "true" : undefined}
-                        className="md:hidden fixed top-6 left-6 z-[60] p-3 rounded-full bg-surface/40 backdrop-blur-[var(--blur-overlay-sm)] border border-white/10 text-white/70 hover:text-white transition-all active:scale-95"
+                        className="md:hidden fixed top-6 left-6 z-[60] p-3 rounded-full backdrop-blur-[var(--blur-overlay-sm)] border border-white/10 text-white/70 hover:text-white transition-all active:scale-95"
+                        style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 40%, transparent)" }}
                     >
                         <Menu className="w-5 h-5" />
                     </button>

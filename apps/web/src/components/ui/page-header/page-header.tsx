@@ -15,7 +15,7 @@ const PageHeaderBase = React.forwardRef<HTMLDivElement, PageHeaderProps>((props,
         <header
             ref={ref}
             className={cn(
-                "flex items-center justify-between px-4 py-3 bg-surface/80 backdrop-blur-overlay-md border-b border-outline-variant shadow-elevation-1",
+                "flex items-center justify-between px-4 py-3 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_80%,transparent)] backdrop-blur-overlay-md border-b border-outline-variant shadow-elevation-1",
                 className
             )}
             {...rest}

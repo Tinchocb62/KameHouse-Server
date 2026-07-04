@@ -23,7 +23,7 @@ export function Navbar({ className }: NavbarProps) {
       className={cn(
         "fixed top-0 left-0 right-0 z-[var(--z-navbar)] flex items-center justify-between",
         "px-4 md:px-6 h-[64px]",
-        "bg-surface/70 backdrop-blur-[var(--blur-overlay-xl)]",
+        "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_70%,transparent)] backdrop-blur-[var(--blur-overlay-xl)]",
         "border-b border-outline-variant/50",
         "shadow-elevation-1",
         className

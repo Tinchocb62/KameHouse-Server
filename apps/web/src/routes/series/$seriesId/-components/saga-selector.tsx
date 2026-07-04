@@ -29,7 +29,7 @@ export function SagaSelector({
   onSelectSubSaga
 }: SagaSelectorProps) {
   return (
-    <div className="w-full h-full flex flex-col p-5 border border-outline-variant/5 bg-surface-container/40 backdrop-blur-overlay-md rounded-container overflow-hidden">
+    <div className="w-full h-full flex flex-col p-5 glass-card overflow-hidden">
       <h3 className="font-bebas text-2xl tracking-widest text-on-surface/95 mb-5 px-1 uppercase flex items-center justify-between flex-shrink-0">
         <span>Sagas</span>
         <span className="text-[10px] font-mono font-bold tracking-normal text-on-surface-variant lowercase">
@@ -55,11 +55,11 @@ export function SagaSelector({
               aria-label={`${saga.name}, episodios ${saga.episodeRange}${saga.isFiller ? ", relleno" : ""}`}
               aria-current={isActive ? "true" : undefined}
               className={cn(
-                "relative flex flex-col text-left p-4 rounded-xl transition-all duration-300 ease-out border select-none group/saga",
+                "relative flex flex-col text-left p-5 rounded-2xl transition-all duration-base ease-smooth-out select-none group/saga active:scale-[0.98]",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
                 isActive
-                  ? "bg-surface-container-high/40 border-brand-accent/30 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
-                  : "bg-transparent border-transparent hover:bg-surface-container/5 hover:border-outline-variant/5",
+                  ? "glass-liquid"
+                  : "bg-transparent hover:bg-white/[0.05]",
                 saga.isFiller && !isActive && "opacity-50 hover:opacity-90"
               )}
             >
@@ -78,7 +78,7 @@ export function SagaSelector({
                   {saga.name}
                 </span>
                 {saga.isFiller && (
-                  <span className="text-label-sm font-black uppercase tracking-wider bg-brand-destructive/15 border border-brand-destructive/25 text-brand-destructive px-2.5 py-1 rounded-full whitespace-nowrap mt-0.5">
+                  <span className="inline-flex items-center text-label-sm uppercase bg-brand-destructive/15 border border-brand-destructive/25 text-brand-destructive px-3 py-1 rounded-full whitespace-nowrap mt-0.5">
                     Relleno
                   </span>
                 )}

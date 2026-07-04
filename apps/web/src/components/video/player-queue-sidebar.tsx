@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion"
-import { X } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { useAppStore, type PlaylistItem } from "@/lib/store"
@@ -48,7 +48,7 @@ export function PlayerQueueSidebar({
                                 onClick={onClose}
                                 className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-full transition-all"
                             >
-                                <X className="w-4 h-4" />
+                                <Icons.ui.close className="w-4 h-4" />
                             </button>
                         </div>
 
@@ -88,7 +88,7 @@ export function PlayerQueueSidebar({
                                                 )}
 
                                                 {/* Dark overlay */}
-                                                <div className="absolute inset-0 bg-surface/20 group-hover:bg-black/0 transition-colors duration-300" />
+                                                <div className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_20%,transparent)] group-hover:bg-black/0 transition-colors duration-300" />
 
                                                 {/* Play overlay for current or hover */}
                                                 <div className={cn(
@@ -132,7 +132,7 @@ export function PlayerQueueSidebar({
                                             className="p-1.5 text-zinc-500 hover:text-red-400 self-center hover:bg-white/5 rounded-full transition-all duration-200 z-10"
                                             title="Eliminar de la cola"
                                         >
-                                            <X className="w-3.5 h-3.5" />
+                                            <Icons.ui.close className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 )

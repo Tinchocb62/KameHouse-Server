@@ -33,7 +33,7 @@ export function Sidebar() {
   return (
     <>
       <aside className={cn(
-        "hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen border-r border-[var(--glass-border)] bg-[var(--bg-secondary)]/60 backdrop-blur-[var(--blur-overlay-xl)] rounded-r-3xl shadow-[8px_0_32px_rgba(0,0,0,0.5)] z-[var(--z-sidebar)] overflow-visible transition-all duration-slow ease-smooth",
+        "hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen border-r border-[var(--glass-border)] backdrop-blur-[var(--blur-overlay-xl)] rounded-r-3xl shadow-glass z-[var(--z-sidebar)] overflow-visible transition-all duration-slow ease-smooth sidebar-gradient relative",
         sidebarOpen ? "w-[260px]" : "w-20"
       )}>
         <SidebarContent setSidebarOpen={setSidebarOpen} />
@@ -42,7 +42,7 @@ export function Sidebar() {
       {isMobile && (
         <Vaul open={sidebarOpen} onOpenChange={setSidebarOpen} direction="left">
           <VaulContent
-            className="md:hidden fixed inset-y-0 left-0 z-[var(--z-sidebar)] flex h-full w-[280px] flex-col border-r border-[var(--glass-border)] glass-base !border-y-0 !border-l-0 !rounded-none shadow-player"
+            className="md:hidden fixed inset-y-0 left-0 z-[var(--z-sidebar)] flex h-full w-[280px] flex-col border-r border-[var(--glass-border)] sidebar-gradient !border-y-0 !border-l-0 !rounded-none shadow-player"
             overlayClass="md:hidden bg-[var(--bg-primary)]/60 backdrop-blur-[var(--blur-overlay-sm)]"
           >
             <SidebarContent setSidebarOpen={setSidebarOpen} />
@@ -61,6 +61,9 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
   const setGlobalQueueOpen = useAppStore(state => state.setGlobalQueueOpen);
   const marathonMode = useAppStore(state => state.marathonMode);
   const setMarathonMode = useAppStore(state => state.setMarathonMode);
+  const bgMusicEnabled = useAppStore(state => state.bgMusicEnabled);
+  const setBgMusicEnabled = useAppStore(state => state.setBgMusicEnabled);
+  const setUiSoundsEnabled = useAppStore(state => state.setUiSoundsEnabled);
   const { isMobile } = useResponsive();
 
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -133,7 +136,7 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
 
   return (
     <div ref={containerRef} className={cn(
-      "flex flex-col h-full py-8 w-full items-center bg-transparent transition-all duration-slow",
+      "relative z-10 flex flex-col h-full py-8 w-full items-center bg-transparent transition-all duration-slow",
       sidebarOpen ? "px-4" : "px-4 md:px-0"
     )}>
       <div className={cn(
@@ -151,7 +154,7 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
               alt="KameHouse"
               className="h-9 w-9 shrink-0 object-contain group-hover:scale-110 transition-transform duration-slow"
             />
-            <div className="absolute inset-0 bg-brand-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-slow rounded-full" />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-slow rounded-full" style={{ background: "var(--sidebar-active-gradient)" }} />
           </div>
           {sidebarOpen && (
             <span className="font-display text-xl text-primary tracking-wider whitespace-nowrap">
@@ -174,12 +177,17 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
       <div ref={navRef} className="flex-1 space-y-3 w-full flex flex-col items-center relative">
         <div
           ref={activeIndicatorRef}
-          className="absolute left-0 top-0 !mt-0 w-1 h-6 bg-brand-primary rounded-r-full hidden md:block z-10 pointer-events-none opacity-0"
+          className="absolute left-0 top-0 !mt-0 w-1 h-6 rounded-r-full hidden md:block z-10 pointer-events-none opacity-0"
+          style={{ background: "var(--sidebar-active-gradient)" }}
         />
 
         <div
           ref={activeBgRef}
-          className="absolute left-0 top-0 !mt-0 bg-brand-primary/[0.06] border border-brand-primary/30 rounded-2xl shadow-[0_8px_32px_rgba(0,150,230,0.15)] z-0 pointer-events-none opacity-0"
+          className="absolute left-0 top-0 !mt-0 rounded-2xl z-0 pointer-events-none opacity-0"
+          style={{
+            background: "var(--sidebar-active-bg-gradient)",
+            borderColor: "var(--sidebar-active-border)"
+          }}
         />
 
         {SIDEBAR_ITEMS.map((item) => {
@@ -197,16 +205,22 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
                   "active:scale-[0.98] font-bold",
                   sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-12 w-full md:px-0",
                   isActive
-                    ? "text-primary"
-                    : "text-on-surface-variant/70 hover:text-primary hover:!border-[var(--glass-hover)]"
+                    ? "text-white"
+                    : "text-on-surface-variant/70 hover:!border-[var(--glass-hover)]"
                 )}>
                   <span className="shrink-0 z-10 group-hover:scale-110 transition-transform duration-fast">
                     {React.createElement(item.icon, { size: 22, strokeWidth: 2.5 })}
                   </span>
-                  <span className={cn(
-                    "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors group-hover:text-brand-primary whitespace-nowrap",
-                    (sidebarOpen || isMobile) ? "block" : "hidden md:hidden"
-                  )}>
+                  <span
+                    className={cn(
+                      "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-all whitespace-nowrap",
+                      (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
+                      isActive
+                        ? "bg-clip-text text-transparent"
+                        : "text-on-surface-variant/70 group-hover:bg-clip-text group-hover:text-transparent"
+                    )}
+                    style={{ backgroundImage: "var(--sidebar-active-gradient)", backgroundClip: "text", WebkitBackgroundClip: "text" } as React.CSSProperties}
+                  >
                     {item.label}
                   </span>
                 </div>
@@ -229,24 +243,32 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
                 "active:scale-[0.98] font-bold",
                 sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-12 w-full md:px-0",
                 globalQueueOpen
-                  ? "text-brand-primary !bg-brand-primary/[0.06] !border-brand-primary/30 shadow-[var(--shadow-brand-primary)]"
-                  : "text-on-surface-variant/70 hover:text-primary hover:!border-[var(--glass-hover)]"
+                  ? "text-white !bg-[var(--sidebar-active-bg-gradient)] !border-[var(--sidebar-active-border)]"
+                  : "text-on-surface-variant/70 hover:!border-[var(--glass-hover)]"
               )}
             >
-              <div className={cn(
-                "absolute left-0 w-1 h-6 bg-brand-primary rounded-r-full transition-all duration-slow hidden md:block",
-                globalQueueOpen ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
-              )} />
+              <div
+                className={cn(
+                  "absolute left-0 w-1 h-6 rounded-r-full transition-all duration-slow hidden md:block",
+                  globalQueueOpen ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                )}
+                style={{ background: "var(--sidebar-active-gradient)" }}
+              />
               <span className="shrink-0 z-10 relative group-hover:scale-110 transition-transform duration-fast">
                 {React.createElement(Icons.navigation.layers, { size: 22, strokeWidth: 2.5 })}
-                <span className="absolute -top-2 -right-2 bg-brand-primary text-[var(--primary-foreground)] text-[8px] font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center border border-[var(--bg-primary)] shadow-md px-[3px]">
+                <span className="absolute -top-2 -right-2 bg-[var(--era-dbs-hex)] text-white text-[8px] font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center border border-[var(--bg-primary)] shadow-md px-[3px]">
                   {playlistQueue.length}
                 </span>
               </span>
               <span className={cn(
-                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors group-hover:text-brand-primary whitespace-nowrap",
-                (sidebarOpen || isMobile) ? "block" : "hidden md:hidden"
-              )}>
+                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-all whitespace-nowrap",
+                (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
+                globalQueueOpen
+                  ? "bg-clip-text text-transparent"
+                  : "text-on-surface-variant/70 group-hover:bg-clip-text group-hover:text-transparent"
+              )}
+                style={{ backgroundImage: "var(--sidebar-active-gradient)", backgroundClip: "text", WebkitBackgroundClip: "text" } as React.CSSProperties}
+              >
                 Cola ({playlistQueue.length})
               </span>
             </button>
@@ -257,28 +279,36 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
           <button
             onClick={() => { setMarathonMode(!marathonMode); playChangeSound(); }}
             title={marathonMode ? "Desactivar Modo Maratón" : "Activar Modo Maratón"}
-            className={cn(
-              "flex items-center h-12 rounded-2xl group px-4 relative glass-base transition-all duration-base",
-              "active:scale-[0.98] font-bold",
-              sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-12 w-full md:px-0",
-              marathonMode
-                ? "text-brand-magic !bg-brand-magic/[0.06] !border-brand-magic/30 shadow-[var(--shadow-brand-magic)]"
-                : "text-on-surface-variant/70 hover:text-primary hover:!border-[var(--glass-hover)]"
-            )}
-          >
-            <div className={cn(
-              "absolute left-0 w-1 h-6 bg-brand-magic rounded-r-full transition-all duration-slow hidden md:block",
-              marathonMode ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
-            )} />
-            <span className="shrink-0 z-10 group-hover:scale-110 transition-transform duration-fast">
-              {React.createElement(Icons.navigation.rocket, { size: 22, strokeWidth: 2.5 })}
-            </span>
-            <span className={cn(
-              "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors group-hover:text-brand-magic whitespace-nowrap",
-              (sidebarOpen || isMobile) ? "block" : "hidden md:hidden"
-            )}>
-              Maratón {marathonMode ? "(ON)" : ""}
-            </span>
+              className={cn(
+                "flex items-center h-12 rounded-2xl group px-4 relative glass-base transition-all duration-base",
+                "active:scale-[0.98] font-bold",
+                sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-12 w-full md:px-0",
+                marathonMode
+                  ? "text-white !bg-[var(--sidebar-active-bg-gradient)] !border-[var(--sidebar-active-border)]"
+                  : "text-on-surface-variant/70 hover:!border-[var(--glass-hover)]"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute left-0 w-1 h-6 rounded-r-full transition-all duration-slow hidden md:block",
+                  marathonMode ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                )}
+                style={{ background: "var(--sidebar-active-gradient)" }}
+              />
+              <span className="shrink-0 z-10 group-hover:scale-110 transition-transform duration-fast">
+                {React.createElement(Icons.navigation.rocket, { size: 22, strokeWidth: 2.5 })}
+              </span>
+              <span className={cn(
+                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-all whitespace-nowrap",
+                (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
+                marathonMode
+                  ? "bg-clip-text text-transparent"
+                  : "text-on-surface-variant/70 group-hover:bg-clip-text group-hover:text-transparent"
+              )}
+                style={{ backgroundImage: "var(--sidebar-active-gradient)", backgroundClip: "text", WebkitBackgroundClip: "text" } as React.CSSProperties}
+              >
+                Maratón {marathonMode ? "(ON)" : ""}
+              </span>
           </button>
         </div>
       </div>
@@ -290,13 +320,27 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
         )}>
           <button
             aria-label="Música de fondo"
-            className="flex-1 md:flex-none p-2 text-on-surface-variant hover:text-on-surface bg-surface-variant hover:bg-surface-container rounded-pill transition-all"
+            onClick={() => {
+              const nextState = !bgMusicEnabled
+              setBgMusicEnabled(nextState)
+              setUiSoundsEnabled(nextState)
+            }}
+            className={cn(
+              "flex-1 md:flex-none p-2 rounded-pill transition-all",
+              bgMusicEnabled 
+                ? "text-on-surface bg-surface-container" 
+                : "text-on-surface-variant hover:text-on-surface bg-surface-variant hover:bg-surface-container"
+            )}
           >
-            <Icons.status.music size={20} strokeWidth={2.5} />
+            {bgMusicEnabled ? (
+              <Icons.status.music size={20} strokeWidth={2.5} />
+            ) : (
+              <Icons.status.musicOff size={20} strokeWidth={2.5} />
+            )}
           </button>
           <button
             aria-label="Reproducción aleatoria"
-            className="flex-1 md:flex-none p-2 text-on-primary bg-primary hover:brightness-110 rounded-pill transition-all"
+            className="flex-1 md:flex-none p-2 text-white bg-[var(--era-dbs-hex)] hover:brightness-110 rounded-pill transition-all"
           >
             <Icons.arrow.leftRight size={20} strokeWidth={2.5} />
           </button>
@@ -314,16 +358,21 @@ function SidebarContent({ setSidebarOpen }: { setSidebarOpen: (open: boolean) =>
               "active:scale-[0.98] font-bold",
               sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-12 w-full md:px-0",
               currentPath === "/settings"
-                ? "text-primary"
-                : "text-on-surface-variant/70 hover:text-primary hover:!border-[var(--glass-hover)]"
+                ? "text-white"
+                : "text-on-surface-variant/70 hover:!border-[var(--glass-hover)]"
             )}>
               <span className="shrink-0 z-10 group-hover:rotate-45 group-hover:scale-110 transition-transform duration-slow">
                 {React.createElement(Icons.navigation.settings, { size: 22, strokeWidth: 2.5 })}
               </span>
               <span className={cn(
-                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors group-hover:text-brand-primary whitespace-nowrap",
-                (sidebarOpen || isMobile) ? "block" : "hidden md:hidden"
-              )}>
+                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-all whitespace-nowrap",
+                (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
+                currentPath === "/settings"
+                  ? "bg-clip-text text-transparent"
+                  : "text-on-surface-variant/70 group-hover:bg-clip-text group-hover:text-transparent"
+              )}
+                style={{ backgroundImage: "var(--sidebar-active-gradient)", backgroundClip: "text", WebkitBackgroundClip: "text" } as React.CSSProperties}
+              >
                 Configuración
               </span>
             </div>

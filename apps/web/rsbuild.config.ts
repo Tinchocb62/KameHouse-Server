@@ -53,7 +53,7 @@ const config: RsbuildConfig = {
         },
     },
     server: { // dev server
-        port: 43210,
+        port: Number(process.env.PORT) || 43210,
         host: "0.0.0.0",
         headers: {
             "Cross-Origin-Embedder-Policy": "credentialless",
@@ -88,7 +88,6 @@ const config: RsbuildConfig = {
         },
         filename: {
             js: process.env.NODE_ENV === "production" ? "[name].[contenthash:8].js" : "[name].js",
-            css: process.env.NODE_ENV === "production" ? "[name].[contenthash:8].css" : "[name].css",
         },
     },
     html: {

@@ -7,12 +7,7 @@ import { Card, CardProps } from "@/components/ui/card"
 import { cn } from "@/components/ui/core/styling"
 import { Field, Form } from "@/components/ui/form"
 import { useAppStore } from "@/lib/store"
-import {
-    getDefaultIinaSocket,
-    getDefaultMpvSocket,
-    getDefaultSettings,
-    gettingStartedSchema,
-} from "@/lib/server/settings"
+import { getDefaultSettings, gettingStartedSchema } from "@/lib/server/settings"
 import { AnimatePresence, motion } from "framer-motion"
 import React from "react"
 import { useFormContext, useWatch } from "react-hook-form"
@@ -225,6 +220,7 @@ function FeaturesStep({ kamehouseFeatures, setKamehouseFeatures }: {
 
 export function GettingStarted({ status }: { status: Status }) {
     const { mutate, isPending } = useGettingStarted()
+    const setDynamicBackdropEnabled = useAppStore(state => state.setDynamicBackdropEnabled)
 
     const [currentStep, setCurrentStep] = React.useState(0)
     const [direction, setDirection] = React.useState(0)
@@ -315,8 +311,7 @@ export function GettingStarted({ status }: { status: Status }) {
                     onSubmit={data => {
                         if (currentStep === STEPS.length - 1) {
                             // Apply KameHouse features
-                            localStorage.setItem("kamehouse:perf-monitor-enabled", "false")
-                            localStorage.setItem("kamehouse:dynamic-backdrop-enabled", kamehouseFeatures.dynamicBackdrop ? "true" : "false")
+                            setDynamicBackdropEnabled(kamehouseFeatures.dynamicBackdrop)
 
                             // Submit to server endpoint
                             const payload = getDefaultSettings(data)
@@ -326,18 +321,8 @@ export function GettingStarted({ status }: { status: Status }) {
                         }
                     }}
                     defaultValues={{
-                        mediaPlayer: {
-                            host: "127.0.0.1",
-                            vlcPort: 8080,
-                            mpcPort: 13579,
-                            defaultPlayer: "web",
-                            vlcPath: "",
-                            mpcPath: "C:/Program Files/MPC-HC/mpc-hc64.exe",
-                            mpvSocket: "",
-                            iinaSocket: "",
-                        },
+                        mediaPlayer: {},
                         library: {
-                            enableOnlinestream: false,
                             enableRichPresence: false,
                             enableWatchContinuity: true,
                             seriesPaths: [],

@@ -47,10 +47,10 @@ export function CommandPalette() {
                 onOpenChange={setOpen} 
                 commandProps={{ 
                     label: "Search Command Palette",
-                    className: "bg-surface-container/95 backdrop-blur-[var(--blur-overlay-lg)] border border-outline-variant shadow-elevation-5 rounded-corner-lg overflow-hidden"
+                    className: "glass-liquid rounded-corner-lg overflow-hidden"
                 }}
             >
-                <div className="p-4 border-b border-outline-variant/50 bg-surface-variant/30">
+                <div className="p-4 border-b border-outline-variant/50" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-variant) 30%, transparent)" }}>
                     <div className="flex items-center gap-3 px-2">
                         <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_var(--glow-primary)] animate-pulse" />
                         <CommandInput

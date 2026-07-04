@@ -13,7 +13,7 @@ import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
 export const ModalAnatomy = defineStyleAnatomy({
     overlay: cva([
         "UI-Modal__overlay",
-        "fixed inset-0 z-50 bg-surface/60 backdrop-blur-[var(--blur-overlay-xl)] transition-all duration-300",
+        "fixed inset-0 z-50 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_60%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] transition-all duration-300",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         // "overflow-y-auto p-0 md:p-4 grid place-items-center",
@@ -137,8 +137,12 @@ export function Modal(props: ModalProps) {
                         onEscapeKeyDown={onEscapeKeyDown}
                         onPointerDownCapture={onPointerDownCapture}
                         onInteractOutside={onInteractOutside}
-                        aria-describedby={undefined}
                     >
+                        {!description && (
+                            <VisuallyHidden asChild>
+                                <DialogPrimitive.Description />
+                            </VisuallyHidden>
+                        )}
 
                         {(title || description) && (
                             <div className={cn(ModalAnatomy.header(), headerClass)}>

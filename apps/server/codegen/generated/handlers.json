@@ -182,11 +182,11 @@
       "enrichEpisodesWithTMDB fetches episode-level metadata from TMDB and fills in",
       "any fields that AniDB/Animap left empty (title, overview/summary, still image, runtime).",
       "Supports multi-season series by fetching all available seasons in parallel.",
-      "This is purely additive â€” never overwrites existing non-empty values.",
+      "This is purely additive — never overwrites existing non-empty values.",
       ""
     ],
-    "filepath": "internal/handlers/anime_entries.go",
-    "filename": "anime_entries.go",
+    "filepath": "internal/handlers/anime_enrichment.go",
+    "filename": "anime_enrichment.go",
     "api": {
       "summary": "",
       "descriptions": [],
@@ -206,8 +206,8 @@
       "enrichMediaWithTMDB fetches series-level metadata from TMDB if the local description is missing.",
       ""
     ],
-    "filepath": "internal/handlers/anime_entries.go",
-    "filename": "anime_entries.go",
+    "filepath": "internal/handlers/anime_enrichment.go",
+    "filename": "anime_enrichment.go",
     "api": {
       "summary": "",
       "descriptions": [],
@@ -882,709 +882,6 @@
     }
   },
   {
-    "name": "HandleSamsungDiscover",
-    "trimmedName": "SamsungDiscover",
-    "comments": [
-      "HandleSamsungDiscover scans the local network for Tizen Smart TVs using SSDP",
-      "and falls back to HTTP health checks for previously paired TVs.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast.go",
-    "filename": "cast.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "HandleSamsungPing",
-    "trimmedName": "SamsungPing",
-    "comments": [
-      "HandleSamsungPing checks if a specific Samsung TV is reachable via HTTP.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast.go",
-    "filename": "cast.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "HandleSamsungPaired",
-    "trimmedName": "SamsungPaired",
-    "comments": [
-      "HandleSamsungPaired returns the list of previously paired Samsung TVs.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast.go",
-    "filename": "cast.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "HandleSamsungLaunch",
-    "trimmedName": "SamsungLaunch",
-    "comments": [
-      "HandleSamsungLaunch launches a URL on a TV (via DLNA if supported, otherwise falling back to Samsung WebSocket browser launch).",
-      ""
-    ],
-    "filepath": "internal/handlers/cast.go",
-    "filename": "cast.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "getSSDPHeader",
-    "trimmedName": "getSSDPHeader",
-    "comments": [
-      "Helper to extract a header value from SSDP response",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "resolveDLNADevice",
-    "trimmedName": "resolveDLNADevice",
-    "comments": [
-      "resolveDLNADevice fetches and parses the device description XML to find friendly name and AVTransport control URL.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "discoverSamsungTVs",
-    "trimmedName": "discoverSamsungTVs",
-    "comments": [
-      "discoverSamsungTVs performs SSDP multicast discovery across all network interfaces",
-      "to find Samsung Smart TVs and generic DLNA Media Renderers on the local network.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "scanInterfaceForTVs",
-    "trimmedName": "scanInterfaceForTVs",
-    "comments": [
-      "scanInterfaceForTVs sends SSDP M-SEARCH packets from a specific local IP",
-      "and collects DLNA Media Renderer / Samsung TV responses.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "isCastableDeviceResponse",
-    "trimmedName": "isCastableDeviceResponse",
-    "comments": [
-      "isCastableDeviceResponse checks if an SSDP response belongs to a Samsung TV or DLNA Media Renderer.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "enrichWithPairedTVs",
-    "trimmedName": "enrichWithPairedTVs",
-    "comments": [
-      "enrichWithPairedTVs checks previously paired TVs via HTTP and adds any",
-      "that are online but were missed by SSDP discovery.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "loadPairedTVs",
-    "trimmedName": "loadPairedTVs",
-    "comments": [
-      "loadPairedTVs reads all previously paired TVs from the token file.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "fetchTVInfo",
-    "trimmedName": "fetchTVInfo",
-    "comments": [
-      "fetchTVInfo queries the Samsung TV HTTP API for its name and MAC addresses.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "isTVReachable",
-    "trimmedName": "isTVReachable",
-    "comments": [
-      "isTVReachable performs a quick HTTP health check against the TV's API.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "containsIP",
-    "trimmedName": "containsIP",
-    "comments": [
-      "containsIP checks if a device list already contains a TV with the given IP.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_discovery.go",
-    "filename": "cast_discovery.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "FetchDLNADeviceInfo",
-    "trimmedName": "FetchDLNADeviceInfo",
-    "comments": [
-      "FetchDLNADeviceInfo retrieves and parses the device description XML from a LOCATION URL.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_dlna.go",
-    "filename": "cast_dlna.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "ResolveURL",
-    "trimmedName": "ResolveURL",
-    "comments": [
-      "ResolveURL helper resolves relative URLs based on the base location URL.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_dlna.go",
-    "filename": "cast_dlna.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "BuildDIDLMetadata",
-    "trimmedName": "BuildDIDLMetadata",
-    "comments": [
-      "BuildDIDLMetadata generates escaped DIDL-Lite metadata for media player renderers.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_dlna.go",
-    "filename": "cast_dlna.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "SendDLNASOAPAction",
-    "trimmedName": "SendDLNASOAPAction",
-    "comments": [
-      "SendDLNASOAPAction sends a SOAP XML request to the DLNA renderer.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_dlna.go",
-    "filename": "cast_dlna.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "DLNASetAVTransportURI",
-    "trimmedName": "DLNASetAVTransportURI",
-    "comments": [
-      "DLNASetAVTransportURI sends the media URL to the DLNA renderer.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_dlna.go",
-    "filename": "cast_dlna.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "DLNAPlay",
-    "trimmedName": "DLNAPlay",
-    "comments": [
-      "DLNAPlay sends the play command to the DLNA renderer.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_dlna.go",
-    "filename": "cast_dlna.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "DLNAStop",
-    "trimmedName": "DLNAStop",
-    "comments": [
-      "DLNAStop sends the stop command to the DLNA renderer.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_dlna.go",
-    "filename": "cast_dlna.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "HandleCastPlayer",
-    "trimmedName": "CastPlayer",
-    "comments": [
-      "HandleCastPlayer serves a minimal HTML5 video player page for Smart TVs.",
-      "The TV browser opens this page to play the stream directly.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_player.go",
-    "filename": "cast_player.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "HandleCastGo",
-    "trimmedName": "CastGo",
-    "comments": [
-      "HandleCastGo redirects to the last cast URL for easy manual TV entry.",
-      "Users can bookmark this URL on their TV browser for instant playback.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_player.go",
-    "filename": "cast_player.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "buildPlayerHTML",
-    "trimmedName": "buildPlayerHTML",
-    "comments": [
-      "buildPlayerHTML returns the \u003cvideo\u003e tag and player script for the given stream URL.",
-      "HLS streams use HLS.js; direct files use native \u003cvideo\u003e.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_player.go",
-    "filename": "cast_player.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "sendWakeOnLAN",
-    "trimmedName": "sendWakeOnLAN",
-    "comments": [
-      "sendWakeOnLAN sends a magic packet to wake a TV from standby.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "connectToTV",
-    "trimmedName": "connectToTV",
-    "comments": [
-      "connectToTV establishes a WebSocket connection to the Samsung TV.",
-      "It tries WSS (port 8002) first, then falls back to WS (port 8001),",
-      "and finally attempts Wake-on-LAN if the TV is unreachable.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "connectWithWoL",
-    "trimmedName": "connectWithWoL",
-    "comments": [
-      "connectWithWoL sends WoL packets and retries the WebSocket connection.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "getMACsForTV",
-    "trimmedName": "getMACsForTV",
-    "comments": [
-      "getMACsForTV reads stored MAC addresses for a given TV IP.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "waitForAuthorization",
-    "trimmedName": "waitForAuthorization",
-    "comments": [
-      "waitForAuthorization reads WebSocket messages until the TV authorizes or rejects the connection.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "fetchInstalledApps",
-    "trimmedName": "fetchInstalledApps",
-    "comments": [
-      "fetchInstalledApps requests the list of installed apps from the TV.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "findBrowserAppID",
-    "trimmedName": "findBrowserAppID",
-    "comments": [
-      "findBrowserAppID determines the correct browser app ID from installed apps.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "sendLaunchCommands",
-    "trimmedName": "sendLaunchCommands",
-    "comments": [
-      "sendLaunchCommands tries multiple strategies to open the browser on the TV.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "launchURLOnSamsungTV",
-    "trimmedName": "launchURLOnSamsungTV",
-    "comments": [
-      "launchURLOnSamsungTV connects to the TV via WebSocket, authorizes,",
-      "detects the browser app, and launches the target URL.",
-      ""
-    ],
-    "filepath": "internal/handlers/cast_samsung.go",
-    "filename": "cast_samsung.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
     "name": "HandleGetCollection",
     "trimmedName": "GetCollection",
     "comments": [
@@ -1617,6 +914,27 @@
     ],
     "filepath": "internal/handlers/collections.go",
     "filename": "collections.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleGetConfigMetadata",
+    "trimmedName": "GetConfigMetadata",
+    "comments": [
+      "HandleGetConfigMetadata returns the TMDB ID → series_id mapping used by the lore system.",
+      ""
+    ],
+    "filepath": "internal/handlers/config.go",
+    "filename": "config.go",
     "api": {
       "summary": "",
       "descriptions": [],
@@ -2044,6 +1362,66 @@
       "returns": "bool",
       "returnGoType": "bool",
       "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleGetBestSource",
+    "trimmedName": "GetBestSource",
+    "comments": [
+      "HandleGetBestSource retorna el mejor archivo para un título/episodio.",
+      "",
+      "\t@summary get best source for playback.",
+      "\t@desc Evaluates all available sources (local + Jellyfin) and returns the winner.",
+      "\t@returns intelligence.SelectionResult",
+      "\t@route /api/v1/intelligence/best-source [GET]",
+      ""
+    ],
+    "filepath": "internal/handlers/intelligence.go",
+    "filename": "intelligence.go",
+    "api": {
+      "summary": "get best source for playback.",
+      "descriptions": [
+        "Evaluates all available sources (local + Jellyfin) and returns the winner."
+      ],
+      "endpoint": "/api/v1/intelligence/best-source",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "intelligence.SelectionResult",
+      "returnGoType": "intelligence.SelectionResult",
+      "returnTypescriptType": "SelectionResult"
+    }
+  },
+  {
+    "name": "HandleGetIntelligenceStats",
+    "trimmedName": "GetIntelligenceStats",
+    "comments": [
+      "HandleGetIntelligenceStats retorna estadísticas del motor de selección.",
+      "",
+      "\t@summary get intelligence engine stats.",
+      "\t@desc Returns cache stats and scoring configuration.",
+      "\t@returns map",
+      "\t@route /api/v1/intelligence/stats [GET]",
+      ""
+    ],
+    "filepath": "internal/handlers/intelligence.go",
+    "filename": "intelligence.go",
+    "api": {
+      "summary": "get intelligence engine stats.",
+      "descriptions": [
+        "Returns cache stats and scoring configuration."
+      ],
+      "endpoint": "/api/v1/intelligence/stats",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "map",
+      "returnGoType": "map",
+      "returnTypescriptType": "map"
     }
   },
   {
@@ -2561,6 +1939,29 @@
     }
   },
   {
+    "name": "resolveLibraryMediaID",
+    "trimmedName": "resolveLibraryMediaID",
+    "comments": [
+      "resolveLibraryMediaID looks up the LibraryMedia record for a given mediaID.",
+      "By convention, mediaIDs \u003e= 1_000_000 are movies (real TMDB ID = mediaID - 1_000_000);",
+      "smaller IDs are TV shows. Returns 0 when no matching record is found.",
+      ""
+    ],
+    "filepath": "internal/handlers/localfiles.go",
+    "filename": "localfiles.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
     "name": "HandleGetLocalFiles",
     "trimmedName": "GetLocalFiles",
     "comments": [
@@ -2922,10 +2323,13 @@
     }
   },
   {
-    "name": "HandleGetDragonBallLore",
-    "trimmedName": "GetDragonBallLore",
+    "name": "HandleGetDragonballLore",
+    "trimmedName": "GetDragonballLore",
     "comments": [
-      "HandleGetDragonBallLore handles the request to fetch the complete Dragon Ball lore database.",
+      "HandleGetDragonballLore returns the local Dragon Ball character wiki used to",
+      "populate the character detail modal. No character data has been authored",
+      "yet, so it currently returns an empty list — the client gates this query to",
+      "Dragon Ball media only and treats an empty wiki as \"no entry found\".",
       ""
     ],
     "filepath": "internal/handlers/lore.go",
@@ -3130,8 +2534,38 @@
           "typescriptType": "number",
           "required": true,
           "descriptions": []
+        },
+        {
+          "name": "PreferredAudioLang",
+          "jsonName": "preferredAudioLang",
+          "goType": "string",
+          "usedStructType": "",
+          "typescriptType": "string",
+          "required": true,
+          "descriptions": []
         }
       ],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "getClientID",
+    "trimmedName": "getClientID",
+    "comments": [
+      "getClientID resolves the client ID from query param, header, or context cookie.",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
       "returns": "bool",
       "returnGoType": "bool",
       "returnTypescriptType": "boolean"
@@ -3166,6 +2600,177 @@
       ],
       "params": [],
       "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleGetEpisodeSkipTimes",
+    "trimmedName": "GetEpisodeSkipTimes",
+    "comments": [
+      "HandleGetEpisodeSkipTimes returns the custom/saved skip times for a given episode.",
+      "",
+      "\t@summary get episode skip times.",
+      "\t@desc This gets the saved skip times (OP/ED) for a specific episode of a series.",
+      "\t@returns models.EpisodeSkipTime",
+      "\t@route /api/v1/mediastream/skip-times [GET]",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "get episode skip times.",
+      "descriptions": [
+        "This gets the saved skip times (OP/ED) for a specific episode of a series."
+      ],
+      "endpoint": "/api/v1/mediastream/skip-times",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "models.EpisodeSkipTime",
+      "returnGoType": "models.EpisodeSkipTime",
+      "returnTypescriptType": "Models_EpisodeSkipTime"
+    }
+  },
+  {
+    "name": "HandleSaveEpisodeSkipTimes",
+    "trimmedName": "SaveEpisodeSkipTimes",
+    "comments": [
+      "HandleSaveEpisodeSkipTimes saves the skip times for an episode.",
+      "",
+      "\t@summary save episode skip times.",
+      "\t@desc This saves custom skip times for an episode. If applyToSeason is true, it propagates it as default offsets for all other episodes of the same series.",
+      "\t@route /api/v1/mediastream/skip-times [POST]",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "save episode skip times.",
+      "descriptions": [
+        "This saves custom skip times for an episode. If applyToSeason is true, it propagates it as default offsets for all other episodes of the same series."
+      ],
+      "endpoint": "/api/v1/mediastream/skip-times",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [
+        {
+          "name": "MediaID",
+          "jsonName": "mediaId",
+          "goType": "int",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "MalID",
+          "jsonName": "malId",
+          "goType": "int",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "EpisodeNumber",
+          "jsonName": "episodeNumber",
+          "goType": "int",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "OpStart",
+          "jsonName": "opStart",
+          "goType": "float64",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "OpEnd",
+          "jsonName": "opEnd",
+          "goType": "float64",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "EdOffset",
+          "jsonName": "edOffset",
+          "goType": "float64",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "EdEnd",
+          "jsonName": "edEnd",
+          "goType": "float64",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "ApplyToSeason",
+          "jsonName": "applyToSeason",
+          "goType": "bool",
+          "usedStructType": "",
+          "typescriptType": "boolean",
+          "required": true,
+          "descriptions": []
+        }
+      ],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleScanEpisodeSkipTimes",
+    "trimmedName": "ScanEpisodeSkipTimes",
+    "comments": [
+      "HandleScanEpisodeSkipTimes triggers a background scan to detect skip times for a series.",
+      "",
+      "\t@summary trigger skip times auto-scan.",
+      "\t@desc This starts a background task using acoustic fingerprinting to detect intro/outro boundaries.",
+      "\t@route /api/v1/mediastream/skip-times/scan [POST]",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "trigger skip times auto-scan.",
+      "descriptions": [
+        "This starts a background task using acoustic fingerprinting to detect intro/outro boundaries."
+      ],
+      "endpoint": "/api/v1/mediastream/skip-times/scan",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [
+        {
+          "name": "MediaID",
+          "jsonName": "mediaId",
+          "goType": "int",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        }
+      ],
       "returns": "bool",
       "returnGoType": "bool",
       "returnTypescriptType": "boolean"
@@ -3593,35 +3198,6 @@
     }
   },
   {
-    "name": "StartPlaybackHeartbeatSubscriber",
-    "trimmedName": "StartPlaybackHeartbeatSubscriber",
-    "comments": [
-      "StartPlaybackHeartbeatSubscriber listens on the dispatcher for real-time",
-      "WebSocket playback progress events and updates the ContinuityManager.",
-      "This provides sub-second progress sync without HTTP request overhead.",
-      "",
-      "Concurrency safety:",
-      "  - Each heartbeat is processed sequentially within a single goroutine,",
-      "    avoiding concurrent DB writes from multiple WS messages.",
-      "  - The dispatcher's non-blocking publish ensures slow DB writes never",
-      "    stall the WebSocket read loop or block other event subscribers.",
-      ""
-    ],
-    "filepath": "internal/handlers/playback_sync.go",
-    "filename": "playback_sync.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
     "name": "HandlePlaybackSync",
     "trimmedName": "PlaybackSync",
     "comments": [
@@ -3645,6 +3221,35 @@
       "methods": [
         "POST"
       ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "StartPlaybackHeartbeatSubscriber",
+    "trimmedName": "StartPlaybackHeartbeatSubscriber",
+    "comments": [
+      "StartPlaybackHeartbeatSubscriber listens on the dispatcher for real-time",
+      "WebSocket playback progress events and updates the ContinuityManager.",
+      "This provides sub-second progress sync without HTTP request overhead.",
+      "",
+      "Concurrency safety:",
+      "  - Each heartbeat is processed sequentially within a single goroutine,",
+      "    avoiding concurrent DB writes from multiple WS messages.",
+      "  - The dispatcher's non-blocking publish ensures slow DB writes never",
+      "    stall the WebSocket read loop or block other event subscribers.",
+      ""
+    ],
+    "filepath": "internal/handlers/playback_sync.go",
+    "filename": "playback_sync.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
       "params": [],
       "bodyFields": [],
       "returns": "bool",
@@ -3825,6 +3430,27 @@
     ],
     "filepath": "internal/handlers/response.go",
     "filename": "response.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "RegisterIntelligenceRoutes",
+    "trimmedName": "RegisterIntelligenceRoutes",
+    "comments": [
+      "RegisterIntelligenceRoutes registra las rutas del motor de selección inteligente.",
+      ""
+    ],
+    "filepath": "internal/handlers/routes.go",
+    "filename": "routes.go",
     "api": {
       "summary": "",
       "descriptions": [],
@@ -4118,6 +3744,70 @@
       "returns": "[]dto.ScanSummaryItem",
       "returnGoType": "dto.ScanSummaryItem",
       "returnTypescriptType": "Array\u003cScanSummaryItem\u003e"
+    }
+  },
+  {
+    "name": "resolveLibraryMediaForSagas",
+    "trimmedName": "resolveLibraryMediaForSagas",
+    "comments": [
+      "resolveLibraryMediaForSagas finds the LibraryMedia for a route media ID",
+      "using the same resolution order as anime.NewSimpleEntry: try the ID as a",
+      "primary key first, then fall back to a TMDB ID lookup (with the +1,000,000",
+      "offset used for movie IDs in this app's normalized ID space).",
+      ""
+    ],
+    "filepath": "internal/handlers/series_details.go",
+    "filename": "series_details.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleGetSeriesSagas",
+    "trimmedName": "GetSeriesSagas",
+    "comments": [
+      "HandleGetSeriesSagas returns fully enriched sagas for a given media entry.",
+      "",
+      "\t@summary returns enriched saga array for a media entry.",
+      "\t@route /api/v1/library/anime-entry/{id}/sagas [GET]",
+      "\t@param id - int - true - \"Anime media ID\"",
+      "\t@returns []dto.SagaDTO",
+      ""
+    ],
+    "filepath": "internal/handlers/series_details.go",
+    "filename": "series_details.go",
+    "api": {
+      "summary": "returns enriched saga array for a media entry.",
+      "descriptions": [],
+      "endpoint": "/api/v1/library/anime-entry/{id}/sagas",
+      "methods": [
+        "GET"
+      ],
+      "params": [
+        {
+          "name": "id",
+          "jsonName": "id",
+          "goType": "int",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": [
+            "Anime media ID"
+          ]
+        }
+      ],
+      "bodyFields": [],
+      "returns": "[]dto.SagaDTO",
+      "returnGoType": "dto.SagaDTO",
+      "returnTypescriptType": "Array\u003cSagaDTO\u003e"
     }
   },
   {
@@ -4642,7 +4332,11 @@
     "name": "HandleUpdateTheme",
     "trimmedName": "UpdateTheme",
     "comments": [
-      "HandleUpdateTheme updates the theme settings.",
+      "HandleUpdateTheme updates the color-related theme settings (used by the",
+      "quick theme-preset picker). It only touches the color fields it receives",
+      "and preserves every other theme setting already saved — it does NOT",
+      "overwrite the whole theme row, to avoid wiping unrelated appearance",
+      "settings configured elsewhere (Settings → Apariencia).",
       "",
       "\t@summary updates the theme settings.",
       "\t@desc The server status should be re-fetched after this on the client.",

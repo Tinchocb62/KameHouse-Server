@@ -1,6 +1,6 @@
 import React from "react"
 import { cleanMediaTitle } from "@/lib/helpers/media"
-import { X } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 
 interface PlayerTopBarProps {
     title?: string
@@ -44,9 +44,9 @@ return (
                 tabIndex={0}
                 onClick={(e) => { e.stopPropagation(); onClose(); }}
                 aria-label="Cerrar reproductor"
-                className="flex items-center justify-center w-10 h-10 text-on-surface-variant bg-surface-container/90 backdrop-blur-[var(--blur-overlay-xl)] hover:text-on-surface hover:bg-surface-container-high border border-outline-variant/50 rounded-full transition-all duration-200 active:scale-[0.95] group shrink-0 pointer-events-auto focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                className="flex items-center justify-center w-10 h-10 text-on-surface-variant bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_90%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] hover:text-on-surface hover:bg-surface-container-high border border-outline-variant/50 rounded-full transition-all duration-200 active:scale-[0.95] group shrink-0 pointer-events-auto focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             >
-                <X className="w-5 h-5 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300" />
+                <Icons.ui.close className="w-5 h-5 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300" />
             </button>
         </div>
     )

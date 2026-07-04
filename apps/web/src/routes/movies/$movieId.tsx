@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { HydrationBoundary, dehydrate, useQueryClient } from "@tanstack/react-query"
 import React, { useState, useEffect, useRef } from "react"
+import { useGSAP } from "@gsap/react"
+import gsap from "gsap"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 import { getHighResImage, getMediumResImage, getLowResImage } from "@/lib/helpers/images"
@@ -14,17 +16,18 @@ import { Skeleton } from "@/components/ui/skeleton/skeleton"
 const VideoPlayer = React.lazy(() => import("@/components/video/player").then(m => ({ default: m.VideoPlayer })))
 import { startViewTransition } from "@/lib/helpers/transitions"
 import { FloatingMatchFlap } from "@/components/shared/floating-match-flap"
+import { MediaHero } from "@/components/ui/media-hero"
 import { useSound } from "@/hooks/use-sound"
 import { cn } from "@/components/ui/core/styling"
 import { Icons } from "@/components/ui/icons"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { ERA_TABS, cleanMovieTitle } from "./-MovieCard"
 import { getEntryEra } from "./-components/movies-utils"
-import { useGSAP } from "@gsap/react"
-import gsap from "gsap"
 import { useServerQuery } from "@/api/client/requests"
 import { CharacterDetailModal } from "@/components/shared/character-detail-modal"
-import { isDragonBallTmdbId } from "@/lib/config/dragonball.config"
+import { isDragonBallTmdbId, getSeriesEraTheme } from "@/lib/config/dragonball.config"
+import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 
 export const Route = createFileRoute("/movies/$movieId")({
@@ -67,6 +70,8 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const backdropRef = useRef<HTMLDivElement>(null)
     const addToQueue = useAppStore(state => state.addToQueue)
+    const ts = useThemeSettings()
+    const isSmallBanner = ts.themeMediaPageBannerSize === "small"
 
     const { data: lore } = useServerQuery<any>({
         endpoint: "/api/v1/lore/dragonball",
@@ -101,15 +106,30 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         if (entry?.media?.id) playSound("detail", 0.4)
     }, [entry?.media?.id, playSound])
 
+    // Parallax del backdrop — escucha en captura porque la página scrollea
+    // dentro de su propio contenedor, no en window (mismo patrón que SeriesHero)
     useEffect(() => {
-        const handleScroll = () => {
-            if (!backdropRef.current) return
-            const scrolled = window.scrollY || document.documentElement.scrollTop
-            backdropRef.current.style.transform = `translate3d(0, ${scrolled * 0.35}px, 0)`
+        const handleScroll = (e: Event) => {
+            const target = e.target
+            if (!backdropRef.current || !containerRef.current) return
+            if (target === document || target === window) {
+                const scrolled = window.scrollY || document.documentElement.scrollTop
+                backdropRef.current.style.transform = `translate3d(0, ${scrolled * 0.35}px, 0)`
+            } else if (target instanceof HTMLElement && target.contains(containerRef.current)) {
+                backdropRef.current.style.transform = `translate3d(0, ${target.scrollTop * 0.35}px, 0)`
+            }
         }
-        window.addEventListener("scroll", handleScroll, { passive: true })
-        return () => window.removeEventListener("scroll", handleScroll)
+        window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
+        return () => window.removeEventListener("scroll", handleScroll, { capture: true })
     }, [])
+
+    // Sincroniza el backdrop con el DynamicBackdrop global (glass real detrás del contenido)
+    const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
+    const backdropForStore = getHighResImage(entry?.media?.bannerImage || entry?.media?.posterImage || "")
+    useEffect(() => {
+        if (backdropForStore) setBackdropUrl(backdropForStore)
+        return () => setBackdropUrl(null)
+    }, [backdropForStore, setBackdropUrl])
 
     useGSAP(() => {
         gsap.from(".movie-animate", {
@@ -125,9 +145,9 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     if (!entry || !entry.media) {
         if (isLoading) {
             return (
-                <div className="h-full w-full bg-surface pb-16 p-6 md:p-12 flex flex-col justify-end min-h-screen gap-6">
+                <div className="h-full w-full pb-16 p-6 md:p-12 flex flex-col justify-end min-h-screen gap-6">
                     <div className="flex flex-col lg:flex-row items-center lg:items-end gap-10 max-w-[1800px] w-full mx-auto">
-                        <Skeleton className="w-56 md:w-68 shrink-0 aspect-[2/3] h-auto rounded-container" />
+                        <Skeleton className="w-56 md:w-64 shrink-0 aspect-[2/3] h-auto rounded-container" />
                         <div className="flex-1 w-full flex flex-col gap-4">
                             <Skeleton className="h-6 w-32 rounded-lg" />
                             <Skeleton className="h-14 w-2/3 rounded-lg" />
@@ -140,7 +160,7 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
             )
         }
         return (
-            <div className="min-h-screen bg-surface text-on-surface flex items-center justify-center">
+            <div className="min-h-screen text-on-surface flex items-center justify-center">
                 <EmptyState title="Película no encontrada" message="No pudimos cargar este contenido." />
             </div>
         )
@@ -151,6 +171,8 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     const year = media.year?.toString() || ""
     const era = getEntryEra(entry)
     const eraConfig = ERA_TABS.find(t => t.value === era) || ERA_TABS[0]
+    const eraTheme = getSeriesEraTheme(media.tmdbId)
+    const localTheme = !ts.themeEra ? eraTheme : undefined
 
     const synopsis = media.description ? media.description.replace(/<[^>]*>/g, "") : ""
 
@@ -232,237 +254,153 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         }
     }
 
+    const titleNode = cleanMovieTitle(title)
+
+    const topBadge = (
+        <span
+            className="inline-flex items-center text-label-sm uppercase px-3 py-1 rounded-full border backdrop-blur-[var(--blur-overlay-sm)]"
+            style={{
+                color: eraConfig.color,
+                borderColor: `color-mix(in srgb, ${eraConfig.color} 27%, transparent)`,
+                backgroundColor: `color-mix(in srgb, ${eraConfig.color} 8%, transparent)`,
+            }}
+        >
+            {eraConfig.label}
+        </span>
+    )
+
+    const metadataRow = (
+        <div className="flex flex-wrap items-center text-on-surface-variant text-xs font-semibold tracking-wide gap-3">
+            <span className="flex items-center justify-center bg-surface-container-low border border-outline-variant/50 rounded-md px-2 py-0.5 text-on-surface-variant font-bold tracking-widest text-[9px]">
+                {media.isNsfw ? "18+" : "PG-13"}
+            </span>
+            
+            {technicalData?.is4K && (
+                <span className="flex items-center gap-1 font-black text-on-surface text-[11px] tracking-wide px-2 py-0.5 rounded-md" style={{ background: "linear-gradient(to right, var(--era-shimmer-1), var(--era-shimmer-2))" }}>
+                    <Icons.ui.star size={10} fill="currentColor" />
+                    4K ENHANCED
+                </span>
+            )}
+            
+            <span className="flex items-center justify-center bg-surface-container-low border border-outline-variant/50 rounded-md px-2 py-0.5 text-on-surface-variant font-bold text-[9px]">CC</span>
+            
+            <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] tracking-wide">
+                {year && <span>{year}</span>}
+                {year && formattedDuration && <span className="text-on-surface-variant/60">•</span>}
+                {formattedDuration && <span>{formattedDuration}</span>}
+                {media.score && (
+                    <>
+                        <span className="text-on-surface-variant/60">•</span>
+                        <span className="flex items-center gap-1 text-brand-secondary">
+                            <Icons.ui.star size={11} fill="currentColor" className="stroke-none" />
+                            {(media.score / 10).toFixed(1)} Ki
+                        </span>
+                    </>
+                )}
+            </div>
+        </div>
+    )
+
+    const actionButtons = (
+        <>
+            <button
+                onClick={handlePlayDefault}
+                className="group/play relative flex items-center gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95"
+                style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
+            >
+                <div className="absolute inset-0 transition-opacity duration-300 opacity-0 group-hover/play:opacity-100 z-0" style={{ background: `linear-gradient(to right, var(--era-btn-hover-from), var(--era-btn-hover-to))` }} />
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-slow ease-smooth-out z-0" />
+
+                <div className="p-3 bg-black/15 backdrop-blur-[var(--blur-overlay-sm)] rounded-xl text-zinc-950 group-hover/play:bg-zinc-950 group-hover/play:text-zinc-50 transition-all duration-300 z-10 shrink-0">
+                    <Icons.media.play className="w-4 h-4 fill-current" />
+                </div>
+
+                <div className="flex flex-col items-start z-10 select-none text-left shrink-0">
+                    <span className="font-sans text-button-md tracking-wider font-black uppercase text-zinc-950 transition-colors whitespace-nowrap">
+                        {continuityData?.item?.currentTime ? "Reanudar" : "Reproducir"}
+                    </span>
+                    <span className="text-label-sm font-black text-zinc-950/70 tracking-widest uppercase transition-colors mt-0.5 whitespace-nowrap">
+                        {continuityData?.item?.currentTime ? "Continuar viendo" : "Ver película"}
+                    </span>
+                </div>
+            </button>
+
+            {/* Queue Button */}
+            {entry.localFiles && entry.localFiles.length > 0 && (
+                <button
+                    onClick={handleAddToQueue}
+                    className="group/queue flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 text-on-surface/70 hover:text-on-surface hover:scale-[1.03] active:scale-95"
+                    title="Añadir a la cola"
+                >
+                    <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
+                </button>
+            )}
+
+            {/* Watch Status */}
+            <button
+                onClick={handleToggleWatched}
+                className={cn(
+                    "flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95",
+                    isWatched ? "text-brand-success" : "text-on-surface/70 hover:text-on-surface"
+                )}
+                title={isWatched ? "Marcar como no vista" : "Marcar como vista"}
+            >
+                {isWatched ? <Icons.ui.check className="w-5 h-5 stroke-[3px]" /> : <Icons.ui.plus className="w-5 h-5 stroke-[2.5px]" />}
+            </button>
+
+            {/* Favorite Button */}
+            <button
+                onClick={handleToggleFavorite}
+                className={cn(
+                    "flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95",
+                    isFavorite ? "text-brand-destructive" : "text-on-surface/70 hover:text-on-surface"
+                )}
+                title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+            >
+                <Icons.ui.heart className={cn("w-5 h-5", isFavorite && "fill-current")} />
+            </button>
+        </>
+    )
+
     return (
-        <div ref={containerRef} className="h-full w-full flex flex-col overflow-y-auto no-scrollbar bg-surface text-on-surface pb-24 relative select-none">
+        <div ref={containerRef} className="h-full w-full flex flex-col overflow-y-auto no-scrollbar text-on-surface pb-24 relative select-none" data-theme={localTheme || undefined}>
             <FloatingMatchFlap
                 directoryPath={entry.libraryData?.sharedPath || ""}
                 mediaId={entry.mediaId}
             />
 
-            {/* FULLSCREEN HERO SECTION */}
-            <section className="relative w-full min-h-screen flex flex-col justify-end overflow-hidden pb-16 pt-32">
-                {/* Ambient Blur Background */}
-                <div className="absolute inset-0 overflow-hidden bg-transparent z-0">
-                    {backdropSrc && (
-                        <div
-                            className="absolute inset-0 opacity-100"
-                            style={{
-                                backgroundImage: `url(${getLowResImage(backdropSrc)})`,
-                                backgroundSize: "cover",
-                                backgroundPosition: "center 20%",
-                                filter: "blur(80px) brightness(0.35) saturate(160%)",
-                            }}
-                        />
-                    )}
-                </div>
+            <MediaHero
+                scrollContainerRef={containerRef}
+                backdropUrl={backdropUrl}
+                posterUrl={posterUrl}
+                hasBannerImage={hasBannerImage}
+                title={titleNode}
+                topBadge={topBadge}
+                metadataRow={metadataRow}
+                synopsis={synopsis}
+                actionButtons={actionButtons}
+                showPosterColumn={true}
+                onBackdropClick={handlePlayDefault}
+            />
 
-                {/* High Res Parallax Backdrop */}
-                <div className="absolute inset-0 z-0">
-                    {backdropUrl && (
-                        hasBannerImage ? (
-                            <div
-                                ref={backdropRef}
-                                onClick={handlePlayDefault}
-                                className="absolute right-0 top-0 h-full w-full md:w-[82%] lg:w-[78%] overflow-hidden cursor-pointer z-0 will-change-transform group/backdrop"
-                            >
-                                <DeferredImage
-                                    src={backdropUrl}
-                                    alt={title}
-                                    priority={true}
-                                    className="w-full h-full object-cover object-[center_20%] opacity-85 transition-all [transition-duration:20s] ease-out group-hover/backdrop:scale-[1.02] animate-ken-burns"
-                                    style={{
-                                        WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
-                                        maskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
-                                    }}
-                                />
-                            </div>
-                        ) : (
-                            <div
-                                ref={backdropRef}
-                                onClick={handlePlayDefault}
-                                className="absolute right-0 top-0 h-full w-auto overflow-hidden cursor-pointer z-0 will-change-transform group/backdrop"
-                            >
-                                <DeferredImage
-                                    src={backdropUrl}
-                                    alt={title}
-                                    priority={true}
-                                    className="h-full w-auto object-contain object-right-top opacity-[0.65] transition-all [transition-duration:20s] ease-out group-hover/backdrop:scale-[1.02] animate-ken-burns"
-                                />
-                            </div>
-                        )
-                    )}
-                </div>
-
-                {/* Cinematic Vignettes */}
-                <div
-                    className="absolute inset-0 z-10 pointer-events-none"
-                    style={{
-                        background: hasBannerImage
-                            ? "linear-gradient(to right, rgba(7,7,10,0.95) 0%, rgba(7,7,10,0.8) 25%, rgba(7,7,10,0.2) 65%, transparent 95%)"
-                            : "linear-gradient(to right, rgba(7,7,10,0.95) 0%, rgba(7,7,10,0.8) 30%, rgba(7,7,10,0.15) 75%, transparent 98%)",
-                    }}
-                />
-                <div
-                    className="absolute inset-x-0 bottom-0 h-64 z-10 pointer-events-none"
-                    style={{ background: "linear-gradient(to top, #07070a 0%, rgba(7,7,10,0.8) 25%, rgba(7,7,10,0.4) 60%, transparent 100%)" }}
-                />
-                <div
-                    className="absolute inset-x-0 top-0 h-32 z-10 pointer-events-none"
-                    style={{ background: "linear-gradient(to bottom, rgba(7,7,10,0.6) 0%, transparent 100%)" }}
-                />
-
-                {/* Content Container (Split Grid) */}
-                <div className="relative z-20 w-full max-w-[1800px] mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center lg:items-end gap-10">
-                                 {/* Left Column: Portrait Poster Card */}
-                    <div className="movie-animate w-56 md:w-68 shrink-0 aspect-[2/3] rounded-container overflow-hidden border border-outline-variant bg-surface-container shadow-elevation-5">
-                        <DeferredImage
-                            src={posterUrl}
-                            alt={title}
-                            className="w-full h-full object-cover"
+            <div className="w-full max-w-[1800px] mx-auto px-6 md:px-12 mt-12 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-12 relative z-20">
+                {/* Progress bar */}
+                {continuityData?.item?.currentTime && continuityData.item.duration && (
+                    <div className="movie-animate w-full max-w-sm mt-1 h-[5px] rounded-full overflow-hidden relative z-10" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 20%, transparent)" }}>
+                        <div 
+                            className="h-full bg-brand-secondary"
+                            style={{ width: `${progressPercent}%` }}
                         />
                     </div>
-
-                    {/* Right Column: Meta & Description */}
-                    <div className="flex-1 flex flex-col gap-6 text-left w-full">
-                        {/* Era Badge */}
-                        <div className="movie-animate">
-                            <span 
-                                className="inline-flex items-center text-[10px] font-black uppercase tracking-widest px-3.5 py-1.5 rounded-lg shadow-elevation-2 border"
-                                style={{
-                                    color: eraConfig.color,
-                                    borderColor: `color-mix(in srgb, ${eraConfig.color} 27%, transparent)`,
-                                    backgroundColor: `color-mix(in srgb, ${eraConfig.color} 8%, transparent)`,
-                                }}
-                            >
-                                {eraConfig.label}
-                            </span>
-                        </div>
-
-                        {/* Title */}
-                        <h1 className="movie-animate font-sans font-extrabold leading-[1.05] tracking-tighter text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.85)] uppercase" style={{ fontSize: "max(2.5rem, min(5.5vw, 4.5rem))" }}>
-                            {cleanMovieTitle(title)}
-                        </h1>
-
-                        {/* Meta Info Row */}
-                        <div className="movie-animate flex flex-wrap items-center text-on-surface-variant text-xs font-semibold tracking-wide gap-3">
-                            <span className="flex items-center justify-center bg-surface-container-low border border-outline-variant/50 rounded-md px-2 py-0.5 text-on-surface-variant font-bold tracking-widest text-[9px]">
-                                {media.isNsfw ? "18+" : "PG-13"}
-                            </span>
-                            
-                            {technicalData?.is4K && (
-                                <span className="flex items-center gap-1 font-black text-on-surface text-[11px] tracking-wide bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 rounded-md">
-                                    4K ENHANCED
-                                </span>
-                            )}
-                            
-                            <span className="flex items-center justify-center bg-surface-container-low border border-outline-variant/50 rounded-md px-2 py-0.5 text-on-surface-variant font-bold text-[9px]">CC</span>
-                            
-                            <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] tracking-wide">
-                                {year && <span>{year}</span>}
-                                {year && formattedDuration && <span className="text-on-surface-variant/60">•</span>}
-                                {formattedDuration && <span>{formattedDuration}</span>}
-                                {media.score && (
-                                    <>
-                                        <span className="text-on-surface-variant/60">•</span>
-                                        <span className="flex items-center gap-1 text-amber-400">
-                                            <Icons.ui.star size={11} fill="currentColor" className="stroke-none" />
-                                            {(media.score / 10).toFixed(1)} Ki
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Synopsis */}
-                        {synopsis && (
-                            <p className="movie-animate text-on-surface-variant text-sm md:text-[15px] leading-relaxed max-w-3xl line-clamp-3 pl-4 border-l-2 border-brand-secondary/30">
-                                {synopsis}
-                            </p>
-                        )}
-
-                        {/* Action Row */}
-                        <div className="movie-animate flex flex-wrap items-center gap-4 pt-2">
-                            {/* Premium Play Button */}
-                            <button
-                                onClick={handlePlayDefault}
-                                className="group/play relative flex items-center gap-4 px-9 py-4 bg-gradient-to-r from-brand-secondary via-brand-secondary to-brand-secondary text-white rounded-full overflow-hidden shadow-[0_12px_40px_rgba(255,110,58,0.35)] hover:shadow-[0_18px_50px_rgba(255,110,58,0.55)] transition-all duration-500 hover:scale-105 active:scale-95 border border-outline-variant hover:border-brand-secondary/40"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-500 z-0" />
-                                <div className="absolute -inset-10 bg-brand-secondary/30 blur-xl group-hover/play:opacity-100 opacity-0 transition-opacity duration-500 -z-10 animate-pulse" />
-
-                                <div className="p-2.5 bg-surface-container backdrop-blur-overlay-xl rounded-full border border-outline-variant text-on-surface group-hover/play:bg-white group-hover/play:text-black transition-all duration-300 shadow-inner z-10 shrink-0">
-                                    <Icons.media.play className="w-4 h-4 fill-current" />
-                                </div>
-
-                                <div className="flex flex-col items-start z-10 select-none text-left shrink-0">
-                                    <span className="font-sans text-[13px] tracking-widest font-extrabold uppercase text-on-surface transition-colors whitespace-nowrap">
-                                        {continuityData?.item?.currentTime ? "REANUDAR" : "PLAY"}
-                                    </span>
-                                    <span className="text-[8px] font-black text-on-surface/60 tracking-widest uppercase transition-colors mt-0.5 whitespace-nowrap">
-                                        {continuityData?.item?.currentTime ? "Continuar viendo" : "Ver película"}
-                                    </span>
-                                </div>
-                            </button>
-
-                            {/* Queue Button */}
-                            {entry.localFiles && entry.localFiles.length > 0 && (
-                                <button
-                                    onClick={handleAddToQueue}
-                                    className="group/queue flex items-center justify-center w-14 h-14 rounded-full bg-[var(--glass-bg)] backdrop-blur-overlay-md border border-[var(--glass-border)] hover:bg-[var(--glass-hover)] hover:border-[var(--glass-strong)] cursor-pointer text-on-surface hover:text-brand-secondary transition-all duration-300 active:scale-95"
-                                    title="Añadir a la cola"
-                                >
-                                    <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
-                                </button>
-                            )}
-
-                            {/* Watch Status */}
-                            <button
-                                onClick={handleToggleWatched}
-                                className={cn(
-                                    "flex items-center justify-center w-14 h-14 rounded-full border transition-all duration-300 active:scale-95",
-                                    isWatched
-                                        ? "bg-surface-container text-on-surface border-outline-variant"
-                                        : "bg-surface-container/5 border-outline-variant/10 text-on-surface"
-                                )}
-                                title={isWatched ? "Marcar como no vista" : "Marcar como vista"}
-                            >
-                                {isWatched ? <Icons.ui.check className="w-5 h-5 stroke-[3px]" /> : <Icons.ui.plus className="w-5 h-5 stroke-[2.5px]" />}
-                            </button>
-
-                            {/* Favorite Button */}
-                            <button
-                                onClick={handleToggleFavorite}
-                                className={cn(
-                                    "flex items-center justify-center w-14 h-14 rounded-full border transition-all duration-300 active:scale-95",
-                                    isFavorite
-                                        ? "bg-surface-container text-on-surface border-outline-variant"
-                                        : "bg-surface-container/5 border-outline-variant/10 text-on-surface"
-                                )}
-                                title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-                            >
-                                <Icons.navigation.users className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Progress bar */}
-                        {continuityData?.item?.currentTime && continuityData.item.duration && (
-                            <div className="movie-animate w-full max-w-sm mt-1 h-[5px] bg-surface-container/20 rounded-full overflow-hidden relative z-10">
-                                <div 
-                                    className="h-full bg-brand-secondary"
-                                    style={{ width: `${progressPercent}%` }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </section>
+                )}
+            </div>
 
             {/* Video Player */}
             {playTarget && (
                 <React.Suspense fallback={
-                    <div className="fixed inset-0 bg-surface/90 backdrop-blur-overlay-xl flex flex-col justify-center items-center z-50">
+                    <div className="fixed inset-0 bg-scrim/80 backdrop-blur-[var(--blur-overlay-lg)] flex flex-col justify-center items-center z-50">
                         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-secondary mb-4"></div>
-                        <p className="text-on-surface-variant text-label-md uppercase tracking-widest">Cargando reproductor...</p>
+                        <p className="text-on-surface-variant/70 text-label-md uppercase">Cargando reproductor...</p>
                     </div>
                 }>
                     <VideoPlayer

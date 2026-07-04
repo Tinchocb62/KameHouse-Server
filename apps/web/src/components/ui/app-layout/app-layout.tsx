@@ -10,7 +10,7 @@ import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
 export const AppLayoutAnatomy = defineStyleAnatomy({
     root: cva([
         "UI-AppLayout__root appLayout",
-        "flex h-screen w-full overflow-hidden bg-transparent text-white",
+        "flex h-screen w-full overflow-hidden bg-transparent text-on-surface",
     ]),
 })
 

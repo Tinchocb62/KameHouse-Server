@@ -1,4 +1,5 @@
 import { Models_Theme } from "@/api/generated/types"
+import { useGetSettings } from "@/api/hooks/settings.hooks"
 
 
 export const enum ThemeLibraryScreenBannerType {
@@ -80,91 +81,92 @@ export const ThemeMediaPageInfoBoxSizeOptions = [
     },
 ]
 
-export type ThemeSettings = Omit<Models_Theme, "id"> & {
-    animeEntryScreenLayout?: string
-    smallerEpisodeCarouselSize?: boolean
-    expandSidebarOnHover?: boolean
-    hideTopNavbar?: boolean
-    enableMediaCardBlurredBackground?: boolean
-    libraryScreenBannerType?: string
-    libraryScreenCustomBannerImage?: string
-    libraryScreenCustomBannerPosition?: string
-    libraryScreenCustomBannerOpacity?: number
-    libraryScreenCustomBackgroundImage?: string
-    libraryScreenCustomBackgroundOpacity?: number
-    disableLibraryScreenGenreSelector?: boolean
-    libraryScreenCustomBackgroundBlur?: string
-    enableMediaPageBlurredBackground?: boolean
-    disableSidebarTransparency?: boolean
-    useLegacyEpisodeCard?: boolean
-    disableCarouselAutoScroll?: boolean
-    mediaPageBannerType?: string
-    mediaPageBannerSize?: string
-    mediaPageBannerInfoBoxSize?: string
-    showEpisodeCardAnimeInfo?: boolean
-    continueWatchingDefaultSorting?: string
-    animeLibraryCollectionDefaultSorting?: string
-    showAnimeUnwatchedCount?: boolean
-    hideEpisodeCardDescription?: boolean
-    hideDownloadedEpisodeCardFilename?: boolean
-    customCSS?: string
-    mobileCustomCSS?: string
-    unpinnedMenuItems?: string[]
-    enableBlurringEffects?: boolean
-    enableEpisodeCardHoverEffects?: boolean
-}
+export type ThemeSettings = Omit<Models_Theme, "id" | "createdAt" | "updatedAt">
+
 export const THEME_DEFAULT_VALUES: ThemeSettings = {
     enableColorSettings: false,
-    animeEntryScreenLayout: "stacked",
-    smallerEpisodeCarouselSize: false,
-    expandSidebarOnHover: false,
     backgroundColor: "#070707",
-    accentColor: "#6152df",
-    sidebarBackgroundColor: "#070707",
-    hideTopNavbar: false,
-    enableMediaCardBlurredBackground: false,
-    libraryScreenBannerType: ThemeLibraryScreenBannerType.Dynamic,
-    libraryScreenCustomBannerImage: "",
-    libraryScreenCustomBannerPosition: "50% 50%",
-    libraryScreenCustomBannerOpacity: 100,
-    libraryScreenCustomBackgroundImage: "",
-    libraryScreenCustomBackgroundOpacity: 10,
-    disableLibraryScreenGenreSelector: false,
-    libraryScreenCustomBackgroundBlur: "",
-    enableMediaPageBlurredBackground: false,
-    disableSidebarTransparency: false,
-    useLegacyEpisodeCard: false,
-    disableCarouselAutoScroll: false,
-    mediaPageBannerType: ThemeMediaPageBannerType.Default,
-    mediaPageBannerSize: ThemeMediaPageBannerSize.Default,
-    mediaPageBannerInfoBoxSize: ThemeMediaPageInfoBoxSize.Fluid,
-    showEpisodeCardAnimeInfo: false,
-    continueWatchingDefaultSorting: "AIRDATE_DESC",
-    animeLibraryCollectionDefaultSorting: "TITLE",
-    showAnimeUnwatchedCount: false,
-    hideEpisodeCardDescription: false,
-    hideDownloadedEpisodeCardFilename: false,
-    customCSS: "",
-    mobileCustomCSS: "",
-    unpinnedMenuItems: [],
-    enableBlurringEffects: false,
-    enableEpisodeCardHoverEffects: true,
+    accentColor: "#ff6e3a",
+    sidebarBackgroundColor: "",
+    themeEra: "",
+    homeItems: [],
+    themeAnimeEntryScreenLayout: "stacked",
+    themeSmallerEpisodeCarouselSize: false,
+    themeExpandSidebarOnHover: false,
+    themeDisableSidebarTransparency: false,
+    themeEnableSidebarGradient: false,
+    themeEnableBlurringEffects: false,
+    themeDisableCarouselAutoScroll: false,
+    themeUseLegacyEpisodeCard: false,
+    themeLibraryScreenBannerType: ThemeLibraryScreenBannerType.Dynamic,
+    themeLibraryScreenCustomBannerImage: "",
+    themeLibraryScreenCustomBannerPosition: "50% 50%",
+    themeLibraryScreenCustomBannerOpacity: 10,
+    themeLibraryScreenCustomBackgroundImage: "",
+    themeLibraryScreenCustomBackgroundOpacity: 10,
+    themeLibraryScreenCustomBackgroundBlur: "none",
+    themeDisableLibraryScreenGenreSelector: false,
+    themeMediaPageBannerType: ThemeMediaPageBannerType.Default,
+    themeMediaPageBannerSize: ThemeMediaPageBannerSize.Default,
+    themeMediaPageBannerInfoBoxSize: ThemeMediaPageInfoBoxSize.Fluid,
+    // Was always-on ambient design behavior before this setting existed — now opt-in for flat default.
+    themeEnableMediaPageBlurredBackground: false,
+    themeShowEpisodeCardAnimeInfo: true,
+    themeShowAnimeUnwatchedCount: true,
+    themeHideEpisodeCardDescription: false,
+    themeHideDownloadedEpisodeCardFilename: false,
+    themeContinueWatchingDefaultSorting: "LAST_WATCHED_DESC",
+    themeAnimeLibraryCollectionDefaultSorting: "TITLE_ASC",
+    themeCustomCSS: "",
+    themeMobileCustomCSS: "",
+    themeUnpinnedMenuItems: [],
 }
 
 export type ThemeSettingsHook = {
     hasCustomBackgroundColor: boolean
+    hasEraTheme: boolean
+    hasCustomBackground: boolean
+    hasCustomAccentColor: boolean
 } & ThemeSettings
 
 /**
  * Get the current theme settings
- * This hook will return the default values if some values are not set
+ * Reads the real settings persisted on the server (Settings → Apariencia),
+ * falling back to THEME_DEFAULT_VALUES for anything not yet set.
  */
 export function useThemeSettings(): ThemeSettingsHook {
+    const { data: serverSettings } = useGetSettings()
+    const theme = serverSettings?.theme
+
+    const merged: ThemeSettings = theme
+        ? {
+            ...THEME_DEFAULT_VALUES,
+            ...theme,
+            backgroundColor: theme.backgroundColor || THEME_DEFAULT_VALUES.backgroundColor,
+            accentColor: theme.accentColor || THEME_DEFAULT_VALUES.accentColor,
+            themeLibraryScreenBannerType: theme.themeLibraryScreenBannerType || THEME_DEFAULT_VALUES.themeLibraryScreenBannerType,
+            themeLibraryScreenCustomBannerPosition: theme.themeLibraryScreenCustomBannerPosition || THEME_DEFAULT_VALUES.themeLibraryScreenCustomBannerPosition,
+            themeMediaPageBannerType: theme.themeMediaPageBannerType || THEME_DEFAULT_VALUES.themeMediaPageBannerType,
+            themeMediaPageBannerSize: theme.themeMediaPageBannerSize || THEME_DEFAULT_VALUES.themeMediaPageBannerSize,
+            themeMediaPageBannerInfoBoxSize: theme.themeMediaPageBannerInfoBoxSize || THEME_DEFAULT_VALUES.themeMediaPageBannerInfoBoxSize,
+            themeContinueWatchingDefaultSorting: theme.themeContinueWatchingDefaultSorting || THEME_DEFAULT_VALUES.themeContinueWatchingDefaultSorting,
+            themeAnimeLibraryCollectionDefaultSorting: theme.themeAnimeLibraryCollectionDefaultSorting || THEME_DEFAULT_VALUES.themeAnimeLibraryCollectionDefaultSorting,
+        }
+        : { ...THEME_DEFAULT_VALUES }
+
+    // Derived from raw (un-coalesced) persisted values — used to drive the
+    // three independent color toggles in Settings → Apariencia, since the
+    // backend model has no separate enableCustomBg/enableCustomAccent fields.
+    const rawThemeEra = theme?.themeEra ?? ""
+    const rawBackgroundColor = theme?.backgroundColor ?? ""
+    const rawAccentColor = theme?.accentColor ?? ""
+
     return {
-        ...THEME_DEFAULT_VALUES,
-        hasCustomBackgroundColor: false,
-        mediaPageBannerInfoBoxSize: "fluid",
-        showEpisodeCardAnimeInfo: true,
+        ...merged,
+        hasCustomBackgroundColor: merged.enableColorSettings && !!merged.backgroundColor,
+        hasEraTheme: rawThemeEra !== "",
+        hasCustomBackground: rawBackgroundColor !== "",
+        hasCustomAccentColor: rawAccentColor !== "",
     }
 }
 

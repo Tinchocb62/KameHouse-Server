@@ -90,6 +90,18 @@
   50%      { opacity: 1; transform: scale(1.08); }
 }
 
+/* ─── Cinematic Hero Animations ──────────────────────────────────────── */
+/* Ken Burns: zoom lentísimo para backdrops de héroe (GPU, transform-only) */
+@keyframes ken-burns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+/* Ki Shimmer: brillo que recorre títulos con bg-clip-text + gradiente */
+@keyframes ki-shimmer {
+  from { background-position: 200% center; }
+  to   { background-position: -200% center; }
+}
+
 /* ─── Clases de Animación ──────────────────────────────────────────── */
 .animate-fade-in       { animation: fade-in var(--duration-base) var(--ease-out) both; }
 .animate-fade-out      { animation: fade-out var(--duration-fast) var(--ease-in) both; }
@@ -112,6 +124,8 @@
 .animate-float         { animation: float 6s ease-in-out infinite; }
 .animate-float-blur    { animation: float-blur 20s ease-in-out infinite; }
 .animate-float-blur-reverse { animation: float-blur-reverse 25s ease-in-out infinite; }
+.animate-ken-burns     { animation: ken-burns 30s ease-in-out infinite alternate; will-change: transform; }
+.animate-ki-shimmer    { background-size: 200% auto; animation: ki-shimmer 4s linear infinite; }
 
 /* Stagger delays */
 .delay-50   { animation-delay: 50ms; }

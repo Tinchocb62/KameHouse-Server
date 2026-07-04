@@ -63,6 +63,11 @@ const config: Config = {
                 "300": "300ms",
                 "400": "400ms",
                 "500": "500ms",
+                // Tokens del design system (animation.css) — duration-base es el default del sistema
+                fast: "150ms",
+                base: "250ms",
+                slow: "400ms",
+                slower: "600ms",
             },
             transitionTimingFunction: {
                 DEFAULT: "cubic-bezier(0.2, 0, 0.38, 0.9)",
@@ -71,6 +76,9 @@ const config: Config = {
                 decelerated: "cubic-bezier(0.05, 0.7, 0.1, 1)",
                 "bounce-spring": "cubic-bezier(0.34, 1.56, 0.64, 1)",
                 "image-zoom": "cubic-bezier(0.2, 1, 0.2, 1)",
+                // Tokens del design system (animation.css)
+                "smooth-out": "cubic-bezier(0.2, 1, 0.2, 1)",
+                "expo-out": "cubic-bezier(0.16, 1, 0.3, 1)",
             },
             keyframes: {
                 "accordion-down": {
@@ -139,6 +147,15 @@ const config: Config = {
                 "overlay-xl": "var(--blur-overlay-xl)",
                 "overlay-2xl": "var(--blur-overlay-2xl)",
             },
+            blur: {
+                sm: "var(--filter-blur-sm, 4px)",
+                DEFAULT: "var(--filter-blur-default, 8px)",
+                md: "var(--filter-blur-md, 12px)",
+                lg: "var(--filter-blur-lg, 16px)",
+                xl: "var(--filter-blur-xl, 24px)",
+                "2xl": "var(--filter-blur-2xl, 40px)",
+                "3xl": "var(--filter-blur-3xl, 64px)",
+            },
             colors: {
                 border: "hsl(var(--border) / <alpha-value>)",
                 input: "hsl(var(--input) / <alpha-value>)",
@@ -205,16 +222,16 @@ const config: Config = {
                 quaternary: "var(--bg-quaternary)",
             },
             surface: {
-                DEFAULT: "#1E1E1E",
-                container: "#2D2D2D",
-                "container-low": "#252525",
-                "container-high": "#363636",
-                "container-highest": "#3C3C3C",
-                variant: "#3C3C3C",
+                DEFAULT: "var(--md-sys-color-surface)",
+                container: "var(--md-sys-color-surface-container)",
+                "container-low": "var(--md-sys-color-surface-container-low)",
+                "container-high": "var(--md-sys-color-surface-container-high)",
+                "container-highest": "var(--md-sys-color-surface-container-highest)",
+                variant: "var(--md-sys-color-surface-variant)",
             },
-            outline: "#79747E",
-            "outline-variant": "#49454F",
-            scrim: "#000000",
+            outline: "var(--md-sys-color-outline)",
+            "outline-variant": "var(--md-sys-color-outline-variant)",
+            scrim: "var(--md-sys-color-scrim)",
             glass: {
                 bg: "var(--glass-bg)",
                 border: "var(--glass-border)",

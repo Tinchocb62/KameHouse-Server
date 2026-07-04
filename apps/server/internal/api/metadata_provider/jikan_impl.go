@@ -105,11 +105,6 @@ func (p *JikanProviderImpl) GetAnimeMetadata(id int) (*apiMetadata.AnimeMetadata
 
 	if media.MyanimelistId > 0 {
 		malID = media.MyanimelistId
-		// #region agent log
-		debugLogJikan("jikan_impl.go:GetAnimeMetadata", "using stored MAL id", map[string]any{
-			"localId": id, "malId": malID, "hypothesisId": "D",
-		})
-		// #endregion
 	} else {
 		searchRes, err := p.client.SearchAnime(ctx, titleToSearch)
 		if err != nil {
@@ -126,11 +121,6 @@ func (p *JikanProviderImpl) GetAnimeMetadata(id int) (*apiMetadata.AnimeMetadata
 		malSynopsis = malAnime.Synopsis
 		malLargeImage = malAnime.Images.Jpg.LargeImageUrl
 		malEpisodes = malAnime.Episodes
-		// #region agent log
-		debugLogJikan("jikan_impl.go:GetAnimeMetadata", "search resolved MAL id", map[string]any{
-			"localId": id, "malId": malID, "title": titleToSearch, "hypothesisId": "D",
-		})
-		// #endregion
 	}
 
 	if malTitle == "" {

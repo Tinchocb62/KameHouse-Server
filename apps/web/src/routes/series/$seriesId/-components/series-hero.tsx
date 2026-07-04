@@ -1,14 +1,11 @@
-import { Icons } from "@/components/ui/icons"
-import { DeferredImage } from "@/components/shared/deferred-image"
-import { getLowResImage, getMediumResImage } from "@/lib/helpers/images"
 import * as React from "react"
-import { useRef, useMemo } from "react"
-import { useGSAP } from "@gsap/react"
-import gsap from "gsap"
-import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
+import { useMemo } from "react"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 import type { Anime_Entry } from "@/api/generated/types"
+import { Icons } from "@/components/ui/icons"
+import { getMediumResImage } from "@/lib/helpers/images"
+import { MediaHero } from "@/components/ui/media-hero"
 
 interface SeriesHeroProps {
   entry: Anime_Entry | undefined
@@ -23,58 +20,14 @@ export function SeriesHero({
   onPlay,
   sagaCount,
 }: SeriesHeroProps) {
-  const containerRef = useRef<HTMLElement>(null)
-  const backdropRef = useRef<HTMLDivElement>(null)
-  const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
-
   const media = entry?.media
   const title = media?.titleSpanish || media?.titleRomaji || media?.titleEnglish || "Título Desconocido"
   const romajiTitle = media?.titleRomaji
   const rating = media?.score ? media.score / 10 : undefined
   const year = media?.year
   const ageRating = media?.isNsfw ? "18+" : undefined
-  const synopsis = media?.description || ""
+  const synopsis = media?.description ? media.description.replace(/<[^>]*>/g, "") : ""
   const hasBannerImage = !!media?.bannerImage
-  const backdropSrc = media?.bannerImage ?? media?.posterImage ?? null
-
-  // Sync current backdrop with global DynamicBackdrop blur background
-  React.useEffect(() => {
-    if (backdropUrl) {
-      setBackdropUrl(backdropUrl)
-    }
-    return () => {
-      setBackdropUrl(null)
-    }
-  }, [backdropUrl, setBackdropUrl])
-
-  // Smooth Parallax capture scroll listener (independent of window scroll)
-  React.useEffect(() => {
-    const handleScroll = (e: Event) => {
-      const target = e.target
-      if (!backdropRef.current || !containerRef.current) return
-
-      if (target === document || target === window) {
-        const scrolled = window.scrollY || document.documentElement.scrollTop
-        backdropRef.current.style.transform = `translate3d(0, ${scrolled * 0.4}px, 0)`
-      } else if (target instanceof HTMLElement && target.contains(containerRef.current)) {
-        const scrolled = target.scrollTop
-        backdropRef.current.style.transform = `translate3d(0, ${scrolled * 0.4}px, 0)`
-      }
-    }
-    window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
-    return () => window.removeEventListener("scroll", handleScroll, { capture: true })
-  }, [])
-
-  useGSAP(() => {
-    gsap.from(".series-hero-animate", {
-      y: 35,
-      opacity: 0,
-      duration: 1.2,
-      stagger: 0.08,
-      ease: "power4.out",
-      delay: 0.15
-    })
-  }, { scope: containerRef, dependencies: [] })
 
   // Technical details from files
   const tech = entry?.localFiles?.[0]?.technicalInfo
@@ -144,212 +97,121 @@ export function SeriesHero({
     }
   }
 
+  const titleNode = (
+    <div className="space-y-2">
+      {romajiTitle && (
+        <h2 className="font-bold uppercase tracking-widest text-xs md:text-sm animate-ki-shimmer bg-clip-text text-transparent select-none drop-shadow-[0_2px_8px_var(--glow-secondary)]" style={{ backgroundImage: "linear-gradient(to right, var(--era-shimmer-1), var(--era-shimmer-2), var(--era-shimmer-3))" }}>
+          {romajiTitle}
+        </h2>
+      )}
+      <h1 onClick={onPlay} className="font-sans font-extrabold leading-[1.05] tracking-tight text-on-surface drop-shadow-[0_4px_25px_rgba(0,0,0,0.85)] cursor-pointer hover:text-brand-secondary transition-colors duration-slow uppercase" style={{ fontSize: "max(2.5rem, min(5.5vw, 4.5rem))" }}>
+        {title}
+      </h1>
+    </div>
+  )
 
-  return (
-    <section ref={containerRef} className="relative w-full h-[98vh] max-h-[420px] flex flex-col justify-center overflow-hidden bg-transparent select-none">
-      {/* Cinematic Grain Overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.025] pointer-events-none mix-blend-overlay z-20"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-      />
+  const metadataRow = (
+    <div className="flex flex-wrap items-center text-on-surface-variant text-xs font-semibold tracking-wide gap-y-1.5">
+      {rating && (
+        <span className="flex items-center gap-1">
+          <Icons.ui.star size={12} fill="currentColor" className="text-brand-secondary stroke-none" />
+          {rating.toFixed(1)} Ki
+        </span>
+      )}
+      {year && (
+        <>
+          {rating && <span className="text-on-surface-variant/50 mx-2 select-none">|</span>}
+          <span>{year}</span>
+        </>
+      )}
+      {ageRating && (
+        <>
+          {(rating || year) && <span className="text-on-surface-variant/50 mx-2 select-none">|</span>}
+          <span>{ageRating}</span>
+        </>
+      )}
+      {sagaCount !== undefined && (
+        <>
+          {(rating || year || ageRating) && <span className="text-on-surface-variant/50 mx-2 select-none">|</span>}
+          <span>{sagaCount} {sagaCount === 1 ? "Saga" : "Sagas"}</span>
+        </>
+      )}
+      <span className="text-brand-secondary font-bold flex items-center gap-1.5">
+        {(rating || year || ageRating || sagaCount !== undefined) && <span className="text-on-surface-variant/50 mr-2 select-none">|</span>}
+        SERIE
+      </span>
+      {genres.length > 0 && (
+        <>
+          <span className="text-on-surface-variant/50 mx-2 select-none">|</span>
+          <span className="text-on-surface-variant">{genres.join(" | ")}</span>
+        </>
+      )}
+    </div>
+  )
 
-      {/* Ambient Blur Background - subtle for series pages */}
-      <div className="absolute inset-0 overflow-hidden bg-transparent z-0">
-        {backdropSrc && (
-          <div
-            className="absolute inset-0 opacity-100"
-            style={{
-              backgroundImage: `url(${getLowResImage(backdropSrc)})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center 20%",
-              filter: "blur(15px) brightness(0.8) saturate(110%)",
-            }}
-          />
-        )}
-      </div>
+  const topBadge = (qualityBadge || codecBadge || audioBadge) ? (
+    <div className="flex flex-wrap items-center gap-2">
+      {[qualityBadge, codecBadge, audioBadge].filter(Boolean).map((badge) => (
+        <span
+          key={badge as string}
+          className="inline-flex items-center glass-liquid rounded-full px-3 py-1 text-label-sm uppercase text-on-surface/90 select-none"
+        >
+          {badge}
+        </span>
+      ))}
+    </div>
+  ) : undefined
 
-      {/* High Res Crisp Parallax Backdrop with Ken Burns */}
-      <div className="absolute inset-0 z-0">
-        {backdropUrl && (
-          hasBannerImage ? (
-            <div
-              ref={backdropRef}
-              className="absolute right-0 top-0 h-full w-full md:w-[80%] lg:w-[75%] overflow-hidden cursor-pointer z-0 will-change-transform group/backdrop"
-              onClick={onPlay}
-            >
-              <DeferredImage
-                src={backdropUrl}
-                alt={title}
-                priority={true}
-                className="w-full h-full object-cover object-[center_20%] opacity-90 transition-all [transition-duration:20s] ease-out group-hover/backdrop:scale-[1.02] animate-ken-burns"
-                style={{
-                  WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
-                  maskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
-                }}
-              />
-            </div>
-          ) : (
-            <div
-              ref={backdropRef}
-              className="absolute right-0 top-0 h-full w-auto overflow-hidden cursor-pointer z-0 will-change-transform group/backdrop"
-              onClick={onPlay}
-            >
-              <DeferredImage
-                src={backdropUrl}
-                alt={title}
-                priority={true}
-                className="h-full w-auto object-contain object-right-top opacity-[0.75] transition-all [transition-duration:20s] ease-out group-hover/backdrop:scale-[1.02] animate-ken-burns"
-              />
-            </div>
-          )
-        )}
-      </div>
+  const actionButtons = (
+    <>
+      <button
+        onClick={onPlay}
+        className="group/play relative flex items-center gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95"
+        style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
+      >
+        <div className="absolute inset-0 transition-opacity duration-300 opacity-0 group-hover/play:opacity-100 z-0" style={{ background: `linear-gradient(to right, var(--era-btn-hover-from), var(--era-btn-hover-to))` }} />
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-slow ease-smooth-out z-0" />
 
-      {/* Gradient izquierdo */}
-      <div
-        className="absolute inset-0 z-10 pointer-events-none"
-        style={{
-          background: hasBannerImage
-            ? "linear-gradient(to right, rgba(7,7,10,0.85) 0%, rgba(7,7,10,0.7) 25%, rgba(7,7,10,0.2) 60%, transparent 90%)"
-            : "linear-gradient(to right, rgba(7,7,10,0.85) 0%, rgba(7,7,10,0.7) 30%, rgba(7,7,10,0.15) 70%, transparent 95%)",
-        }}
-      />
-      {/* Gradient inferior */}
-      <div
-        className="absolute inset-x-0 bottom-0 h-32 z-10 pointer-events-none"
-        style={{ background: "linear-gradient(to top, transparent 0%, rgba(7,7,10,0.35) 50%, transparent 100%)" }}
-      />
-      {/* Vignette superior */}
-      <div
-        className="absolute inset-x-0 top-0 h-16 z-10 pointer-events-none"
-        style={{ background: "linear-gradient(to bottom, rgba(7,7,10,0.4) 0%, transparent 100%)" }}
-      />
-
-      {/* Content Container */}
-      <div className="relative z-20 w-full max-w-[1800px] mx-auto px-6 md:px-12 lg:px-12 flex flex-col pointer-events-none">
-        <div className="max-w-3xl space-y-7">
-
-          {/* Metadata Row */}
-          <div className="series-hero-animate flex flex-wrap items-center text-on-surface-variant text-xs font-semibold tracking-wide gap-y-1.5">
-            {rating && (
-              <span className="flex items-center gap-1">
-                <Icons.ui.star size={12} fill="currentColor" className="text-brand-success stroke-none" />
-                {(rating).toFixed(1)} Ki
-              </span>
-            )}
-            {year && (
-              <>
-                {(rating) && <span className="text-on-surface-variant/50 mx-2 select-none">|</span>}
-                <span>{year}</span>
-              </>
-            )}
-            {ageRating && (
-              <>
-                {(rating || year) && <span className="text-on-surface-variant/50 mx-2 select-none">|</span>}
-                <span>{ageRating}</span>
-              </>
-            )}
-            {sagaCount !== undefined && (
-              <>
-                {(rating || year || ageRating) && <span className="text-on-surface-variant/50 mx-2 select-none">|</span>}
-                <span>{sagaCount} {sagaCount === 1 ? "Saga" : "Sagas"}</span>
-              </>
-            )}
-            <span className="text-brand-secondary font-bold flex items-center gap-1.5">
-              {(rating || year || ageRating || sagaCount !== undefined) && <span className="text-on-surface-variant/50 mr-2 select-none">|</span>}
-              SERIE
-            </span>
-            {genres.length > 0 && (
-              <>
-                <span className="text-on-surface-variant/50 mx-2 select-none">|</span>
-                <span className="text-on-surface-variant">{genres.join(" | ")}</span>
-              </>
-            )}
-
-            {/* Quality details inline with low-profile colors */}
-            {qualityBadge && (
-              <>
-                <span className="text-on-surface-variant/50 mx-2 select-none">|</span>
-                <span className="text-label-sm text-on-surface-variant/95">{qualityBadge}</span>
-              </>
-            )}
-            {codecBadge && (
-              <>
-                <span className="text-on-surface-variant/50 mx-2 select-none">|</span>
-                <span className="text-label-sm text-on-surface-variant/95">{codecBadge}</span>
-              </>
-            )}
-            {audioBadge && (
-              <>
-                <span className="text-on-surface-variant/50 mx-2 select-none">|</span>
-                <span className="text-label-sm text-on-surface-variant/95">{audioBadge}</span>
-              </>
-            )}
-          </div>
-
-          {/* Titles */}
-          <div className="series-hero-animate space-y-2">
-            {romajiTitle && (
-              <h2 className="text-brand-secondary font-bold uppercase tracking-widest text-xs md:text-sm animate-ki-shimmer bg-gradient-to-r from-brand-secondary via-amber-500 to-brand-orange bg-clip-text text-transparent select-none drop-shadow-[0_2px_8px_rgba(255,110,58,0.25)]">
-                {romajiTitle}
-              </h2>
-            )}
-            <h1 className="font-sans font-extrabold leading-[1.05] tracking-tight text-on-surface drop-shadow-[0_4px_25px_rgba(0,0,0,0.85)] cursor-pointer hover:text-brand-secondary transition-colors duration-500 z-10 relative select-none" style={{ fontSize: "max(2.5rem, min(5.5vw, 4.5rem))" }} onClick={onPlay}>
-              {title}
-            </h1>
-          </div>
-
-          {/* Synopsis */}
-          <p className="series-hero-animate text-on-surface-variant text-sm md:text-base leading-relaxed line-clamp-3 drop-shadow-md font-medium select-none max-w-2xl border-l-[3px] border-brand-secondary/20 pl-4 py-0.5">
-            {synopsis}
-          </p>
-
-          {/* Cast list at the bottom of the left column */}
-          {castList.length > 0 && (
-            <p className="series-hero-animate text-on-surface-variant text-xs font-semibold tracking-wide select-none drop-shadow-sm">
-              {castList.join(", ")}
-            </p>
-          )}
-
-          {/* Action Buttons */}
-          <div className="series-hero-animate flex flex-wrap items-center gap-4 pt-2">
-            <button
-              onClick={onPlay}
-              className="group/play relative flex items-center gap-4 px-9 py-4.5 bg-gradient-to-r from-brand-secondary via-orange-500 to-amber-500 text-white rounded-container overflow-hidden shadow-[0_12px_40px_rgba(255,110,58,0.35)] hover:shadow-[0_18px_50px_rgba(255,110,58,0.55)] transition-all duration-500 hover:scale-105 active:scale-95 border border-outline-variant hover:border-brand-secondary/40"
-            >
-              {/* Glossy shine */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-500 z-0" />
-              {/* Glow halo */}
-              <div className="absolute -inset-10 bg-brand-secondary/30 blur-xl group-hover/play:opacity-100 opacity-0 transition-opacity duration-500 -z-10 animate-pulse" />
-
-              <div className="p-3 bg-surface-container/40 backdrop-blur-[var(--blur-overlay-xl)] rounded-xl border border-outline-variant text-on-surface group-hover/play:bg-white group-hover/play:text-black transition-all duration-300 shadow-inner z-10 shrink-0">
-                <Icons.media.play className="w-4 h-4 fill-current" />
-              </div>
-
-              <div className="flex flex-col items-start z-10 select-none text-left">
-                <span className="font-sans text-[14px] tracking-widest font-extrabold uppercase text-white transition-colors">
-                  Reproducir
-                </span>
-                <span className="text-[9px] font-black text-white/60 tracking-widest uppercase transition-colors mt-0.5">
-                  Comenzar episodio
-                </span>
-              </div>
-            </button>
-
-            {/* Queue Button */}
-            {entry?.localFiles && entry.localFiles.length > 0 && (
-              <button
-                onClick={handleAddToQueue}
-                className="group/queue flex items-center justify-center p-4.5 rounded-container bg-[var(--glass-bg)] backdrop-blur-[var(--blur-overlay-md)] border border-[var(--glass-border)] hover:bg-[var(--glass-hover)] hover:border-[var(--glass-strong)] transition-all duration-300 text-on-surface/70 hover:text-on-surface shadow-elevation-2"
-                title="Añadir a la cola"
-              >
-                <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
-              </button>
-            )}
-          </div>
+        <div className="p-3 bg-black/15 backdrop-blur-[var(--blur-overlay-sm)] rounded-xl text-zinc-950 group-hover/play:bg-zinc-950 group-hover/play:text-zinc-50 transition-all duration-300 z-10 shrink-0">
+          <Icons.media.play className="w-4 h-4 fill-current" />
         </div>
 
-      </div>
-    </section>
+        <div className="flex flex-col items-start z-10 select-none text-left">
+          <span className="font-sans text-button-md tracking-wider font-black uppercase text-zinc-950 transition-colors">
+            Reproducir
+          </span>
+          <span className="text-label-sm font-black text-zinc-950/70 tracking-widest uppercase transition-colors mt-0.5">
+            Comenzar episodio
+          </span>
+        </div>
+      </button>
+
+      {entry?.localFiles && entry.localFiles.length > 0 && (
+        <button
+          onClick={handleAddToQueue}
+          className="group/queue flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 text-on-surface/70 hover:text-on-surface hover:scale-[1.03] active:scale-95"
+          title="Añadir a la cola"
+        >
+          <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
+        </button>
+      )}
+    </>
+  )
+
+  const footerText = castList.length > 0 ? castList.join(", ") : undefined
+
+  return (
+    <MediaHero
+      backdropUrl={backdropUrl}
+      hasBannerImage={hasBannerImage}
+      title={titleNode}
+      topBadge={topBadge}
+      metadataRow={metadataRow}
+      synopsis={synopsis}
+      footerText={footerText}
+      actionButtons={actionButtons}
+      onBackdropClick={onPlay}
+      className="py-8 md:py-10"
+    />
   )
 }

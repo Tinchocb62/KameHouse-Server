@@ -19,7 +19,11 @@ func (h *Handler) HandleGetTheme(c echo.Context) error {
 	return h.RespondWithData(c, theme)
 }
 
-// HandleUpdateTheme updates the theme settings.
+// HandleUpdateTheme updates the color-related theme settings (used by the
+// quick theme-preset picker). It only touches the color fields it receives
+// and preserves every other theme setting already saved — it does NOT
+// overwrite the whole theme row, to avoid wiping unrelated appearance
+// settings configured elsewhere (Settings → Apariencia).
 //
 //	@summary updates the theme settings.
 //	@desc The server status should be re-fetched after this on the client.
@@ -36,23 +40,26 @@ func (h *Handler) HandleUpdateTheme(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	// Set the theme ID to 1, so we overwrite the previous settings
-	b.Theme.BaseModel = models.BaseModel{
-		ID: 1,
-	}
-
 	currentTheme, err := h.App.Database.GetTheme()
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
 
-	b.Theme.HomeItems = currentTheme.HomeItems
+	// Merge: only the color fields are updated by this endpoint, everything
+	// else (carousel/banner/CSS/etc settings) is preserved as-is.
+	merged := *currentTheme
+	merged.ID = 1
+	merged.EnableColorSettings = b.Theme.EnableColorSettings
+	merged.BackgroundColor = b.Theme.BackgroundColor
+	merged.AccentColor = b.Theme.AccentColor
+	merged.SidebarBackgroundColor = b.Theme.SidebarBackgroundColor
+	merged.ThemeEra = b.Theme.ThemeEra
 
 	// Update the theme settings
-	if _, err := h.App.Database.UpsertTheme(&b.Theme); err != nil {
+	if _, err := h.App.Database.UpsertTheme(&merged); err != nil {
 		return h.RespondWithError(c, err)
 	}
 
 	// Send the new theme to the client
-	return h.RespondWithData(c, b.Theme)
+	return h.RespondWithData(c, merged)
 }

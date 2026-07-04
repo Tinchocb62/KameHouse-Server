@@ -141,12 +141,12 @@ export function RandomPlayButton() {
                             id="random-play-btn"
                             disabled={isLoading}
                             className={cn(
-                                "flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 group bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-[var(--blur-overlay-sm)] border border-white/5 hover:border-white/10 active:scale-95 font-bold",
+                                "flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 group bg-surface-container hover:bg-surface-container-high border border-outline-variant active:scale-95 font-bold",
                                 isLoading
-                                    ? "!border-brand-orange/25 !bg-brand-orange/[0.05] text-brand-orange cursor-wait"
+                                    ? "bg-surface-container-high text-on-surface cursor-wait"
                                     : showPicker
-                                        ? "!border-brand-orange/25 !bg-brand-orange/[0.05] text-brand-orange shadow-[0_8px_32px_rgba(255,110,58,0.15)]"
-                                        : "text-zinc-400 hover:text-brand-orange"
+                                        ? "bg-surface-container-high text-on-surface"
+                                        : "text-on-surface-variant hover:text-on-surface"
                             )}
                         >
                             {isLoading ? (
@@ -171,7 +171,7 @@ export function RandomPlayButton() {
                             align="end"
                             sideOffset={16}
                             className={cn(
-                                "z-[999] w-56 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-1.5 outline-none",
+                                "z-[999] w-56 bg-surface-container border border-outline-variant rounded-2xl p-1.5 outline-none",
                                 "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                                 "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                                 "data-[side=right]:slide-in-from-left-4 data-[side=bottom]:slide-in-from-top-4",
@@ -181,41 +181,41 @@ export function RandomPlayButton() {
                             {/* Header */}
                             <div className="px-3 pt-2.5 pb-2">
                                 <div className="flex items-center gap-2">
-                                    <Tv className="w-3 h-3 text-brand-orange opacity-75" />
-                                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-400">
+                                    <Tv className="w-3 h-3 text-on-surface-variant opacity-75" />
+                                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-on-surface-variant">
                                         Modo TV
                                     </p>
                                 </div>
                             </div>
 
                             {/* Divider */}
-                            <div className="h-px bg-white/10 mx-2 mb-1" />
+                            <div className="h-px bg-outline-variant mx-2 mb-1" />
 
                             {/* Movie option */}
                             <PickerOption
                                 id="tv-mode-movie"
                                 onClick={() => pick("movie")}
-                                icon={<Clapperboard className="w-4 h-4 text-amber-400" />}
-                                iconBg="bg-amber-500/10 border-amber-500/20"
+                                icon={<Clapperboard className="w-4 h-4 text-on-surface-variant" />}
+                                iconBg="bg-surface-container-high border-outline-variant"
                                 label="Modo TV Películas"
                                 description="Película aleatoria continua"
-                                accentColor="group-hover:text-amber-400"
+                                accentColor="group-hover:text-on-surface"
                             />
 
                             {/* Episode option */}
                             <PickerOption
                                 id="tv-mode-episode"
                                 onClick={() => pick("episode")}
-                                icon={<Tv className="w-4 h-4 text-blue-400" />}
-                                iconBg="bg-blue-500/10 border-blue-500/20"
+                                icon={<Tv className="w-4 h-4 text-on-surface-variant" />}
+                                iconBg="bg-surface-container-high border-outline-variant"
                                 label="Modo TV Series"
                                 description="Episodio aleatorio y orden cronológico"
-                                accentColor="group-hover:text-blue-400"
+                                accentColor="group-hover:text-on-surface"
                             />
 
                             {/* Tip */}
                             <div className="px-3 py-2.5">
-                                <p className="text-[9px] text-zinc-500 font-medium leading-tight">
+                                <p className="text-[9px] text-on-surface-variant font-medium leading-tight">
                                     Solo se incluyen títulos con archivos descargados
                                 </p>
                             </div>
@@ -262,7 +262,7 @@ function PickerOption({ id, onClick, icon, iconBg, label, description, accentCol
             id={id}
             role="menuitem"
             onClick={onClick}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.08] border border-transparent hover:border-white/10 transition-all duration-300 text-left group active:scale-95"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-transparent hover:bg-surface-container-high border border-transparent hover:border-outline-variant transition-all duration-300 text-left group active:scale-95"
         >
             {/* Icon badge */}
             <div className={cn(
@@ -276,19 +276,19 @@ function PickerOption({ id, onClick, icon, iconBg, label, description, accentCol
             {/* Text */}
             <div>
                 <p className={cn(
-                    "text-sm font-bold text-white transition-colors duration-200",
+                    "text-sm font-bold text-on-surface transition-colors duration-200",
                     accentColor
                 )}>
                     {label}
                 </p>
-                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">
+                <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">
                     {description}
                 </p>
             </div>
 
             {/* Arrow hint */}
             <span
-                className="ml-auto text-zinc-500/50 group-hover:text-zinc-300 text-xs transition-all duration-300 group-hover:translate-x-1"
+                className="ml-auto text-on-surface-variant/50 group-hover:text-on-surface-variant text-xs transition-all duration-300 group-hover:translate-x-1"
             >
                 ›
             </span>

@@ -3,6 +3,7 @@ import { WebsocketProvider } from "@/app/websocket-provider"
 import { PwaRegistry } from "@/components/pwa-registry"
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { MotionConfig } from "framer-motion"
 
 import React, { useEffect } from "react"
 import { CookiesProvider } from "react-cookie"
@@ -58,7 +59,7 @@ export const ClientProviders: React.FC<ClientProvidersProps> = ({ children }) =>
     }, []);
 
     return (
-        <>
+        <MotionConfig reducedMotion="user">
             <CookiesProvider>
                 <QueryClientProvider client={queryClient}>
                     <WebsocketProvider>
@@ -70,7 +71,7 @@ export const ClientProviders: React.FC<ClientProvidersProps> = ({ children }) =>
                     {/*</React.Suspense>}*/}
                 </QueryClientProvider>
             </CookiesProvider>
-        </>
+        </MotionConfig>
     )
 
 }

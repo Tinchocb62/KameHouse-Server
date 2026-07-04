@@ -180,7 +180,7 @@ export function HeroBanner({
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
                                     onClick={activeItem.onPlay}
-                                    className="flex items-center bg-brand-orange text-white px-10 py-4 rounded-xl font-bebas text-xl uppercase tracking-wider shadow-[0_15px_30px_-5px_rgba(255,110,58,0.3)] hover:shadow-[0_20px_40px_-5px_rgba(255,110,58,0.45)] border border-brand-orange/20 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
+                                    className="flex items-center bg-brand-orange text-white px-10 py-4 rounded-xl font-bebas text-xl uppercase tracking-wider shadow-[0_15px_30px_-5px_hsl(var(--brand-orange)/0.3)] hover:shadow-[0_20px_40px_-5px_hsl(var(--brand-orange)/0.45)] border border-brand-orange/20 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
                                 >
                                     <Play size={20} fill="currentColor" />
                                     <span>Reproducir</span>
@@ -207,7 +207,7 @@ export function HeroBanner({
                     {/* Left Chevron */}
                     <div className="absolute inset-y-0 left-0 z-30 flex items-center pl-6 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-300 pointer-events-none">
                         <motion.button
-                            whileHover={{ scale: 1.1, backgroundColor: "rgba(24, 24, 27, 0.6)" }}
+                            whileHover={{ scale: 1.1, backgroundColor: "color-mix(in srgb, var(--bg-tertiary) 60%, transparent)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={(e) => {
                                 e.stopPropagation()
@@ -223,7 +223,7 @@ export function HeroBanner({
                     {/* Right Chevron */}
                     <div className="absolute inset-y-0 right-0 z-30 flex items-center pr-6 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-300 pointer-events-none">
                         <motion.button
-                            whileHover={{ scale: 1.1, backgroundColor: "rgba(24, 24, 27, 0.6)" }}
+                            whileHover={{ scale: 1.1, backgroundColor: "color-mix(in srgb, var(--bg-tertiary) 60%, transparent)" }}
                             whileTap={{ scale: 0.95 }}
                             onClick={(e) => {
                                 e.stopPropagation()
@@ -245,7 +245,7 @@ export function HeroBanner({
                     <motion.div 
                         animate={{ y: [0, 6, 0] }}
                         transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-                        className="w-1 h-1.5 rounded-full bg-brand-orange shadow-[0_0_6px_#ff6e3a]"
+                        className="w-1 h-1.5 rounded-full bg-brand-orange shadow-[0_0_6px_hsl(var(--brand-orange))]"
                     />
                 </div>
             </div>
@@ -260,7 +260,7 @@ export function HeroBanner({
                             className={cn(
                                 "h-1.5 rounded-full transition-all duration-500 ease-out",
                                 activeIndex === idx 
-                                    ? "w-10 bg-brand-orange shadow-[0_0_12px_rgba(255,110,58,0.4)]" 
+                                    ? "w-10 bg-brand-orange shadow-[0_0_12px_hsl(var(--brand-orange)/0.4)]" 
                                     : "w-2.5 bg-white/25 hover:bg-white/50"
                             )}
                         />

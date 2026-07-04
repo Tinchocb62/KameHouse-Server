@@ -1,18 +1,17 @@
 import React from "react"
 import { Section, Card, OsToggle } from "../components"
+import { RangeSlider } from "@/components/settings/range-slider"
+import { LocalDeviceSection } from "@/components/settings/local-device-section"
+import { DangerZone } from "@/components/settings/danger-zone"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 
-import { useSound } from "@/hooks/use-sound"
-import { cn } from "@/components/ui/core/styling"
-
 interface SystemTabProps {
     control: Control<SettingsFormValues>
 }
 
-// Custom simple icons to replace Lucide
 const HardDriveIcon = () => (
     <svg className="w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
@@ -22,17 +21,7 @@ const HardDriveIcon = () => (
     </svg>
 )
 
-const AlertIcon = () => (
-    <svg className="w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-)
-
 export function SystemTab({ control }: SystemTabProps) {
-    const { playSound } = useSound()
-
     const {
         bgMusicEnabled,
         setBgMusicEnabled,
@@ -42,12 +31,6 @@ export function SystemTab({ control }: SystemTabProps) {
         setUiSoundsEnabled,
         uiSoundsVolume,
         setUiSoundsVolume,
-        activeTheme,
-        setActiveTheme,
-        dynamicBackdropEnabled,
-        setDynamicBackdropEnabled,
-        dynamicBackdropMotionEnabled,
-        setDynamicBackdropMotionEnabled
     } = useAppStore()
 
     const handleBackup = () => {
@@ -58,52 +41,49 @@ export function SystemTab({ control }: SystemTabProps) {
         toast.success("Caché de imágenes restablecida con éxito")
     }
 
-
-
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
-            {/* User preferences & Core DB Bento Grid */}
+            {/* Aplicación & Core DB Bento Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-                {/* Preferencias de Usuario */}
-                <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 md:col-span-2 space-y-5">
-                    <h4 className="text-xs font-bold text-[#ff6e3a] uppercase tracking-wide">Preferencias de Usuario</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Controller
-                            control={control}
-                            name="library.dohProvider"
-                            render={({ field }) => (
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="admin-username-input" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider font-mono">Admin Username</label>
-                                    <input
-                                        id="admin-username-input"
-                                        type="text"
-                                        value={field.value || "Martín"}
-                                        onChange={field.onChange}
-                                        className="w-full bg-surface-container border border-outline-variant rounded-xl px-4 py-2.5 text-xs text-on-surface focus:outline-none focus:border-[#ff6e3a]/50 focus:shadow-[0_0_20px_rgba(255,110,58,0.12)] transition-all"
-                                    />
-                                </div>
-                            )}
-                        />
-                        <Controller
-                            control={control}
-                            name="library.tmdbLanguage"
-                            render={({ field }) => (
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="pref-language-select" className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider font-mono">Idioma de Preferencia</label>
-                                    <select
-                                        id="pref-language-select"
-                                        value={field.value || "es-MX"}
-                                        onChange={field.onChange}
-                                        className="w-full bg-surface-container border border-outline-variant rounded-xl px-4 py-2.5 text-xs text-on-surface-variant focus:outline-none focus:border-[#ff6e3a]/50 focus:shadow-[0_0_20px_rgba(255,110,58,0.12)] transition-all cursor-pointer [&>option]:bg-[#141418] [&>option]:text-on-surface"
-                                    >
-                                        <option value="es-MX">Español Latino (Intertrack)</option>
-                                        <option value="es-ES">Español (España)</option>
-                                        <option value="en-US">English</option>
-                                    </select>
-                                </div>
-                            )}
-                        />
-                    </div>
+                {/* Aplicación */}
+                <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 md:col-span-2 space-y-5 divide-y divide-outline-variant/3">
+                    <h4 className="text-xs font-bold text-brand-accent uppercase tracking-wide">Aplicación</h4>
+                    <Controller
+                        control={control}
+                        name="library.openWebURLOnStart"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Abrir Interfaz Web al Iniciar"
+                                description="Abre automáticamente el navegador con KameHouse al arrancar el servidor."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="Platform.hideAudienceScore"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Ocultar Puntuación de Audiencia"
+                                description="No mostrar la puntuación de la comunidad en las tarjetas de media."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="Platform.disableCacheLayer"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Desactivar Capa de Caché"
+                                description="Desactiva el cacheo de respuestas de la plataforma (útil para depuración)."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
                 </div>
 
                 {/* Base de Datos Core */}
@@ -125,51 +105,13 @@ export function SystemTab({ control }: SystemTabProps) {
                         <button
                             type="button"
                             onClick={handleClearCache}
-                            className="w-full py-2.5 bg-red-500/8 hover:bg-red-500/15 border border-red-500/15 text-[10px] font-bold uppercase tracking-wider text-red-400 rounded-xl transition-all active:scale-[0.98]"
+                            className="w-full py-2.5 bg-brand-destructive/8 hover:bg-brand-destructive/15 border border-brand-destructive/15 text-[10px] font-bold uppercase tracking-wider text-brand-destructive rounded-xl transition-all active:scale-[0.98]"
                         >
                             Limpiar Caché Imágenes
                         </button>
                     </div>
                 </div>
             </div>
-
-            {/* Tema de la Interfaz */}
-            <Section label="Tema de la Interfaz">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {[
-                        { id: "dark", name: "Cine Oscuro", desc: "El clásico fondo azul noche con acento naranja", color: "bg-[#0B0F19]", accent: "bg-[#ff6e3a]" },
-                        { id: "amoled", name: "Negro AMOLED", desc: "Negro absoluto para pantallas OLED con acento carmesí", color: "bg-black", accent: "bg-[#ff1e56]" },
-                        { id: "cyberpunk", name: "Cyberpunk", desc: "Ambiente obsidian con acentos cian brillante", color: "bg-[#07050e]", accent: "bg-[#00f3ff]" }
-                    ].map(t => {
-                        const isThemeActive = activeTheme === t.id
-                        return (
-                            <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => {
-                                    setActiveTheme(t.id)
-                                    playSound("category")
-                                }}
-                                className={cn(
-"flex flex-col text-left p-5 rounded-container border transition-all duration-300 relative overflow-hidden group active:scale-95",
-                                    isThemeActive
-                                        ? "bg-surface-container border-[#ff6e3a] shadow-[0_8px_30px_rgba(255,110,58,0.12)]"
-                                        : "bg-surface-container border border-outline-variant rounded-container hover:bg-surface-container-high hover:border-outline-variant"
-                                )}
-                            >
-                                <div className="flex items-center justify-between w-full mb-3">
-                                    <span className="text-xs font-bold text-on-surface uppercase tracking-wider">{t.name}</span>
-                                    <div className="flex gap-1">
-                                        <div className={cn("w-3 h-3 rounded-full border border-outline-variant/10", t.color)} />
-                                        <div className={cn("w-3 h-3 rounded-full", t.accent)} />
-                                    </div>
-                                </div>
-                                <p className="text-[11px] text-on-surface-variant leading-relaxed font-medium">{t.desc}</p>
-                            </button>
-                        )
-                    })}
-                </div>
-            </Section>
 
             {/* Gestión de Notificaciones */}
             <Section label="Notificaciones de la Aplicación">
@@ -198,116 +140,67 @@ export function SystemTab({ control }: SystemTabProps) {
                             />
                         )}
                     />
+                    <Controller
+                        control={control}
+                        name="notifications.disableAutoDownloaderNotifications"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Desactivar Avisos del Descargador"
+                                description="No mostrar notificaciones toast de progreso de descargas automáticas."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
                 </Card>
             </Section>
 
-            {/* Audio y Efectos */}
-            <Section label="Audio y Efectos">
-                <Card className="divide-y divide-outline-variant/3">
-                    <OsToggle
-                        label="Efectos de Sonido"
-                        description="Habilita los sonidos de interacción al pasar el cursor o hacer clic sobre tarjetas y menús."
-                        checked={uiSoundsEnabled}
-                        onChange={setUiSoundsEnabled}
+            {/* Audio y Efectos — preferencia local del dispositivo */}
+            <LocalDeviceSection title="Audio y Efectos">
+                <OsToggle
+                    label="Efectos de Sonido"
+                    description="Habilita los sonidos de interacción al pasar el cursor o hacer clic sobre tarjetas y menús."
+                    checked={uiSoundsEnabled}
+                    onChange={setUiSoundsEnabled}
+                />
+                {uiSoundsEnabled && (
+                    <RangeSlider
+                        label="Volumen de los Efectos"
+                        description="Ajusta el volumen general de los efectos de sonido de la interfaz."
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={uiSoundsVolume}
+                        onChange={setUiSoundsVolume}
+                        formatValue={(v) => `${Math.round(v * 100)}%`}
                     />
-                    {uiSoundsEnabled && (
-                        <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-4 hover:bg-surface-variant/[0.01] transition-all duration-200 gap-5 border-t border-outline-variant/4">
-                            <div className="space-y-0.5 flex-1 max-w-xl">
-                                <div className="flex items-center gap-3">
-                                    <p className="text-sm font-semibold text-on-surface">Volumen de los Efectos</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => playSound("hover")}
-                                        className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-[#ff6e3a]/10 hover:bg-[#ff6e3a]/20 text-[#ff6e3a] border border-[#ff6e3a]/25 rounded-md transition-all active:scale-95"
-                                    >
-                                        Probar Sonido
-                                    </button>
-                                </div>
-                                <p className="text-xs text-on-surface-variant font-medium mt-1">Ajusta el volumen general de los efectos de sonido de la interfaz.</p>
-                            </div>
-                            <div className="flex items-center gap-3 w-full md:w-72">
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                    value={uiSoundsVolume}
-                                    onChange={(e) => setUiSoundsVolume(parseFloat(e.target.value))}
-                                    className="w-full accent-brand-secondary bg-surface-container h-1.5 rounded-lg appearance-none cursor-pointer"
-                                />
-                                <span className="text-xs font-mono text-on-surface-variant w-8 text-right shrink-0">
-                                    {Math.round(uiSoundsVolume * 100)}%
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                    <OsToggle
-                        label="Música de Fondo"
-                        description="Habilita la reproducción de música ambiental de fondo mientras navegas por KameHouse."
-                        checked={bgMusicEnabled}
-                        onChange={setBgMusicEnabled}
+                )}
+                <OsToggle
+                    label="Música de Fondo"
+                    description="Habilita la reproducción de música ambiental de fondo mientras navegas por KameHouse."
+                    checked={bgMusicEnabled}
+                    onChange={setBgMusicEnabled}
+                />
+                {bgMusicEnabled && (
+                    <RangeSlider
+                        label="Volumen de la Música"
+                        description="Ajusta el volumen general de la música de fondo."
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={bgMusicVolume}
+                        onChange={setBgMusicVolume}
+                        formatValue={(v) => `${Math.round(v * 100)}%`}
                     />
-                    {bgMusicEnabled && (
-                        <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-4 hover:bg-surface-variant/[0.01] transition-all duration-200 gap-5">
-                            <div className="space-y-0.5 flex-1 max-w-xl">
-                                <p className="text-sm font-semibold text-on-surface">Volumen de la Música</p>
-                                <p className="text-xs text-on-surface-variant font-medium">Ajusta el volumen general de la música de fondo.</p>
-                            </div>
-                            <div className="flex items-center gap-3 w-full md:w-72">
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                    value={bgMusicVolume}
-                                    onChange={(e) => setBgMusicVolume(parseFloat(e.target.value))}
-                                    className="w-full accent-brand-secondary bg-surface-container h-1.5 rounded-lg appearance-none cursor-pointer"
-                                />
-                                <span className="text-xs font-mono text-on-surface-variant w-8 text-right shrink-0">
-                                    {Math.round(bgMusicVolume * 100)}%
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                </Card>
-            </Section>
-
-            {/* Rendimiento Gráfico */}
-            <Section label="Rendimiento Gráfico">
-                <Card className="divide-y divide-outline-variant/3">
-                    <OsToggle
-                        label="Fondo Dinámico Difuminado"
-                        description="Habilita el fondo artístico con desenfoque de color y orbes de luces. Desactivar esto mejora drásticamente el rendimiento de la GPU en ordenadores menos potentes."
-                        checked={dynamicBackdropEnabled}
-                        onChange={setDynamicBackdropEnabled}
-                    />
-                    {dynamicBackdropEnabled && (
-                        <OsToggle
-                            label="Efecto de Movimiento del Ratón"
-                            description="Permite que el fondo y las orbes se desplacen sutilmente al mover el cursor en la pantalla."
-                            checked={dynamicBackdropMotionEnabled}
-                            onChange={setDynamicBackdropMotionEnabled}
-                        />
-                    )}
-                </Card>
-            </Section>
-
+                )}
+            </LocalDeviceSection>
 
             {/* Zona de Peligro */}
             <Section label="Zona de Peligro">
-                <div className="border border-outline-variant rounded-container p-6 space-y-6 relative overflow-hidden group/danger hover:border-red-500/20 transition-colors">
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
-                            <AlertIcon />
-                        </div>
-                        <div className="space-y-1">
-                            <h3 className="text-base font-bold text-red-400 tracking-tight">Zona de Riesgo Crítico</h3>
-                            <p className="text-xs text-on-surface-variant leading-relaxed font-medium">
-                                Operaciones destructivas que alteran permanentemente los datos del servidor KameHouse.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <DangerZone
+                    title="Zona de Riesgo Crítico"
+                    description="Operaciones destructivas que alteran permanentemente los datos del servidor KameHouse."
+                />
             </Section>
         </div>
     )

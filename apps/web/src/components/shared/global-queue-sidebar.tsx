@@ -44,7 +44,8 @@ export const GlobalQueueSidebar = () => {
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className="fixed right-0 top-0 bottom-0 w-full sm:w-[420px] z-[9995] bg-surface-container/90 backdrop-blur-overlay-xl border-l border-outline-variant flex flex-col shadow-elevation-4 pointer-events-auto select-none"
+                        className="fixed right-0 top-0 bottom-0 w-full sm:w-[420px] z-[9995] backdrop-blur-overlay-xl border-l border-outline-variant flex flex-col shadow-elevation-4 pointer-events-auto select-none"
+                        style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 90%, transparent)" }}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-outline-variant/30 shrink-0">

@@ -4,7 +4,6 @@ import { persist } from "zustand/middleware"
 // --- UI Slice ---
 export interface UIState {
     sidebarOpen: boolean
-    activeTheme: string
     searchQuery: string
     isVideoActive: boolean
     bgMusicEnabled: boolean
@@ -15,7 +14,6 @@ export interface UIState {
     dynamicBackdropEnabled: boolean
     dynamicBackdropMotionEnabled: boolean
     setSidebarOpen: (open: boolean) => void
-    setActiveTheme: (theme: string) => void
     setSearchQuery: (query: string) => void
     setVideoActive: (active: boolean) => void
     setBgMusicEnabled: (enabled: boolean) => void
@@ -69,7 +67,6 @@ export const createScannerSlice: StateCreator<UIState & PlayerState & ScannerSta
 
 export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState> = (set) => ({
     sidebarOpen: true,
-    activeTheme: "dark",
     searchQuery: "",
     isVideoActive: false,
     bgMusicEnabled: false,
@@ -77,14 +74,9 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     uiSoundsEnabled: true,
     uiSoundsVolume: 1.0,
     globalQueueOpen: false,
-    dynamicBackdropEnabled: typeof window !== "undefined"
-        ? localStorage.getItem("kamehouse:dynamic-backdrop-enabled") !== "false"
-        : true,
-    dynamicBackdropMotionEnabled: typeof window !== "undefined"
-        ? localStorage.getItem("kamehouse:perf-monitor-enabled") === "true"
-        : false,
+    dynamicBackdropEnabled: false,
+    dynamicBackdropMotionEnabled: false,
     setSidebarOpen: (open) => set({ sidebarOpen: open }),
-    setActiveTheme: (theme) => set({ activeTheme: theme }),
     setSearchQuery: (query) => set({ searchQuery: query }),
     setVideoActive: (active) => set({ isVideoActive: active }),
     setBgMusicEnabled: (enabled) => set({ bgMusicEnabled: enabled }),
@@ -93,15 +85,9 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     setUiSoundsVolume: (volume) => set({ uiSoundsVolume: volume }),
     setGlobalQueueOpen: (open) => set({ globalQueueOpen: open }),
     setDynamicBackdropEnabled: (enabled) => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("kamehouse:dynamic-backdrop-enabled", enabled ? "true" : "false")
-        }
         set({ dynamicBackdropEnabled: enabled })
     },
     setDynamicBackdropMotionEnabled: (enabled) => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("kamehouse:perf-monitor-enabled", enabled ? "true" : "false")
-        }
         set({ dynamicBackdropMotionEnabled: enabled })
     },
 })
@@ -264,7 +250,6 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
             partialize: (state) => ({
                 // Solo persistimos lo que queremos que sobreviva
                 sidebarOpen: state.sidebarOpen,
-                activeTheme: state.activeTheme,
                 bgMusicEnabled: state.bgMusicEnabled,
                 bgMusicVolume: state.bgMusicVolume,
                 uiSoundsEnabled: state.uiSoundsEnabled,

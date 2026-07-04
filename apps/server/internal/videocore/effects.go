@@ -1,11 +1,9 @@
-﻿package videocore
+package videocore
 
 import (
-	"context"
 	"kamehouse/internal/continuity"
 	"kamehouse/internal/events"
 	"kamehouse/internal/mkvparser"
-	"kamehouse/internal/platforms/platform"
 
 	"github.com/samber/lo"
 )
@@ -31,57 +29,6 @@ func (vc *VideoCore) setupSharedEffects() {
 				}
 			case *VideoErrorEvent:
 			case *VideoCompletedEvent:
-				state, ok := vc.GetPlaybackState()
-				if !ok {
-					continue
-				}
-				shouldUpdateProgress := false
-				vc.settingsMu.RLock()
-				shouldUpdateProgress = vc.settings.Library.AutoUpdateProgress
-				vc.settingsMu.RUnlock()
-				if shouldUpdateProgress {
-					// get the list entry
-					collection, err := vc.dynamicPlatform.GetAnimeCollection(context.Background(), false)
-					if err != nil {
-						vc.logger.Error().Err(err).Msg("videocore: Cannot update progress, failed to get anime collection")
-						continue
-					}
-
-					// Helper to extract properties from various media types
-					var mediaID int
-					var totalEpisodes *int
-
-					// Try to extract from common types or ignore if not possible
-					// This is a temporary measure until a proper Media interface is used across Videocore
-					if m, ok := state.PlaybackInfo.Media.(map[string]interface{}); ok {
-						if id, ok := m["id"].(float64); ok {
-							mediaID = int(id)
-						}
-						if eps, ok := m["episodes"].(float64); ok {
-							te := int(eps)
-							totalEpisodes = &te
-						}
-					} else if m, ok := state.PlaybackInfo.Media.(interface{ GetID() int }); ok {
-						mediaID = m.GetID()
-					}
-
-					progress := state.PlaybackInfo.Episode.GetProgressNumber()
-
-					if c, ok := collection.(*platform.UnifiedCollection); ok {
-						if listEntry, hasEntry := c.GetListEntryFromMediaId(mediaID); hasEntry {
-							if listEntry.Progress != nil && progress <= *listEntry.Progress {
-								continue
-							}
-						}
-					} else if mediaID == 0 {
-						continue
-					}
-
-					err = vc.dynamicPlatform.UpdateEntryProgress(context.Background(), mediaID, progress, totalEpisodes)
-					if err != nil {
-						vc.logger.Error().Err(err).Msgf("videocore: Failed to update progress for media %d", mediaID)
-					}
-				}
 			case *VideoTerminatedEvent:
 			case *VideoStatusEvent:
 				state, ok := vc.GetPlaybackState()

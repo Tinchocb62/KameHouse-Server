@@ -2,7 +2,7 @@ import { cva } from "class-variance-authority"
 import * as React from "react"
 import { useIsomorphicLayoutEffect, useUpdateEffect } from "../core/hooks"
 import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
-import { useDraggableScroll } from "@/hooks/use-draggable-scroll"
+import { useDraggableScroll } from "./use-draggable-scroll"
 
 /* -------------------------------------------------------------------------------------------------
  * Anatomy
@@ -37,7 +37,7 @@ const HorizontalDraggableScrollAnatomy = defineStyleAnatomy({
         "flex max-w-full w-full space-x-3 overflow-x-scroll scrollbar-hide scroll select-none",
     ]),
     chevronIcon: cva([
-        "w-12 h-12 stroke-[2.5px] p-3 rounded-full bg-surface-container/70 text-white/80 border border-white/10 shadow-lg",
+        "w-12 h-12 stroke-[2.5px] p-3 rounded-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_70%,transparent)] text-white/80 border border-white/10 shadow-lg",
         "backdrop-blur-[var(--blur-overlay-md)] transition-all duration-300",
         "group-hover/chevron:bg-brand-orange group-hover/chevron:text-white group-hover/chevron:border-brand-orange group-hover/chevron:scale-110 group-hover/chevron:shadow-[0_0_15px_rgba(255,110,58,0.4)]",
     ]),
@@ -73,6 +73,17 @@ export type HorizontalDraggableScrollProps = ComponentAnatomy<typeof HorizontalD
      * Whether to apply a rubber band effect when the slider reaches the end
      */
     applyRubberBandEffect?: boolean
+    /**
+     * Ambient auto-scroll: slowly scrolls right and loops back to the start.
+     * Pauses on hover/drag/focus so it never fights the user.
+     * @default false
+     */
+    autoScroll?: boolean
+    /**
+     * Auto-scroll speed in pixels per second.
+     * @default 30
+     */
+    autoScrollSpeed?: number
 }
 
 export const HorizontalDraggableScroll = React.forwardRef<HTMLDivElement, HorizontalDraggableScrollProps>((props, forwadedRef) => {
@@ -89,6 +100,8 @@ export const HorizontalDraggableScroll = React.forwardRef<HTMLDivElement, Horizo
         safeDisplacement = 20,
         applyRubberBandEffect = true,
         scrollAmount = 500,
+        autoScroll = false,
+        autoScrollSpeed = 30,
         ...rest
     } = props
 
@@ -158,6 +171,50 @@ export const HorizontalDraggableScroll = React.forwardRef<HTMLDivElement, Horizo
             setShowRightChevron(false)
         }
     }, [])
+
+    // Ambient auto-scroll — pauses while the user hovers, drags, or focuses the lane.
+    const isPausedRef = React.useRef(false)
+    React.useEffect(() => {
+        if (!autoScroll) return
+        const div = ref.current
+        if (!div) return
+
+        let rafId: number
+        let lastTime: number | null = null
+
+        const tick = (time: number) => {
+            if (lastTime === null) lastTime = time
+            const dt = (time - lastTime) / 1000
+            lastTime = time
+
+            if (!isPausedRef.current && document.visibilityState === "visible") {
+                const maxScroll = div.scrollWidth - div.clientWidth
+                if (maxScroll > 0) {
+                    const next = div.scrollLeft + autoScrollSpeed * dt
+                    div.scrollLeft = next >= maxScroll ? 0 : next
+                }
+            }
+            rafId = requestAnimationFrame(tick)
+        }
+        rafId = requestAnimationFrame(tick)
+
+        const pause = () => { isPausedRef.current = true }
+        const resume = () => { isPausedRef.current = false }
+        div.addEventListener("pointerenter", pause)
+        div.addEventListener("pointerleave", resume)
+        div.addEventListener("pointerdown", pause)
+        div.addEventListener("focusin", pause)
+        div.addEventListener("focusout", resume)
+
+        return () => {
+            cancelAnimationFrame(rafId)
+            div.removeEventListener("pointerenter", pause)
+            div.removeEventListener("pointerleave", resume)
+            div.removeEventListener("pointerdown", pause)
+            div.removeEventListener("focusin", pause)
+            div.removeEventListener("focusout", resume)
+        }
+    }, [autoScroll, autoScrollSpeed])
 
     return (
         <div ref={forwadedRef} className={cn(HorizontalDraggableScrollAnatomy.root(), className)} {...rest}>

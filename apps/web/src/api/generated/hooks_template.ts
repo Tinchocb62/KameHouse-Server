@@ -304,6 +304,28 @@
 // }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// intelligence
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useGetBestSource() {
+//     return useServerQuery<SelectionResult>({
+//         endpoint: API_ENDPOINTS.INTELLIGENCE.GetBestSource.endpoint,
+//         method: API_ENDPOINTS.INTELLIGENCE.GetBestSource.methods[0],
+//         queryKey: [API_ENDPOINTS.INTELLIGENCE.GetBestSource.key],
+//         enabled: true,
+//     })
+// }
+
+// export function useGetIntelligenceStats() {
+//     return useServerQuery<map>({
+//         endpoint: API_ENDPOINTS.INTELLIGENCE.GetIntelligenceStats.endpoint,
+//         method: API_ENDPOINTS.INTELLIGENCE.GetIntelligenceStats.methods[0],
+//         queryKey: [API_ENDPOINTS.INTELLIGENCE.GetIntelligenceStats.key],
+//         enabled: true,
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // library_explorer
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -611,6 +633,37 @@
 //     })
 // }
 
+// export function useGetEpisodeSkipTimes() {
+//     return useServerQuery<Models_EpisodeSkipTime>({
+//         endpoint: API_ENDPOINTS.MEDIASTREAM.GetEpisodeSkipTimes.endpoint,
+//         method: API_ENDPOINTS.MEDIASTREAM.GetEpisodeSkipTimes.methods[0],
+//         queryKey: [API_ENDPOINTS.MEDIASTREAM.GetEpisodeSkipTimes.key],
+//         enabled: true,
+//     })
+// }
+
+// export function useSaveEpisodeSkipTimes() {
+//     return useServerMutation<boolean, SaveEpisodeSkipTimes_Variables>({
+//         endpoint: API_ENDPOINTS.MEDIASTREAM.SaveEpisodeSkipTimes.endpoint,
+//         method: API_ENDPOINTS.MEDIASTREAM.SaveEpisodeSkipTimes.methods[0],
+//         mutationKey: [API_ENDPOINTS.MEDIASTREAM.SaveEpisodeSkipTimes.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+// export function useScanEpisodeSkipTimes() {
+//     return useServerMutation<boolean, ScanEpisodeSkipTimes_Variables>({
+//         endpoint: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.endpoint,
+//         method: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.methods[0],
+//         mutationKey: [API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // metadata
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -749,6 +802,19 @@
 //         endpoint: API_ENDPOINTS.SCAN_SUMMARY.GetScanSummaries.endpoint,
 //         method: API_ENDPOINTS.SCAN_SUMMARY.GetScanSummaries.methods[0],
 //         queryKey: [API_ENDPOINTS.SCAN_SUMMARY.GetScanSummaries.key],
+//         enabled: true,
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// series_details
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useGetSeriesSagas(id: number) {
+//     return useServerQuery<Array<SagaDTO>>({
+//         endpoint: API_ENDPOINTS.SERIES_DETAILS.GetSeriesSagas.endpoint.replace("{id}", String(id)),
+//         method: API_ENDPOINTS.SERIES_DETAILS.GetSeriesSagas.methods[0],
+//         queryKey: [API_ENDPOINTS.SERIES_DETAILS.GetSeriesSagas.key],
 //         enabled: true,
 //     })
 // }

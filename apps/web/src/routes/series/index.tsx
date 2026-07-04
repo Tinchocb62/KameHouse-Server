@@ -127,7 +127,10 @@ function SeriesFullscreenIndex() {
             <div className="absolute inset-0 pointer-events-none z-[49] opacity-[0.015] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,6px_100%]" />
 
             {/* Main Shelf Container */}
-            <div className="flex-1 min-h-0 bg-surface/90 backdrop-blur-[var(--blur-overlay-xl)] rounded-[var(--radius-corner-lg)] border border-outline-variant/50 shadow-elevation-3 overflow-hidden relative z-10 flex flex-col">
+            <div
+                className="flex-1 min-h-0 backdrop-blur-[var(--blur-overlay-xl)] rounded-[var(--radius-corner-lg)] border border-outline-variant/50 shadow-elevation-3 overflow-hidden relative z-10 flex flex-col"
+                style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 50%, transparent)" }}
+            >
                 <main
                     className="vhs-shelf w-full h-full flex bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar relative z-10 scroll-smooth"
                     role="listbox"

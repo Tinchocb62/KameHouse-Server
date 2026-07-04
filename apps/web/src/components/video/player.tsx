@@ -1,6 +1,6 @@
 import React, { useEffect, Suspense, lazy, useState } from "react"
 import { createPortal } from "react-dom"
-import { Loader2 } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import { useAppStore } from "@/lib/store"
 
 export type VideoPlayerProps = {
@@ -37,7 +37,7 @@ export type VideoPlayerProps = {
 function PlayerLoadingScreen() {
     return (
         <div className="fixed inset-0 z-[10000] bg-black w-screen h-screen flex flex-col items-center justify-center gap-4 text-white">
-            <Loader2 className="w-14 h-14 text-white animate-spin" />
+            <Icons.ui.spinner className="w-14 h-14 text-white animate-spin" />
             <p className="font-bold tracking-widest uppercase text-[10px] opacity-80 animate-pulse">
                 Cargando Reproductor
             </p>

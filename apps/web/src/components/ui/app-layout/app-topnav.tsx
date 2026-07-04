@@ -15,7 +15,7 @@ export const AppTopNav = ({ title }: TopNavProps) => {
     if (isFullscreen) return null
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-[40] bg-surface/70 backdrop-blur-[var(--blur-overlay-xl)] border-b border-outline-variant/50 shadow-elevation-1">
+        <header className="fixed top-0 left-0 right-0 z-[40] backdrop-blur-[var(--blur-overlay-xl)] border-b border-outline-variant/50 shadow-elevation-1" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 70%, transparent)" }}>
             <div className="flex items-center justify-between h-20 px-6 md:px-10">
                 <div className="flex items-center ml-6 [&>*:not(:first-child)]:ml-6">
                     <button 
@@ -43,7 +43,7 @@ export const AppBottomNav = () => {
     if (isFullscreen) return null
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-surface/90 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/50 shadow-elevation-3 z-[40] flex items-center justify-around px-8 safe-area-pb">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/50 shadow-elevation-3 z-[40] flex items-center justify-around px-8 safe-area-pb" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 90%, transparent)" }}>
             <Link 
                 to="/home" 
                 activeProps={{ className: "text-primary scale-110" }}

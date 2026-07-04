@@ -20,6 +20,7 @@ const VideoPlayer = React.lazy(() => import("@/components/video/player").then(m 
 import { RelationsTab, CharactersTab } from "./-series-bento-tabs"
 import { getDragonBallSpanishTitle, isDragonBallTmdbId, getSeriesEraTheme } from "@/lib/config/dragonball.config"
 import { startViewTransition } from "@/lib/helpers/transitions"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 // New Design System Components
 import { FloatingMatchFlap } from "@/components/shared/floating-match-flap"
@@ -90,6 +91,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const { data: entry, isLoading } = useGetAnimeEntry(seriesId)
     const { data: continuityData, refetch: refetchContinuity } = useGetContinuityWatchHistoryItem(Number(seriesId))
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
+    const ts = useThemeSettings()
 
     const { mutate: preloadStream } = usePreloadMediastreamMediaContainer()
 
@@ -361,7 +363,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
 
     if (isLoading && !entry) {
         return (
-            <div className="h-full w-full bg-[var(--bg-primary)] text-white pb-16 overflow-y-auto">
+            <div className="h-full w-full text-on-surface pb-16 overflow-y-auto">
                 <BentoDetailsSkeleton />
             </div>
         )
@@ -369,7 +371,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
 
     if (!entry || !entry.media) {
         return (
-            <div className="h-full w-full bg-[var(--bg-primary)] text-white flex items-center justify-center px-6">
+            <div className="h-full w-full text-on-surface flex items-center justify-center px-6">
                 <EmptyState
                     title="Contenido no encontrado"
                     message="No pudimos cargar este contenido. Vuelve al inicio o intenta con otro."
@@ -382,11 +384,12 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const hasRelations = entry.media?.relations && entry.media.relations.length > 0
     const hasCharacters = entry.media?.characters?.edges && entry.media.characters.edges.length > 0
     const eraTheme = getSeriesEraTheme(entry.media?.tmdbId)
+    const localTheme = !ts.themeEra ? eraTheme : undefined
 
     return (
         <div
-            data-theme={eraTheme || undefined}
-            className="h-full w-full flex flex-col overflow-y-auto no-scrollbar bg-[var(--bg-primary)] text-white pb-16"
+            data-theme={localTheme || undefined}
+            className="h-full w-full flex flex-col overflow-y-auto no-scrollbar text-on-surface pb-16"
         >
             <FloatingMatchFlap
                 directoryPath={entry.libraryData?.sharedPath || ""}
@@ -399,48 +402,28 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                 onPlay={handlePlayDefault}
             />
             <div className="w-full max-w-[1800px] mx-auto px-6 md:px-12 mt-8">
-                <div className="flex border-b border-outline-variant pb-2 mb-6 gap-6 overflow-x-auto no-scrollbar">
-                    <button
+                <div className="flex border-b border-outline-variant pb-2 mb-6 gap-3 overflow-x-auto no-scrollbar">
+                    <SectionTab
+                        active={activeTab === "episodes"}
                         onClick={() => setSearchParams({ tab: "episodes" })}
-                        className={cn(
-                            "inline-flex items-center gap-2 shrink-0 text-sm font-semibold transition-all px-4 py-2 rounded-pill",
-                            activeTab === "episodes"
-                                ? "bg-primary text-on-primary shadow-elevation-1"
-                                : "bg-transparent text-on-surface-variant hover:bg-surface-container-high"
-                        )}
-                    >
-                        <Icons.navigation.film size={14} strokeWidth={2.5} />
-                        Episodios
-                    </button>
-
+                        icon={<Icons.navigation.film size={14} strokeWidth={2.5} />}
+                        label="Episodios"
+                    />
                     {hasRelations && (
-                        <button
+                        <SectionTab
+                            active={activeTab === "relations"}
                             onClick={() => setSearchParams({ tab: "relations" })}
-                            className={cn(
-                                "inline-flex items-center gap-2 shrink-0 text-sm font-semibold transition-all px-4 py-2 rounded-pill",
-                                activeTab === "relations"
-                                    ? "bg-primary text-on-primary shadow-elevation-1"
-                                    : "bg-transparent text-on-surface-variant hover:bg-surface-container-high"
-                            )}
-                        >
-                            <Icons.navigation.layers size={14} strokeWidth={2.5} />
-                            Relacionados
-                        </button>
+                            icon={<Icons.navigation.layers size={14} strokeWidth={2.5} />}
+                            label="Relacionados"
+                        />
                     )}
-
                     {hasCharacters && (
-                        <button
+                        <SectionTab
+                            active={activeTab === "characters"}
                             onClick={() => setSearchParams({ tab: "characters" })}
-                            className={cn(
-                                "inline-flex items-center gap-2 shrink-0 text-sm font-semibold transition-all px-4 py-2 rounded-pill",
-                                activeTab === "characters"
-                                    ? "bg-primary text-on-primary shadow-elevation-1"
-                                    : "bg-transparent text-on-surface-variant hover:bg-surface-container-high"
-                            )}
-                        >
-                            <Icons.navigation.users size={14} strokeWidth={2.5} />
-                            Personajes
-                        </button>
+                            icon={<Icons.navigation.users size={14} strokeWidth={2.5} />}
+                            label="Personajes"
+                        />
                     )}
                 </div>
 
@@ -456,19 +439,17 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                 className="mt-8 flex flex-col lg:flex-row gap-10"
                             >
                                 {sagas && sagas.length > 0 && (
-                                    <div className="lg:w-80 flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)]">
-                                        <div className="bg-surface-container shadow-elevation-2 p-4 rounded-container h-full">
-                                            <SagaSelector
-                                                sagas={sagas}
-                                                activeSagaId={activeSagaId}
-                                                onSelectSaga={(sagaId) => {
-                                                    setSearchParams({ saga: sagaId, subSaga: "" })
-                                                    window.scrollTo({ top: 0, behavior: "smooth" })
-                                                }}
-                                                activeSubSagaId={activeSubSagaId}
-                                                onSelectSubSaga={(subSagaId) => setSearchParams({ subSaga: subSagaId })}
-                                            />
-                                        </div>
+                                    <div className="lg:w-80 flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)] h-full">
+                                        <SagaSelector
+                                            sagas={sagas}
+                                            activeSagaId={activeSagaId}
+                                            onSelectSaga={(sagaId) => {
+                                                setSearchParams({ saga: sagaId, subSaga: "" })
+                                                window.scrollTo({ top: 0, behavior: "smooth" })
+                                            }}
+                                            activeSubSagaId={activeSubSagaId}
+                                            onSelectSubSaga={(subSagaId) => setSearchParams({ subSaga: subSagaId })}
+                                        />
                                     </div>
                                 )}
 
@@ -520,7 +501,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                         activeSubSagaStart={activeSubSaga?.startEp}
                                         activeSubSagaEnd={activeSubSaga?.endEp}
                                         onPlay={handlePlayByNumber}
-                                        onPreload={(path) => preloadStream({ path, streamType: "direct", audioStreamIndex: 0 })}
+                                        onPreload={(path) => preloadStream({ path, streamType: "direct", audioStreamIndex: 0, preferredAudioLang: "" })}
                                     />
                                 </div>
                             </motion.div>
@@ -535,7 +516,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                 transition={{ duration: 0.2 }}
                                 className="py-4"
                             >
-                                <div className="bg-surface-container-low p-6 rounded-container">
+                                <div className="glass-card p-6 md:p-8">
                                     <RelationsTab media={entry.media} />
                                 </div>
                             </motion.div>
@@ -550,7 +531,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                 transition={{ duration: 0.2 }}
                                 className="py-4"
                             >
-                                <div className="bg-surface-container-low p-6 rounded-container">
+                                <div className="glass-card p-6 md:p-8">
                                     <CharactersTab characters={entry.media?.characters?.edges || []} onSelectChar={setSelectedCharacterName} />
                                 </div>
                             </motion.div>
@@ -563,9 +544,9 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                 const nextTitle = nextEp ? (nextEp.titleSpanish || nextEp.episodeMetadata?.title || nextEp.episodeTitle || nextEp.displayTitle || `Episodio ${nextEp.absoluteEpisodeNumber || nextEp.episodeNumber}`) : undefined;
                 return (
                     <React.Suspense fallback={
-                        <div className="fixed inset-0 bg-[var(--bg-primary)]/90 backdrop-blur-[var(--blur-overlay-lg)] flex flex-col justify-center items-center z-50">
+                        <div className="fixed inset-0 bg-scrim/80 backdrop-blur-[var(--blur-overlay-lg)] flex flex-col justify-center items-center z-50">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-secondary mb-4"></div>
-                            <p className="text-on-surface-variant/70 text-label-md uppercase tracking-widest">Cargando reproductor...</p>
+                            <p className="text-on-surface-variant/70 text-label-md uppercase">Cargando reproductor...</p>
                         </div>
                     }>
                         <VideoPlayer
@@ -608,30 +589,55 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     )
 }
 
+function SectionTab({ active, onClick, icon, label }: {
+    active: boolean
+    onClick: () => void
+    icon: React.ReactNode
+    label: string
+}) {
+    return (
+        <button
+            onClick={onClick}
+            aria-current={active ? "true" : undefined}
+            className={cn(
+                "inline-flex items-center gap-2 shrink-0 text-sm font-semibold px-4 py-2 rounded-pill",
+                "transition-all duration-base ease-smooth-out active:scale-95",
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
+                active
+                    ? "glass-liquid text-on-surface"
+                    : "bg-transparent text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+            )}
+        >
+            {icon}
+            {label}
+        </button>
+    )
+}
+
 function SagaLoreHeader({ saga }: { saga: SagaDTO | undefined }) {
     if (!saga) return null
 
     const hasRichDetails = saga.antagonists?.length > 0 || saga.keyEvents?.length > 0 || saga.newCharacters?.length > 0
 
     return (
-        <div className="bg-surface-container shadow-elevation-2 p-6 rounded-container mb-8">
+        <div className="glass-card p-6 md:p-8 mb-8 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="space-y-1">
-                    <span className="text-label-sm text-brand-accent uppercase tracking-widest bg-brand-accent/10 border border-brand-accent/20 px-4 py-1.5 rounded-full">
+                    <span className="inline-flex items-center text-label-sm text-brand-accent uppercase bg-brand-accent/10 border border-brand-accent/20 px-3 py-1 rounded-full">
                         Detalles del Arco
                     </span>
-                    <h2 className="text-h3 font-display text-on-surface uppercase tracking-wide mt-1.5">
+                    <h2 className="text-h3 font-display text-on-surface uppercase mt-1.5">
                         {saga.name}
                     </h2>
                 </div>
                 {saga.canonStatus && (
                     <span className={cn(
-                        "px-2.5 py-1 rounded-full text-label-sm font-black uppercase tracking-wider shadow-sm",
+                        "inline-flex items-center px-3 py-1 rounded-full text-label-sm uppercase border",
                         saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon"
-                            ? "bg-brand-success/15 text-brand-success border border-brand-success/25"
+                            ? "bg-brand-success/15 text-brand-success border-brand-success/25"
                             : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false"
-                            ? "bg-brand-destructive/15 text-brand-destructive border border-brand-destructive/25"
-                            : "bg-brand-secondary/15 text-brand-secondary border border-brand-secondary/25"
+                            ? "bg-brand-destructive/15 text-brand-destructive border-brand-destructive/25"
+                            : "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
                     )}>
                         {saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon" ? "Canon" : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false" ? "Relleno" : saga.canonStatus}
                     </span>
@@ -645,16 +651,16 @@ function SagaLoreHeader({ saga }: { saga: SagaDTO | undefined }) {
             )}
 
             {hasRichDetails && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-outline-variant mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/10 mt-2">
                     {saga.antagonists?.length > 0 && (
-                        <div className="bg-surface-container-low p-6 rounded-container shadow-inner">
-                            <span className="flex items-center gap-2 text-label-sm font-black text-on-surface-variant/70 uppercase tracking-wider mb-3 pb-2 border-b border-outline-variant">
+                        <div className="bg-white/[0.04] border border-white/10 p-5 rounded-2xl">
+                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/10">
                                 <Icons.status.skull size={14} className="text-brand-destructive" />
                                 Antagonistas
                             </span>
                             <div className="flex flex-wrap gap-2">
                                 {saga.antagonists.map((ant: string, idx: number) => (
-                                    <span key={idx} className="px-2.5 py-1 bg-brand-destructive/20 text-brand-destructive border border-brand-destructive/20 text-label-sm rounded-lg font-bold">
+                                    <span key={idx} className="inline-flex items-center px-3 py-1 bg-brand-destructive/15 text-brand-destructive border border-brand-destructive/25 text-label-sm uppercase rounded-full">
                                         {ant}
                                     </span>
                                 ))}
@@ -663,8 +669,8 @@ function SagaLoreHeader({ saga }: { saga: SagaDTO | undefined }) {
                     )}
 
                     {saga.keyEvents?.length > 0 && (
-                        <div className="bg-surface-container-low p-6 rounded-container md:col-span-2 shadow-inner">
-                            <span className="flex items-center gap-2 text-label-sm font-black text-on-surface-variant/70 uppercase tracking-wider mb-3 pb-2 border-b border-outline-variant">
+                        <div className="bg-white/[0.04] border border-white/10 p-5 rounded-2xl md:col-span-2">
+                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/10">
                                 <Icons.status.trophy size={14} className="text-brand-secondary" />
                                 Hitos Clave
                             </span>

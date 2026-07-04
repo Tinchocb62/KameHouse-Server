@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
-import { Loader2, AlertTriangle, Play } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
 
 export function LoadingErrorOverlay({
@@ -38,8 +38,8 @@ export function LoadingErrorOverlay({
 
     if (status === "loading") {
         return (
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 text-white bg-black [&>*:not(:first-child)]:mt-6">
-                <Loader2 className="w-16 h-16 text-white animate-spin" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-30 text-white bg-black [&>*:not(:first-child)]:mt-6">
+                <Icons.ui.spinner className="w-16 h-16 text-white animate-spin" />
                 <p className="font-black tracking-[0.4em] uppercase text-[11px] opacity-60">
                     {streamType === "transcode" ? "Espere" : "Cargando"}
                 </p>
@@ -49,8 +49,8 @@ export function LoadingErrorOverlay({
 
     if (showBuffering && status === "ready") {
         return (
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 text-white pointer-events-none bg-surface/20">
-                <Loader2 className="w-16 h-16 text-white animate-spin" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-30 text-white pointer-events-none" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 20%, transparent)" }}>
+                <Icons.ui.spinner className="w-16 h-16 text-white animate-spin" />
                 {isSeeking && (
                     <p className="mt-4 font-black tracking-[0.4em] uppercase text-[10px] opacity-50">
                         Buscando...
@@ -62,8 +62,8 @@ export function LoadingErrorOverlay({
 
     if (status === "error") {
         return (
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-8 text-center text-white bg-surface/85 backdrop-blur-[var(--blur-overlay-lg)] [&>*:not(:first-child)]:mt-6">
-                <AlertTriangle className="w-16 h-16 text-brand-orange animate-pulse" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-30 px-8 text-center text-white backdrop-blur-[var(--blur-overlay-lg)] [&>*:not(:first-child)]:mt-6" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 85%, transparent)" }}>
+                <Icons.ui.alert className="w-16 h-16 text-brand-orange animate-pulse" />
                 <h3 className="font-bebas text-3xl tracking-[0.2em] uppercase">TRANSMISIÓN CAÍDA</h3>
                 <p className="text-zinc-400 max-w-md text-sm font-medium uppercase tracking-wide leading-relaxed">{errorMsg}</p>
                 <button
@@ -178,8 +178,8 @@ export function SkipIntroOverlay({
                     "relative flex items-center px-6 py-3 overflow-hidden text-white",
                     "bg-[var(--bg-secondary)] border border-[var(--glass-strong)] rounded-[22px] shadow-[var(--shadow-modal)]",
                     isOutro
-                        ? "border-purple-500/30 hover:border-purple-400/60 hover:bg-purple-500/15"
-                        : "border-white/10 hover:border-brand-orange/40 hover:bg-brand-orange/15",
+                        ? "border-brand-secondary/30 hover:border-brand-secondary/60 hover:bg-brand-secondary/15"
+                        : "border-white/10 hover:border-brand-accent/40 hover:bg-brand-accent/15",
                     "text-[10px] font-black uppercase tracking-[0.3em]",
                     "transition-all duration-300",
                     "active:scale-95",
@@ -192,7 +192,7 @@ export function SkipIntroOverlay({
                 <div
                     className={cn(
                         "absolute bottom-0 left-0 h-[2px] transition-all duration-1000 ease-linear",
-                        isOutro ? "bg-purple-400" : "bg-brand-orange"
+                        isOutro ? "bg-brand-secondary" : "bg-brand-accent"
                     )}
                     style={{ width: `${fillProgress}%` }}
                 />
@@ -200,7 +200,7 @@ export function SkipIntroOverlay({
                 {/* Skip icon */}
                 <svg viewBox="0 0 24 24" fill="currentColor" className={cn(
                     "w-4 h-4 transition-colors shrink-0",
-                    isOutro ? "text-purple-300 group-hover:text-purple-200" : "text-brand-orange group-hover:brightness-110"
+                    isOutro ? "text-brand-secondary group-hover:brightness-110" : "text-brand-accent group-hover:brightness-110"
                 )}>
                     <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
                 </svg>
@@ -213,7 +213,7 @@ export function SkipIntroOverlay({
                         "text-[9px] font-mono tabular-nums tracking-widest",
                         "px-2 py-0.5 rounded",
                         isOutro
-                            ? "bg-purple-500/20 text-purple-300 group-hover:bg-white/20 group-hover:text-white"
+                            ? "bg-brand-secondary/20 text-brand-secondary group-hover:bg-white/20 group-hover:text-white"
                             : "bg-white/10 group-hover:bg-white/20 group-hover:text-white text-zinc-300"
                     )}>
                         {remainingSeconds}s
@@ -261,7 +261,7 @@ export function NextEpisodeOverlay({
         )}>
             <div className={cn(
                 "flex flex-col w-64 sm:w-72 bg-zinc-950/70 backdrop-blur-[var(--blur-overlay-md)] border border-white/[0.08]",
-                "shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] overflow-hidden rounded-2xl",
+                "shadow-player overflow-hidden rounded-2xl",
                 "[&>*:not(:first-child)]:mt-4"
             )}>
                 {/* Thumbnail */}
@@ -281,7 +281,7 @@ export function NextEpisodeOverlay({
                         )}
                         {/* Play icon overlay hint */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Play className="w-10 h-10 text-white/80 fill-white/80" />
+                            <Icons.media.play className="w-10 h-10 text-white/80 fill-white/80" />
                         </div>
                     </div>
                 )}

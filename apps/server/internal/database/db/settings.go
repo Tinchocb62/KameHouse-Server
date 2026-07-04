@@ -57,13 +57,6 @@ func (db *Database) AllLibraryPathsFromSettings(settings *models.Settings) *[]st
 	return &r
 }
 
-func (db *Database) AutoUpdateProgressIsEnabled() (bool, error) {
-	settings, err := db.GetSettings()
-	if err != nil {
-		return false, err
-	}
-	return settings.Library.AutoUpdateProgress, nil
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
