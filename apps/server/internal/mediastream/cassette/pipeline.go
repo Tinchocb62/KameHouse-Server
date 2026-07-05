@@ -191,7 +191,7 @@ func (p *Pipeline) GetSegment(ctx context.Context, seg int32) (string, error) {
 	// so the subsequent governor.Acquire() in runHead does not block waiting for
 	// cmd.Wait() to return (which can take 100-500ms on Windows after Process.Kill).
 	if p.velocity.DetectSeek(5) {
-		p.session.KillAllPipelines()
+		p.session.KillAllPipelineHeads()
 		p.velocity.Reset()
 		p.velocity.Record(seg)
 	}
@@ -615,9 +615,12 @@ func (p *Pipeline) readSegments(
 		p.headsMu.Unlock()
 
 		if p.segments.IsReady(seg) {
-			// another encoder beat us, quit to avoid duplicate work
-			_, _ = stdin.Write([]byte("q"))
-			_ = stdin.Close()
+			// another encoder beat us, quit to avoid duplicate work.
+			// write q in a goroutine so readSegments never blocks on a full pipe.
+			go func() {
+				_, _ = stdin.Write([]byte("q"))
+				_ = stdin.Close()
+			}()
 			return
 		}
 
@@ -627,9 +630,12 @@ func (p *Pipeline) readSegments(
 			return // range complete, ffmpeg will finish naturally
 		}
 		if p.segments.IsReady(seg + 1) {
-			// next segment already done by another head, no point continuing
-			_, _ = stdin.Write([]byte("q"))
-			_ = stdin.Close()
+			// next segment already done by another head, no point continuing.
+			// write q in a goroutine so readSegments never blocks on a full pipe.
+			go func() {
+				_, _ = stdin.Write([]byte("q"))
+				_ = stdin.Close()
+			}()
 			return
 		}
 	}

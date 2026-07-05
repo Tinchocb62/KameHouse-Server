@@ -74,6 +74,8 @@ export function AppSidebar() {
 
     const tvMode = useAppStore(state => state.tvMode)
 
+    const [hoverExpanded, setHoverExpanded] = React.useState(false)
+
     if (isFullscreen || tvMode) return null
 
     // Sidebar is "glass" (translucent + blurred) when cinematic effects are enabled globally.
@@ -83,7 +85,6 @@ export function AppSidebar() {
     // Temporary expand-on-hover for the collapsed desktop sidebar (does not
     // touch the persisted sidebarOpen preference — collapses back on leave).
     const canHoverExpand = ts.themeExpandSidebarOnHover && !sidebarOpen && !isMobile
-    const [hoverExpanded, setHoverExpanded] = React.useState(false)
     const isExpanded = sidebarOpen || (canHoverExpand && hoverExpanded)
 
     return (
@@ -93,7 +94,7 @@ export function AppSidebar() {
                 onMouseEnter={() => canHoverExpand && setHoverExpanded(true)}
                 onMouseLeave={() => canHoverExpand && setHoverExpanded(false)}
                 className={cn(
-                    "hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen border-r border-outline-variant z-50 overflow-visible transition-all duration-300 ease-in-out sidebar-gradient",
+                    "hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen border-r border-[color:var(--sidebar-active-border)] z-50 overflow-visible transition-all duration-300 ease-in-out sidebar-gradient",
                     isGlass
                         ? "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_70%,transparent)] backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
                         : "bg-surface",
@@ -109,7 +110,7 @@ export function AppSidebar() {
                 <Vaul open={sidebarOpen} onOpenChange={setSidebarOpen} direction="left">
                     <VaulContent
                         className={cn(
-                            "md:hidden fixed inset-y-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-outline-variant !border-y-0 !border-l-0 !rounded-none sidebar-gradient",
+                            "md:hidden fixed inset-y-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-[color:var(--sidebar-active-border)] !border-y-0 !border-l-0 !rounded-none sidebar-gradient",
                             isGlass
                                 ? "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_80%,transparent)] backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
                                 : "bg-surface"

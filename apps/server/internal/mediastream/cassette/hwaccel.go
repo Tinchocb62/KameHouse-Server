@@ -65,7 +65,9 @@ func BuildHwAccelProfile(opts HwAccelOptions, ffmpegPath string, logger *zerolog
 		return vaAPIProfile(defaultDevice)
 	case "qsv", "intel":
 		return qsvProfile(defaultDevice, preset)
-	case "nvidia", "cuda":
+	case "qsv-low-power":
+		return qsvLowPowerProfile(defaultDevice, preset)
+	case "nvidia", "cuda", "nvenc":
 		return nvidiaProfile(preset)
 	case "videotoolbox":
 		return videotoolboxProfile()
@@ -197,6 +199,30 @@ func qsvProfile(device, preset string) HwAccelProfile {
 	}
 }
 
+func qsvLowPowerProfile(device, preset string) HwAccelProfile {
+	return HwAccelProfile{
+		Name: "qsv-low-power",
+		DecodeFlags: []string{
+			"-hwaccel", "qsv",
+			"-qsv_device", getEnvOr("KAMEHOUSE_TRANSCODER_QSV_RENDERER", device),
+			"-hwaccel_output_format", "qsv",
+		},
+		EncodeFlags: []string{
+			"-c:v", "h264_qsv",
+			"-preset", preset,
+			"-profile:v", "high",
+			"-async_depth", "1",
+			"-look_ahead", "0",
+			"-bf", "3",
+			"-low_power", "1",
+		},
+		ScaleFilter:   "format=nv12|qsv,hwupload,scale_qsv=%d:%d:format=nv12",
+		NoScaleFilter: "format=nv12|qsv,hwupload",
+		ForcedIDR:     true,
+	}
+}
+
+
 func nvidiaProfile(preset string) HwAccelProfile {
 	// map to nvenc presets
 	switch preset {
@@ -216,7 +242,8 @@ func nvidiaProfile(preset string) HwAccelProfile {
 	return HwAccelProfile{
 		Name: "nvidia",
 		DecodeFlags: []string{
-			"-hwaccel", "auto",
+			"-hwaccel", "cuda",
+			"-hwaccel_output_format", "cuda",
 		},
 		EncodeFlags: []string{
 			"-c:v", "h264_nvenc",
@@ -229,10 +256,9 @@ func nvidiaProfile(preset string) HwAccelProfile {
 			"-rc-lookahead", "0",
 			"-delay", "0",
 			"-no-scenecut", "1",
-			"-pix_fmt", "yuv420p",
 		},
-		ScaleFilter:   "scale=%d:%d",
-		NoScaleFilter: "scale=iw:ih:format=yuv420p",
+		ScaleFilter:   "scale_cuda=%d:%d",
+		NoScaleFilter: "",
 		ForcedIDR:     true,
 	}
 }

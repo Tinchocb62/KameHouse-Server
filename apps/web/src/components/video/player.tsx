@@ -2,6 +2,7 @@ import React, { useEffect, Suspense, lazy, useState } from "react"
 import { createPortal } from "react-dom"
 import { Icons } from "@/components/ui/icons"
 import { useAppStore } from "@/lib/store"
+import { PlayerErrorBoundary } from "./player-error-boundary"
 
 export type VideoPlayerProps = {
     streamUrl: string
@@ -79,9 +80,11 @@ export function VideoPlayer(props: VideoPlayerProps) {
     }
 
     return createPortal(
-        <Suspense fallback={<PlayerLoadingScreen />}>
-            {playerContent}
-        </Suspense>,
+        <PlayerErrorBoundary label="Video Player">
+            <Suspense fallback={<PlayerLoadingScreen />}>
+                {playerContent}
+            </Suspense>
+        </PlayerErrorBoundary>,
         document.body
     )
 }

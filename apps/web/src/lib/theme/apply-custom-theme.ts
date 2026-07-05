@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useThemeSettings } from "./theme-hooks"
+import { useDominantColors } from "@/hooks/use-dominant-colors"
 
 /** Converts a "#rrggbb" hex color into the "H S% L%" triplet format used by
  *  this design system's HSL custom properties (consumed as hsl(var(--x))). */
@@ -38,6 +39,10 @@ export function hexToHslTriplet(hex: string): string | null {
  */
 export function useApplyCustomTheme() {
     const ts = useThemeSettings()
+    const dominantColors = useDominantColors(
+        ts.themeEra === "era-universe" ? "/casa-kame-de-dragon-ball-3963.webp" : undefined,
+        5
+    )
 
     React.useEffect(() => {
         const root = document.documentElement.style
@@ -66,8 +71,34 @@ export function useApplyCustomTheme() {
 
         if (eraOn) {
             html.dataset.theme = ts.themeEra
+            
+            if (ts.themeEra === "era-universe" && dominantColors.length >= 5) {
+                const [c1, c2, c3, c4, c5] = dominantColors
+                root.setProperty("--glow-color-1", c1)
+                root.setProperty("--glow-color-2", c2)
+                root.setProperty("--glow-color-3", c3)
+                root.setProperty("--glow-color-4", c4)
+                root.setProperty("--glow-color-5", c5)
+                root.setProperty("--sidebar-active-gradient", `linear-gradient(135deg, ${c1} 0%, ${c2} 25%, ${c3} 50%, ${c4} 75%, ${c5} 100%)`)
+                root.setProperty("--sidebar-active-bg-gradient", `linear-gradient(135deg, color-mix(in srgb, ${c1} 12%, transparent) 0%, color-mix(in srgb, ${c2} 12%, transparent) 25%, color-mix(in srgb, ${c3} 12%, transparent) 50%, color-mix(in srgb, ${c4} 12%, transparent) 75%, color-mix(in srgb, ${c5} 12%, transparent) 100%)`)
+            } else if (ts.themeEra !== "era-universe") {
+                root.removeProperty("--glow-color-1")
+                root.removeProperty("--glow-color-2")
+                root.removeProperty("--glow-color-3")
+                root.removeProperty("--glow-color-4")
+                root.removeProperty("--glow-color-5")
+                root.removeProperty("--sidebar-active-gradient")
+                root.removeProperty("--sidebar-active-bg-gradient")
+            }
         } else {
             delete html.dataset.theme
+            root.removeProperty("--glow-color-1")
+            root.removeProperty("--glow-color-2")
+            root.removeProperty("--glow-color-3")
+            root.removeProperty("--glow-color-4")
+            root.removeProperty("--glow-color-5")
+            root.removeProperty("--sidebar-active-gradient")
+            root.removeProperty("--sidebar-active-bg-gradient")
         }
 
         if (bgOn) {
@@ -94,6 +125,13 @@ export function useApplyCustomTheme() {
             root.removeProperty("--bg-primary")
             root.removeProperty("--brand-accent")
             root.removeProperty("--brand-accent-hex")
+            root.removeProperty("--glow-color-1")
+            root.removeProperty("--glow-color-2")
+            root.removeProperty("--glow-color-3")
+            root.removeProperty("--glow-color-4")
+            root.removeProperty("--glow-color-5")
+            root.removeProperty("--sidebar-active-gradient")
+            root.removeProperty("--sidebar-active-bg-gradient")
         }
     }, [
         ts.themeEra,
@@ -105,6 +143,7 @@ export function useApplyCustomTheme() {
         ts.hasCustomAccentColor,
         ts.backgroundColor,
         ts.accentColor,
+        dominantColors.join(","), // add colors to dependency array
     ])
 }
 

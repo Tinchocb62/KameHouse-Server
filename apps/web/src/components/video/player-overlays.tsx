@@ -260,7 +260,7 @@ export function NextEpisodeOverlay({
             show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8 pointer-events-none"
         )}>
             <div className={cn(
-                "flex flex-col w-64 sm:w-72 bg-zinc-950/70 backdrop-blur-[var(--blur-overlay-md)] border border-white/[0.08]",
+                "flex flex-col w-64 sm:w-72 bg-[var(--glass-panel-bg-strong)] backdrop-blur-[var(--blur-overlay-md)] border border-white/[0.08]",
                 "shadow-player overflow-hidden rounded-2xl",
                 "[&>*:not(:first-child)]:mt-4"
             )}>

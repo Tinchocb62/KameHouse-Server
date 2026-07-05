@@ -16,8 +16,12 @@ import (
 
 // APIResponse is the canonical response envelope.
 // Use JSONSuccess / JSONError to construct; never populate both fields.
+// Note: Data intentionally does NOT use `omitempty`. A nil/zero Data (e.g. a
+// "record not found" response returning nil) must still serialize as
+// `{"data":null}` so the TypeScript client's `"data" in json` invariant holds.
+// With omitempty the key vanished and the client threw "missing 'data'".
 type APIResponse[T any] struct {
-	Data  T      `json:"data,omitempty"`
+	Data  T      `json:"data"`
 	Error string `json:"error,omitempty"`
 }
 

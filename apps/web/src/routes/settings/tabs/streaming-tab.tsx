@@ -14,6 +14,7 @@ const HW_ACCEL_OPTIONS = [
     { value: "", label: "Automático (Recomendado)", desc: "Detecta Nvidia NVENC, Intel QuickSync, VAAPI, AMD AMF", badge: "AUTO" },
     { value: "nvenc", label: "NVIDIA NVENC", desc: "Tarjetas GeForce GTX/RTX series", badge: "NVEN" },
     { value: "qsv", label: "Intel QuickSync (QSV)", desc: "Gráficos integrados Intel (6th gen+)", badge: "QSV" },
+    { value: "qsv-low-power", label: "Intel QuickSync (Low Power)", desc: "Menor consumo de energía (QSV)", badge: "QSV-LP" },
     { value: "vaapi", label: "VAAPI (AMD/Intel)", desc: "Linux: AMD Radeon, Intel integrado", badge: "VAAP" },
     { value: "amf", label: "AMD AMF", desc: "Tarjetas AMD Radeon (RDNA/RDNA2)", badge: "AMF" },
     { value: "videotoolbox", label: "VideoToolbox (macOS)", desc: "Apple Silicon / macOS nativo", badge: "VTB" },

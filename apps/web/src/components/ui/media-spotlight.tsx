@@ -338,7 +338,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
 
                 {/* ─── LADO DERECHO (3/12): Selector de Eras en tarjeta Glassmorphic ─── */}
                 <div className="flex flex-col lg:col-span-3 h-full z-10 justify-center">
-                    <div className="h-full bg-zinc-950/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 lg:border-r-0 rounded-3xl lg:rounded-r-none lg:rounded-l-[32px] p-5 lg:-mr-14 xl:-mr-16 shadow-2xl flex flex-col justify-center [&>*:not(:first-child)]:mt-4">
+                    <div className="h-full bg-[var(--glass-panel-bg)] backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 lg:border-r-0 rounded-3xl lg:rounded-r-none lg:rounded-l-[32px] p-5 lg:-mr-14 xl:-mr-16 shadow-2xl flex flex-col justify-center [&>*:not(:first-child)]:mt-4">
                         <h4 className="font-bold text-[10px] tracking-widest text-zinc-300 uppercase pl-1">
                             Seleccionar Saga / Era
                         </h4>

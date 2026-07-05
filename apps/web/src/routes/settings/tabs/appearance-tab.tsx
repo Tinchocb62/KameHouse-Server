@@ -21,11 +21,20 @@ interface AppearanceTabProps {
 // no colores de plataformas de streaming.
 const THEME_PRESETS = [
     {
+        id: "era-universe",
+        name: "Universo Dragon Ball",
+        desc: "Todas las eras, todos los colores",
+        background: "#0b0b12",
+        accent: "#EAB308",
+        sidebar: "#050507",
+        themeEra: "era-universe",
+    },
+    {
         id: "era-db",
         name: "Dragon Ball",
         desc: "Azul Kame clásico, la aventura original",
         background: "#060a14",
-        accent: "#1DA1F2",
+        accent: "#1E9BE0",
         sidebar: "#03060d",
         themeEra: "era-db",
     },
@@ -43,7 +52,7 @@ const THEME_PRESETS = [
         name: "Dragon Ball GT",
         desc: "Rojo Super Saiyajin 4, la transformación definitiva",
         background: "#140507",
-        accent: "#F40009",
+        accent: "#E0202A",
         sidebar: "#0d0204",
         themeEra: "era-dbgt",
     },
@@ -52,7 +61,7 @@ const THEME_PRESETS = [
         name: "Dragon Ball Super",
         desc: "Celeste Ultra Instinto, el poder de los dioses",
         background: "#040d12",
-        accent: "#00E5FF",
+        accent: "#1FB6E6",
         sidebar: "#02080b",
         themeEra: "era-dbs",
     },
@@ -61,7 +70,7 @@ const THEME_PRESETS = [
         name: "Dragon Ball Daima",
         desc: "Violeta Reino Demoníaco, la nueva era",
         background: "#0d0514",
-        accent: "#D500F9",
+        accent: "#C21FDE",
         sidebar: "#06020a",
         themeEra: "era-daima",
     },
@@ -73,7 +82,8 @@ const THEME_PRESETS = [
         accent: "",
         sidebar: "",
         themeEra: "",
-    },
+    }
+    
 ]
 
 const BANNER_POSITIONS = [
@@ -140,9 +150,6 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                 setValue("theme.themeEra", "era-daima", { shouldDirty: true })
                 setValue("theme.enableColorSettings", true, { shouldDirty: true })
             }
-        } else {
-            setValue("theme.themeEra", "", { shouldDirty: true })
-            setValue("theme.enableColorSettings", false, { shouldDirty: true })
         }
     }
 
@@ -165,10 +172,10 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                 enableColorSettings={!!getValues("theme.enableColorSettings")}
             />
 
-            <Section label="Modo Cinematográfico">
+            <Section label="Modo Avanzado (Cinematográfico)" description="Habilita efectos visuales inmersivos y opciones de diseño avanzadas para una mejor experiencia.">
                 <Card className="divide-y divide-outline-variant/3">
                     <OsToggle
-                        label="Modo Cinematográfico"
+                        label="Modo Avanzado (Cinematográfico)"
                         description="Activa el paquete completo: Efectos de Vidrio Líquido, Fondo Dinámico Animado, Degradados de Interfaz y colores por Era."
                         checked={isCinematic}
                         onChange={setCinematic}
@@ -179,7 +186,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             {isCinematic && (
                 <>
                     {/* Theme Presets Grid */}
-                    <Section label="Presets de Tema">
+                    <Section label="Presets de Tema" description="Selecciona una paleta de colores predefinida basada en las diferentes eras de Dragon Ball.">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {THEME_PRESETS.map((preset) => {
                                 const isActive = activePreset === preset.id
@@ -236,7 +243,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                     </Section>
 
                     {/* Color Customization — subgrupo avanzado */}
-                    <Section label="Avanzado">
+                    <Section label="Colores Personalizados" description="Define tus propios colores principales y de fondo para crear un estilo único.">
                         <Card className="divide-y divide-outline-variant/3">
                             <div className="transition-opacity">
                                 <div className="flex items-center justify-between px-6 pt-5">
@@ -351,7 +358,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             </>)}
 
             {/* Layout & Behavior */}
-            <Section label="Diseño y Comportamiento">
+            <Section label="Diseño y Comportamiento" description="Ajusta cómo se muestran los elementos de la interfaz y su comportamiento interactivo.">
                 <Card className="divide-y divide-outline-variant/3">
                     <Controller
                         control={control}
@@ -458,7 +465,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             </Section>
 
             {/* Menú Lateral */}
-            <Section label="Elementos Fijados del Menú">
+            <Section label="Elementos Fijados del Menú" description="Personaliza qué accesos directos aparecen de forma permanente en la barra de navegación lateral.">
                 <Card className="p-6 space-y-3">
                     <p className="text-[11px] text-on-surface-variant leading-relaxed font-medium">
                         Desactiva un elemento para ocultarlo de la barra lateral.
@@ -487,7 +494,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             </Section>
 
             {/* Library Screen Customization */}
-            <Section label="Pantalla de Biblioteca">
+            <Section label="Pantalla de Biblioteca" description="Modifica la apariencia, los fondos y la presentación visual del catálogo principal de contenido.">
                 <Card className="divide-y divide-outline-variant/3">
                     <Controller
                         control={control}
@@ -614,7 +621,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             </Section>
 
             {/* Media Page Customization */}
-            <Section label="Página de Detalle">
+            <Section label="Página de Detalle" description="Configura cómo se presenta la información, banners y carátulas cuando entras a ver una serie o película.">
                 <Card className="divide-y divide-outline-variant/3">
                     <Controller
                         control={control}
@@ -685,7 +692,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             </Section>
 
             {/* Sorting & Lists */}
-            <Section label="Ordenación y Listas">
+            <Section label="Ordenación y Listas" description="Establece el criterio por defecto para ordenar tu contenido (alfabético, fecha, puntuación).">
                 <Card className="divide-y divide-outline-variant/3">
                     <Controller
                         control={control}
@@ -726,7 +733,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             </Section>
 
             {/* Advanced: Custom CSS */}
-            <Section label="CSS Personalizado (Avanzado)">
+            <Section label="CSS Personalizado" description="Opciones para usuarios avanzados: inyecta tu propio código CSS para modificar cualquier parte de la interfaz.">
                 <Card className="p-6 space-y-4">
                     <Controller
                         control={control}
@@ -770,7 +777,7 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             <LocalDeviceSectionAppearance />
 
             {/* Reset */}
-            <Section label="Acciones">
+            <Section label="Acciones" description="Restablece toda la configuración de apariencia a sus valores predeterminados de fábrica.">
                 <DangerZone
                     title="Restablecer a Defecto"
                     description="Vuelve al tema KameHouse Original en este servidor."
@@ -807,7 +814,7 @@ function LocalDeviceSectionAppearance() {
     } = useAppStore()
 
     return (
-        <LocalDeviceSection title="Rendimiento Gráfico">
+        <LocalDeviceSection title="Rendimiento Gráfico" description="Opciones de rendimiento que se guardan localmente en este dispositivo para optimizar la fluidez.">
             <OsToggle
                 label="Fondo Animado"
                 description="Habilita las orbes y el movimiento sutil de fondo."
@@ -866,10 +873,8 @@ function AppearancePreview({
                 {/* Contenedor base - bg-primary de la app */}
                 <div className="absolute inset-0 bg-[var(--bg-primary)] transition-colors duration-500 z-[-2]" />
                 
-                {/* Simulación del fondo dinámico si está en modo cinematográfico */}
-                {isCinematic && (
-                    <div className="absolute inset-0 opacity-20 transition-opacity duration-500 z-[-1] bg-gradient-to-br from-[hsl(var(--brand-accent)/0.3)] to-transparent" />
-                )}
+                {/* Simulación del fondo dinámico */}
+                <div className="absolute inset-0 opacity-50 transition-opacity duration-500 z-[-1]" style={{ background: "radial-gradient(circle at 20% 20%, var(--glow-color-1) 0%, transparent 60%), radial-gradient(circle at 80% 80%, var(--glow-color-2) 0%, transparent 60%), linear-gradient(135deg, transparent, hsl(var(--brand-accent)/0.1))" }} />
 
                 {/* Sidebar */}
                 <div 
@@ -890,15 +895,18 @@ function AppearancePreview({
                         <div className="px-3 py-1 rounded-full bg-brand-accent/15 text-brand-accent border border-brand-accent/30 text-[10px] font-bold uppercase tracking-wider">
                             Badge
                         </div>
-                        <div className="h-4 w-32 rounded bg-on-surface-variant/20" />
+                        <div className="glass-liquid px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider">
+                            Liquid Glass
+                        </div>
+                        <div className="h-4 w-16 rounded bg-on-surface-variant/20" />
                     </div>
                     
                     <div className="flex gap-4">
-                        <div className="flex-1 max-w-[160px] h-24 rounded-xl bg-surface border border-outline-variant/10 shadow-sm transition-colors duration-500 flex flex-col p-3">
+                        <div className="flex-1 max-w-[160px] h-24 rounded-xl bg-surface-container border border-[var(--glass-border)] backdrop-blur-[var(--blur-overlay-md)] shadow-sm transition-colors duration-500 flex flex-col p-3">
                              <div className="w-1/2 h-2 rounded bg-on-surface/30 mb-2" />
                              <div className="w-3/4 h-2 rounded bg-on-surface-variant/30" />
                         </div>
-                        <div className="flex-1 max-w-[160px] h-24 rounded-xl bg-surface border border-outline-variant/10 shadow-sm transition-colors duration-500 flex flex-col p-3">
+                        <div className="flex-1 max-w-[160px] h-24 rounded-xl bg-surface-container border border-[var(--glass-border)] backdrop-blur-[var(--blur-overlay-md)] shadow-sm transition-colors duration-500 flex flex-col p-3">
                              <div className="w-1/2 h-2 rounded bg-on-surface/30 mb-2" />
                              <div className="w-3/4 h-2 rounded bg-on-surface-variant/30" />
                         </div>

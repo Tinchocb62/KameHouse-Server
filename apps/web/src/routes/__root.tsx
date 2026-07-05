@@ -31,6 +31,7 @@ import { GettingStarted } from "@/components/shared/getting-started"
 import { GlobalQueueSidebar } from "@/components/shared/global-queue-sidebar"
 import { startViewTransition } from "@/lib/helpers/transitions"
 import { useApplyCustomTheme, CustomThemeStyles } from "@/lib/theme/apply-custom-theme"
+import { prewarmVideoPlayer } from "@/components/video/prewarm"
 
 function RootComponent() {
     const routerState = useRouterState()
@@ -46,6 +47,10 @@ function RootComponent() {
     const { data: status, isLoading, isError, refetch } = useGetStatus()
 
     useApplyCustomTheme()
+
+    // Warm the player chunk during idle so the first play is instant (no on-click
+    // JS download, no Suspense fallback flash).
+    React.useEffect(() => { prewarmVideoPlayer() }, [])
 
     if (isLoading || !status) {
         return <LoadingOverlayWithLogo isError={isError} refetch={refetch} />

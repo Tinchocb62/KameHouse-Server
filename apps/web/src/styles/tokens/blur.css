@@ -76,9 +76,9 @@
 .glass-liquid {
   background: linear-gradient(
     165deg,
-    rgba(255, 255, 255, 0.16),
-    rgba(20, 20, 28, 0.5) 45%,
-    rgba(20, 20, 28, 0.62) 100%
+    color-mix(in srgb, var(--brand-accent-hex) 22%, white 10%),
+    color-mix(in srgb, var(--brand-accent-hex) 14%, black 80%) 45%,
+    color-mix(in srgb, var(--brand-accent-hex) 9%, black 88%) 100%
   );
   backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate-cinematic));
   border-top: 1px solid var(--glass-rim-highlight);
@@ -93,7 +93,7 @@
      Equivale a: bg-zinc-950/40 + backdrop-blur-overlay-xl + border-white/10
      + rounded-3xl. Para filas internas usar bg-white/[0.04] sin blur. ────── */
 .glass-card {
-  background: rgba(9, 9, 11, 0.40);
+  background: var(--glass-panel-bg);
   backdrop-filter: blur(var(--blur-overlay-xl)) saturate(var(--glass-saturate));
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-3xl);
@@ -134,14 +134,7 @@
   --glass-saturate-strong:   1;
   --glass-saturate-cinematic: 1;
 
-  /* ─── Filter blur decorativo también a 0 en flat mode ─── */
-  --filter-blur-hero:    0px;
-  --filter-blur-hero-bg: 0px;
-  --filter-blur-orb:     0px;
-  --filter-blur-ambient-sm: 0px;
-  --filter-blur-ambient-md: 0px;
-  --filter-blur-ambient-lg: 0px;
-  --filter-blur-ambient-xl: 0px;
+  /* ─── Filter blur decorativo se conserva en flat mode ─── */
 }
 
 /* ─── .glass-liquid y .glass-card tienen backgrounds hardcodeados (no usan
@@ -149,14 +142,13 @@
    backdrop-filter se desactiva automáticamente vía --blur-overlay-* = 0px
    de arriba. ─────────────────────────────────────────────────────────── */
 [data-flat="true"] .glass-liquid {
-  background: var(--bg-secondary);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--brand-accent-hex) 12%, var(--bg-secondary));
+  border-top: 1px solid var(--sidebar-active-border);
+  border-left: 1px solid var(--sidebar-active-border);
+  border-right: 1px solid var(--sidebar-active-border);
+  border-bottom: 1px solid var(--sidebar-active-border);
 }
 
 [data-flat="true"] .glass-card {
-  background: var(--bg-secondary);
   border-color: rgba(255, 255, 255, 0.06);
 }

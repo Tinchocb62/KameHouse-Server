@@ -11,6 +11,8 @@ interface SeriesHeroProps {
   entry: Anime_Entry | undefined
   backdropUrl: string
   onPlay?: () => void
+  /** Fired on hover/focus intent so the backend can warm the media container ahead of the click. */
+  onPlayHover?: () => void
   sagaCount?: number
 }
 
@@ -18,6 +20,7 @@ export function SeriesHero({
   entry,
   backdropUrl,
   onPlay,
+  onPlayHover,
   sagaCount,
 }: SeriesHeroProps) {
   const media = entry?.media
@@ -42,24 +45,8 @@ export function SeriesHero({
     return null
   }, [tech])
 
-  const codecBadge = useMemo(() => {
-    if (!tech?.videoStream?.codec) return null
-    const c = tech.videoStream.codec.toLowerCase()
-    if (c.includes("hevc") || c.includes("x265") || c.includes("h265")) return "HEVC"
-    if (c.includes("avc") || c.includes("x264") || c.includes("h264")) return "AVC"
-    return c.toUpperCase()
-  }, [tech])
 
-  const audioBadge = useMemo(() => {
-    if (!tech?.audioStreams || tech.audioStreams.length === 0) return null
-    const langs = tech.audioStreams.map((a: any) => a.language?.toLowerCase() || "")
-    const hasSpa = langs.some((l: string) => l.includes("spa") || l.includes("esp") || l.includes("lat"))
-    const hasJpn = langs.some((l: string) => l.includes("jap") || l.includes("jpn"))
-    const labels: string[] = []
-    if (hasSpa) labels.push("ESPAÑOL")
-    if (hasJpn) labels.push("JAPONÉS")
-    return labels.length > 0 ? labels.join(" / ") : null
-  }, [tech])
+
 
   const addToQueue = useAppStore(state => state.addToQueue)
 
@@ -149,23 +136,14 @@ export function SeriesHero({
     </div>
   )
 
-  const topBadge = (qualityBadge || codecBadge || audioBadge) ? (
-    <div className="flex flex-wrap items-center gap-2">
-      {[qualityBadge, codecBadge, audioBadge].filter(Boolean).map((badge) => (
-        <span
-          key={badge as string}
-          className="inline-flex items-center glass-liquid rounded-full px-3 py-1 text-label-sm uppercase text-on-surface/90 select-none"
-        >
-          {badge}
-        </span>
-      ))}
-    </div>
-  ) : undefined
+  
 
   const actionButtons = (
     <>
       <button
         onClick={onPlay}
+        onPointerEnter={onPlayHover}
+        onFocus={onPlayHover}
         className="group/play relative flex items-center gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95"
         style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
       >
@@ -205,7 +183,7 @@ export function SeriesHero({
       backdropUrl={backdropUrl}
       hasBannerImage={hasBannerImage}
       title={titleNode}
-      topBadge={topBadge}
+      
       metadataRow={metadataRow}
       synopsis={synopsis}
       footerText={footerText}

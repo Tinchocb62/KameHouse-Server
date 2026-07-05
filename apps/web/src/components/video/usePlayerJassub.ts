@@ -35,7 +35,9 @@ export function usePlayerJassub({
     setIsJassubLoading,
     setIsJassubActive,
 }: UsePlayerJassubProps) {
-    const activeTrack = activeSubtitleIndex !== null && subtitleTracks ? subtitleTracks[activeSubtitleIndex] : null
+    const activeTrack = activeSubtitleIndex !== null && subtitleTracks 
+        ? subtitleTracks.find(t => t.index === activeSubtitleIndex) ?? null 
+        : null
     const trackUrl = activeTrack?.url
     const trackCodec = activeTrack?.codec
 
@@ -60,9 +62,16 @@ export function usePlayerJassub({
             /WebOS/i.test(navigator.userAgent) ||
             /Web0S/i.test(navigator.userAgent)
         )
-        const isAss = trackCodec?.toLowerCase() === "ass" || trackCodec?.toLowerCase() === "ssa"
+        // Supported codec families:
+        //   ass/ssa   → native ASS (full styling support)
+        //   subrip    → SRT text (libass handles .srt content via subContent)
+        //   vtt       → WebVTT text (libass handles simple VTT via subContent)
+        // Image-based codecs (PGS/DVB) are excluded — they have isImageBased=true
+        // and no URL, so they never reach this hook.
+        const codec = trackCodec?.toLowerCase() ?? ""
+        const isSupported = codec === "ass" || codec === "ssa" || codec === "subrip" || codec === "vtt"
 
-        if (!isAss || isTv) {
+        if (!isSupported || isTv) {
             if (currentJassubRef.current) {
                 currentJassubRef.current.destroy()
                 setRefValue(currentJassubRef, null)

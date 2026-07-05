@@ -69,6 +69,9 @@ export function cleanMediaTitle(text?: string, isMovie?: boolean): string {
     // Remove brackets [...] and parentheses (...) to clean raw filenames (e.g. year, quality tags)
     cleaned = cleaned.replace(/\[[^\]]+\]/g, "").replace(/\([^)]+\)/g, "").trim()
     
+    // Remove guillemets (arrows) « and » often used in episode titles
+    cleaned = cleaned.replace(/[«»]/g, "").trim()
+    
     // Strip common series prefixes for movies (e.g. "Dragon Ball: ", "Dragon Ball Z ", "Dragon Ball GT ")
     if (isMovie) {
         cleaned = cleaned.replace(/^(dragon\s*ball\s*(z|gt|super|kai)?\s*[:\-–—]?\s*)/i, "").trim()
@@ -91,5 +94,17 @@ export function cleanMediaTitle(text?: string, isMovie?: boolean): string {
     
     // Clean up any double spaces introduced by removing tags
     return cleaned.replace(/\s+/g, " ").trim()
+}
+
+export function getSeriesName(fullTitle?: string): string {
+    if (!fullTitle) return ""
+    if (fullTitle.includes(":")) {
+        return fullTitle.split(":")[0].trim()
+    }
+    const match = fullTitle.match(/^(dragon\s*ball\s*(z|gt|super|kai)?)/i)
+    if (match) {
+        return match[1].trim()
+    }
+    return fullTitle
 }
 

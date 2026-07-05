@@ -94,6 +94,14 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const ts = useThemeSettings()
 
     const { mutate: preloadStream } = usePreloadMediastreamMediaContainer()
+    // Paths already warmed this session (server preload is idempotent, but this
+    // avoids spamming the mutation on every hover/re-render).
+    const preloadedPathsRef = React.useRef<Set<string>>(new Set())
+    const preloadPath = useCallback((path: string | undefined | null) => {
+        if (!path || preloadedPathsRef.current.has(path)) return
+        preloadedPathsRef.current.add(path)
+        preloadStream({ path, streamType: "direct", audioStreamIndex: 0, preferredAudioLang: "" })
+    }, [preloadStream])
 
     const { data: lore } = useServerQuery<any>({
         endpoint: "/api/v1/lore/dragonball",
@@ -161,7 +169,8 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                     const epNum = ep.absoluteEpisodeNumber || ep.episodeNumber;
                     const matchingSaga = sagas.find(s => epNum >= s.startEp && epNum <= s.endEp);
                     return matchingSaga ? { ...ep, sagaId: matchingSaga.id } : ep;
-                });
+                })
+                .sort((a, b) => (a.absoluteEpisodeNumber || a.episodeNumber) - (b.absoluteEpisodeNumber || b.episodeNumber));
         }
 
         if (entry.localFiles && entry.localFiles.length > 0) {
@@ -292,6 +301,36 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
         }
     }, [entry, computedEpisodes, continuityData, handlePlayLocalFile, handlePlayEpisode])
 
+    // Path that the primary "Reproducir" button would open — mirrors the selection
+    // in handlePlayDefault so we can warm it ahead of the click.
+    const defaultTargetPath = useMemo<string | null>(() => {
+        if (!entry) return null
+        if (entry.media?.format === "MOVIE" || !computedEpisodes || computedEpisodes.length === 0) {
+            if (!entry.localFiles || entry.localFiles.length === 0) return null
+            let targetFile = entry.localFiles[0]
+            if (continuityData?.item?.episodeNumber) {
+                const matchedFile = entry.localFiles.find(f => {
+                    const ep = f.metadata?.episode || f.parsedInfo?.episode
+                    return ep != null && Number(ep) === continuityData.item?.episodeNumber
+                })
+                if (matchedFile) targetFile = matchedFile
+            }
+            return targetFile.path || null
+        }
+        let targetEp = computedEpisodes.find(ep => !ep.watched) || computedEpisodes[0]
+        if (continuityData?.item) {
+            const resumeEp = computedEpisodes.find(ep => (ep.absoluteEpisodeNumber || ep.episodeNumber) === continuityData.item?.episodeNumber)
+            if (resumeEp) targetEp = resumeEp
+        }
+        const lf = resolveLocalFileForEpisode(targetEp, entry.localFiles)
+        return lf?.path || entry.localFiles?.[0]?.path || null
+    }, [entry, computedEpisodes, continuityData])
+
+    // Warm the default target on page load so the first play is instant.
+    React.useEffect(() => {
+        if (defaultTargetPath) preloadPath(defaultTargetPath)
+    }, [defaultTargetPath, preloadPath])
+
     const handlePlayByNumber = useCallback((episodeNumber: number) => {
         const targetEp = computedEpisodes.find(ep => (ep.absoluteEpisodeNumber || ep.episodeNumber) === episodeNumber)
         if (!targetEp) {
@@ -400,15 +439,11 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                 backdropUrl={heroBackdrop}
                 sagaCount={sagas?.length ?? 0}
                 onPlay={handlePlayDefault}
+                onPlayHover={() => preloadPath(defaultTargetPath)}
             />
-            <div className="w-full max-w-[1800px] mx-auto px-6 md:px-12 mt-8">
+            <div className="w-full max-w-[1800px] mx-auto px-8 md:px-16 lg:px-20 xl:px-24 mt-8">
                 <div className="flex border-b border-outline-variant pb-2 mb-6 gap-3 overflow-x-auto no-scrollbar">
-                    <SectionTab
-                        active={activeTab === "episodes"}
-                        onClick={() => setSearchParams({ tab: "episodes" })}
-                        icon={<Icons.navigation.film size={14} strokeWidth={2.5} />}
-                        label="Episodios"
-                    />
+
                     {hasRelations && (
                         <SectionTab
                             active={activeTab === "relations"}

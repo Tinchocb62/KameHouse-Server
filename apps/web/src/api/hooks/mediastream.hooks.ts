@@ -43,6 +43,14 @@ export function useRequestMediastreamMediaContainer(variables: Partial<RequestMe
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         staleTime: Infinity,
+        // gcTime: 0 is load-bearing for CORRECTNESS, not just memory. This POST is a
+        // server-side session bind: RequestPlayback sets clientMediaContainers[clientID]
+        // and currentMediaContainer, and every stream request (segments, ranges,
+        // subtitles) resolves the file from that binding. If cached data were reused on
+        // episode change WITHOUT re-issuing the POST, the server would still point at the
+        // previous file and stream the wrong episode. Evicting on unmount forces a fresh
+        // bind every time. Do NOT raise this to "fix" refetching — warm via the
+        // side-effect-free preload endpoint instead.
         gcTime: 0,
     })
 }

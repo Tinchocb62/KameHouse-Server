@@ -319,9 +319,24 @@ func (s *Session) getAudioPipeline(idx int32) *Pipeline {
 
 // lifecycle
 
+// KillAllPipelineHeads stops all running ffmpeg processes across video and audio
+// pipelines but leaves the pipeline contexts and segment tables intact.
+// Used when a seek is detected to free governor slots and ensure fresh restarts.
+func (s *Session) KillAllPipelineHeads() {
+	s.videosMu.Lock()
+	for _, p := range s.videos {
+		p.killAllHeads()
+	}
+	s.videosMu.Unlock()
+
+	s.audiosMu.Lock()
+	for _, p := range s.audios {
+		p.killAllHeads()
+	}
+	s.audiosMu.Unlock()
+}
+
 // KillAllPipelines kills all running encode pipelines across video and audio.
-// Used when a seek is detected in any pipeline to free governor slots
-// and ensure both video and audio restart fresh from the seek target.
 func (s *Session) KillAllPipelines() {
 	s.videosMu.Lock()
 	for _, p := range s.videos {

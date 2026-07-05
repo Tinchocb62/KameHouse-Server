@@ -67,8 +67,12 @@ func (h *Handler) HandleScanLocalFiles(c echo.Context) error {
 		if s, err := h.App.Database.GetSettings(); err == nil && s != nil {
 			s.Library.LastScanAt = time.Time{}
 			// CRITICAL: Reset all media IDs in local_files to force the matcher to re-run
-			_ = h.App.Database.ResetLocalFilesMediaIds()
-			_, _ = h.App.Database.UpsertSettings(s)
+			if err := h.App.Database.ResetLocalFilesMediaIds(); err != nil {
+				h.App.Logger.Warn().Err(err).Msg("scan: failed to reset media IDs (best-effort, continuing)")
+			}
+			if _, err := h.App.Database.UpsertSettings(s); err != nil {
+				h.App.Logger.Warn().Err(err).Msg("scan: failed to upsert settings (best-effort, continuing)")
+			}
 		}
 	}
 
@@ -178,6 +182,18 @@ func (h *Handler) HandleScanLocalFiles(c echo.Context) error {
 		if err != nil {
 			h.App.Logger.Error().Err(err).Msg("Failed to save shelved files after scan")
 			return
+		}
+
+		// Warm the media-info (ffprobe) cache in the background so the first play of
+		// any freshly scanned file skips the cold-start probe. Best-effort.
+		if h.App.MediastreamRepository != nil {
+			paths := make([]string, 0, len(allLfs))
+			for _, lf := range allLfs {
+				if lf != nil && lf.Path != "" {
+					paths = append(paths, lf.Path)
+				}
+			}
+			go h.App.MediastreamRepository.WarmMediaInfo(paths)
 		}
 
 		// Save the scan summary

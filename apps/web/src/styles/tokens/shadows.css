@@ -48,7 +48,7 @@
   /* Liquid glass — sombra de contacto (elevación) + highlight interno */
   --shadow-glass-liquid:
     0 12px 24px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
 
   /* ─── Brand Glows (por era — usan variables dinámicas) ──────────────────── */
   --shadow-brand-primary:   0 8px 24px -4px var(--glow-primary);

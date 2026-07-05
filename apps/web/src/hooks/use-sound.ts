@@ -32,9 +32,10 @@ function getOrAddAudio(path: string): HTMLAudioElement {
 export function useSound() {
     const uiSoundsEnabled = useAppStore((state) => state.uiSoundsEnabled);
     const uiSoundsVolume = useAppStore((state) => state.uiSoundsVolume);
+    const isGlobalMuted = useAppStore((state) => state.isGlobalMuted);
 
     const playSound = useCallback((type: SfxType, volume = 0.15) => {
-        if (!uiSoundsEnabled) return;
+        if (!uiSoundsEnabled || isGlobalMuted) return;
         try {
             const path = SFX_PATHS[type];
             if (!path) return;
@@ -55,7 +56,7 @@ export function useSound() {
         } catch (e) {
             console.warn("Could not play UI sound effect:", e);
         }
-    }, [uiSoundsEnabled, uiSoundsVolume]);
+    }, [uiSoundsEnabled, isGlobalMuted, uiSoundsVolume]);
 
     return { playSound };
 }

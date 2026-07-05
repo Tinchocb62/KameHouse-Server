@@ -74,6 +74,7 @@ pub fn run() {
             ipc::show_window,
             ipc::is_main_window,
             ipc::startup_renderer_ready,
+            ipc::shell_open,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

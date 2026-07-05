@@ -9,22 +9,8 @@ import * as Popover from "@radix-ui/react-popover"
 import { cn } from "@/components/ui/core/styling"
 import { useGetLibraryCollection } from "@/api/hooks/anime_collection.hooks"
 import { fetchAnimeEntryLocalFiles } from "@/api/hooks/anime_entries.hooks"
-import { VideoPlayer } from "@/components/video/player"
 import { useSound } from "@/hooks/use-sound"
-import { useAppStore } from "@/lib/store"
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface PlayTarget {
-    path: string
-    streamType: "direct" | "transcode"
-    title: string
-    episodeLabel: string
-    episodeNumber: number
-    mediaId: number
-    malId?: number | null
-    mediaFormat?: string | null
-}
+import { useAppStore, PlaylistItem } from "@/lib/store"
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -32,7 +18,8 @@ export function RandomPlayButton() {
     const { playSound } = useSound()
     const [showPicker, setShowPicker] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(false)
-    const [playTarget, setPlayTarget] = React.useState<PlayTarget | null>(null)
+    const tvMode = useAppStore(state => state.tvMode)
+    const sidebarOpen = useAppStore(state => state.sidebarOpen)
     const setTvMode = useAppStore(state => state.setTvMode)
 
     const { data: collection } = useGetLibraryCollection()
@@ -79,42 +66,84 @@ export function RandomPlayButton() {
                 return
             }
 
-            // ── 4. Choose the file ─────────────────────────────────────────
-            // Movies → first file (or most complete one by size heuristic isn't available, so first)
-            // Episodes → random file across all local files
-            const selectedFile = isMovie
-                ? localFiles[0]
-                : localFiles[Math.floor(Math.random() * localFiles.length)]
-
-            if (!selectedFile?.path) {
-                toast.error("Archivo no disponible")
-                return
-            }
-
-            // ── 5. Resolve episode number ──────────────────────────────────
-            const rawEp = selectedFile.metadata?.episode || Number(selectedFile.parsedInfo?.episode)
-            const epNum = typeof rawEp === "number" ? rawEp : Number(rawEp) || 1
+            // ── 4. Choose files and populate queue ─────────────────────────
+            const sortedLocalFiles = localFiles.sort((a, b) => {
+                const epA = a.metadata?.episode || Number(a.parsedInfo?.episode) || 1
+                const epB = b.metadata?.episode || Number(b.parsedInfo?.episode) || 1
+                return Number(epA) - Number(epB)
+            })
 
             const seriesTitle =
                 randomEntry.media?.titleSpanish ||
                 randomEntry.media?.titleRomaji ||
                 randomEntry.media?.titleEnglish ||
                 "Sin título"
+                
+            let newQueue: PlaylistItem[] = []
+            let activeItem: PlaylistItem | null = null
 
-            setPlayTarget({
-                path: selectedFile.path,
-                streamType: "direct",
-                title: seriesTitle,
-                episodeLabel: isMovie ? "Película" : `Episodio ${epNum}`,
-                episodeNumber: epNum,
-                mediaId: randomEntry.mediaId,
-                malId: randomEntry.media?.idMal ?? null,
-                mediaFormat: randomEntry.media?.format,
+            if (isMovie) {
+                const selectedFile = sortedLocalFiles[0]
+                if (!selectedFile?.path) {
+                    toast.error("Archivo no disponible")
+                    return
+                }
+                const epNum = selectedFile.metadata?.episode || Number(selectedFile.parsedInfo?.episode) || 1
+                activeItem = {
+                    id: String(selectedFile.path),
+                    title: seriesTitle,
+                    playableUrl: selectedFile.path,
+                    episodeNumber: Number(epNum),
+                    mediaId: randomEntry.mediaId,
+                    malId: randomEntry.media?.idMal ?? null,
+                    mediaFormat: randomEntry.media?.format,
+                    subtitle: "Película"
+                }
+                newQueue = [activeItem]
+            } else {
+                if (sortedLocalFiles.length === 0 || !sortedLocalFiles[0]?.path) {
+                    toast.error("Archivo no disponible")
+                    return
+                }
+                
+                // Pick a random episode as starting point
+                const startIdx = Math.floor(Math.random() * sortedLocalFiles.length)
+                
+                // Add from startIdx to the end
+                for (let i = startIdx; i < sortedLocalFiles.length; i++) {
+                    const file = sortedLocalFiles[i]
+                    if (!file.path) continue
+                    const epNum = file.metadata?.episode || Number(file.parsedInfo?.episode) || 1
+                    const item: PlaylistItem = {
+                        id: String(file.path),
+                        title: seriesTitle,
+                        playableUrl: file.path,
+                        episodeNumber: Number(epNum),
+                        mediaId: randomEntry.mediaId,
+                        malId: randomEntry.media?.idMal ?? null,
+                        mediaFormat: randomEntry.media?.format,
+                        subtitle: `Episodio ${epNum}`
+                    }
+                    newQueue.push(item)
+                    if (i === startIdx) {
+                        activeItem = item
+                    }
+                }
+            }
+            
+            if (!activeItem) return
+
+            useAppStore.setState({
+                playlistQueue: newQueue,
+                currentQueueIndex: 0,
+                activeQueuePlayItem: activeItem,
+                globalQueueOpen: false
             })
+
             setTvMode(true)
 
             toast.success(`📺 Modo TV ${isMovie ? "Películas" : "Series"} iniciado`, {
-                description: `${seriesTitle}${!isMovie ? ` — Ep. ${epNum}` : ""}`,
+                description: `${seriesTitle}${!isMovie ? ` — Ep. ${activeItem.episodeNumber}` : ""}`,
                 duration: 3000,
             })
         } catch (err) {
@@ -128,7 +157,7 @@ export function RandomPlayButton() {
     return (
         <>
             {/* ─── Trigger Button + Picker Popover ─────────────────────── */}
-            <div className="relative flex items-center justify-center">
+            <div className="w-full flex justify-center gsap-sidebar-item">
                 <Popover.Root
                     open={showPicker}
                     onOpenChange={(open) => {
@@ -137,32 +166,51 @@ export function RandomPlayButton() {
                     }}
                 >
                     <Popover.Trigger asChild>
-                        <motion.button
+                        <button
                             id="random-play-btn"
                             disabled={isLoading}
+                            title="Modo TV"
                             className={cn(
-                                "flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 group bg-surface-container hover:bg-surface-container-high border border-outline-variant active:scale-95 font-bold",
-                                isLoading
-                                    ? "bg-surface-container-high text-on-surface cursor-wait"
-                                    : showPicker
-                                        ? "bg-surface-container-high text-on-surface"
-                                        : "text-on-surface-variant hover:text-on-surface"
+                                "flex items-center h-14 rounded-2xl group px-4 relative transition-all duration-300 w-full",
+                                "active:scale-95 font-bold outline-none",
+                                sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
+                                tvMode || showPicker || isLoading
+                                    ? "text-on-surface bg-white/[0.08]"
+                                    : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-white/[0.12] text-on-surface-variant hover:text-on-surface"
                             )}
                         >
-                            {isLoading ? (
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                >
-                                    <Loader2 className="w-5 h-5" />
-                                </motion.div>
-                            ) : (
-                                <Tv className={cn(
-                                    "w-5 h-5 transition-transform duration-300",
-                                    "group-hover:scale-110"
-                                )} />
-                            )}
-                        </motion.button>
+                            <div className={cn(
+                                "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-500 hidden md:block",
+                                (tvMode || showPicker || isLoading) ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                            )} />
+                            
+                            <span className={cn(
+                                "shrink-0 z-10 group-hover:scale-110 transition-transform duration-300",
+                                (tvMode || showPicker || isLoading) && "text-on-surface"
+                            )}>
+                                {isLoading ? (
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    >
+                                        <Loader2 className="w-5 h-5" />
+                                    </motion.div>
+                                ) : (
+                                    <Tv className={cn(
+                                        "w-5 h-5 transition-transform duration-300",
+                                        "group-hover:scale-110"
+                                    )} />
+                                )}
+                            </span>
+                            
+                            <span className={cn(
+                                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                                (sidebarOpen) ? "block" : "hidden md:hidden",
+                                (tvMode || showPicker || isLoading) ? "text-on-surface" : "group-hover:text-on-surface"
+                            )}>
+                                Modo TV {tvMode ? "(Activado)" : ""}
+                            </span>
+                        </button>
                     </Popover.Trigger>
 
                     <Popover.Portal>
@@ -224,22 +272,6 @@ export function RandomPlayButton() {
                 </Popover.Root>
             </div>
 
-            {/* ─── Video Player (rendered at the same root level) ──────── */}
-            <AnimatePresence>
-                {playTarget && (
-                    <VideoPlayer
-                        streamUrl={playTarget.path}
-                        streamType={playTarget.streamType}
-                        title={playTarget.title}
-                        episodeLabel={playTarget.episodeLabel}
-                        episodeNumber={playTarget.episodeNumber}
-                        mediaId={playTarget.mediaId}
-                        malId={playTarget.malId}
-                        mediaFormat={playTarget.mediaFormat}
-                        onClose={() => setPlayTarget(null)}
-                    />
-                )}
-            </AnimatePresence>
         </>
     )
 }

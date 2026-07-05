@@ -3,8 +3,6 @@ import { useAniSkipTimes, getAniSkipTimes } from "@/api/hooks/aniskip.hooks"
 import { useGetSettings } from "@/api/hooks/settings.hooks"
 import { usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { useQueryClient } from "@tanstack/react-query"
-import { buildSeaQuery } from "@/api/client/requests"
-import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { useAppStore, useSkipTimesStore } from "@/lib/store"
 import { useShallow } from "zustand/react/shallow"
 import { Mediastream_StreamType } from "@/api/generated/types"
@@ -229,14 +227,19 @@ export function usePlayerSkip({
     const [videoEnded, setVideoEnded] = useState(false)
 
     // ── Episode change reset ─────────────────────────────────────────────────────
-    // When the orchestrator loads a new episode, playableUrl transitions "" → realUrl.
-    // Using playableUrl in the key causes a double-reset (once with "" and once with
-    // the real URL), which clears hasTriggeredNextEpisodeRef prematurely.
-    // We use episodeNumber as the primary key and only append playableUrl when it is
-    // a real non-empty URL to ensure a single reset per episode change.
-    const currentEpisodeKey = playableUrl ? `${episodeNumber}_${playableUrl}` : String(episodeNumber)
+    // When the orchestrator loads a new episode, playableUrl transitions "" → realUrl
+    // while episodeNumber changes immediately. Keying the effect on episodeNumber alone
+    // meant it ran during the "" phase (early return) and never re-ran once the real
+    // URL arrived, so every flag stayed stale for the new episode. Depending on both
+    // and deduping with a ref guarantees exactly one reset per episode+URL, avoiding
+    // the double-reset ("" then realUrl) that cleared hasTriggeredNextEpisodeRef
+    // prematurely.
+    const lastResetKeyRef = useRef<string | null>(null)
     useEffect(() => {
         if (!playableUrl) return  // still in the loading phase — wait for real URL
+        const resetKey = `${episodeNumber}_${playableUrl}`
+        if (lastResetKeyRef.current === resetKey) return
+        lastResetKeyRef.current = resetKey
         setShowNextEpisode(false)
         setSkipMode(null)
         setShowCountdown(false)
@@ -247,7 +250,7 @@ export function usePlayerSkip({
         hasTriggeredNextEpisodeRef.current = false
         hasPreloadedRef.current = false
         skippedChaptersRef.current.clear()
-    }, [currentEpisodeKey]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [episodeNumber, playableUrl]) // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Video ended tracking ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -367,7 +370,8 @@ export function usePlayerSkip({
     const skipOpening = useCallback(() => {
         const video = videoRef.current
         if (!video) return
-        const target = Math.min(video.duration, video.currentTime + 85)
+        const dur = Number.isFinite(video.duration) ? video.duration : Infinity
+        const target = Math.max(0, Math.min(dur, video.currentTime + 85))
         checkManualSkipOverrides(target)
         video.currentTime = target
         lastManualSeekTimestampRef.current = Date.now()
@@ -565,7 +569,7 @@ export function usePlayerSkip({
                 triggerToast("intro")
                 return
             }
-            if (inWindow) {
+            if (inWindow && curr >= startTime + 2) {
                 const remaining = Math.ceil(endTime - curr)
                 const progress = Math.round(((curr - startTime) / Math.max(1, endTime - startTime)) * 100)
                 if (skipModeRef.current !== "intro") setSkipMode("intro")
@@ -591,7 +595,7 @@ export function usePlayerSkip({
                 return
             }
             if (curr >= opEnd) {
-                if (inWindow) {
+                if (inWindow && curr >= startTime + 2) {
                     const remaining = Math.ceil(endTime - curr)
                     const progress = Math.round(((curr - startTime) / Math.max(1, endTime - startTime)) * 100)
                     if (skipModeRef.current !== "outro") setSkipMode("outro")
@@ -614,16 +618,15 @@ export function usePlayerSkip({
                     : "direct"
             ) as Mediastream_StreamType
 
+            // Warm the NEXT episode via the side-effect-free preload path only.
+            // We intentionally do NOT prefetch the RequestMediastreamMediaContainer
+            // query here: that POST is a server-side session bind (it sets the
+            // client's current container), so populating the react-query cache under
+            // the orchestrator's queryKey would let the next episode start WITHOUT
+            // re-binding with the real clientId, and its queryFn would clobber the
+            // server's current container mid-playback. Preload only warms the ffprobe
+            // + container cache + first transcode segments with zero session effects.
             cfg.preloadStream({ path: cfg.nextStreamUrl, streamType: resolvedStreamType, audioStreamIndex: 0, preferredAudioLang: cfg.preferredAudioLang || "" })
-
-            cfg.queryClient!.prefetchQuery({
-                queryKey: [API_ENDPOINTS.MEDIASTREAM.RequestMediastreamMediaContainer.key, cfg.nextStreamUrl, resolvedStreamType],
-                queryFn: () => buildSeaQuery({
-                    endpoint: API_ENDPOINTS.MEDIASTREAM.RequestMediastreamMediaContainer.endpoint,
-                    method: API_ENDPOINTS.MEDIASTREAM.RequestMediastreamMediaContainer.methods[0],
-                    data: { path: cfg.nextStreamUrl, streamType: resolvedStreamType, audioStreamIndex: 0, preferredAudioLang: cfg.preferredAudioLang, clientID: cfg.clientId || "prefetch-client" }
-                })
-            })
 
             if ((cfg.malId || cfg.mediaId) && cfg.episodeNumber) {
                 const nextEp = cfg.episodeNumber + 1
@@ -698,6 +701,10 @@ export function usePlayerSkip({
     // Including it would cause React to cancel the pending 1-second timer on each
     // re-render (via the effect cleanup), meaning onNextEpisode() would never fire.
     // We read it through configRef.current inside the callback so it is always current.
+    // episodeNumber IS in the dep array on purpose: if the episode advances through any
+    // other path (manual click, "Up next" panel, shortcut) while this timer is pending,
+    // the cleanup cancels it — otherwise the stale timer fired against the already-updated
+    // queue index and skipped an extra episode.
     useEffect(() => {
         if (videoEnded && hasNextEpisode && configRef.current.onNextEpisode && mediaFormat?.toUpperCase() !== "MOVIE" && (marathonMode || autoPlayNextEpisode)) {
             if (marathonMode) {
@@ -717,7 +724,7 @@ export function usePlayerSkip({
                 }
             }
         }
-    }, [videoEnded, hasNextEpisode, autoPlayNextEpisode, tvMode, marathonMode, mediaFormat, videoRef])  
+    }, [videoEnded, hasNextEpisode, autoPlayNextEpisode, tvMode, marathonMode, mediaFormat, videoRef, episodeNumber])
 
     // ── Cleanup ───────────────────────────────────────────────────────────────────
     useEffect(() => {

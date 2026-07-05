@@ -2244,6 +2244,8 @@ export type Subtitle = {
     isForced: boolean
     isExternal: boolean
     link?: string
+    /** True for bitmap subtitle codecs (PGS, DVB, XSUB) that cannot be extracted as text. */
+    isImageBased?: boolean
 }
 
 /**

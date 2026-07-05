@@ -31,7 +31,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 
 	mediaContainer, found := r.playbackManager.clientMediaContainers.Get(clientID)
 	if !found {
-		mediaContainer, found = r.playbackManager.currentMediaContainer.Get()
+		mediaContainer, found = r.playbackManager.getCurrentMediaContainer()
 		if !found {
 			return errors.New("no file has been loaded")
 		}
@@ -40,6 +40,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 	if path == "master.m3u8" {
 		ret, err := r.transcoder.MustGet().GetMaster(mediaContainer.Filepath, mediaContainer.Hash, mediaContainer.MediaInfo, clientID, "")
 		if err != nil {
+			r.logger.Error().Err(err).Str("path", mediaContainer.Filepath).Msg("mediastream: GetMaster failed")
 			return err
 		}
 
@@ -61,6 +62,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 
 		ret, err := r.transcoder.MustGet().GetVideoIndex(mediaContainer.Filepath, mediaContainer.Hash, mediaContainer.MediaInfo, quality, clientID, "")
 		if err != nil {
+			r.logger.Error().Err(err).Str("path", mediaContainer.Filepath).Str("quality", split[0]).Msg("mediastream: GetVideoIndex failed")
 			return err
 		}
 
@@ -82,6 +84,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 
 		ret, err := r.transcoder.MustGet().GetAudioIndex(mediaContainer.Filepath, mediaContainer.Hash, mediaContainer.MediaInfo, int32(audioIndex), clientID, "")
 		if err != nil {
+			r.logger.Error().Err(err).Str("path", mediaContainer.Filepath).Str("audio", split[1]).Msg("mediastream: GetAudioIndex failed")
 			return err
 		}
 
@@ -108,6 +111,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 
 		ret, err := r.transcoder.MustGet().GetVideoSegment(c.Request().Context(), mediaContainer.Filepath, mediaContainer.Hash, mediaContainer.MediaInfo, quality, segment, clientID)
 		if err != nil {
+			r.logger.Error().Err(err).Str("path", mediaContainer.Filepath).Str("quality", split[0]).Int32("segment", segment).Msg("mediastream: GetVideoSegment failed")
 			return err
 		}
 
@@ -134,6 +138,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 
 		ret, err := r.transcoder.MustGet().GetAudioSegment(c.Request().Context(), mediaContainer.Filepath, mediaContainer.Hash, mediaContainer.MediaInfo, int32(audioIndex), segment, clientID)
 		if err != nil {
+			r.logger.Error().Err(err).Str("path", mediaContainer.Filepath).Str("audio", split[1]).Int32("segment", segment).Msg("mediastream: GetAudioSegment failed")
 			return err
 		}
 
@@ -155,7 +160,7 @@ func (r *Repository) ServeEchoOptimizedStream(c echo.Context, clientID string) e
 
 	mediaContainer, found := r.playbackManager.clientMediaContainers.Get(clientID)
 	if !found {
-		mediaContainer, found = r.playbackManager.currentMediaContainer.Get()
+		mediaContainer, found = r.playbackManager.getCurrentMediaContainer()
 		if !found {
 			return errors.New("no file has been loaded")
 		}

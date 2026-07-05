@@ -23,6 +23,9 @@ interface UsePlayerHlsProps {
     setResumeTime: (time: number) => void
     setShowResume: (show: boolean) => void
     setIsPlaying: (playing: boolean) => void
+    /** Llamado UNA sola vez cuando el reproductor nativo (direct play) encuentra un
+     *  error irrecuperable. El caller puede usar esto para hacer fallback a transcode. */
+    onDirectPlayFailed?: () => void
 }
 
 function setRefValue<T>(ref: React.MutableRefObject<T>, value: T) {
@@ -52,10 +55,13 @@ export function usePlayerHls({
     setResumeTime,
     setShowResume,
     setIsPlaying,
+    onDirectPlayFailed,
 }: UsePlayerHlsProps) {
     const backendTracksRef = useRef(backendTracks)
     const hasPromptedResumeRef = useRef<string | null>(null)
     const initialProgressRef = useRef(initialProgressSeconds)
+    // Guard: solo disparar onDirectPlayFailed una sola vez por playableUrl.
+    const directPlayFailedFiredRef = useRef(false)
 
     useEffect(() => {
         backendTracksRef.current = backendTracks
@@ -63,6 +69,8 @@ export function usePlayerHls({
 
     useEffect(() => {
         initialProgressRef.current = initialProgressSeconds
+        // Resetear el guard de fallback cuando cambia el video.
+        directPlayFailedFiredRef.current = false
     }, [playableUrl, initialProgressSeconds])
 
     // Decoupled watch history/resume prompt logic
@@ -84,14 +92,29 @@ export function usePlayerHls({
         }
     }, [historyData, episodeNumber, playableUrl, setResumeTime, setShowResume])
 
-    // Decoupled track updates for direct streams (non-HLS)
+    // Decoupled track updates.
+    // - Audio: only for non-HLS streams (HLS gets tracks from AUDIO_TRACKS_UPDATED event).
+    // - Subtitles: ALWAYS use backend tracks regardless of stream type.
+    //   Subs are served via /api/v1/mediastream/subtitles + JASSUB, not via the HLS manifest
+    //   (the master playlist intentionally emits CLOSED-CAPTIONS=NONE and no EXT-X-MEDIA:TYPE=SUBTITLES).
+    //   If we waited for SUBTITLE_TRACKS_UPDATED it would never fire, leaving subtitleTracks empty.
     useEffect(() => {
         if (!backendTracks) return
         const isHlsUrl = playableUrl.includes(".m3u8")
+
+        // [DIAGNOSTIC] Log track info
+        console.info("[player diag] backendTracks updated", {
+            streamType: isHlsUrl ? "hls" : "direct",
+            audioTracks: backendTracks.audioTracks,
+            subtitleTracks: backendTracks.subtitleTracks,
+        })
+
         if (!isHlsUrl || !Hls.isSupported()) {
+            // Direct-play: seed both audio and subtitles from backend
             setAudioTracks(backendTracks.audioTracks)
-            setSubtitleTracks(backendTracks.subtitleTracks)
         }
+        // Always seed subtitles from backend (HLS manifest never carries subtitle tracks)
+        setSubtitleTracks(backendTracks.subtitleTracks)
     }, [backendTracks, playableUrl, setAudioTracks, setSubtitleTracks])
 
     useEffect(() => {
@@ -142,6 +165,15 @@ export function usePlayerHls({
         }
 
         const handleNativeError = () => {
+            // Si hay un callback de fallback y aún no lo hemos disparado, invocarlo
+            // en vez de mostrar la pantalla de error directamente. Esto permite al
+            // orchestrator intentar transcode antes de rendirse.
+            if (onDirectPlayFailed && !directPlayFailedFiredRef.current) {
+                directPlayFailedFiredRef.current = true
+                console.warn("[player] Direct play native error — triggering onDirectPlayFailed fallback")
+                onDirectPlayFailed()
+                return
+            }
             setStatus("error")
             setErrorMsg(video.error?.message || "Ocurrió un error al cargar el archivo de video.")
         }
@@ -254,22 +286,44 @@ export function usePlayerHls({
             })
 
             hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, data) => {
-                const mappedTracks = data.audioTracks.map((t, idx) => ({
-                    index: idx,
-                    language: t.lang || "und",
-                    title: t.name || t.lang || `Audio ${t.id}`,
-                }))
-                setAudioTracks(mappedTracks.length > 0 ? mappedTracks : (backendTracksRef.current?.audioTracks || []))
+                // [DIAGNOSTIC]
+                console.info("[player diag] AUDIO_TRACKS_UPDATED", data.audioTracks, "backendTracks:", backendTracksRef.current?.audioTracks)
+
+                // Enrich hls.js tracks with backend metadata (absolute index, codec, channels, default).
+                // hls.js assigns sequential ids (0,1,2…) but the backend audio URI uses the
+                // ABSOLUTE stream index from the container (./audio/{index}/index.m3u8).
+                // Without this merge, selecting track N would request the wrong audio stream.
+                const backendAudioTracks = backendTracksRef.current?.audioTracks || []
+                const mappedTracks = data.audioTracks.map((t, idx) => {
+                    const backend = backendAudioTracks[idx]
+                    return {
+                        // Preserve the backend's absolute container index.
+                        // Falls back to the hls.js sequential id only when backend data is missing.
+                        index: backend?.index ?? idx,
+                        // hlsId is the hls.js internal sequential id used for hls.audioTrack assignment.
+                        hlsId: idx,
+                        language: t.lang || backend?.language || "und",
+                        title: t.name || backend?.title || t.lang || `Audio ${t.id}`,
+                        codec: backend?.codec,
+                        channels: backend?.channels,
+                        default: backend?.default ?? (t.default === true),
+                    }
+                })
+                setAudioTracks(mappedTracks.length > 0 ? mappedTracks : backendAudioTracks)
                 setActiveAudioIndex(hls.audioTrack)
             })
 
+
+            // Subtitle tracks: the HLS master playlist does NOT include EXT-X-MEDIA:TYPE=SUBTITLES
+            // (it emits CLOSED-CAPTIONS=NONE instead). Subtitles are served via the backend's
+            // /subtitles endpoint and rendered by JASSUB. Therefore:
+            // - SUBTITLE_TRACKS_UPDATED fires with an empty array → we must NOT overwrite the
+            //   backend-seeded subtitleTracks. If hls.js somehow emits real subtitle entries
+            //   (future-proofing), we ignore them and keep relying on the backend URL+codec data.
             hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_, data) => {
-                const mappedSubs = data.subtitleTracks.map((t, idx) => ({
-                    index: idx,
-                    language: t.lang || "und",
-                    title: t.name || t.lang || `Subtítulos ${t.id ?? 0}`,
-                }))
-                setSubtitleTracks(mappedSubs.length > 0 ? mappedSubs : (backendTracksRef.current?.subtitleTracks || []))
+                console.info("[player diag] SUBTITLE_TRACKS_UPDATED", data.subtitleTracks, "(ignored — backend tracks are authoritative)")
+                // Intentionally do NOT call setSubtitleTracks here.
+                // Subtitles were already seeded from backendTracks in the effect above.
             })
 
             hls.on(Hls.Events.ERROR, (_, data) => {

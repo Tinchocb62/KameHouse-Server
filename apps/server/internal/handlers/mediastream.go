@@ -158,6 +158,11 @@ func (h *Handler) HandleMediastreamGetSubtitles(c echo.Context) error {
 	return h.App.MediastreamRepository.ServeEchoExtractedSubtitles(c)
 }
 
+func (h *Handler) HandleMediastreamGetPGSEvents(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "public, max-age=86400")
+	return h.App.MediastreamRepository.ServeEchoParsedPGS(c)
+}
+
 func (h *Handler) HandleMediastreamGetAttachments(c echo.Context) error {
 	// tell the client not to cache the response
 	c.Response().Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")

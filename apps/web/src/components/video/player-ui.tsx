@@ -13,6 +13,7 @@ import { useAppStore } from "@/lib/store"
 import { useShallow } from "zustand/react/shallow"
 import { PlayerEpisodesSidebar } from "./player-episodes-sidebar"
 import { PlayerQueueSidebar } from "./player-queue-sidebar"
+import { PlayerAmbientBackdrop } from "./player-ambient"
 import { __isTV__ } from "@/types/constants"
 import { useFocusNavigation } from "@/hooks/use-focus-navigation"
 
@@ -266,11 +267,9 @@ export function PlayerUI(props: PlayerUIProps) {
         if (controlsVisible) {
             gsap.to(".player-top-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out" })
             gsap.to(".player-bottom-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out" })
-            gsap.to(".player-overlays-bg", { autoAlpha: 1, duration: 0.45 })
         } else {
             gsap.to(".player-top-bar", { y: -15, scale: 0.97, autoAlpha: 0, duration: 0.35, ease: "power2.inOut" })
             gsap.to(".player-bottom-bar", { y: 15, scale: 0.97, autoAlpha: 0, duration: 0.35, ease: "power2.inOut" })
-            gsap.to(".player-overlays-bg", { autoAlpha: 0, duration: 0.5 })
         }
     }, { dependencies: [controlsVisible], scope: domElements.containerElement })
 
@@ -290,7 +289,10 @@ export function PlayerUI(props: PlayerUIProps) {
             } as React.CSSProperties}
         >
 
-
+            <PlayerAmbientBackdrop 
+                videoRef={localVideoRef} 
+                enabled={state.ambientModeEnabled && !state.tvMode} // Usually ambient mode isn't great for TVs or we can just leave it enabled for both
+            />
 
             <video
                 ref={domElements.videoElement}
@@ -304,11 +306,9 @@ export function PlayerUI(props: PlayerUIProps) {
                 onEnded={() => {
                     actions.handleTimeUpdate()
                 }}
-                className="w-full h-full bg-black relative z-10"
+                className="absolute inset-0 m-auto w-full h-full z-10"
                 style={{
-                    objectFit: state.aspectRatio === "16/9" ? "contain" :
-                        state.aspectRatio === "fill" ? "fill" :
-                            state.aspectRatio === "cover" ? "cover" : "contain"
+                    objectFit: state.aspectRatio === "cover" ? "cover" : state.aspectRatio === "fill" ? "fill" : "contain"
                 }}
                 crossOrigin="anonymous"
                 playsInline
@@ -384,17 +384,6 @@ export function PlayerUI(props: PlayerUIProps) {
                 )}
             />
 
-            <div
-                className={cn(
-                    "player-overlays-bg absolute inset-0 pointer-events-none transition-opacity duration-300 z-20 opacity-0"
-                )}
-            >
-                {/* Aggressive blur scrim overlay */}
-                <div className="absolute inset-0 z-50 pointer-events-none backdrop-blur-[var(--blur-overlay-lg)] saturate-125" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 50%, transparent)" }} />
-                
-                {/* Subtle bottom gradient only for extra readability under controls */}
-                <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-black/40 to-transparent" />
-            </div>
 
             <LoadingErrorOverlay
                 status={state.status}
@@ -502,7 +491,7 @@ export function PlayerUI(props: PlayerUIProps) {
                     subtitleTracks={state.subtitleTracks}
                     activeSubtitleIndex={state.activeSubtitleIndex}
                     onSelectSubtitle={actions.onSelectSubtitle}
-                    isJassubLoading={state.isJassubLoading}
+                    isJassubLoading={state.isJassubLoading || state.isPgsLoading}
                     episodeSources={episodeSources || []}
                     activeStreamUrl={playableUrl}
                     handleSourceSwitch={onSourceSwitch || (() => { })}
@@ -536,6 +525,8 @@ export function PlayerUI(props: PlayerUIProps) {
                     onAutoDisableSubtitlesWhenDubbedChange={actions.setAutoDisableSubtitlesWhenDubbed}
                     tvMode={state.tvMode}
                     onTvModeChange={actions.setTvMode}
+                    ambientModeEnabled={state.ambientModeEnabled}
+                    onAmbientModeEnabledChange={actions.setAmbientModeEnabled}
                     marathonMode={state.marathonMode}
                     onMarathonModeChange={actions.setMarathonMode}
                     onNextEpisode={onNextEpisode}
@@ -552,6 +543,7 @@ export function PlayerUI(props: PlayerUIProps) {
                     isQueueSidebarOpen={isQueueSidebarOpen}
                     onToggleQueueSidebar={() => setIsQueueSidebarOpen(!isQueueSidebarOpen)}
                     hasQueue={playlistQueue.length > 0}
+                    previewManager={state.previewManager}
                 />
             </div>
 

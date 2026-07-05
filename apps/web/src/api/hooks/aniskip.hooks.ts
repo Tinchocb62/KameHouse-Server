@@ -52,9 +52,11 @@ async function fetchAniSkipTimes(
     const res = await fetch(url)
 
     if (!res.ok) {
-        // AniSkip returns 404 when no skip times found — that is not a real error
-        if (res.status === 404) {
-            return { found: false, statusCode: 404 } as AniSkipResponse
+        // AniSkip returns 404 when no skip times found, and 400 for invalid
+        // MAL id / episode numbers (e.g. an episode beyond the mapped range).
+        // Neither is a real error for us — just treat as "no skip times".
+        if (res.status === 404 || res.status === 400) {
+            return { found: false, statusCode: res.status } as AniSkipResponse
         }
         throw new Error(`AniSkip API error: ${res.status}`)
     }

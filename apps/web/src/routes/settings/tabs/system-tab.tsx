@@ -197,10 +197,12 @@ export function SystemTab({ control }: SystemTabProps) {
 
             {/* Zona de Peligro */}
             <Section label="Zona de Peligro">
-                <DangerZone
-                    title="Zona de Riesgo Crítico"
-                    description="Operaciones destructivas que alteran permanentemente los datos del servidor KameHouse."
-                />
+                <Card>
+                    <DangerZone
+                        title="Zona de Riesgo Crítico"
+                        description="Operaciones destructivas que alteran permanentemente los datos del servidor KameHouse."
+                    />
+                </Card>
             </Section>
         </div>
     )

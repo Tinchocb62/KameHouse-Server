@@ -15,9 +15,8 @@ type SettingsView = "main" | "audio" | "subtitles" | "quality" | "playback" | "i
 
 const ASPECT_RATIO_LABELS: Record<string, string> = {
     contain: "Ajustado",
-    fill: "Rellenar",
     cover: "Recortar",
-    "16/9": "16:9 forzado",
+    fill: "Estirar",
 }
 
 export function PlayerSettingsMenu({
@@ -57,10 +56,12 @@ export function PlayerSettingsMenu({
     onMarathonModeChange,
     videoRef,
     malId,
-    duration,
     mediaId,
+    duration,
     episodeNumber,
     mediaFormat,
+    ambientModeEnabled = true,
+    onAmbientModeEnabledChange,
 }: PlayerSettingsMenuProps) {
     const [internalOpen, setInternalOpen] = React.useState(false)
     const [view, setView] = React.useState<SettingsView>("main")
@@ -303,7 +304,7 @@ export function PlayerSettingsMenu({
                                 onClose={() => setIsOpen(false)}
                             >
                                 <div className="px-4 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Relación de aspecto</div>
-                                {(["contain", "fill", "cover", "16/9"] as const).map((ratio) => (
+                                {(["contain", "cover", "fill"] as const).map((ratio) => (
                                     <button
                                         key={ratio}
                                         onClick={() => onAspectRatioChange?.(ratio)}
@@ -316,9 +317,8 @@ export function PlayerSettingsMenu({
                                             <span className="text-xs font-bold">{ASPECT_RATIO_LABELS[ratio]}</span>
                                             <span className="text-[9px] text-zinc-600 mt-0.5">
                                                 {ratio === "contain" && "Barras negras · conserva proporción"}
-                                                {ratio === "fill" && "Estira para llenar · puede distorsionar"}
                                                 {ratio === "cover" && "Rellena y recorta bordes"}
-                                                {ratio === "16/9" && "Fuerza 16:9 con contain"}
+                                                {ratio === "fill" && "Estira la imagen sin recortar"}
                                             </span>
                                         </div>
                                         {aspectRatio === ratio && <Check className="w-3.5 h-3.5 shrink-0" />}
@@ -347,6 +347,8 @@ export function PlayerSettingsMenu({
                                     onAutoDisableSubtitlesWhenDubbedChange={onAutoDisableSubtitlesWhenDubbedChange ?? (() => {})}
                                     tvMode={tvMode}
                                     onTvModeChange={onTvModeChange}
+                                    ambientModeEnabled={ambientModeEnabled}
+                                    onAmbientModeEnabledChange={onAmbientModeEnabledChange ?? (() => {})}
                                     marathonMode={marathonMode}
                                     onMarathonModeChange={onMarathonModeChange}
                                     showSeparator={false}

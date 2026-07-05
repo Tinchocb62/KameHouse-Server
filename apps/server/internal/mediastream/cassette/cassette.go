@@ -3,6 +3,7 @@ package cassette
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -132,7 +133,12 @@ func (c *Cassette) getSession(
 ) (*Session, error) {
 	// session already exists
 	if v, ok := c.sessions.Load(filePath); ok {
-		s := v.(*Session)
+		s, ok := v.(*Session)
+		if !ok {
+			c.logger.Error().Msg("cassette: invalid session type in sync.Map (first load)")
+			c.sessions.Delete(filePath)
+			return nil, errors.New("cassette: internal error: invalid session type")
+		}
 		s.WaitReady()
 		if s.err != nil {
 			c.sessions.Delete(filePath)
@@ -145,7 +151,12 @@ func (c *Cassette) getSession(
 	c.sessionsMu.Lock()
 	if v, ok := c.sessions.Load(filePath); ok {
 		c.sessionsMu.Unlock()
-		s := v.(*Session)
+		s, ok := v.(*Session)
+		if !ok {
+			c.logger.Error().Msg("cassette: invalid session type in sync.Map (double-checked)")
+			c.sessions.Delete(filePath)
+			return nil, errors.New("cassette: internal error: invalid session type")
+		}
 		s.WaitReady()
 		if s.err != nil {
 			c.sessions.Delete(filePath)
@@ -172,7 +183,13 @@ func (c *Cassette) getSessionByPath(filePath string) *Session {
 	if !ok {
 		return nil
 	}
-	return v.(*Session)
+	s, ok := v.(*Session)
+	if !ok {
+		c.logger.Error().Msg("cassette: invalid session type in sync.Map (getSessionByPath)")
+		c.sessions.Delete(filePath)
+		return nil
+	}
+	return s
 }
 
 // destroySession removes and destroys a session
@@ -181,7 +198,12 @@ func (c *Cassette) destroySession(filePath string) {
 	if !ok {
 		return
 	}
-	v.(*Session).Destroy()
+	s, ok := v.(*Session)
+	if !ok {
+		c.logger.Error().Msg("cassette: invalid session type in sync.Map (destroySession)")
+		return
+	}
+	s.Destroy()
 }
 
 // public api

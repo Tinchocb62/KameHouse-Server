@@ -25,7 +25,7 @@ export function EmptyState({
     return (
         <div className={cn(
             "relative flex flex-col items-center justify-center text-center",
-            "bg-zinc-950/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 px-12 py-16 md:py-24 rounded-3xl",
+            "glass-card px-12 py-16 md:py-24",
             "max-w-2xl mx-auto overflow-hidden shadow-2xl",
             className,
         )}>

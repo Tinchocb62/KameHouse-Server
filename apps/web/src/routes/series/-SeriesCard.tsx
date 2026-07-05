@@ -3,7 +3,7 @@ import { Icons } from '@/components/ui/icons';
 import { cn } from '@/components/ui/core/styling';
 import { getSpineConfig } from '@/lib/helpers/goku-panorama';
 import { getHighResImage } from '@/lib/helpers/images';
-import { useDominantColors } from './-use-dominant-colors';
+import { useDominantColors } from '@/hooks/use-dominant-colors';
 import { useThemeSettings } from '@/lib/theme/theme-hooks';
 
 export interface SeriesItem {
@@ -23,30 +23,49 @@ export const getVhsColor = (id: number) => {
     return colors[id % colors.length];
 };
 
+const getDragonBallStars = (seriesId: string) => {
+    switch (seriesId) {
+        case 'dragon_ball': return 1;
+        case 'dragon_ball_z': return 2;
+        case 'dragon_ball_gt': return 3;
+        case 'dragon_ball_super': return 4;
+        case 'dragon_ball_daima': return 5;
+        default: return 7;
+    }
+};
+
+const DragonBallIcon = memo(function DragonBallIcon({ stars, color }: { stars: number; color: string }) {
+    const starPositions: Record<number, [number, number][]> = {
+        1: [[5, 5]],
+        2: [[3.5, 5], [6.5, 5]],
+        3: [[5, 3.5], [3.5, 6.5], [6.5, 6.5]],
+        4: [[3.5, 3.5], [6.5, 3.5], [3.5, 6.5], [6.5, 6.5]],
+        5: [[5, 5], [3.5, 3.5], [6.5, 3.5], [3.5, 6.5], [6.5, 6.5]],
+        6: [[3.5, 3.5], [6.5, 3.5], [3.5, 5], [6.5, 5], [3.5, 6.5], [6.5, 6.5]],
+        7: [[5, 5], [3.5, 3.5], [6.5, 3.5], [3.5, 5], [6.5, 5], [3.5, 6.5], [6.5, 6.5]],
+    };
+
+    const pts = starPositions[stars] || [[5, 5]];
+
+    return (
+        <svg viewBox="0 0 10 10" className="w-3 h-3 shrink-0 opacity-80" style={{ filter: 'drop-shadow(0 0.5px 1px rgba(0,0,0,0.15))' }}>
+            <circle cx="5" cy="5" r="4.2" fill="#efe9db" stroke={color} strokeWidth="0.8" />
+            {pts.map(([cx, cy], idx) => (
+                <polygon
+                    key={idx}
+                    points={`${cx},${cy - 0.7} ${cx + 0.2},${cy - 0.2} ${cx + 0.7},${cy - 0.2} ${cx + 0.3},${cy + 0.1} ${cx + 0.5},${cy + 0.6} ${cx},${cy + 0.3} ${cx - 0.5},${cy + 0.6} ${cx - 0.3},${cy + 0.1} ${cx - 0.7},${cy - 0.2} ${cx - 0.2},${cy - 0.2}`}
+                    fill={color}
+                />
+            ))}
+        </svg>
+    );
+});
+
 /**
  * Carrete de VHS (reel) — extraído porque estaba duplicado 1:1 dos veces
  * dentro del spine expandido.
  */
-function VhsReel({ className }: { className?: string }) {
-    return (
-        <div className={cn("relative w-12 h-12 rounded-full bg-[#121212] border border-zinc-800 shadow-[inset_0_4px_8px_rgba(0,0,0,0.9)] flex items-center justify-center shrink-0", className)}>
-            {/* Inner tape wrap visual */}
-            <div className="absolute inset-1.5 rounded-full bg-gradient-to-r from-zinc-850 to-zinc-950 opacity-90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-zinc-900/50" />
-            <div
-                className="w-full h-full animate-spin-slow flex items-center justify-center z-10"
-                style={{ animationDuration: '6s' }}
-            >
-                <svg className="w-3/4 h-3/4 text-zinc-650" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-                    <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="2.5" strokeDasharray="6 3.5" />
-                    <circle cx="50" cy="50" r="24" stroke="currentColor" strokeWidth="2" fill="none" />
-                    <circle cx="50" cy="50" r="8" stroke="currentColor" strokeWidth="2" fill="currentColor" />
-                    {/* Gear teeth/spokes for the reel center */}
-                    <path d="M50 20 L50 32 M50 68 L50 80 M20 50 L32 50 M68 50 L80 50 M29 29 L38 38 M62 62 L71 71 M29 71 L38 62 M62 29 L71 38" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-            </div>
-        </div>
-    );
-}
+
 
 export const SeriesCard = memo(function SeriesCard({
     item,
@@ -151,7 +170,7 @@ export const SeriesCard = memo(function SeriesCard({
                         "absolute inset-0 w-full h-full object-cover transition-all duration-1000",
                         isSelected
                             ? 'opacity-100 scale-100 blur-none brightness-50 will-change-transform'
-                            : 'opacity-0 scale-110 blur-md pointer-events-none'
+                             : 'opacity-0 scale-110 blur-md pointer-events-none'
                     )}
                     style={{
                         transition: 'opacity 850ms cubic-bezier(0.16, 1, 0.3, 1), transform 1000ms cubic-bezier(0.16, 1, 0.3, 1), filter 850ms cubic-bezier(0.16, 1, 0.3, 1)'
@@ -265,7 +284,6 @@ export const SeriesCard = memo(function SeriesCard({
             <div
                 className="relative shrink-0 bg-[#0d0d0d] flex items-center justify-center px-3 z-20 h-[110px] w-full min-w-0 select-none overflow-hidden transition-all duration-700 ease-out border-t-2"
                 style={{
-                    borderColor: eraGradientFrom,
                     boxShadow: !isHovered && !isSelected
                         ? 'var(--shadow-glass), inset 0 2px 4px var(--glass-border-top), inset 0 -2px 4px rgba(0,0,0,0.8)'
                         : undefined
@@ -278,40 +296,53 @@ export const SeriesCard = memo(function SeriesCard({
                 {/* Expanded state: VHS Reels + Label */}
                 <div
                     className={cn(
-                        "absolute inset-0 px-4 flex items-center justify-between py-2 z-10 transition-all duration-[550ms] ease-out",
+                        "absolute inset-0 px-3 flex items-center justify-center py-2 z-10 transition-all duration-[550ms] ease-out",
                         isSelected ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"
                     )}
                 >
-                    <VhsReel className="w-16 h-16 border border-zinc-900 shadow-[inset_0_4px_10px_rgba(0,0,0,0.9),0_4px_12px_rgba(0,0,0,0.5)]" />
+                   
 
                     {/* Center paper label (mimics the cassette face sticker) */}
-                    <div className="flex-1 max-w-[200px] h-[82px] relative flex flex-col rounded-sm shadow-[2px_4px_12px_rgba(0,0,0,0.65),inset_0_1px_2px_rgba(255,255,255,0.25)] overflow-hidden bg-[#fbf9f1] border border-black/15 mx-3 transition-transform duration-700">
-                        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:4px_4px] mix-blend-multiply pointer-events-none" />
+                    <div 
+                        className={cn(
+                            "flex-1 h-[94px] relative flex flex-col rounded-md transition-all duration-700 overflow-hidden",
+                            "border-2 border-zinc-400 bg-gradient-to-br from-[#efe9db] via-[#ebdcb9] to-[#d6c7a3]",
+                            "shadow-[inset_1px_1px_1px_#fff,inset_-1px_-1px_1px_#9c907a,2px_4px_12px_rgba(0,0,0,0.5)] mx-auto w-[calc(100%-6px)]"
+                        )}
+                        style={{
+                            boxShadow: isSelected 
+                                ? `0 0 15px ${eraGradientFrom}90, inset 1px 1px 1px #fff, inset -1px -1px 1px #9c907a, 2px 4px 12px rgba(0,0,0,0.5)`
+                                : undefined,
+                        }}
+                    >
+                        <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:4px_4px] mix-blend-multiply pointer-events-none" />
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-b from-white/20 to-transparent pointer-events-none z-10" />
 
-                        {/* Top stripe */}
-                        <div className="relative z-10 bg-[#0d0d0d] flex items-center justify-between px-2 py-1 select-none border-b border-black/20">
-                            <span className="font-extrabold text-[7px] uppercase tracking-wider leading-none font-mono" style={{ color: eraGradientFrom }}>
-                                KAME-VHS
-                            </span>
-                            <span className="text-[6px] font-bold text-zinc-500 tracking-wider">
-                                {item.eps > 0 ? `${item.eps} EPS` : 'SPECIAL'}
-                            </span>
-                        </div>
-
                         {/* Title area */}
-                        <div className="relative flex-1 text-[#1c1917] p-2 flex flex-col justify-center items-center overflow-hidden">
+                        <div className="relative flex-1 text-[#1c1917] p-2.5 flex flex-col justify-center items-start overflow-hidden w-full">
+                            <div className="flex items-center gap-1.5 w-full mb-1">
+                                <span
+                                    className="font-mono text-[9px] font-bold tracking-[0.2em] shrink-0 uppercase"
+                                    style={{ color: isSelected ? eraGradientFrom : '#71717a' }}
+                                >
+                                    {item.year}
+                                </span>
+                                <DragonBallIcon stars={getDragonBallStars(item.seriesId || '')} color={isSelected ? eraGradientFrom : '#71717a'} />
+                                <div className="h-[1px] flex-1 bg-black/10" />
+                                {isSelected && (
+                                    <span className="text-[10px] animate-pulse shrink-0" style={{ color: eraGradientFrom }}>★</span>
+                                )}
+                            </div>
                             <span
-                                className="font-serif italic text-zinc-900 leading-tight text-center font-semibold break-words w-full"
+                                className="font-sans font-black leading-[1.1] text-left break-words w-full uppercase line-clamp-2"
                                 style={{
-                                    fontFamily: "'Cormorant Garamond', serif",
-                                    fontSize: item.title.length > 20 ? '9px' : item.title.length > 14 ? '10px' : '11.5px'
+                                    fontFamily: '"Bebas Neue", "Arial Black", sans-serif',
+                                    fontSize: '17px',
+                                    letterSpacing: '0.02em',
+                                    color: '#1c1917'
                                 }}
                             >
                                 {item.title}
-                            </span>
-                            <span className="text-[6px] font-bold text-zinc-400 tracking-wide uppercase mt-1">
-                                {item.year}
                             </span>
                         </div>
 
@@ -323,8 +354,6 @@ export const SeriesCard = memo(function SeriesCard({
                             )}
                         </div>
                     </div>
-
-                    <VhsReel className="w-16 h-16 border border-zinc-900 shadow-[inset_0_4px_10px_rgba(0,0,0,0.9),0_4px_12px_rgba(0,0,0,0.5)]" />
                 </div>
 
                 {/* Collapsed state: VHS Label */}
@@ -335,27 +364,41 @@ export const SeriesCard = memo(function SeriesCard({
                     )}
                 >
                     {/* VHS Label */}
-                    <div className="h-[94px] relative flex flex-col rounded shadow-[2px_4px_10px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.25)] overflow-hidden transition-all duration-[600ms] ease-out shrink-0 w-[calc(100%-6px)] mx-auto bg-[#fbf9f1] border border-black/10">
-                        <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:4px_4px] mix-blend-multiply pointer-events-none" />
+                    <div 
+                        className={cn(
+                            "h-[94px] relative flex flex-col rounded-md transition-all duration-600 shrink-0 w-[calc(100%-6px)] mx-auto overflow-hidden",
+                            "border-2 border-zinc-400 bg-gradient-to-br from-[#efe9db] via-[#ebdcb9] to-[#d6c7a3]",
+                            "shadow-[inset_1px_1px_1px_#fff,inset_-1px_-1px_1px_#9c907a,2px_4px_10px_rgba(0,0,0,0.45)]"
+                        )}
+                        style={{
+                            boxShadow: isSelected 
+                                ? `0 0 15px ${eraGradientFrom}90, inset 1px 1px 1px #fff, inset -1px -1px 1px #9c907a, 2px 4px 10px rgba(0,0,0,0.45)`
+                                : undefined,
+                            borderColor: isSelected ? eraGradientFrom : '#71717a'
+                        }}
+                    >
+                        <div className="absolute inset-0 opacity-[0.05] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:4px_4px] mix-blend-multiply pointer-events-none" />
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-b from-white/15 to-transparent pointer-events-none z-10" />
 
-                        {/* Header stripe */}
-                        <div className="relative z-10 bg-[#0d0d0d] flex items-center justify-between px-1.5 py-0.5 select-none border-b border-black/20">
-                            <span className="font-extrabold text-[7px] uppercase tracking-wide leading-none font-mono" style={{ color: eraGradientFrom }}>
-                                KAME-VHS
-                            </span>
-                            <span className="text-[6px] font-bold text-zinc-600 tracking-wide">
-                                {item.eps} EP
-                            </span>
-                        </div>
-
                         {/* Title area */}
-                        <div className="relative flex-1 text-[#1c1917] p-1.5 flex flex-col justify-center overflow-hidden">
+                        <div className="relative flex-1 text-[#1c1917] p-2.5 flex flex-col justify-center items-start overflow-hidden w-full">
+                            <div className="flex items-center gap-1.5 w-full mb-1">
+                                <span
+                                    className="font-mono text-[9px] font-bold tracking-[0.2em] shrink-0 uppercase"
+                                    style={{ color: isSelected ? eraGradientFrom : '#71717a' }}
+                                >
+                                    {item.year}
+                                </span>
+                                <DragonBallIcon stars={getDragonBallStars(item.seriesId || '')} color={isSelected ? eraGradientFrom : '#71717a'} />
+                                <div className="h-[1px] flex-1 bg-black/10" />
+                            </div>
                             <span
-                                className="font-serif italic text-zinc-900 leading-tight text-center font-light break-words w-full"
+                                className="font-sans text-zinc-950 font-black leading-[1.1] text-left break-words w-full uppercase line-clamp-3"
                                 style={{
-                                    fontFamily: "'Cormorant Garamond', serif",
-                                    fontSize: item.title.length > 18 ? '9px' : item.title.length > 12 ? '10px' : '11px'
+                                    fontFamily: '"Bebas Neue", "Arial Black", sans-serif',
+                                    fontSize: '14px',
+                                    letterSpacing: '0.02em',
+                                    color: '#1c1917'
                                 }}
                             >
                                 {item.title}

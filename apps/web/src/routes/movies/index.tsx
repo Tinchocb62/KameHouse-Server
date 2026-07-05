@@ -75,7 +75,7 @@ function MoviesPage() {
     // Set KameHouse backdrop on mount (just like series page does)
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
     useEffect(() => {
-        setBackdropUrl("/casa-kame-de-dragon-ball-3963.webp")
+        setBackdropUrl(null)
         return () => { setBackdropUrl(null) }
     }, [setBackdropUrl])
 

@@ -3,11 +3,16 @@ import Hls from "hls.js"
 import JASSUB from "jassub"
 import { usePlayerShortcuts } from "./usePlayerShortcuts"
 import { usePlayerJassub } from "./usePlayerJassub"
+import { usePlayerPgs } from "./usePlayerPgs"
+import { usePlayerMediaSession } from "./usePlayerMediaSession"
+import { PlayerPreviewManager } from "./player-preview"
 import { usePlayerHls } from "./usePlayerHls"
 import { useAnimeTracking } from "@/api/hooks/useAnimeTracking"
 import { useWebSocket } from "@/hooks/use-websocket"
 import { getApiWebSocketUrl } from "@/api/client/server-url"
 import { useMediastreamShutdownTranscodeStream, usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
+import { useGetSettings } from "@/api/hooks/settings.hooks"
+import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 import { useShallow } from "zustand/react/shallow"
 import { usePlayerProgressSync } from "@/api/hooks/usePlayerProgressSync"
@@ -22,6 +27,7 @@ import { buildSeaQuery } from "@/api/client/requests"
 
 
 export type { PlayerStats, PlayerCoreProps, PlayerCore }
+
 
 function getAbsoluteLanUrl(playableUrl: string, serverIPs?: string[], serverPort?: number): string {
     if (!playableUrl) return ""
@@ -92,11 +98,15 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         nextStreamType,
         streamType,
         onRequestStreamTypeChange,
+        onDirectPlayFailed,
     } = props
 
     const { data: statusQuery } = useGetStatus()
     const serverIPs = statusQuery?.serverIPs
     const serverPort = statusQuery?.serverPort
+
+    const { data: settingsQuery } = useGetSettings()
+    const transcodeEnabled = settingsQuery?.mediastream?.transcodeEnabled ?? false
 
     const absoluteLanUrl = useMemo(() => {
         return getAbsoluteLanUrl(playableUrl, serverIPs, serverPort)
@@ -107,6 +117,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const hlsRef = useRef<Hls | null>(null)
     const jassubRef = useRef<JASSUB | null>(null)
+    
+    const [previewManager, setPreviewManager] = useState<PlayerPreviewManager | null>(null)
 
     const progressBarRef = useRef<HTMLDivElement>(null)
     const progressInputRef = useRef<HTMLInputElement>(null)
@@ -116,6 +128,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const lastSeekTimeRef = useRef(0)
     const pendingSeekTimeRef = useRef<number | null>(null)
     const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const flashTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     const [isPlaying, setIsPlaying] = useState(false)
     const [duration, setDuration] = useState(0)
@@ -135,6 +148,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const [activeSubtitleIndex, setActiveSubtitleIndex] = useState<number | null>(null)
     const [isJassubLoading, setIsJassubLoading] = useState(false)
     const [isJassubActive, setIsJassubActive] = useState(false)
+    const [isPgsLoading, setIsPgsLoading] = useState(false)
+    const [isPgsActive, setIsPgsActive] = useState(false)
     const [hlsLevels, setHlsLevels] = useState<{ index: number; label: string; height: number }[]>([])
     const [activeHlsLevel, setActiveHlsLevel] = useState<number>(-1) // -1 = auto
 
@@ -165,6 +180,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         setMarathonMode,
         tvMode,
         setTvMode,
+        ambientModeEnabled,
+        setAmbientModeEnabled,
     } = useAppStore(
         useShallow(state => ({
             setFullscreen: state.setFullscreen,
@@ -191,6 +208,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             setMarathonMode: state.setMarathonMode,
             tvMode: state.tvMode,
             setTvMode: state.setTvMode,
+            ambientModeEnabled: state.ambientModeEnabled,
+            setAmbientModeEnabled: state.setAmbientModeEnabled,
         }))
     )
 
@@ -287,21 +306,16 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const { mutate: shutdownTranscode } = useMediastreamShutdownTranscodeStream()
     const { mutate: preloadMutate } = usePreloadMediastreamMediaContainer()
 
-    // Proactive preload: fire-and-forget as soon as the player mounts.
-    // For transcode: kicks off keyframe extraction + segments 0/1/2 in the background.
-    // For direct: does a HEAD request so the server caches ffprobe/MediaInfo and the
-    // browser's connection pool is warmed up, reducing cold-start latency.
+    // Proactive preload for TRANSCODE only: kicks off keyframe extraction + the
+    // first segments in the background so playback starts without waiting on the
+    // on-demand encode. The direct-play branch was removed as redundant — the
+    // detail pages (series/movies) now warm the container on hover/page-load, and
+    // the RequestMediastreamMediaContainer POST already forces ffprobe for the
+    // current episode, so a second direct preload here only duplicated work.
     useEffect(() => {
         const path = streamUrl || playableUrl
-        if (!path) return
-
-        if (streamType === "transcode") {
-            preloadMutate({ path, streamType: "transcode", audioStreamIndex: 0, preferredAudioLang })
-        } else if (streamType === "direct" || streamType === "local") {
-            // Warm up: request the media container metadata so ffprobe runs now
-            // instead of when the user clicks play. This is a no-op if already cached.
-            preloadMutate({ path, streamType: "direct", audioStreamIndex: 0, preferredAudioLang })
-        }
+        if (!path || streamType !== "transcode") return
+        preloadMutate({ path, streamType: "transcode", audioStreamIndex: 0, preferredAudioLang })
     }, [streamUrl, playableUrl, streamType, preferredAudioLang])
 
     const { onProgress: onTrackingProgress, reset: resetTracking } = useAnimeTracking({
@@ -373,6 +387,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         setResumeTime,
         setShowResume,
         setIsPlaying,
+        onDirectPlayFailed,
     })
 
     // JASSUB Subtitle renderer hook
@@ -387,33 +402,81 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         setIsJassubActive,
     })
 
+    // --- PGS Plugin ---
+    usePlayerPgs({
+        videoRef,
+        subtitleTracks,
+        activeSubtitleIndex,
+        setIsPgsLoading,
+        setIsPgsActive,
+    })
+
+    // Preview Manager
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video || !playableUrl) return
+
+        const pm = new PlayerPreviewManager(video, playableUrl as string, (streamType || "direct") as "local" | "online" | "direct" | "transcode" | "optimized")
+        setPreviewManager(pm)
+
+        return () => {
+            pm.cleanup()
+            setPreviewManager(null)
+        }
+    }, [playableUrl, streamType])
+
     // Selección de audio pendiente tras un cambio de stream (direct → transcode):
     // se aplica cuando llega la nueva lista de pistas HLS.
     const pendingAudioSelectionRef = useRef<AudioTrack | null>(null)
 
     // Auto-select preferred tracks
-    const onSelectAudio = useCallback((track: AudioTrack) => {
+    // opts.auto === true → selección automática (preferencia): nunca forzar transcode.
+    // Sin opts (o auto === false) → selección manual del usuario.
+    const onSelectAudio = useCallback((track: AudioTrack, opts?: { auto?: boolean }) => {
+        const isAuto = opts?.auto === true
         if (hlsRef.current) {
-            hlsRef.current.audioTrack = track.index
+            // Use hlsId (hls.js sequential manifest position) for hls.audioTrack.
+            // `track.index` is the ABSOLUTE container index (used in backend URIs);
+            // hls.js expects the positional id within its own audioTracks list.
+            // hlsId is set during AUDIO_TRACKS_UPDATED merging; fall back to index
+            // only when hlsId is not available (e.g. backend-only fallback list).
+            hlsRef.current.audioTrack = track.hlsId ?? track.index
         } else if (videoRef.current && 'audioTracks' in videoRef.current && (videoRef.current as HTMLVideoElement & { audioTracks: AudioTrackList }).audioTracks?.length > 0) {
             const video = videoRef.current as HTMLVideoElement & { audioTracks: AudioTrackList }
             const trackList = Array.from(video.audioTracks)
             for (let i = 0; i < trackList.length; i++) {
                 trackList[i].enabled = i === track.index
             }
-        } else if (onRequestStreamTypeChange && (streamType === "direct" || streamType === "local")) {
-            // Direct play: Chromium/WebView2 no soporta la API nativa de
-            // audioTracks, así que cambiar de pista era un no-op silencioso.
-            // Cambiamos a transcode (HLS con renditions de audio) y aplicamos
-            // la pista elegida cuando llegue la nueva lista.
-            pendingAudioSelectionRef.current = track
-            onRequestStreamTypeChange("transcode")
+        } else if (streamType === "direct" || streamType === "local") {
+            // Chromium/WebView2 no soporta la API nativa de audioTracks en direct play.
+            if (isAuto) {
+                // Auto-selección: solo persistir la preferencia de idioma y mantener
+                // direct play con la pista por defecto. No disparar transcode.
+                if (track.language && track.language.toLowerCase() !== "und") {
+                    setPreferredAudioLang(track.language)
+                }
+                return
+            } else if (onRequestStreamTypeChange) {
+                // Selección manual explícita del usuario.
+                if (!transcodeEnabled) {
+                    // Transcode desactivado: mostrar aviso en vez de un request 500.
+                    toast.warning("Para cambiar de pista de audio activá la transcodificación en Ajustes → Streaming")
+                    return
+                }
+                // Transcode disponible: cambiar de stream para poder aplicar la pista.
+                pendingAudioSelectionRef.current = track
+                onRequestStreamTypeChange("transcode")
+            }
         }
         setActiveAudioIndex(track.index)
-        if (track.language) {
+        // "und" (unlabeled track, común en MKVs de anime) no identifica un idioma:
+        // persistirlo hacía que en el siguiente episodio se auto-seleccionara la
+        // PRIMERA pista sin etiqueta (normalmente japonés) en vez de la elegida.
+        if (track.language && track.language.toLowerCase() !== "und") {
             setPreferredAudioLang(track.language)
         }
-    }, [setPreferredAudioLang, onRequestStreamTypeChange, streamType])
+    }, [setPreferredAudioLang, onRequestStreamTypeChange, streamType, transcodeEnabled])
+
 
     const onSelectSubtitle = useCallback((track: SubtitleTrack | null) => {
         if (track === null) {
@@ -453,6 +516,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             const match = audioTracks.find(t => pending.title && t.title === pending.title)
                 ?? audioTracks.find(t => t.language === pending.language)
             if (match) {
+                // La selección pendiente vino de una elección manual (antes del cambio de stream):
+                // no pasar { auto: true } para que se aplique correctamente en transcode.
                 if (activeAudioIndex !== match.index) onSelectAudio(match)
                 return
             }
@@ -460,10 +525,21 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
 
         let preferred: AudioTrack | undefined
 
-        preferred = audioTracks.find(t => {
-            const lang = t.language?.toLowerCase() || ""
-            return lang === "spa-lat" || lang === "es-la"
-        })
+        // Ignorar "und" como preferencia: matchearía la primera pista sin etiqueta
+        // (ver onSelectAudio) y pisaría las heurísticas de Latino/Español de abajo.
+        if (preferredAudioLang && preferredAudioLang.toLowerCase() !== "und") {
+            preferred = audioTracks.find(t => {
+                const lang = t.language?.toLowerCase() || ""
+                return lang === preferredAudioLang.toLowerCase() || lang.startsWith(preferredAudioLang.toLowerCase())
+            })
+        }
+
+        if (!preferred) {
+            preferred = audioTracks.find(t => {
+                const lang = t.language?.toLowerCase() || ""
+                return lang === "spa-lat" || lang === "es-la"
+            })
+        }
         if (!preferred) {
             preferred = audioTracks.find(t => {
                 const title = t.title?.toLowerCase() || ""
@@ -477,12 +553,9 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             })
         }
 
-        if (!preferred) {
-            preferred = audioTracks.find(t => t.language === preferredAudioLang)
-        }
-
         if (preferred && activeAudioIndex !== preferred.index) {
-            onSelectAudio(preferred)
+            // Pasar { auto: true } para que en direct play no dispare transcode.
+            onSelectAudio(preferred, { auto: true })
         }
     }, [audioTracks, preferredAudioLang, activeAudioIndex, onSelectAudio])
 
@@ -526,19 +599,21 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         const video = videoRef.current
         if (!video || status !== "ready") return
 
+        if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current)
+
         if (video.paused) {
             video.play()
                 .then(() => {
                     setIsPlaying(true)
                     setFlash("play")
-                    setTimeout(() => setFlash(null), 400)
+                    flashTimeoutRef.current = setTimeout(() => setFlash(null), 400)
                 })
                 .catch((e) => console.error("Playback failed:", e))
         } else {
             video.pause()
             setIsPlaying(false)
             setFlash("pause")
-            setTimeout(() => setFlash(null), 400)
+            flashTimeoutRef.current = setTimeout(() => setFlash(null), 400)
         }
     }, [status])
 
@@ -637,7 +712,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const skipTime = useCallback((amount: number) => {
         const video = videoRef.current
         if (!video) return
-        const target = Math.max(0, Math.min(video.duration, video.currentTime + amount))
+        const dur = Number.isFinite(video.duration) ? video.duration : Infinity
+        const target = Math.max(0, Math.min(dur, video.currentTime + amount))
 
         performSeek(target)
         triggerControlsVisibility()
@@ -657,9 +733,15 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         const video = videoRef.current
         if (!video) return
         const nextMute = !isMuted
+        
+        if (!nextMute && volume === 0) {
+            video.volume = 1
+            setVolume(1)
+        }
+        
         video.muted = nextMute
         setIsMuted(nextMute)
-    }, [isMuted])
+    }, [isMuted, volume])
 
     const toggleFullscreen = () => {
         const container = containerRef.current
@@ -738,6 +820,18 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             setGlobalFullscreen(false)
         }
     }, [setGlobalFullscreen])
+
+    // Media Session API hook (moved here to ensure togglePlay and skipTime are defined)
+    usePlayerMediaSession({
+        videoRef,
+        isPlaying,
+        title,
+        episodeNumber,
+        togglePlay,
+        skipTime,
+        onNextEpisode,
+        hasNextEpisode,
+    })
 
     useEffect(() => {
         const el = window.electron
@@ -884,7 +978,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             timeTextElement: timeTextRef as React.RefObject<HTMLSpanElement>,
         },
         state: {
-            isPlaying, duration, volume, isMuted, isFullscreen, controlsVisible, status, errorMsg, isBuffering, isSeeking, flash, skipMode, skipRemainingSeconds, segmentProgress, showNextEpisode, hasNextEpisode, countdownSeconds, showCountdown, tvMode, audioTracks, activeAudioIndex, subtitleTracks, activeSubtitleIndex, isJassubLoading, isJassubActive, isSettingsOpen, remainingProgress, showAutoSkipToast,
+            isPlaying, duration, volume, isMuted, isFullscreen, controlsVisible, status, errorMsg, isBuffering, isSeeking, flash, skipMode, skipRemainingSeconds, segmentProgress, showNextEpisode, hasNextEpisode, countdownSeconds, showCountdown, tvMode, audioTracks, activeAudioIndex, subtitleTracks, activeSubtitleIndex, isJassubLoading, isJassubActive, isPgsLoading, isPgsActive, isSettingsOpen, remainingProgress, showAutoSkipToast,
             autoSkipIntro: autoSkipIntroPref,
             autoSkipOutro: autoSkipOutroPref,
             playbackRate: playbackRatePref,
@@ -896,12 +990,14 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             statsData,
             hlsLevels,
             activeHlsLevel,
+            previewManager,
             get currentTime() {
                 return videoRef.current?.currentTime || 0
             },
             showResume,
             resumeTime,
             autoDisableSubtitlesWhenDubbed,
+            ambientModeEnabled,
             marathonMode,
             skipTimesOp,
             skipTimesEd,
@@ -922,6 +1018,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             setSubtitleSize: setSubtitleSizePref,
             setLoopEnabled: setLoopEnabledPref,
             setTvMode: handleSetTvMode,
+            setAmbientModeEnabled,
             setMarathonMode,
             handleResume,
             setShowResume,

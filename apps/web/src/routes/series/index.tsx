@@ -49,7 +49,7 @@ function SeriesFullscreenIndex() {
     const { data: collection, isLoading } = useGetLibraryCollection();
 
     useEffect(() => {
-        setBackdropUrl("/casa-kame-de-dragon-ball-3963.webp");
+        setBackdropUrl(null);
         return () => {
             setBackdropUrl(null);
         };

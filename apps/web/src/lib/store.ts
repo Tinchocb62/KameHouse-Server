@@ -10,6 +10,7 @@ export interface UIState {
     bgMusicVolume: number
     uiSoundsEnabled: boolean
     uiSoundsVolume: number
+    isGlobalMuted: boolean
     globalQueueOpen: boolean
     dynamicBackdropEnabled: boolean
     dynamicBackdropMotionEnabled: boolean
@@ -20,6 +21,7 @@ export interface UIState {
     setBgMusicVolume: (volume: number) => void
     setUiSoundsEnabled: (enabled: boolean) => void
     setUiSoundsVolume: (volume: number) => void
+    setGlobalMuted: (muted: boolean) => void
     setGlobalQueueOpen: (open: boolean) => void
     setDynamicBackdropEnabled: (enabled: boolean) => void
     setDynamicBackdropMotionEnabled: (enabled: boolean) => void
@@ -73,6 +75,7 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     bgMusicVolume: 0.25,
     uiSoundsEnabled: true,
     uiSoundsVolume: 1.0,
+    isGlobalMuted: false,
     globalQueueOpen: false,
     dynamicBackdropEnabled: false,
     dynamicBackdropMotionEnabled: false,
@@ -83,6 +86,7 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     setBgMusicVolume: (volume) => set({ bgMusicVolume: volume }),
     setUiSoundsEnabled: (enabled) => set({ uiSoundsEnabled: enabled }),
     setUiSoundsVolume: (volume) => set({ uiSoundsVolume: volume }),
+    setGlobalMuted: (muted) => set({ isGlobalMuted: muted }),
     setGlobalQueueOpen: (open) => set({ globalQueueOpen: open }),
     setDynamicBackdropEnabled: (enabled) => {
         set({ dynamicBackdropEnabled: enabled })
@@ -134,8 +138,8 @@ export interface PlayerState {
     setMarathonMode: (enabled: boolean) => void
     tvMode: boolean
     setTvMode: (enabled: boolean) => void
-
-
+    ambientModeEnabled: boolean
+    setAmbientModeEnabled: (enabled: boolean) => void
 
     playlistQueue: PlaylistItem[]
     currentQueueIndex: number
@@ -176,9 +180,16 @@ export const createPlayerSlice: StateCreator<UIState & PlayerState, [], [], Play
     marathonMode: false,
     setMarathonMode: (marathonMode) => set({ marathonMode }),
     tvMode: false,
-    setTvMode: (tvMode) => set({ tvMode }),
-
-
+    setTvMode: (tvMode) => set((state) => ({
+        tvMode,
+        ...(tvMode ? {
+            autoSkipIntro: true,
+            autoSkipOutro: true,
+            marathonMode: true,
+        } : {}),
+    })),
+    ambientModeEnabled: true,
+    setAmbientModeEnabled: (ambientModeEnabled) => set({ ambientModeEnabled }),
 
     playlistQueue: [],
     currentQueueIndex: -1,
@@ -247,6 +258,13 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
         }),
         {
             name: "kamehouse-app-settings",
+            merge: (persistedState, currentState) => {
+                const p = persistedState as any
+                if (p && (p.aspectRatio === "fill" || p.aspectRatio === "16/9")) {
+                    p.aspectRatio = "contain"
+                }
+                return { ...currentState, ...p }
+            },
             partialize: (state) => ({
                 // Solo persistimos lo que queremos que sobreviva
                 sidebarOpen: state.sidebarOpen,
@@ -254,6 +272,7 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
                 bgMusicVolume: state.bgMusicVolume,
                 uiSoundsEnabled: state.uiSoundsEnabled,
                 uiSoundsVolume: state.uiSoundsVolume,
+                isGlobalMuted: state.isGlobalMuted,
                 autoSkipIntro: state.autoSkipIntro,
                 autoSkipOutro: state.autoSkipOutro,
                 playbackRate: state.playbackRate,
@@ -266,6 +285,8 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
                 autoDisableSubtitlesWhenDubbed: state.autoDisableSubtitlesWhenDubbed,
                 playerVolume: state.playerVolume,
                 marathonMode: state.marathonMode,
+                tvMode: state.tvMode,
+                ambientModeEnabled: state.ambientModeEnabled,
                 dynamicBackdropEnabled: state.dynamicBackdropEnabled,
                 dynamicBackdropMotionEnabled: state.dynamicBackdropMotionEnabled,
             }),

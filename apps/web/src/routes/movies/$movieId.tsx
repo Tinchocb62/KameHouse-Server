@@ -8,6 +8,7 @@ import { useAppStore } from "@/lib/store"
 import { getHighResImage, getMediumResImage, getLowResImage } from "@/lib/helpers/images"
 import { fetchAnimeEntry, useGetAnimeEntry, useUpdateAnimeEntryProgress } from "@/api/hooks/anime_entries.hooks"
 import { useGetContinuityWatchHistoryItem } from "@/api/hooks/continuity.hooks"
+import { usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { Anime_LocalFile, FileTechnicalInfo, Mediastream_StreamType } from "@/api/generated/types"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -25,6 +26,7 @@ import { ERA_TABS, cleanMovieTitle } from "./-MovieCard"
 import { getEntryEra } from "./-components/movies-utils"
 import { useServerQuery } from "@/api/client/requests"
 import { CharacterDetailModal } from "@/components/shared/character-detail-modal"
+
 import { isDragonBallTmdbId, getSeriesEraTheme } from "@/lib/config/dragonball.config"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
@@ -96,6 +98,16 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     const [isWatched, setIsWatched] = useState(initialWatched)
     const [prevInitialWatched, setPrevInitialWatched] = useState(initialWatched)
     const { mutate: updateProgress } = useUpdateAnimeEntryProgress(Number(movieId), 1, false)
+    const { mutate: preloadStream } = usePreloadMediastreamMediaContainer()
+
+    // Warm the media container ahead of the click (page load + hover intent).
+    const defaultTargetPath = entry?.localFiles?.[0]?.path || null
+    const preloadedPathsRef = useRef<Set<string>>(new Set())
+    useEffect(() => {
+        if (!defaultTargetPath || preloadedPathsRef.current.has(defaultTargetPath)) return
+        preloadedPathsRef.current.add(defaultTargetPath)
+        preloadStream({ path: defaultTargetPath, streamType: "direct", audioStreamIndex: 0, preferredAudioLang: "" })
+    }, [defaultTargetPath, preloadStream])
 
     if (initialWatched !== prevInitialWatched) {
         setPrevInitialWatched(initialWatched)
@@ -234,6 +246,12 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         }
     }
 
+    const preloadTarget = () => {
+        if (!defaultTargetPath || preloadedPathsRef.current.has(defaultTargetPath)) return
+        preloadedPathsRef.current.add(defaultTargetPath)
+        preloadStream({ path: defaultTargetPath, streamType: "direct", audioStreamIndex: 0, preferredAudioLang: "" })
+    }
+
     const handleAddToQueue = (e: React.MouseEvent) => {
         e.stopPropagation()
         if (entry.localFiles && entry.localFiles.length > 0) {
@@ -305,6 +323,8 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         <>
             <button
                 onClick={handlePlayDefault}
+                onPointerEnter={preloadTarget}
+                onFocus={preloadTarget}
                 className="group/play relative flex items-center gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95"
                 style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
             >
@@ -363,7 +383,7 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     )
 
     return (
-        <div ref={containerRef} className="h-full w-full flex flex-col overflow-y-auto no-scrollbar text-on-surface pb-24 relative select-none" data-theme={localTheme || undefined}>
+        <div ref={containerRef} className="h-full w-full flex flex-col overflow-y-auto no-scrollbar text-on-surface relative select-none" data-theme={localTheme || undefined}>
             <FloatingMatchFlap
                 directoryPath={entry.libraryData?.sharedPath || ""}
                 mediaId={entry.mediaId}
@@ -383,17 +403,17 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
                 onBackdropClick={handlePlayDefault}
             />
 
-            <div className="w-full max-w-[1800px] mx-auto px-6 md:px-12 mt-12 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-12 relative z-20">
-                {/* Progress bar */}
-                {continuityData?.item?.currentTime && continuityData.item.duration && (
-                    <div className="movie-animate w-full max-w-sm mt-1 h-[5px] rounded-full overflow-hidden relative z-10" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 20%, transparent)" }}>
-                        <div 
+            {/* Progress bar */}
+            {continuityData?.item?.currentTime && continuityData.item.duration && (
+                <div className="w-full max-w-[1800px] mx-auto px-8 md:px-16 lg:px-20 xl:px-24 mt-12 pb-24 relative z-20">
+                    <div className="movie-animate w-full h-[5px] rounded-full overflow-hidden relative z-10" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 20%, transparent)" }}>
+                        <div
                             className="h-full bg-brand-secondary"
                             style={{ width: `${progressPercent}%` }}
                         />
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Video Player */}
             {playTarget && (

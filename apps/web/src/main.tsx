@@ -38,6 +38,35 @@ if (import.meta.env.DEV && import.meta.env.VITE_REACT_SCAN === "true") {
     document.head.appendChild(script)
 }
 
+// Global error telemetry — capture unhandled errors and promise rejections.
+// In desktop (Tauri) mode the errors are also emitted to the Rust-side event
+// bus so they appear in the app's native log file.
+window.addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason instanceof Error
+        ? { message: event.reason.message, stack: event.reason.stack }
+        : { message: String(event.reason) }
+    console.error("[global] Unhandled promise rejection:", reason)
+    try {
+        if (typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== "undefined") {
+            import("@tauri-apps/api/event").then(({ emit }) =>
+                emit("web-error", { type: "unhandledrejection", ...reason }).catch(() => {})
+            ).catch(() => {})
+        }
+    } catch { /* non-fatal */ }
+})
+
+window.addEventListener("error", (event) => {
+    const info = { message: event.message, filename: event.filename, line: event.lineno, col: event.colno }
+    console.error("[global] Uncaught error:", info)
+    try {
+        if (typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== "undefined") {
+            import("@tauri-apps/api/event").then(({ emit }) =>
+                emit("web-error", { type: "error", ...info }).catch(() => {})
+            ).catch(() => {})
+        }
+    } catch { /* non-fatal */ }
+})
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <ClientProviders>
         <RouterProvider router={router} />

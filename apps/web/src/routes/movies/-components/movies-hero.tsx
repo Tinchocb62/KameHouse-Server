@@ -48,7 +48,7 @@ export function MoviesHero({
     const backdropSrc = displayMedia?.bannerImage ?? displayMedia?.posterImage ?? null
 
     useEffect(() => {
-        setBackdropUrl("/casa-kame-de-dragon-ball-3963.webp")
+        setBackdropUrl(null)
         return () => setBackdropUrl(null)
     }, [setBackdropUrl])
 
@@ -108,8 +108,8 @@ export function MoviesHero({
                                     transition={{ duration: 1.0 }}
                                     className="absolute right-0 top-0 h-full w-full md:w-[80%] lg:w-[75%] object-cover object-[center_20%]"
                                     style={{
-                                        WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
-                                        maskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
+                                        WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 35%)",
+                                        maskImage: "linear-gradient(to right, transparent 0%, black 35%)",
                                     }}
                                 />
                             ) : (
@@ -130,27 +130,15 @@ export function MoviesHero({
                 </div>
             </div>
 
-            {/* Gradient izquierdo */}
+            {/* Gradient izquierdo (Scrim) */}
             <div
-                className="absolute inset-0 z-10 pointer-events-none"
-                style={{
-                    background: hasBannerImage
-                        ? "linear-gradient(to right, color-mix(in srgb, var(--bg-primary) 85%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 25%, color-mix(in srgb, var(--bg-primary) 20%, transparent) 60%, transparent 90%)"
-                        : "linear-gradient(to right, color-mix(in srgb, var(--bg-primary) 85%, transparent) 0%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 30%, color-mix(in srgb, var(--bg-primary) 15%, transparent) 70%, transparent 95%)",
-                    WebkitMaskImage: "linear-gradient(to top, transparent 0%, black 15%)",
-                    maskImage: "linear-gradient(to top, transparent 0%, black 15%)",
-                }}
+                className={cn("absolute inset-0 z-10 pointer-events-none", hasBannerImage && "scrim-hero-left")}
+                style={!hasBannerImage ? { background: "linear-gradient(to right, var(--bg-primary) 0%, color-mix(in srgb, var(--bg-primary) 80%, transparent) 30%, color-mix(in srgb, var(--bg-primary) 20%, transparent) 70%, transparent 95%)" } : undefined}
             />
-            {/* Gradient inferior: semi-transparente para fundirse con el fondo Kame House */}
-            <div
-                className="absolute inset-x-0 bottom-0 h-40 z-10 pointer-events-none"
-                style={{ background: "linear-gradient(to top, transparent 0%, color-mix(in srgb, var(--bg-primary) 45%, transparent) 50%, transparent 100%)" }}
-            />
+            {/* Gradient inferior */}
+            <div className="absolute inset-x-0 bottom-0 h-40 z-10 pointer-events-none scrim-hero-bottom-soft" />
             {/* Vignette superior */}
-            <div
-                className="absolute inset-x-0 top-0 h-16 z-10 pointer-events-none"
-                style={{ background: "linear-gradient(to bottom, color-mix(in srgb, var(--bg-primary) 40%, transparent) 0%, transparent 100%)" }}
-            />
+            <div className="absolute inset-x-0 top-0 h-16 z-10 pointer-events-none scrim-hero-top" />
 
             {/* Grain */}
             <div

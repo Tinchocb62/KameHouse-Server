@@ -37,6 +37,9 @@ export interface PlayerCoreProps {
      *  cuando el usuario elige una pista de audio y el navegador no soporta
      *  cambiarla nativamente en direct play). */
     onRequestStreamTypeChange?: (type: "transcode" | "direct") => void
+    /** Llamado cuando direct play falla de forma irrecuperable. El orchestrator
+     *  puede usarlo para hacer fallback a transcode si está habilitado. */
+    onDirectPlayFailed?: () => void
     nextEpisodeTitle?: string
     nextEpisodeNumber?: number
     nextEpisodeImage?: string
@@ -80,6 +83,8 @@ export interface PlayerCore {
         activeSubtitleIndex: number | null
         isJassubLoading: boolean
         isJassubActive: boolean
+        isPgsLoading: boolean
+        isPgsActive: boolean
         isSettingsOpen: boolean
         autoSkipIntro: boolean
         autoSkipOutro: boolean
@@ -92,11 +97,13 @@ export interface PlayerCore {
         statsData: PlayerStats | null
         hlsLevels: { index: number; label: string; height: number }[]
         activeHlsLevel: number
+        previewManager: any
         showResume: boolean
         resumeTime: number
         autoDisableSubtitlesWhenDubbed: boolean
         marathonMode: boolean
         tvMode: boolean
+        ambientModeEnabled: boolean
         /** AniSkip intervals exposed to child components for rendering timeline markers */
         skipTimesOp?: { startTime: number; endTime: number }
         skipTimesEd?: { startTime: number; endTime: number }
@@ -123,7 +130,7 @@ export interface PlayerCore {
         skipOpening: () => void
         handleVolume: (e: React.ChangeEvent<HTMLInputElement>) => void
         toggleMute: () => void
-        onSelectAudio: (track: AudioTrack) => void
+        onSelectAudio: (track: AudioTrack, opts?: { auto?: boolean }) => void
         onSelectSubtitle: (track: SubtitleTrack | null) => void
         toggleFullscreen: () => void
         handleSkipIntro: () => void
@@ -144,6 +151,7 @@ export interface PlayerCore {
         handleResume: () => void
         setShowResume: (val: boolean) => void
         setAutoDisableSubtitlesWhenDubbed: (val: boolean) => void
+        setAmbientModeEnabled: (val: boolean) => void
         skipToNextChapter: () => void
         skipToPrevChapter: () => void
     }

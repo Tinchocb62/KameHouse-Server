@@ -3,7 +3,7 @@
  *
  * Shared TypeScript types for audio/subtitle track metadata.
  *
- * â”€â”€â”€ Backend contract â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * ─── Backend contract ──────────────────────────────────────────────────────────
  *
  * The backend should expose a dedicated endpoint (or include this in the stream
  * start response) that returns the available tracks extracted from the MKV
@@ -18,12 +18,12 @@
  * {
  *   "audioTracks": [
  *     { "index": 0, "language": "jpn", "title": "Japanese",          "codec": "FLAC",     "channels": 2, "default": true  },
- *     { "index": 1, "language": "spa", "title": "EspaÃ±ol Latino",    "codec": "AAC",      "channels": 2, "default": false }
+ *     { "index": 1, "language": "spa", "title": "Español Latino",    "codec": "AAC",      "channels": 2, "default": false }
  *   ],
  *   "subtitleTracks": [
- *     { "index": 0, "language": "spa", "title": "EspaÃ±ol",           "codec": "ASS",      "forced": false, "default": true  },
+ *     { "index": 0, "language": "spa", "title": "Español",           "codec": "ASS",      "forced": false, "default": true  },
  *     { "index": 1, "language": "eng", "title": "English (Honorifics)","codec": "ASS",    "forced": false, "default": false },
- *     { "index": 2, "language": "spa", "title": "EspaÃ±ol (Forzado)", "codec": "ASS",      "forced": true,  "default": false }
+ *     { "index": 2, "language": "spa", "title": "Español (Forzado)", "codec": "ASS",      "forced": true,  "default": false }
  *   ]
  * }
  * ```
@@ -32,28 +32,35 @@
  * into the HLS manifest as `#EXT-X-MEDIA` tags; HLS.js surfaces these via
  * `Hls.Events.AUDIO_TRACKS_UPDATED`.  Both paths converge to the same
  * `AudioTrack` shape below so the UI layer is agnostic.
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
-// â”€â”€ Audio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Audio ───────────────────────────────────────────────────────────────────────
 
 /**
- * Represents a single audio track inside an MKV file.
+ * Represents a single audio track inside a media container.
  *
- * For HLS streams this struct can be built from `Hls.audioTrack` objects.
- * For direct MKV streams call `/api/v1/mediastream/track-info` and map the
- * response onto this interface.
+ * For HLS streams this struct is built by merging hls.js audioTracks with
+ * backend metadata. For direct-play streams it is seeded from the backend
+ * mediaInfo response.
  */
 export interface AudioTrack {
     /**
-     * Zero-based index in the container (MKV track number / ffprobe index).
-     * When selecting via the native HTML5 `AudioTrackList` API use this as the
-     * array index; for HLS.js set `hls.audioTrack = index`.
+     * Absolute container index (MKV track number / ffprobe stream index).
+     * Used by the backend in audio URIs: `./audio/{index}/index.m3u8`.
+     * For native HTML5 AudioTrackList, use this as the array index.
      */
     index: number
+    /**
+     * hls.js internal id (sequential position in the manifest: 0, 1, 2…).
+     * Only populated for HLS streams. Use this for `hls.audioTrack = hlsId`.
+     * Distinct from `index` because hls.js ids are always sequential while
+     * container indexes can have gaps (e.g. container has streams 0, 2, 5).
+     */
+    hlsId?: number
     /** BCP-47 / ISO 639-2 language code, e.g. "jpn", "spa", "eng". */
     language: string
-    /** Human-readable label as embedded in the MKV â€” fall back to `language` if absent. */
+    /** Human-readable label as embedded in the MKV — fall back to `language` if absent. */
     title: string
     /** Codec string, e.g. "FLAC", "AAC", "AC3", "OPUS". */
     codec?: string
@@ -63,7 +70,7 @@ export interface AudioTrack {
     default?: boolean
 }
 
-// â”€â”€ Subtitles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Subtitles ──────────────────────────────────────────────────────────────────
 
 /**
  * Codec-agnostic subtitle track descriptor.
@@ -80,7 +87,7 @@ export interface SubtitleTrack {
     /** Human-readable label from the container metadata. */
     title: string
     /**
-     * Container codec: "ass" | "ssa" | "subrip" | "webvtt" | "hdmv_pgs_bitmap".
+     * Container codec: "ass" | "ssa" | "subrip" | "webvtt" | "hdmv_pgs_subtitle".
      * The player uses this to choose the renderer (jassub vs. native <track>).
      */
     codec?: string
@@ -89,19 +96,25 @@ export interface SubtitleTrack {
      *
      * For **jassub** this must point to the raw `.ass` file.
      * Endpoint example:
-     *   GET /api/v1/mediastream/subtitle?streamId=<id>&trackIndex=<n>
+     *   GET /api/v1/mediastream/subtitles?path=<path>&trackIndex=<n>&clientId=<id>
      *
-     * The backend extracts the track on-demand with:
-     *   ffmpeg -i <input.mkv> -map 0:s:<n> -c:s copy <out.ass>
+     * Image-based tracks (PGS/DVB) do NOT have a url — they require burn-in during transcode.
      */
     url?: string
     /** Whether this is a forced-subtitle-only track (signs/songs). */
     forced?: boolean
     /** Whether this is flagged as the default track in the container. */
     default?: boolean
+    /**
+     * True for bitmap subtitle codecs (PGS, DVB, XSUB) that cannot be
+     * extracted as text. These require burn-in during transcode to be
+     * rendered in a browser. When true, `url` is undefined and JASSUB
+     * must NOT be used.
+     */
+    isImageBased?: boolean
 }
 
-// â”€â”€ Aggregate container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Aggregate container ─────────────────────────────────────────────────────────
 
 /**
  * Track metadata bundle returned by the backend for the active stream.
@@ -111,7 +124,7 @@ export interface StreamTrackInfo {
     subtitleTracks: SubtitleTrack[]
 }
 
-// â”€â”€ UI Props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── UI Props ─────────────────────────────────────────────────────────────────────
 
 /**
  * Props for the PlayerSettingsMenu component.
@@ -164,6 +177,9 @@ export interface PlayerSettingsMenuProps {
 
     marathonMode?: boolean
     onMarathonModeChange?: (enabled: boolean) => void
+
+    ambientModeEnabled?: boolean
+    onAmbientModeEnabledChange?: (enabled: boolean) => void
 
     open?: boolean
     onOpenChange?: (open: boolean) => void

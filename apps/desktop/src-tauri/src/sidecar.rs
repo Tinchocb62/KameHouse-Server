@@ -87,39 +87,39 @@ impl SidecarManager {
         }
     }
 
-    fn get_binary_name(&self) -> String {
+    fn get_binary_name(&self) -> Result<String, String> {
         if self.is_dev {
             if cfg!(target_os = "windows") {
-                "kamehouse.exe".to_string()
+                Ok("kamehouse.exe".to_string())
             } else {
-                "kamehouse".to_string()
+                Ok("kamehouse".to_string())
             }
         } else {
             let os = std::env::consts::OS;
             let arch = std::env::consts::ARCH;
             match os {
-                "windows" => "kamehouse-server-windows.exe".to_string(),
-                "macos" => format!("kamehouse-server-darwin-{}", arch),
-                "linux" => format!("kamehouse-server-linux-{}", arch),
-                _ => panic!("Unsupported OS: {}", os),
+                "windows" => Ok("kamehouse-server-windows.exe".to_string()),
+                "macos" => Ok(format!("kamehouse-server-darwin-{}", arch)),
+                "linux" => Ok(format!("kamehouse-server-linux-{}", arch)),
+                _ => Err(format!("Unsupported OS: {}", os)),
             }
         }
     }
 
-    fn get_binary_path<R: Runtime>(&self, app_handle: &AppHandle<R>) -> PathBuf {
-        let binary_name = self.get_binary_name();
+    fn get_binary_path<R: Runtime>(&self, app_handle: &AppHandle<R>) -> Result<PathBuf, String> {
+        let binary_name = self.get_binary_name()?;
         if self.is_dev {
             // In dev, the binary is in the server directory at the root of the monorepo
             let current_dir = std::env::current_dir().unwrap_or_default();
             let server_dir = current_dir.join("..").join("..").join("server");
-            server_dir.join(binary_name)
+            Ok(server_dir.join(binary_name))
         } else {
             // In production, binaries are bundled as externalBin in tauri.conf.json
             let resource_dir = app_handle
                 .path()
                 .resource_dir()
-                .expect("Failed to get resource dir");
-            resource_dir.join("binaries").join(binary_name)
+                .map_err(|e| format!("Failed to get resource dir: {}", e))?;
+            Ok(resource_dir.join("binaries").join(binary_name))
         }
     }
 
@@ -144,7 +144,8 @@ impl SidecarManager {
             return Ok(());
         }
 
-        let binary_path = self.get_binary_path(app_handle);
+        let binary_path = self.get_binary_path(app_handle)
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
         info!("[Sidecar] Using binary: {:?}", binary_path);
 
         if !binary_path.exists() {
@@ -300,7 +301,11 @@ impl SidecarManager {
                 }
 
                 let mut process_lock = process_arc.lock().await;
-                if process_lock.is_none() || process_lock.as_mut().unwrap().try_wait().map(|status| status.is_some()).unwrap_or(true) {
+                let process_exited = match process_lock.as_mut() {
+                    None => true,
+                    Some(p) => p.try_wait().map(|s| s.is_some()).unwrap_or(true),
+                };
+                if process_exited {
                     drop(process_lock);
                     if !startup_resolved.load(Ordering::SeqCst) {
                         status.store(3, Ordering::SeqCst); // Crashed

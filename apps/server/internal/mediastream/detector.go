@@ -276,17 +276,24 @@ func (d *SkipDetector) GetFingerprint(ctx context.Context, fpcalcBin, videoPath 
 			return nil, fmt.Errorf("failed to start fpcalc: %w", err)
 		}
 
-		// Wait in background for ffmpeg to finish or error out
+		// Wait in background for ffmpeg to finish or error out.
+		// errCh lets us synchronise before returning so the goroutine
+		// is never leaked (it always exits before this function returns).
+		errCh := make(chan struct{}, 1)
 		go func() {
+			defer close(errCh)
 			_ = ffmpegCmd.Wait()
 			pw.Close()
 		}()
 
 		if err := fpcalcCmd.Wait(); err != nil {
-			pr.Close()
+			// Signal the pipe so the goroutine's pw.Close() unblocks immediately.
+			pr.CloseWithError(err)
+			<-errCh // wait for goroutine to finish before returning
 			return nil, fmt.Errorf("fpcalc execution failed: %w", err)
 		}
 		pr.Close()
+		<-errCh // wait for goroutine to finish
 
 		var res FingerprintResult
 		if err := json.Unmarshal(fpcalcOut.Bytes(), &res); err != nil {

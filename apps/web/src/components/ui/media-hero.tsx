@@ -108,14 +108,14 @@ export function MediaHero({
             ease: "power4.out",
             delay: 0.15
         })
-    }, { scope: heroRef, dependencies: [title] })
+    }, { scope: heroRef, dependencies: [typeof title === "string" ? title : null] })
 
     return (
         <section
             ref={heroRef}
             className={cn(
                 "relative w-full flex flex-col justify-end overflow-hidden pb-16 pt-32 shrink-0 select-none",
-                isSmallBanner ? "min-h-[60vh] md:min-h-[260px]" : "min-h-[100vh] md:min-h-[380px]",
+                isSmallBanner ? "min-h-[60vh] md:min-h-[260px]" : "min-h-[100vh]",
                 className
             )}
         >
@@ -150,7 +150,7 @@ export function MediaHero({
                             ref={backdropRef}
                             onClick={onBackdropClick}
                             className={cn(
-                                "absolute right-0 top-0 h-full w-full md:w-[82%] lg:w-[78%] overflow-hidden z-0 will-change-transform group/backdrop",
+                                "absolute right-0 top-0 h-full w-full overflow-hidden z-0 will-change-transform group/backdrop",
                                 onBackdropClick && "cursor-pointer"
                             )}
                         >
@@ -159,10 +159,6 @@ export function MediaHero({
                                 alt="Backdrop"
                                 priority={true}
                                 className="w-full h-full object-cover object-[center_20%] opacity-85 animate-ken-burns"
-                                style={{
-                                    WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
-                                    maskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 12%, black 40%)",
-                                }}
                             />
                         </div>
                     ) : (
@@ -178,7 +174,8 @@ export function MediaHero({
                                 src={backdropUrl}
                                 alt="Backdrop"
                                 priority={true}
-                                className="h-full w-auto object-contain object-right-top opacity-[0.65] animate-ken-burns"
+                                className="h-full w-auto opacity-[0.65] animate-ken-burns"
+                                imgClassName="!w-auto !h-full !object-contain !object-right-top"
                             />
                         </div>
                     )
@@ -192,15 +189,16 @@ export function MediaHero({
 
             {/* Content Container */}
             <div className={cn(
-                "relative z-20 w-full max-w-[1800px] mx-auto px-6 md:px-12 flex",
-                showPosterColumn ? "flex-col lg:flex-row items-center lg:items-end gap-10" : "flex-col pointer-events-none"
+                "relative z-20 w-full max-w-[1800px] mx-auto px-8 md:px-16 lg:px-20 xl:px-24 flex",
+                showPosterColumn ? "flex-col lg:flex-row items-center lg:items-end gap-10 lg:gap-14" : "flex-col pointer-events-none"
             )}>
                 {showPosterColumn && posterUrl && (
                     <div className="media-hero-animate w-56 md:w-64 shrink-0 aspect-[2/3] rounded-container overflow-hidden border border-white/10 bg-surface-container shadow-elevation-5 pointer-events-auto">
                         <DeferredImage
                             src={posterUrl}
                             alt="Poster"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full block"
+                            imgClassName="!w-full !h-full !object-cover"
                         />
                     </div>
                 )}

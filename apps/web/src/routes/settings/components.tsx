@@ -231,14 +231,21 @@ export function StatusCard({ label, value, icon: Icon, hint, tone = "ok" }: { la
 
 // ─── Section ──────────────────────────────────────────────────────────────────
 
-export function Section({ label, children }: { label: string; children: React.ReactNode }) {
+export function Section({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
     return (
         <section className="space-y-4">
-            <div className="flex items-center gap-3 pl-1">
-                <div className="w-1 h-4 rounded-full bg-brand-accent/60" />
-                <h2 className="text-xs font-black uppercase tracking-[0.25em] text-on-surface-variant font-mono">
-                    {label}
-                </h2>
+            <div className="space-y-1">
+                <div className="flex items-center gap-3 pl-1">
+                    <div className="w-1 h-4 rounded-full bg-brand-accent/60" />
+                    <h2 className="text-xs font-black uppercase tracking-[0.25em] text-on-surface-variant font-mono">
+                        {label}
+                    </h2>
+                </div>
+                {description && (
+                    <p className="text-[11px] text-on-surface-variant/80 pl-5 leading-relaxed font-medium">
+                        {description}
+                    </p>
+                )}
             </div>
             {children}
         </section>

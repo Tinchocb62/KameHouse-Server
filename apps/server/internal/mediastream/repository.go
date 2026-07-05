@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/samber/mo"
@@ -31,6 +33,7 @@ type (
 		transcodeDir       string // where stream segments are stored
 		database           *db.Database
 		skipDetector       *SkipDetector
+		warmingActive      atomic.Bool // guards WarmMediaInfo against overlapping runs
 	}
 
 	NewRepositoryOptions struct {
@@ -111,6 +114,55 @@ func (r *Repository) GetSkipDetector() *SkipDetector {
 	return r.skipDetector
 }
 
+// WarmMediaInfo pre-extracts and caches media info (ffprobe) for the given files
+// using a small worker pool, so the first play of any file skips the cold-start
+// ffprobe. GetInfo is cache-aware (52-week disk TTL keyed by path hash), so
+// already-warmed files are near-free. Best-effort: failures are logged at debug
+// and never block. Safe to call from a goroutine; overlapping calls are skipped.
+func (r *Repository) WarmMediaInfo(paths []string) {
+	if !r.IsInitialized() || len(paths) == 0 {
+		return
+	}
+	if !r.warmingActive.CompareAndSwap(false, true) {
+		r.logger.Debug().Msg("mediastream: Media-info warming already in progress, skipping")
+		return
+	}
+	defer r.warmingActive.Store(false)
+
+	ffprobePath := r.settings.MustGet().FfprobePath
+	start := time.Now()
+	r.logger.Info().Int("files", len(paths)).Msg("mediastream: Warming media-info cache")
+
+	const workers = 3
+	sem := make(chan struct{}, workers)
+	var wg sync.WaitGroup
+	var warmed atomic.Int64
+
+	for _, p := range paths {
+		if p == "" {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(path string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			if _, err := r.mediaInfoExtractor.GetInfo(ffprobePath, path); err != nil {
+				r.logger.Debug().Err(err).Str("filepath", path).Msg("mediastream: Media-info warm failed")
+				return
+			}
+			warmed.Add(1)
+		}(p)
+	}
+	wg.Wait()
+
+	r.logger.Info().
+		Int64("warmed", warmed.Load()).
+		Int("total", len(paths)).
+		Dur("took", time.Since(start)).
+		Msg("mediastream: Media-info cache warming complete")
+}
+
 // CacheWasCleared should be called when the cache directory is manually cleared.
 func (r *Repository) CacheWasCleared() {
 	r.playbackManager.mediaContainers.Clear()
@@ -155,19 +207,28 @@ func (r *Repository) TranscoderIsInitialized() bool {
 }
 
 func (r *Repository) RequestTranscodeStream(filepath string, clientID string) (ret *MediaContainer, err error) {
-	r.reqMu.Lock()
-	defer r.reqMu.Unlock()
-
 	r.logger.Debug().Str("filepath", filepath).Msg("mediastream: Transcode stream requested")
 
 	if !r.IsInitialized() {
 		return nil, errors.New("module not initialized")
 	}
 
+	// reqMu now guards ONLY transcoder initialization and ClearTranscodeDir — not the
+	// whole request. The expensive newMediaContainer runs lock-free (deduped by
+	// singleflight), so concurrent playback requests no longer serialize behind a
+	// global mutex or each other's ffprobe.
 	if !r.transcoder.IsPresent() {
-		if ok := r.initializeTranscoder(r.settings); !ok {
-			return nil, errors.New("real-time transcoder not initialized, check your settings")
+		r.reqMu.Lock()
+		if !r.transcoder.IsPresent() { // double-check under the lock
+			if ok := r.initializeTranscoder(r.settings); !ok {
+				r.reqMu.Unlock()
+				if !r.settings.MustGet().TranscodeEnabled {
+					return nil, errors.New("La transcodificación está desactivada. Actívala en Ajustes -> Streaming.")
+				}
+				return nil, errors.New("real-time transcoder not initialized, check your settings")
+			}
 		}
+		r.reqMu.Unlock()
 	}
 
 	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeTranscode, clientID)
@@ -192,15 +253,13 @@ func (r *Repository) RequestPreloadTranscodeStream(filepath string, preferredAud
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func (r *Repository) RequestDirectPlay(filepath string, clientID string) (ret *MediaContainer, err error) {
-	r.reqMu.Lock()
-	defer r.reqMu.Unlock()
-
 	r.logger.Debug().Str("filepath", filepath).Msg("mediastream: Direct play requested")
 
 	if !r.IsInitialized() {
 		return nil, errors.New("module not initialized")
 	}
 
+	// No global lock: newMediaContainer dedupes concurrent builds via singleflight.
 	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeDirect, clientID)
 
 	return
@@ -223,15 +282,13 @@ func (r *Repository) RequestPreloadDirectPlay(filepath string) (err error) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func (r *Repository) RequestOptimizedStream(filepath string, clientID string) (ret *MediaContainer, err error) {
-	r.reqMu.Lock()
-	defer r.reqMu.Unlock()
-
 	r.logger.Debug().Str("filepath", filepath).Msg("mediastream: Optimized stream requested")
 
 	if !r.IsInitialized() {
 		return nil, errors.New("module not initialized")
 	}
 
+	// No global lock: newMediaContainer dedupes concurrent builds via singleflight.
 	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeOptimized, clientID)
 
 	return
@@ -262,6 +319,7 @@ func (r *Repository) initializeTranscoder(settings mo.Option[*models.Mediastream
 
 	// If the transcoder is not enabled, don't initialize the transcoder
 	if !settings.MustGet().TranscodeEnabled {
+		r.logger.Warn().Msg("mediastream: transcoder disabled (TranscodeEnabled=false); files that need transcoding will fail until enabled in Settings -> Streaming")
 		return false
 	}
 

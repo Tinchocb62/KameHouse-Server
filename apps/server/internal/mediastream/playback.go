@@ -9,10 +9,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/samber/mo"
+	"golang.org/x/sync/singleflight"
 )
 
 var attachmentSemaphore = make(chan struct{}, 2)
@@ -28,10 +30,14 @@ type (
 
 	PlaybackManager struct {
 		logger                *zerolog.Logger
+		stateMu               sync.Mutex                 // Guards currentMediaContainer (no longer serialized by repository.reqMu).
 		currentMediaContainer mo.Option[*MediaContainer] // The current media being played.
 		repository            *Repository
 		mediaContainers       *result.Map[string, *MediaContainer] // Temporary cache for the media containers.
 		clientMediaContainers *result.Map[string, *MediaContainer]
+		// Dedupes concurrent identical newMediaContainer builds (keyed by hash:streamType)
+		// so a hover-preload racing the play click runs ffprobe once instead of twice.
+		containerGroup singleflight.Group
 	}
 
 	PlaybackState struct {
@@ -60,16 +66,37 @@ func NewPlaybackManager(repository *Repository) *PlaybackManager {
 
 func (p *PlaybackManager) KillPlayback() {
 	p.logger.Debug().Msg("mediastream: Killing playback")
+	p.stateMu.Lock()
+	defer p.stateMu.Unlock()
 	if p.currentMediaContainer.IsPresent() {
 		p.currentMediaContainer = mo.None[*MediaContainer]()
 		p.logger.Trace().Msg("mediastream: Removed current media container")
 	}
 }
 
+// setCurrentMediaContainer / getCurrentMediaContainer guard the "current media"
+// pointer that stream endpoints fall back to when a request carries no bound
+// clientID. Previously the surrounding repository.reqMu made these writes safe;
+// now that container builds run lock-free (singleflight), the writes/reads need
+// their own small mutex.
+func (p *PlaybackManager) setCurrentMediaContainer(mc *MediaContainer) {
+	p.stateMu.Lock()
+	p.currentMediaContainer = mo.Some(mc)
+	p.stateMu.Unlock()
+}
+
+func (p *PlaybackManager) getCurrentMediaContainer() (*MediaContainer, bool) {
+	p.stateMu.Lock()
+	defer p.stateMu.Unlock()
+	return p.currentMediaContainer.Get()
+}
+
 // RequestPlayback is called by the frontend to stream a media file
 func (p *PlaybackManager) RequestPlayback(filepath string, streamType StreamType, clientID string) (ret *MediaContainer, err error) {
 
 	p.logger.Debug().Str("filepath", filepath).Any("type", streamType).Msg("mediastream: Requesting playback")
+
+	start := time.Now()
 
 	// Create a new media container
 	ret, err = p.newMediaContainer(filepath, streamType)
@@ -79,13 +106,14 @@ func (p *PlaybackManager) RequestPlayback(filepath string, streamType StreamType
 		return nil, fmt.Errorf("failed to create media container: %v", err)
 	}
 
-	// Set the current media container.
-	p.currentMediaContainer = mo.Some(ret)
+	// Bind the session: stream endpoints (segments, ranges, subtitles) resolve the
+	// file from this per-client (and global fallback) pointer.
+	p.setCurrentMediaContainer(ret)
 	if clientID != "" {
 		p.clientMediaContainers.Set(clientID, ret)
 	}
 
-	p.logger.Info().Str("filepath", filepath).Msg("mediastream: Ready to play media")
+	p.logger.Info().Str("filepath", filepath).Str("hash", ret.Hash).Dur("total", time.Since(start)).Msg("mediastream: Ready to play media")
 
 	return
 }
@@ -210,12 +238,36 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 
 	p.logger.Trace().Str("hash", hash).Msg("mediastream: Checking cache")
 
-	// Check the cache ONLY if the stream type is the same.
+	// Fast path: cache hit (lock-free read). Only reuse if the stream type matches.
 	if mc, ok := p.mediaContainers.Get(hash); ok && mc.StreamType == streamType {
-		p.logger.Debug().Str("hash", hash).Msg("mediastream: Media container cache HIT")
+		p.logger.Debug().Str("hash", hash).Bool("cached", true).Msg("mediastream: Media container cache HIT")
 		return mc, nil
 	}
 
+	// Slow path: dedupe concurrent identical builds. Keyed by hash:streamType so
+	// a preload racing a play (or two clients opening the same file) runs ffprobe
+	// once and shares the result; different files still build in parallel (no global
+	// lock). This replaces the old repository-wide reqMu around the whole request.
+	key := hash + ":" + string(streamType)
+	v, err, _ := p.containerGroup.Do(key, func() (interface{}, error) {
+		// Re-check the cache: a concurrent build may have completed while we queued.
+		if mc, ok := p.mediaContainers.Get(hash); ok && mc.StreamType == streamType {
+			p.logger.Debug().Str("hash", hash).Bool("cached", true).Msg("mediastream: Media container cache HIT (deduped)")
+			return mc, nil
+		}
+		return p.buildMediaContainer(filePath, hash, streamType)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*MediaContainer), nil
+}
+
+// buildMediaContainer performs the expensive work (ffprobe media-info extraction,
+// codec compatibility decision, stream-URL resolution) and caches the result. It
+// must only be called from within the containerGroup singleflight in
+// newMediaContainer so the ffprobe never runs concurrently for the same file.
+func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, streamType StreamType) (ret *MediaContainer, err error) {
 	p.logger.Trace().Str("hash", hash).Msg("mediastream: Creating media container")
 
 	// Get the media information of the file.
@@ -227,10 +279,12 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 
 	p.logger.Debug().Msg("mediastream: Extracting media info")
 
+	ffprobeStart := time.Now()
 	ret.MediaInfo, err = p.repository.mediaInfoExtractor.GetInfo(p.repository.settings.MustGet().FfprobePath, filePath)
 	if err != nil {
 		return nil, err
 	}
+	p.logger.Debug().Str("hash", hash).Bool("cached", false).Dur("mediaInfo", time.Since(ffprobeStart)).Msg("mediastream: Media info extracted")
 
 	p.logger.Debug().Msg("mediastream: Extracted media info, deferring attachment extraction to background")
 
@@ -276,10 +330,18 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 
 			hasSupportedAudio := true
 			if len(ret.MediaInfo.Audios) > 0 {
-				aCodec := strings.ToLower(ret.MediaInfo.Audios[0].Codec)
-				// aac, mp3, opus, flac, vorbis, ac3, and dts (dca) are universally supported or handled by modern audio hardware.
-				if aCodec != "aac" && aCodec != "mp3" && aCodec != "opus" && aCodec != "flac" && aCodec != "vorbis" && aCodec != "ac3" && aCodec != "dca" {
-					hasSupportedAudio = false
+				hasSupportedAudio = false
+				for _, audio := range ret.MediaInfo.Audios {
+					aCodec := strings.ToLower(audio.Codec)
+					// Only codecs with decoders shipped in Chromium/WebView2 are safe for direct play.
+					// AC3, E-AC3 and DTS (dca) are proprietary and NOT decoded by Chromium (an OS
+					// Media Foundation decoder may exist on some Windows builds, but it's unreliable and
+					// absent on Firefox/Chrome), so they must fall back to Transcode HLS (re-encoded to AAC).
+					// Leaving them here caused PIPELINE_ERROR_DECODE: "Failed to send audio packet for decoding".
+					if aCodec == "aac" || aCodec == "mp3" || aCodec == "opus" || aCodec == "flac" || aCodec == "vorbis" {
+						hasSupportedAudio = true
+						break
+					}
 				}
 			}
 
@@ -289,7 +351,19 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 		}
 
 		if !isDirectPlayable {
-			p.logger.Info().Str("filepath", filePath).Str("ext", ext).Msg("mediastream: File container or codecs not natively supported by browser. Falling back to Transcode HLS.")
+			vCodec := ""
+			if ret.MediaInfo.Video != nil {
+				vCodec = strings.ToLower(ret.MediaInfo.Video.Codec)
+			}
+			aCodec := ""
+			if len(ret.MediaInfo.Audios) > 0 {
+				var audioCodecs []string
+				for _, audio := range ret.MediaInfo.Audios {
+					audioCodecs = append(audioCodecs, strings.ToLower(audio.Codec))
+				}
+				aCodec = strings.Join(audioCodecs, ",")
+			}
+			p.logger.Info().Str("filepath", filePath).Str("ext", ext).Str("videoCodec", vCodec).Str("audioCodec", aCodec).Msg("mediastream: File container or codecs not natively supported by browser. Falling back to Transcode HLS.")
 			streamType = StreamTypeTranscode
 			ret.StreamType = StreamTypeTranscode
 		}

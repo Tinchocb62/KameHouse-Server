@@ -93,7 +93,7 @@ export const settingsSchema = z.object({
         themeCustomCSS: z.string().default(""),
         themeMobileCustomCSS: z.string().default(""),
         themeUnpinnedMenuItems: z.array(z.string()).default([]),
-        themeEnableBlurringEffects: z.boolean().default(true),
+        themeEnableBlurringEffects: z.boolean().default(false),
     }),
     notifications: z.object({
         disableNotifications: z.boolean().default(false),

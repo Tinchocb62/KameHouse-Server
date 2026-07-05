@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState, useEffect, useCallback } from "react"
 import { useRequestMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { usePlayerCore } from "./player-core"
 import { PlayerUI } from "./player-ui"
@@ -6,6 +6,7 @@ import type { EpisodeSource } from "@/api/types/unified.types"
 import type { Mediastream_StreamType, Audio, Subtitle } from "@/api/generated/types"
 import type { AudioTrack, SubtitleTrack } from "@/components/ui/track-types"
 import type { VideoPlayerProps } from "./player"
+import { useGetSettings } from "@/api/hooks/settings.hooks"
 
 export interface Chapter {
     startTime: number
@@ -26,6 +27,9 @@ export interface OrchestratorProps extends VideoPlayerProps {
 export function VideoPlayerOrchestrator(props: OrchestratorProps) {
     const [streamType, setStreamType] = useState<string>(props.streamType || "direct")
     const [clientId] = useState(() => Math.random().toString(36).substring(2, 11))
+
+    const { data: settingsQuery } = useGetSettings()
+    const transcodeEnabled = settingsQuery?.mediastream?.transcodeEnabled ?? false
 
     const [prevStreamTypeProp, setPrevStreamTypeProp] = useState(props.streamType)
     useEffect(() => {
@@ -70,8 +74,12 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
                 codec: s.codec,
                 default: s.isDefault,
                 forced: s.isForced,
-                url: `/api/v1/mediastream/subtitles?path=${encodeURIComponent(props.streamUrl)}&trackIndex=${s.index ?? i}&clientId=${clientId}`
+                isImageBased: s.isImageBased ?? false,
+                // Image-based tracks (PGS/DVB) have no extractable text URL;
+                // they require burn-in during transcode. Only set url for text-based subs.
+                url: s.isImageBased ? undefined : `/api/v1/mediastream/subtitles?path=${encodeURIComponent(props.streamUrl)}&trackIndex=${s.index ?? i}&clientId=${clientId}`
             })) || [],
+
             chapters: data.mediaInfo.chapters?.map((c) => ({
                 startTime: c.startTime || 0,
                 endTime: c.endTime || 0,
@@ -83,6 +91,15 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
 
     const activeStreamType = (data?.streamType && ["local", "online", "direct", "transcode", "optimized"].includes(data.streamType) ? data.streamType : streamType || "direct") as "local" | "online" | "direct" | "transcode" | "optimized"
 
+    const handleDirectPlayFailed = useCallback(() => {
+        if (transcodeEnabled) {
+            console.info("[orchestrator] Direct play failed — falling back to transcode")
+            setStreamType("transcode")
+        } else {
+            console.warn("[orchestrator] Direct play failed but transcode is disabled — showing error")
+        }
+    }, [transcodeEnabled])
+
     const core = usePlayerCore({
         ...props,
         streamType: activeStreamType,
@@ -91,6 +108,7 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
         clientId,
         mediaFormat: props.mediaFormat,
         onRequestStreamTypeChange: setStreamType,
+        onDirectPlayFailed: handleDirectPlayFailed,
     })
 
     const episodeSources = useMemo<EpisodeSource[]>(() => [

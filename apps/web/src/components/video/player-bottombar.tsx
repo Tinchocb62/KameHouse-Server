@@ -4,7 +4,9 @@ import { cn } from "@/components/ui/core/styling"
 
 import { TimelineHeatmap, type InsightNode } from "@/components/ui/timeline-heatmap"
 import { PlayerSettingsMenu } from "@/components/ui/PlayerSettingsMenu"
+import { PlayerSeekPreview } from "./player-seek-preview"
 import type { AudioTrack, SubtitleTrack } from "@/components/ui/track-types"
+import type { PlayerPreviewManager } from "./player-preview"
 import type { EpisodeSource } from "@/api/types/unified.types"
 import { cleanMediaTitle } from "@/lib/helpers/media"
 
@@ -98,6 +100,8 @@ export interface PlayerBottomBarProps {
     onMarathonModeChange?: (enabled: boolean) => void
     tvMode?: boolean
     onTvModeChange?: (enabled: boolean) => void
+    ambientModeEnabled?: boolean
+    onAmbientModeEnabledChange?: (enabled: boolean) => void
 
     /** AniSkip intervals for rendering visual markers on the timeline */
     skipTimesOp?: { startTime: number; endTime: number }
@@ -122,19 +126,11 @@ export interface PlayerBottomBarProps {
     videoRef?: React.RefObject<HTMLVideoElement | null>
     malId?: number | null
     mediaId?: number
+
+    previewManager?: PlayerPreviewManager | null
 }
 
-function getSeriesName(fullTitle?: string): string {
-    if (!fullTitle) return ""
-    if (fullTitle.includes(":")) {
-        return fullTitle.split(":")[0].trim()
-    }
-    const match = fullTitle.match(/^(dragon\s*ball\s*(z|gt|super|kai)?)/i)
-    if (match) {
-        return match[1].trim()
-    }
-    return fullTitle
-}
+
 
 const SkipNextChapterIcon = () => (
     <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" className="fill-current">
@@ -168,6 +164,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
     autoDisableSubtitlesWhenDubbed = true, onAutoDisableSubtitlesWhenDubbedChange,
     marathonMode = false, onMarathonModeChange,
     tvMode = false, onTvModeChange,
+    ambientModeEnabled = true, onAmbientModeEnabledChange,
     skipTimesOp,
     skipTimesEd,
     chapters = [],
@@ -183,20 +180,47 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
     videoRef,
     malId,
     mediaId,
+    previewManager,
 }: PlayerBottomBarProps) {
     const isMovie = React.useMemo(() => {
         const formatUpper = mediaFormat?.toUpperCase()
         return formatUpper === "MOVIE" || formatUpper === "SPECIAL" || formatUpper === "OVA"
     }, [mediaFormat])
 
+    const [hoverTime, setHoverTime] = React.useState<number | null>(null)
+    const [hoverPosPercent, setHoverPosPercent] = React.useState<number>(0)
+    
+    const handleMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
+        const percent = x / rect.width
+        setHoverTime(percent * duration)
+        setHoverPosPercent(percent * 100)
+    }, [duration])
+
+    const handleMouseLeave = React.useCallback(() => {
+        setHoverTime(null)
+    }, [])
+
     return (
         <div className={cn(
-            "absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-4xl flex flex-col pointer-events-auto select-none",
-            "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_85%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] border border-outline-variant rounded-full shadow-elevation-4 px-6 py-3 z-30",
+            "absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] flex flex-col pointer-events-auto select-none",
+            "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_85%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] border border-outline-variant rounded-full shadow-elevation-4 px-5 py-2.5 z-30",
         )}>
 
+            <PlayerSeekPreview 
+                previewManager={previewManager || null} 
+                hoverTime={hoverTime} 
+                hoverPosPercent={hoverPosPercent} 
+                duration={duration} 
+            />
+
             {/* Progress Timeline */}
-            <div className="relative flex items-center h-3 md:h-3 cursor-pointer w-full mb-2 py-2.5 md:py-0 -my-2.5 md:my-0">
+            <div 
+                className="relative flex items-center h-3 md:h-3 cursor-pointer w-full mb-2 py-2.5 md:py-0 -my-2.5 md:my-0"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+            >
                 {showHeatmap && (
                     <TimelineHeatmap
                         duration={duration}
@@ -230,8 +254,8 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                     )}
 
                     {/* Chapter tick markers */}
-                    {duration > 0 && !isMovie && chapters && chapters.map((chapter, idx) => {
-                        if (chapter.startTime <= 0 || chapter.startTime >= duration) return null;
+                    {duration > 0 && !isMovie && Array.isArray(chapters) && chapters.map((chapter, idx) => {
+                        if (typeof chapter.startTime !== "number" || chapter.startTime <= 0 || chapter.startTime >= duration) return null;
                         return (
                             <div
                                 key={idx}
@@ -449,6 +473,8 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                         onMarathonModeChange={onMarathonModeChange}
                         tvMode={tvMode}
                         onTvModeChange={onTvModeChange}
+                        ambientModeEnabled={ambientModeEnabled}
+                        onAmbientModeEnabledChange={onAmbientModeEnabledChange}
                         videoRef={videoRef}
                         malId={malId}
                         mediaId={mediaId}

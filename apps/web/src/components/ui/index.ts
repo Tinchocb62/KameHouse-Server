@@ -6,7 +6,6 @@ export type { PosterCardProps, PosterAspect, PosterSize, PosterGridProps } from 
 export { Navbar, NavbarSpacer } from "./navbar";
 export type { NavbarProps } from "./navbar";
 
-export { Sidebar } from "./sidebar";
 
 export { Modal, ConfirmModal, AlertModal } from "./modal";
 export type { ModalProps, ConfirmModalProps, AlertModalProps } from "./modal";

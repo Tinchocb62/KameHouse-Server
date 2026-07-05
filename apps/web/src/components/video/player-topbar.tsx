@@ -31,7 +31,7 @@ export function PlayerTopBar({ title, episodeLabel, episodeNumber, mediaFormat, 
     }, [isMovie, cleanTitle, cleanLabel])
 
 return (
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-6 md:p-8 pointer-events-none z-[100] bg-gradient-to-b from-black/70 to-transparent">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-6 md:p-8 pointer-events-none z-[100] bg-gradient-to-b from-black/70 to-transparent backdrop-blur-[var(--blur-overlay-lg)]">
             <div className="flex flex-col ml-2 pointer-events-auto select-none [&>*:not(:first-child)]:mt-1">
                 <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-[0.25em]" style={{ fontFamily: "'Space Mono', monospace" }}>
                     {isMovie ? "Película" : `Episodio ${episodeNumber ?? ""}`}

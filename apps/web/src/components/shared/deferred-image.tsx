@@ -15,6 +15,7 @@ interface DeferredImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageEleme
     aspectRatio?: string;
     showSkeleton?: boolean;
     fallback?: React.ReactNode;
+    imgClassName?: string;
 }
 
 const NO_COVER = "/no-cover.png"
@@ -62,6 +63,7 @@ export function DeferredImage(props: DeferredImageProps) {
         priority = false,
         showSkeleton = true,
         fallback,
+        imgClassName,
         onError,
         onLoad,
         ...restProps
@@ -174,7 +176,8 @@ export function DeferredImage(props: DeferredImageProps) {
                     onLoad={() => setIsLowResLoaded(true)}
                     className={cn(
                         "absolute inset-0 h-full w-full object-cover scale-[1.08] filter blur-[12px] transition-opacity duration-500 ease-out",
-                        isLowResLoaded ? "opacity-100" : "opacity-0"
+                        isLowResLoaded ? "opacity-100" : "opacity-0",
+                        imgClassName
                     )}
                 />
             )}
@@ -191,7 +194,8 @@ export function DeferredImage(props: DeferredImageProps) {
                     className={cn(
                         "relative h-full w-full object-cover transition-opacity duration-500 ease-out",
                         !isLoaded && "will-change-[opacity]",  // Only hint GPU during the fade-in
-                        isLoaded ? "opacity-100" : "opacity-0"
+                        isLoaded ? "opacity-100" : "opacity-0",
+                        imgClassName
                     )}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     {...(restProps as any)}

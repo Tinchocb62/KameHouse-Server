@@ -102,6 +102,9 @@ type Subtitle struct {
 	IsExternal bool `json:"isExternal"`
 	// The link to access this subtitle
 	Link *string `json:"link"`
+	// IsImageBased indicates a bitmap/image subtitle (PGS, DVB, XSUB).
+	// These cannot be extracted as text and require burn-in during transcode.
+	IsImageBased bool `json:"isImageBased"`
 }
 
 type Chapter struct {
@@ -178,6 +181,26 @@ func (e *MediaInfoExtractor) GetInfo(ffprobePath, path string) (mi *MediaInfo, e
 	// Save in the cache
 	_ = e.fileCacher.Set(bucket, hash, mi)
 
+	// [DIAGNOSTIC] Log detected audio and subtitle streams so we can
+	// see exactly what ffprobe found in the file (before any filtering).
+	for _, a := range mi.Audios {
+		e.logger.Info().
+			Uint32("index", a.Index).
+			Str("codec", a.Codec).
+			Uint32("channels", a.Channels).
+			Bool("default", a.IsDefault).
+			Msg("mediastream: [diag] audio stream")
+	}
+	for _, s := range mi.Subtitles {
+		e.logger.Info().
+			Uint32("index", s.Index).
+			Str("codec", s.Codec).
+			Bool("isImageBased", s.IsImageBased).
+			Bool("default", s.IsDefault).
+			Bool("forced", s.IsForced).
+			Msg("mediastream: [diag] subtitle stream")
+	}
+
 	e.logger.Debug().Str("hash", hash).Msg("mediastream: Extracted media information using FFprobe")
 
 	return mi, nil
@@ -245,14 +268,26 @@ func FfprobeGetInfo(ffprobePath, path, hash string) (*MediaInfo, error) {
 		}
 	})
 
+	// imageBasedSubCodecs are bitmap subtitle codecs that cannot be extracted
+	// as text. They require burn-in during transcode to be rendered in a browser.
+	imageBasedSubCodecs := map[string]bool{
+		"hdmv_pgs_subtitle": true,
+		"pgssub":            true,
+		"dvb_subtitle":      true,
+		"dvbsub":            true,
+		"xsub":              true,
+	}
+
 	// Get the subtitle streams
 	mi.Subtitles = streamToMap(data.Streams, ffprobe.StreamSubtitle, func(stream *ffprobe.Stream, i uint32) Subtitle {
 		subExtensions := map[string]string{
-			"subrip": "srt",
-			"ass":    "ass",
-			"vtt":    "vtt",
-			"ssa":    "ssa",
+			"subrip":            "srt",
+			"ass":               "ass",
+			"vtt":               "vtt",
+			"ssa":               "ssa",
+			"hdmv_pgs_subtitle": "sup",
 		}
+		isImage := imageBasedSubCodecs[stream.CodecName]
 		extension, ok := subExtensions[stream.CodecName]
 		var link *string
 		if ok {
@@ -261,19 +296,41 @@ func FfprobeGetInfo(ffprobePath, path, hash string) (*MediaInfo, error) {
 		}
 		lang, _ := language.Parse(stream.Tags.Language)
 		return Subtitle{
-			Index:     i,
-			Title:     nullIfZero(stream.Tags.Title),
-			Language:  nullIfZero(lang.String()),
-			Codec:     stream.CodecName,
-			Extension: lo.ToPtr(extension),
-			IsDefault: stream.Disposition.Default != 0,
-			IsForced:  stream.Disposition.Forced != 0,
-			Link:      link,
+			Index:        i,
+			Title:        nullIfZero(stream.Tags.Title),
+			Language:     nullIfZero(lang.String()),
+			Codec:        stream.CodecName,
+			Extension:    lo.ToPtr(extension),
+			IsDefault:    stream.Disposition.Default != 0,
+			IsForced:     stream.Disposition.Forced != 0,
+			Link:         link,
+			IsImageBased: isImage,
 		}
 	})
 
-	// Remove subtitles without extensions (not supported)
+
+	// [DIAGNOSTIC] Log all subtitle streams before filtering so we can see
+	// which codecs are present in the file (visible in server logs at Info level).
+	for _, sub := range mi.Subtitles {
+		hasExt := sub.Extension != nil && *sub.Extension != ""
+		fmt.Printf("[mediastream diag] subtitle stream index=%d codec=%q lang=%v hasExt=%v isImageBased=%v\n",
+			sub.Index, sub.Codec,
+			func() string {
+				if sub.Language != nil { return *sub.Language }
+				return "und"
+			}(),
+			hasExt, sub.IsImageBased)
+	}
+
+	// Remove subtitles that are neither text-based nor image-based.
+	// Text-based tracks (subrip/ass/vtt/ssa) have a link; image-based tracks
+	// (PGS/DVB) are kept but served differently (burn-in during transcode).
 	mi.Subtitles = lo.Filter(mi.Subtitles, func(item Subtitle, _ int) bool {
+		if item.IsImageBased {
+			// Keep image-based tracks — they will be exposed to the frontend
+			// so the user can select them; rendering requires burn-in.
+			return true
+		}
 		if item.Extension == nil || *item.Extension == "" || item.Link == nil {
 			return false
 		}

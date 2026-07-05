@@ -82,7 +82,7 @@ export function PipelineStageCard({ stage, isActive, isDone }: {
                     ? "border-[#ff6e3a]/50 bg-[#ff6e3a]/[0.03] shadow-brand-secondary"
                     : isDone
                         ? "border-emerald-500/25 bg-emerald-500/[0.02]"
-                        : "border-white/5 bg-zinc-950/30 hover:border-white/10 hover:bg-white/[0.015]"
+                        : "border-white/5 bg-[var(--glass-panel-bg)] hover:border-white/10 hover:bg-white/[0.015]"
             )}
         >
             {/* Ambient Background Gradient */}

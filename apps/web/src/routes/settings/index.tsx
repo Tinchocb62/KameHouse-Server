@@ -121,15 +121,15 @@ export const Route = createFileRoute("/settings/")(({
     component: SettingsPage,
 }))
 
-const NAV_ITEMS = [
-    { id: "general",      label: "General",       desc: "Sistema, audio, notificaciones",     icon: LucideSettings },
-    { id: "appearance",   label: "Apariencia",    desc: "Temas, colores, layout",             icon: LucidePalette },
-    { id: "library",      label: "Biblioteca",    desc: "Directorios, rutas de media",        icon: LucideHardDrive },
-    { id: "scanner",      label: "Escáner",       desc: "Motor bayesiano, matching",          icon: LucideRadar },
-    { id: "player",       label: "Reproductor",   desc: "VLC, MPC, MPV, IINA",                icon: LucidePlay },
-    { id: "streaming",    label: "Streaming",     desc: "Transcodificación HLS, GPU",         icon: LucideTv },
-    { id: "integrations", label: "Integraciones", desc: "TMDB, Fanart, OMDb",                 icon: LucideCloud },
-    
+const NAV_ITEMS: { id: string; label: string; icon: React.ElementType; desc?: string }[] = [
+    { id: "general",      label: "General",         icon: LucideSettings },
+    { id: "appearance",   label: "Apariencia",    icon: LucidePalette },
+    { id: "library",      label: "Biblioteca",    icon: LucideHardDrive },
+    { id: "scanner",      label: "Escáner",       icon: LucideRadar },
+    { id: "player",       label: "Reproductor",   icon: LucidePlay },
+    { id: "streaming",    label: "Streaming",     icon: LucideTv },
+    { id: "integrations", label: "Integraciones", icon: LucideCloud },
+
 ]
 
 const SECTION_LABELS: Record<string, string> = {
@@ -150,7 +150,7 @@ function SettingsPage() {
     // KameHouse backdrop for settings
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
     useEffect(() => {
-        setBackdropUrl("/casa-kame-de-dragon-ball-3963.webp")
+        setBackdropUrl(null)
         return () => { setBackdropUrl(null) }
     }, [setBackdropUrl])
 

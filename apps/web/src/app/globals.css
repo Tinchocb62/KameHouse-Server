@@ -107,9 +107,9 @@
   .scrim-hero-left {
     background: linear-gradient(
       to right,
-      color-mix(in srgb, var(--bg-primary) 95%, transparent) 0%,
-      color-mix(in srgb, var(--bg-primary) 78%, transparent) 25%,
-      color-mix(in srgb, var(--bg-primary) 18%, transparent) 65%,
+      var(--bg-primary) 0%,
+      color-mix(in srgb, var(--bg-primary) 90%, transparent) 25%,
+      color-mix(in srgb, var(--bg-primary) 35%, transparent) 65%,
       transparent 95%
     );
   }
@@ -237,26 +237,34 @@ media-time-range {
 @container (min-width: 1440px) { .swimlane { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @container (min-width: 1920px) { .swimlane { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
 
-/* ─── Sidebar Gradient — degrade fijo de todas las eras Dragon Ball ──── */
+/* ─── Sidebar Gradient — base negra + acento del preset activo ──────── */
 .sidebar-gradient {
-  background: var(--bg-secondary);
+  background: var(--sidebar-bg);
 }
 
-[data-sidebar-gradient="true"] .sidebar-gradient::before {
+[data-sidebar-gradient="true"] .sidebar-gradient::before,
+[data-theme="era-universe"] .sidebar-gradient::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--spotlight-db) 30%, transparent) 0%,
-    color-mix(in srgb, var(--spotlight-dbz) 30%, transparent) 25%,
-    color-mix(in srgb, var(--spotlight-dbgt) 30%, transparent) 50%,
-    color-mix(in srgb, var(--spotlight-dbs) 30%, transparent) 75%,
-    color-mix(in srgb, var(--spotlight-daima) 30%, transparent) 100%
-  );
+  /* Color del preset activo sumado sobre la base negra del sidebar */
+  background: var(--sidebar-accent-gradient);
   pointer-events: none;
   z-index: 0;
+}
+
+[data-theme="era-universe"] .era-universe-layer {
+  opacity: 1 !important;
+  background: conic-gradient(
+    from 180deg at 50% 50%,
+    color-mix(in srgb, var(--spotlight-db) 15%, transparent) 0deg,
+    color-mix(in srgb, var(--spotlight-dbz) 15%, transparent) 72deg,
+    color-mix(in srgb, var(--spotlight-dbgt) 15%, transparent) 144deg,
+    color-mix(in srgb, var(--spotlight-dbs) 15%, transparent) 216deg,
+    color-mix(in srgb, var(--spotlight-daima) 15%, transparent) 288deg,
+    color-mix(in srgb, var(--spotlight-db) 15%, transparent) 360deg
+  );
 }
 
 /* ─── Safe Area Insets ───────────────────────────────────────────────── */

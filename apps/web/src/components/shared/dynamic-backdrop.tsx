@@ -2,6 +2,7 @@ import * as React from "react"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 import { useLocation } from "@tanstack/react-router"
 import { useAppStore } from "@/lib/store"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 /**
  * DynamicBackdrop — Cinematic Minimalist backdrop for KameHouse v3
@@ -24,21 +25,25 @@ export function DynamicBackdrop() {
         location.pathname === "/series" ||
         location.pathname === "/series/" ||
         location.pathname.startsWith("/settings")
-    const isStaticPage = isHomePage || isListingPage
+    
+    const isDetailPage = Boolean(location.pathname.match(/\/(movies|series)\/\d+/))
+    const isStaticPage = isHomePage || isListingPage || isDetailPage
 
     const isEnabled = useAppStore(state => state.dynamicBackdropEnabled)
     const isMotionEnabled = useAppStore(state => state.dynamicBackdropMotionEnabled)
     const currentBackdropUrl = useIntelligenceStore(s => s.currentBackdropUrl)
     const activeBackdropUrl = currentBackdropUrl
-    const isKameHouseBackdrop = currentBackdropUrl?.includes("casa-kame")
-    // KameHouse backdrop: high opacity so the house and island are clearly visible
-    const baseOpacity = isHomePage
+    
+    const ts = useThemeSettings()
+    const isFlat = !ts.themeEnableBlurringEffects
+    
+    const baseOpacity = (isHomePage
         ? 0.65
-        : isListingPage && isKameHouseBackdrop
-            ? 0.85
-            : isListingPage
-                ? 0.55
-                : 0.24
+        : isListingPage
+            ? 0.55
+            : isDetailPage
+                ? 0.45
+                : 0.24) * (isFlat ? 0.75 : 1)
 
     const [displayedUrl, setDisplayedUrl] = React.useState<string | null>(null)
     const [nextUrl, setNextUrl] = React.useState<string | null>(null)
@@ -134,14 +139,11 @@ export function DynamicBackdrop() {
         return () => clearTimeout(timer)
     }, [activeBackdropUrl, displayedUrl, isEnabled])
 
-    // KameHouse image: very subtle blur so the house silhouette is recognizable
     const filterClass = isHomePage
         ? "blur-[var(--filter-blur-ambient-xl)]"
-        : isListingPage && isKameHouseBackdrop
-            ? "blur-[var(--filter-blur-ambient-sm)]"
-            : isListingPage
-                ? "blur-[var(--filter-blur-ambient-lg)]"
-                : "blur-[var(--filter-blur-ambient-md)]"
+        : isListingPage || isDetailPage
+            ? "blur-[var(--filter-blur-ambient-lg)]"
+            : "blur-[var(--filter-blur-ambient-md)]"
 
     if (!isEnabled) return null
 
@@ -151,33 +153,45 @@ export function DynamicBackdrop() {
             aria-hidden="true"
             className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[var(--bg-primary)]"
         >
-            {/* Cinematic Gradient Orbs - warm orange/amber tones for KameHouse image */}
+            {/* Cinematic Gradient Orbs */}
             <div className="absolute inset-0 overflow-hidden" style={{ filter: "blur(var(--filter-blur-orb))" }}>
+                {/* Era Universe gradient layer */}
+                <div className="era-universe-layer absolute inset-0 transition-opacity duration-1000 mix-blend-plus-lighter opacity-0" />
                 <div className="absolute top-[10%] left-[8%] w-[45vw] h-[45vw] rounded-full animate-float-blur mix-blend-plus-lighter"
                     style={{
-                        background: isKameHouseBackdrop
-                            ? "radial-gradient(circle at 30% 30%, #E85D2E 0%, transparent 70%)"
-                            : "radial-gradient(circle at 30% 30%, var(--glow-color-1) 0%, transparent 70%)",
-                        opacity: isKameHouseBackdrop ? 0.45 : 0.4,
+                        background: "radial-gradient(circle at 30% 30%, var(--glow-color-1) 0%, transparent 70%)",
+                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.75 : 0.4,
                         willChange: "transform",
                     }}
                 />
                 <div className="absolute bottom-[8%] right-[6%] w-[38vw] h-[38vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
                     style={{
-                        background: isKameHouseBackdrop
-                            ? "radial-gradient(circle at 70% 70%, #F59E0B 0%, transparent 70%)"
-                            : "radial-gradient(circle at 70% 70%, var(--glow-color-2) 0%, transparent 70%)",
-                        opacity: isKameHouseBackdrop ? 0.38 : 0.34,
+                        background: "radial-gradient(circle at 70% 70%, var(--glow-color-2) 0%, transparent 70%)",
+                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.60 : 0.34,
                         willChange: "transform",
                     }}
                 />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[48vw] h-[48vw] rounded-full animate-pulse-glow mix-blend-plus-lighter"
                     style={{
-                        background: isKameHouseBackdrop
-                            ? "radial-gradient(circle at 50% 50%, #F97316 0%, transparent 60%)"
-                            : "radial-gradient(circle at 50% 50%, var(--glow-color-3) 0%, transparent 60%)",
-                        opacity: isKameHouseBackdrop ? 0.3 : 0.24,
+                        background: "radial-gradient(circle at 50% 50%, var(--glow-color-3) 0%, transparent 60%)",
+                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.50 : 0.24,
                         willChange: "opacity, transform",
+                    }}
+                />
+                <div className="absolute top-[20%] right-[15%] w-[40vw] h-[40vw] rounded-full animate-float-blur mix-blend-plus-lighter"
+                    style={{
+                        background: "radial-gradient(circle at 40% 40%, var(--glow-color-4) 0%, transparent 65%)",
+                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.65 : 0.35,
+                        willChange: "transform",
+                        animationDelay: "-2s",
+                    }}
+                />
+                <div className="absolute bottom-[20%] left-[10%] w-[42vw] h-[42vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
+                    style={{
+                        background: "radial-gradient(circle at 60% 60%, var(--glow-color-5) 0%, transparent 65%)",
+                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.55 : 0.30,
+                        willChange: "transform",
+                        animationDelay: "-4s",
                     }}
                 />
             </div>
@@ -199,7 +213,7 @@ export function DynamicBackdrop() {
                         style={{
                             backgroundImage: `url(${displayedUrl})`,
                             opacity: isCrossFading ? 0 : baseOpacity,
-                            transform: isKameHouseBackdrop ? "scale(1.05)" : "scale(1.25)",
+                            transform: "scale(1.25)",
                             transition: "opacity 1000ms cubic-bezier(0.25, 0.8, 0.25, 1)",
                             willChange: "opacity",
                         }}
@@ -231,11 +245,11 @@ export function DynamicBackdrop() {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_0%,var(--glass-border-bottom),transparent_60%)]" />
             <div
                 className="absolute inset-0 bg-gradient-to-r from-[var(--bg-primary)] via-[var(--bg-primary)]/10 to-transparent transition-opacity duration-500"
-                style={{ opacity: isHomePage ? 0.08 : isListingPage && isKameHouseBackdrop ? 0.06 : isListingPage ? 0.28 : 0.65 }}
+                style={{ opacity: isHomePage ? 0.08 : isListingPage ? 0.28 : isDetailPage ? 0.40 : 0.65 }}
             />
             <div
                 className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent transition-opacity duration-500"
-                style={{ opacity: isHomePage ? 0.1 : isListingPage && isKameHouseBackdrop ? 0.08 : isListingPage ? 0.32 : 0.70 }}
+                style={{ opacity: isHomePage ? 0.1 : isListingPage ? 0.32 : isDetailPage ? 0.48 : 0.70 }}
             />
         </div>
     )

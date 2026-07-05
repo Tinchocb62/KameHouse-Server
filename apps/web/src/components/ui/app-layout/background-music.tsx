@@ -16,7 +16,7 @@ const PLAYLIST = [
 ]
 
 export function BackgroundMusicPlayer() {
-    const { bgMusicEnabled, setBgMusicEnabled, bgMusicVolume, isVideoActive, uiSoundsEnabled, setUiSoundsEnabled } = useAppStore(
+    const { bgMusicEnabled, setBgMusicEnabled, bgMusicVolume, isVideoActive, uiSoundsEnabled, setUiSoundsEnabled, isGlobalMuted, setGlobalMuted, sidebarOpen } = useAppStore(
         useShallow((state) => ({
             bgMusicEnabled: state.bgMusicEnabled,
             setBgMusicEnabled: state.setBgMusicEnabled,
@@ -24,8 +24,14 @@ export function BackgroundMusicPlayer() {
             isVideoActive: state.isVideoActive,
             uiSoundsEnabled: state.uiSoundsEnabled,
             setUiSoundsEnabled: state.setUiSoundsEnabled,
+            isGlobalMuted: state.isGlobalMuted,
+            setGlobalMuted: state.setGlobalMuted,
+            sidebarOpen: state.sidebarOpen,
         }))
     )
+
+    // Combined state: audio is "on" if either music or UI sounds are enabled
+    const isAudioEnabled = bgMusicEnabled || uiSoundsEnabled
     
     const audioRef = React.useRef<HTMLAudioElement | null>(null)
     const [isPlaying, setIsPlaying] = React.useState(false)
@@ -44,6 +50,27 @@ export function BackgroundMusicPlayer() {
 
     // Sync audio state with store preferences, video active state, and current track
     React.useEffect(() => {
+        let playTimeout: NodeJS.Timeout
+
+        const playAudio = () => {
+            if (audioRef.current && !isGlobalMuted) {
+                audioRef.current.play()
+                    .then(() => setIsPlaying(true))
+                    .catch((err) => {
+                        console.warn("Could not autoplay background music:", err)
+                        setIsPlaying(false)
+                    })
+            }
+        }
+
+        const pauseAudio = () => {
+            if (audioRef.current) {
+                audioRef.current.pause()
+                setIsPlaying(false)
+            }
+        }
+
+        // Initialize audio instance if it doesn't exist
         if (!audioRef.current) {
             audioRef.current = new Audio(PLAYLIST[currentTrackIndex])
             audioRef.current.volume = Math.pow(bgMusicVolume, 2)
@@ -58,35 +85,15 @@ export function BackgroundMusicPlayer() {
             }
         }
 
+        // Loop handling
         const audio = audioRef.current
-
-        // Handle track ending to automatically switch to the next one
         const handleEnded = () => {
-            setCurrentTrackIndex((prevIndex) => (prevIndex + 1) % PLAYLIST.length)
+            setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length)
         }
-
         audio.addEventListener("ended", handleEnded)
 
-        const playAudio = () => {
-            audio.play()
-                .then(() => {
-                    setIsPlaying(true)
-                })
-                .catch((err) => {
-                    console.warn("Autoplay blocked or playback interrupted:", err)
-                    setIsPlaying(false)
-                })
-        }
-
-        const pauseAudio = () => {
-            audio.pause()
-            setIsPlaying(false)
-        }
-
-        let playTimeout: NodeJS.Timeout | null = null
-
-        // If enabled and no video is playing, start background music with a debounce to prevent pops during transitions
-        if (bgMusicEnabled && !isVideoActive && !isAnyVideoPlaying) {
+        // If enabled, not globally muted, and no video is playing, start background music with a debounce to prevent pops during transitions
+        if (bgMusicEnabled && !isGlobalMuted && !isVideoActive && !isAnyVideoPlaying) {
             playTimeout = setTimeout(() => {
                 playAudio()
             }, 1000)
@@ -100,7 +107,7 @@ export function BackgroundMusicPlayer() {
             audio.removeEventListener("ended", handleEnded)
             audio.pause()
         }
-    }, [bgMusicEnabled, isVideoActive, isAnyVideoPlaying, currentTrackIndex])
+    }, [bgMusicEnabled, isGlobalMuted, isVideoActive, currentTrackIndex, isAnyVideoPlaying, bgMusicVolume])
 
     // Listen to any other video/audio playing on the page to automatically pause background music
     React.useEffect(() => {
@@ -161,84 +168,80 @@ export function BackgroundMusicPlayer() {
     }, [bgMusicEnabled, isVideoActive])
 
     const togglePlayback = () => {
-        const nextState = !bgMusicEnabled
-        setBgMusicEnabled(nextState)
-        setUiSoundsEnabled(nextState)
-        
-        // Immediate toggle feedback
-        if (audioRef.current) {
-            if (nextState && !isVideoActive) {
+        if (!isAudioEnabled) {
+            // Neither music nor UI sounds enabled - turn both on
+            setBgMusicEnabled(true)
+            setUiSoundsEnabled(true)
+            setGlobalMuted(false)
+            if (audioRef.current && !isVideoActive) {
                 audioRef.current.play()
                     .then(() => setIsPlaying(true))
                     .catch(() => setIsPlaying(false))
-            } else {
-                audioRef.current.pause()
-                setIsPlaying(false)
+            }
+        } else {
+            // Audio is enabled - toggle mute
+            const nextMuted = !isGlobalMuted
+            setGlobalMuted(nextMuted)
+            
+            if (audioRef.current) {
+                if (!nextMuted && !isVideoActive) {
+                    audioRef.current.play()
+                        .then(() => setIsPlaying(true))
+                        .catch(() => setIsPlaying(false))
+                } else {
+                    audioRef.current.pause()
+                    setIsPlaying(false)
+                }
             }
         }
     }
 
     return (
-        <div className="relative flex items-center justify-center">
-            {/* Custom keyframes injected locally */}
-            <style>{`
-                @keyframes soundwave {
-                    0%, 100% { height: 4px; }
-                    50% { height: 16px; }
-                }
-                .animate-soundwave-1 { animation: soundwave 0.8s ease-in-out infinite; }
-                .animate-soundwave-2 { animation: soundwave 0.5s ease-in-out infinite 0.15s; }
-                .animate-soundwave-3 { animation: soundwave 0.7s ease-in-out infinite 0.3s; }
-                .animate-soundwave-4 { animation: soundwave 0.6s ease-in-out infinite 0.45s; }
-            `}</style>
-
-            <motion.button
+        <div className="w-full flex justify-center gsap-sidebar-item">
+            <button
                 id="bg-music-toggle-btn"
                 onClick={togglePlayback}
-                title={bgMusicEnabled ? "Silenciar música de fondo" : "Activar música de fondo"}
+                title={!isAudioEnabled ? "Activar audio (música + efectos)" : isGlobalMuted ? "Activar audio" : "Silenciar audio"}
                 className={cn(
-                    "flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 group relative overflow-hidden bg-surface-container hover:bg-surface-container-high border border-outline-variant active:scale-95 font-bold",
-                    bgMusicEnabled && isPlaying && !isVideoActive
-                        ? "bg-surface-container-high text-on-surface"
-                        : "text-on-surface-variant hover:text-on-surface"
+                    "flex items-center h-14 rounded-2xl group px-4 relative transition-all duration-300 w-full",
+                    "active:scale-95 font-bold",
+                    sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
+                    isAudioEnabled && !isGlobalMuted
+                        ? "text-on-surface bg-white/[0.08]"
+                        : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-white/[0.12] text-on-surface-variant hover:text-on-surface"
                 )}
             >
-                <AnimatePresence mode="wait">
-                    {bgMusicEnabled && isPlaying && !isVideoActive ? (
-                        <motion.div
-                            key="playing"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="flex items-end gap-[2px] h-4 z-10 group-hover:scale-110 transition-transform duration-300"
-                        >
-                            <div className="w-[2px] bg-brand-orange rounded-full animate-soundwave-1" />
-                            <div className="w-[2px] bg-brand-orange rounded-full animate-soundwave-2" />
-                            <div className="w-[2px] bg-brand-orange rounded-full animate-soundwave-3" />
-                            <div className="w-[2px] bg-brand-orange rounded-full animate-soundwave-4" />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="paused"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="z-10 flex items-center justify-center"
-                        >
-                            {bgMusicEnabled ? (
-                                <Music className="w-5 h-5 text-brand-orange animate-pulse group-hover:scale-110 transition-transform duration-300" />
-                            ) : (
-                                <VolumeX className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                            )}
-                        </motion.div>
+                {/* Active Indicator Line */}
+                <div className={cn(
+                    "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-500 hidden md:block",
+                    isAudioEnabled && !isGlobalMuted ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                )} />
+
+                <span className={cn(
+                    "shrink-0 z-10 group-hover:scale-110 transition-transform duration-300 relative",
+                    isAudioEnabled && !isGlobalMuted && "text-on-surface"
+                )}>
+                    {/* Audio playing waves overlay */}
+                    {isAudioEnabled && isPlaying && !isVideoActive && !isGlobalMuted && (
+                        <div className="absolute inset-0 z-0 pointer-events-none -m-1">
+                            {/* We can put subtle visual feedback here if needed, or just let the icon speak for itself */}
+                        </div>
                     )}
-                </AnimatePresence>
+                    {!isGlobalMuted && isAudioEnabled ? (
+                        <Music className="w-5 h-5 relative z-10" />
+                    ) : (
+                        <VolumeX className="w-5 h-5 relative z-10" />
+                    )}
+                </span>
                 
-                {/* Aura overlay */}
-                {bgMusicEnabled && isPlaying && !isVideoActive && (
-                    <div className="absolute inset-0 bg-brand-orange/5 animate-pulse pointer-events-none" />
-                )}
-            </motion.button>
+                <span className={cn(
+                    "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                    (sidebarOpen) ? "block" : "hidden md:hidden",
+                    isAudioEnabled && !isGlobalMuted ? "text-on-surface" : "group-hover:text-on-surface"
+                )}>
+                    Audio {!isGlobalMuted && isAudioEnabled ? "(ON)" : "(OFF)"}
+                </span>
+            </button>
         </div>
     )
 }

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager, State, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_opener::OpenerExt;
 
 use crate::settings::{DesktopSettings, SettingsManager, WindowBounds};
 use crate::sidecar::SidecarManager;
@@ -191,4 +192,20 @@ pub async fn startup_renderer_ready(
 ) -> Result<(), String> {
     window_manager.set_startup_ready(true);
     Ok(())
+}
+
+/// Open a URL in the system default browser.
+/// Only http:// and https:// URLs are accepted to prevent misuse.
+#[tauri::command]
+pub async fn shell_open(app_handle: AppHandle, url: String) -> Result<(), String> {
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err(format!(
+            "shell_open: only http/https URLs are supported, got: {}",
+            url
+        ));
+    }
+    app_handle
+        .opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| e.to_string())
 }

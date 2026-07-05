@@ -15,13 +15,15 @@ interface PlaybackSettingsProps {
     onLoopEnabledChange?: (enabled: boolean) => void
     autoDisableSubtitlesWhenDubbed?: boolean
     onAutoDisableSubtitlesWhenDubbedChange?: (enabled: boolean) => void
+    ambientModeEnabled?: boolean
+    onAmbientModeEnabledChange?: (enabled: boolean) => void
+    showSeparator?: boolean
+    onAdjustSkipTimes?: () => void
+    mediaFormat?: string | null
     tvMode?: boolean
     onTvModeChange?: (enabled: boolean) => void
     marathonMode?: boolean
     onMarathonModeChange?: (enabled: boolean) => void
-    showSeparator?: boolean
-    onAdjustSkipTimes?: () => void
-    mediaFormat?: string | null
 }
 
 function ToggleRow({ label, enabled, onChange }: { label: string; enabled: boolean; onChange: (v: boolean) => void }) {
@@ -67,19 +69,22 @@ export function PlaybackSettings({
     onLoopEnabledChange,
     autoDisableSubtitlesWhenDubbed = true,
     onAutoDisableSubtitlesWhenDubbedChange = () => {},
-    tvMode = false,
-    onTvModeChange = () => {},
-    marathonMode = false,
-    onMarathonModeChange = () => {},
+    ambientModeEnabled = true,
+    onAmbientModeEnabledChange = () => {},
     showSeparator = true,
     onAdjustSkipTimes,
     mediaFormat,
+    tvMode,
+    onTvModeChange,
+    marathonMode,
+    onMarathonModeChange,
 }: PlaybackSettingsProps) {
     const isMovie = mediaFormat?.toUpperCase() === "MOVIE"
 
     return (
         <div className="py-4">
             {showSeparator && <div className="mx-6 h-px bg-white/10 mb-4" />}
+            <ToggleRow label="Modo Ambiente (efecto de luz)" enabled={ambientModeEnabled} onChange={onAmbientModeEnabledChange} />
             <ToggleRow label="Mapa de Calor (timeline)" enabled={showHeatmap} onChange={onShowHeatmapChange} />
             {!isMovie && <ToggleRow label="Omitir Intro (automático)" enabled={autoSkipIntro} onChange={onAutoSkipIntroChange} />}
             {!isMovie && <ToggleRow label="Saltar Final (automático)" enabled={autoSkipOutro} onChange={onAutoSkipOutroChange} />}
