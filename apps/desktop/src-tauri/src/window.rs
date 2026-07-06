@@ -87,6 +87,7 @@ impl WindowManager {
 
         let window = builder.build()?;
 
+        #[cfg(debug_assertions)]
         if is_dev {
             window.open_devtools();
         }
