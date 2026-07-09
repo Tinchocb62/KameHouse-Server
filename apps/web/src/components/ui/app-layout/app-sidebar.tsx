@@ -13,6 +13,7 @@ import { RandomPlayButton } from "./random-play-button"
 import { useSound } from "@/hooks/use-sound"
 import { useResponsive } from "@/hooks/use-responsive"
 import { BackgroundMusicPlayer } from "./background-music"
+import { NotificationBell } from "./notification-center"
 import { useGetLibraryCollection } from "@/api/hooks/anime_collection.hooks"
 import { toast } from "sonner"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
@@ -39,7 +40,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         icon: <Home className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
-        activeBgClass: "glass-liquid"
+        activeBgClass: "glass-liquid glass-active glass-refract"
     },
     {
         id: "series",
@@ -48,7 +49,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         icon: <Tv className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
-        activeBgClass: "glass-liquid"
+        activeBgClass: "glass-liquid glass-active glass-refract"
     },
     {
         id: "movies",
@@ -57,7 +58,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         icon: <Film className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
-        activeBgClass: "glass-liquid"
+        activeBgClass: "glass-liquid glass-active glass-refract"
     },
 ]
 
@@ -80,7 +81,8 @@ export function AppSidebar() {
 
     // Sidebar is "glass" (translucent + blurred) when cinematic effects are enabled globally.
     const isGlass = ts.themeEnableBlurringEffects
-    const sidebarBgStyle = ts.enableColorSettings && ts.sidebarBackgroundColor ? { backgroundColor: ts.sidebarBackgroundColor } : undefined
+    // El color de sidebar personalizado es exclusivo del modo Por Era (Clásico/Avanzado usan paletas fijas).
+    const sidebarBgStyle = ts.effectiveMode === "era" && ts.enableColorSettings && ts.sidebarBackgroundColor ? { backgroundColor: ts.sidebarBackgroundColor } : undefined
 
     // Temporary expand-on-hover for the collapsed desktop sidebar (does not
     // touch the persisted sidebarOpen preference — collapses back on leave).
@@ -96,8 +98,8 @@ export function AppSidebar() {
                 className={cn(
                     "hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen border-r border-[color:var(--sidebar-active-border)] z-50 overflow-visible transition-all duration-300 ease-in-out sidebar-gradient",
                     isGlass
-                        ? "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_70%,transparent)] backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
-                        : "bg-surface",
+                        ? "backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
+                        : "",
                     isExpanded ? "w-[260px]" : "w-20"
                 )}
                 style={sidebarBgStyle}
@@ -112,8 +114,8 @@ export function AppSidebar() {
                         className={cn(
                             "md:hidden fixed inset-y-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-[color:var(--sidebar-active-border)] !border-y-0 !border-l-0 !rounded-none sidebar-gradient",
                             isGlass
-                                ? "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_80%,transparent)] backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
-                                : "bg-surface"
+                                ? "backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
+                                : ""
                         )}
                         style={sidebarBgStyle}
                         overlayClass={cn("md:hidden bg-scrim/60", ts.themeEnableBlurringEffects && "backdrop-blur-[var(--blur-overlay-sm)]")}
@@ -211,7 +213,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                                 to={item.to}
                                 title={item.label}
                                 onClick={() => { if (isMobile) setSidebarOpen(false); playChangeSound(); }}
-                                className={cn("w-full flex justify-center", isActive && "active-sidebar-link")}
+                                className={cn("w-full flex justify-center")}
                             >
                                 <div className={cn(
                                     "flex items-center h-14 rounded-2xl group px-4 relative transition-all duration-300 w-full",
@@ -330,13 +332,15 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                     <RandomPlayButton />
                 </div>
 
+                <NotificationBell sidebarOpen={sidebarOpen || isMobile} />
+
                 {/* Settings (Always at the bottom) */}
                 <div className="gsap-sidebar-item w-full flex justify-center">
                     <Link
                         to="/settings"
                         title="Configuración"
                         onClick={() => { if (isMobile) setSidebarOpen(false); playChangeSound(); }}
-                        className={cn("w-full flex justify-center", currentPath === "/settings" && "active-sidebar-link")}
+                        className={cn("w-full flex justify-center")}
                     >
                         <div className={cn(
                             "flex items-center h-14 rounded-2xl group px-4 relative border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 w-full",

@@ -35,7 +35,8 @@ export function DynamicBackdrop() {
     const activeBackdropUrl = currentBackdropUrl
     
     const ts = useThemeSettings()
-    const isFlat = !ts.themeEnableBlurringEffects
+    const tvMode = useAppStore(state => state.tvMode)
+    const isFlat = !ts.themeEnableBlurringEffects || tvMode
     
     const baseOpacity = (isHomePage
         ? 0.65
@@ -56,7 +57,7 @@ export function DynamicBackdrop() {
 
     // Mouse parallax (GPU-accelerated)
     React.useEffect(() => {
-        if (!isEnabled || !isMotionEnabled) return
+        if (!isEnabled || !isMotionEnabled || tvMode) return
         let rafId: number | null = null
         let targetX = 0
         let targetY = 0
@@ -154,47 +155,49 @@ export function DynamicBackdrop() {
             className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[var(--bg-primary)]"
         >
             {/* Cinematic Gradient Orbs */}
-            <div className="absolute inset-0 overflow-hidden" style={{ filter: "blur(var(--filter-blur-orb))" }}>
-                {/* Era Universe gradient layer */}
-                <div className="era-universe-layer absolute inset-0 transition-opacity duration-1000 mix-blend-plus-lighter opacity-0" />
-                <div className="absolute top-[10%] left-[8%] w-[45vw] h-[45vw] rounded-full animate-float-blur mix-blend-plus-lighter"
-                    style={{
-                        background: "radial-gradient(circle at 30% 30%, var(--glow-color-1) 0%, transparent 70%)",
-                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.75 : 0.4,
-                        willChange: "transform",
-                    }}
-                />
-                <div className="absolute bottom-[8%] right-[6%] w-[38vw] h-[38vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
-                    style={{
-                        background: "radial-gradient(circle at 70% 70%, var(--glow-color-2) 0%, transparent 70%)",
-                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.60 : 0.34,
-                        willChange: "transform",
-                    }}
-                />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[48vw] h-[48vw] rounded-full animate-pulse-glow mix-blend-plus-lighter"
-                    style={{
-                        background: "radial-gradient(circle at 50% 50%, var(--glow-color-3) 0%, transparent 60%)",
-                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.50 : 0.24,
-                        willChange: "opacity, transform",
-                    }}
-                />
-                <div className="absolute top-[20%] right-[15%] w-[40vw] h-[40vw] rounded-full animate-float-blur mix-blend-plus-lighter"
-                    style={{
-                        background: "radial-gradient(circle at 40% 40%, var(--glow-color-4) 0%, transparent 65%)",
-                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.65 : 0.35,
-                        willChange: "transform",
-                        animationDelay: "-2s",
-                    }}
-                />
-                <div className="absolute bottom-[20%] left-[10%] w-[42vw] h-[42vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
-                    style={{
-                        background: "radial-gradient(circle at 60% 60%, var(--glow-color-5) 0%, transparent 65%)",
-                        opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.55 : 0.30,
-                        willChange: "transform",
-                        animationDelay: "-4s",
-                    }}
-                />
-            </div>
+            {!tvMode && (
+                <div className="absolute inset-0 overflow-hidden" style={{ filter: "blur(var(--filter-blur-orb))" }}>
+                    {/* Era Universe gradient layer */}
+                    <div className="era-universe-layer absolute inset-0 transition-opacity duration-1000 mix-blend-plus-lighter opacity-0" />
+                    <div className="absolute top-[10%] left-[8%] w-[45vw] h-[45vw] rounded-full animate-float-blur mix-blend-plus-lighter"
+                        style={{
+                            background: "radial-gradient(circle at 30% 30%, var(--glow-color-1) 0%, transparent 70%)",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.75 : 0.4,
+                            willChange: "transform",
+                        }}
+                    />
+                    <div className="absolute bottom-[8%] right-[6%] w-[38vw] h-[38vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
+                        style={{
+                            background: "radial-gradient(circle at 70% 70%, var(--glow-color-2) 0%, transparent 70%)",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.60 : 0.34,
+                            willChange: "transform",
+                        }}
+                    />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[48vw] h-[48vw] rounded-full animate-pulse-glow mix-blend-plus-lighter"
+                        style={{
+                            background: "radial-gradient(circle at 50% 50%, var(--glow-color-3) 0%, transparent 60%)",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.50 : 0.24,
+                            willChange: "opacity, transform",
+                        }}
+                    />
+                    <div className="absolute top-[20%] right-[15%] w-[40vw] h-[40vw] rounded-full animate-float-blur mix-blend-plus-lighter"
+                        style={{
+                            background: "radial-gradient(circle at 40% 40%, var(--glow-color-4) 0%, transparent 65%)",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.65 : 0.35,
+                            willChange: "transform",
+                            animationDelay: "-2s",
+                        }}
+                    />
+                    <div className="absolute bottom-[20%] left-[10%] w-[42vw] h-[42vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
+                        style={{
+                            background: "radial-gradient(circle at 60% 60%, var(--glow-color-5) 0%, transparent 65%)",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.55 : 0.30,
+                            willChange: "transform",
+                            animationDelay: "-4s",
+                        }}
+                    />
+                </div>
+            )}
 
             {/* Wrapper for backdrop layers with mouse parallax */}
             <div
@@ -237,9 +240,7 @@ export function DynamicBackdrop() {
             </div>
 
             {/* Film Grain Overlay */}
-            <div className="absolute inset-0 opacity-[0.025] pointer-events-none mix-blend-overlay z-10"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-            />
+            {!tvMode && !isFlat && <div className="grain-overlay z-10" />}
 
             {/* Vignette Stack — very subtle for KameHouse to keep image visible */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_0%,var(--glass-border-bottom),transparent_60%)]" />

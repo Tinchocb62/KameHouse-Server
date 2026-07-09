@@ -5,6 +5,7 @@ import * as React from "react"
 import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { GlowingEffect } from "@/components/shared/glowing-effect"
+import { useAppStore } from "@/lib/store"
 
 export interface MediaCardProps {
     artwork: string
@@ -46,11 +47,12 @@ export const MediaCard = React.memo(function MediaCard({
     const [isHovered, setIsHovered] = React.useState(false)
     const [showPopup, setShowPopup] = React.useState(false)
     const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+    const tvMode = useAppStore(state => state.tvMode)
 
     const handleMouseEnter = React.useCallback(() => {
         setIsHovered(true)
         if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
-        
+
         // Debounce hover activation by 350ms to verify "hover intent" (Netflix style)
         hoverTimeoutRef.current = setTimeout(() => {
             setShowPopup(true)
@@ -106,15 +108,15 @@ export const MediaCard = React.memo(function MediaCard({
                     "transition-all duration-300",
                     showPopup
                         ? cn(
-                              "z-[100] bg-surface-container backdrop-blur-overlay-xl border border-outline-variant/10 shadow-overlay",
-                              isPoster
-                                  ? "-top-[12%] -left-[12.5%] w-[125%] h-[135%] rounded-container"
-                                  : "-top-[15%] -left-[10%] w-[120%] h-[135%] rounded-container"
-                          )
+                            "z-[100] bg-surface-container backdrop-blur-overlay-xl border border-outline-variant/10 shadow-overlay",
+                            isPoster
+                                ? "-top-[12%] -left-[12.5%] w-[125%] h-[135%] rounded-container"
+                                : "-top-[15%] -left-[10%] w-[120%] h-[135%] rounded-container"
+                        )
                         : cn(
-                              "z-10 w-full h-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_10%,transparent)] border border-outline-variant/5 hover:border-brand-orange/30 hover:shadow-[0_0_20px_hsl(var(--brand-orange)/0.15)] shadow-elevation-2 group cursor-pointer",
-                              isPoster ? "rounded-xl" : "rounded-container"
-                          )
+                            "z-10 w-full h-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_10%,transparent)] border border-outline-variant/5 hover:border-brand-accent/30 hover:shadow-[0_0_20px_hsl(var(--brand-accent)/0.15)] shadow-elevation-2 group cursor-pointer",
+                            isPoster ? "rounded-xl" : "rounded-container"
+                        )
                 )}
                 style={{
                     willChange: showPopup ? "transform, opacity" : "auto",
@@ -132,17 +134,17 @@ export const MediaCard = React.memo(function MediaCard({
                         alt={title}
                         className="h-full w-full object-cover transition-transform duration-1000 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
                     />
-                    
+
                     {/* Shadow Gradient Overlay */}
                     <div className={cn(
-                        "absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent transition-opacity duration-500",
+                        "absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent transition-opacity duration-500",
                         showPopup ? "opacity-100" : "opacity-75 group-hover:opacity-85"
                     )} />
 
                     {/* Glass sheen sweep */}
-                    {!showPopup && (
+                    {!showPopup && !tvMode && (
                         <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-[inherit]">
-                            <div 
+                            <div
                                 className={cn(
                                     "w-1/3 h-full bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 absolute inset-y-0 transition-transform duration-700 ease-out translate-x-[-150%]",
                                     isHovered && "translate-x-[150%]"
@@ -156,7 +158,7 @@ export const MediaCard = React.memo(function MediaCard({
                         <div className="absolute top-0 left-0 z-20">
                             <div className="bg-surface-container backdrop-blur-overlay-md text-on-surface-variant border-r border-b border-outline-variant/10 px-3 py-1.5 rounded-br-xl font-black text-[10px] tracking-[0.15em] uppercase flex items-center gap-1 shadow-elevation-2">
                                 <span>EP</span>
-                                <span className="text-brand-orange">{episodeNumber}</span>
+                                <span className="text-brand-accent">{episodeNumber}</span>
                             </div>
                         </div>
                     )}
@@ -173,7 +175,7 @@ export const MediaCard = React.memo(function MediaCard({
                     {/* Quick Play Action Indicator */}
                     {showPopup && (
                         <div className="absolute bottom-3 left-4 z-20 flex items-center gap-2">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-orange text-white shadow-elevation-3 hover:scale-110 hover:shadow-brand-orange/20 active:scale-95 transition-all duration-300 cursor-pointer">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-accent text-white shadow-elevation-3 hover:scale-110 hover:shadow-[0_0_20px_hsl(var(--brand-accent)/0.2)] active:scale-95 transition-all duration-300 cursor-pointer">
                                 <Play size={15} fill="currentColor" className="ml-0.5" />
                             </div>
                             <div className="flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container backdrop-blur-overlay-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
@@ -203,8 +205,8 @@ export const MediaCard = React.memo(function MediaCard({
                 <div
                     className={cn(
                         "p-4 space-y-2 select-none flex flex-col justify-between overflow-hidden bg-surface-container transition-all duration-300 ease-out transform-gpu",
-                        showPopup 
-                            ? "opacity-100 max-h-[220px] pointer-events-auto" 
+                        showPopup
+                            ? "opacity-100 max-h-[220px] pointer-events-auto"
                             : "opacity-0 max-h-0 py-0 pointer-events-none"
                     )}
                 >
@@ -216,7 +218,7 @@ export const MediaCard = React.memo(function MediaCard({
                         {/* Tags / Meta Information */}
                         <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
                             {rating && (
-                                <span className="text-emerald-400 font-extrabold flex items-center gap-1">
+                                <span className="text-brand-success font-extrabold flex items-center gap-1">
                                     {(rating * 10).toFixed(0)}% COINCIDENCIA
                                 </span>
                             )}
@@ -234,7 +236,7 @@ export const MediaCard = React.memo(function MediaCard({
                                 {vibes.slice(0, 3).map((vibe, idx) => (
                                     <span
                                         key={idx}
-                                        className="text-[8px] font-bold tracking-widest uppercase bg-gradient-to-r from-brand-orange/15 via-amber-500/15 to-brand-orange/15 border border-brand-orange/30 text-brand-orange px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm animate-ki-shimmer"
+                                        className="text-[8px] font-bold tracking-widest uppercase bg-gradient-to-r from-brand-accent/15 via-brand-accent/25 to-brand-accent/15 border border-brand-accent/30 text-brand-accent px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm animate-ki-shimmer"
                                     >
                                         <Sparkles size={8} className="animate-pulse" />
                                         {vibe}
@@ -256,7 +258,7 @@ export const MediaCard = React.memo(function MediaCard({
                 {progress !== undefined && (
                     <div className="absolute inset-x-0 bottom-0 z-20 h-1 bg-surface-variant">
                         <div
-                            className="h-full bg-brand-orange shadow-[0_0_8px_hsl(var(--brand-orange)/0.5)]"
+                            className="h-full bg-brand-accent shadow-[0_0_8px_hsl(var(--brand-accent)/0.5)]"
                             style={{ width: `${progress}%` }}
                         />
                     </div>

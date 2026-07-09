@@ -6,6 +6,7 @@ import { cn } from "@/components/ui/core/styling"
 import type { CardAspect } from "@/api/types/intelligence.types"
 import * as React from "react"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
+import { useAppStore } from "@/lib/store"
 
 export interface SwimlaneItem {
     id: string
@@ -110,6 +111,7 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
     className,
 }: SwimlaneProps) {
     const ts = useThemeSettings()
+    const tvMode = useAppStore(state => state.tvMode)
 
     if (items.length === 0) {
         return null
@@ -136,7 +138,7 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
                     scrollAmount={420}
                     safeDisplacement={18}
                     applyRubberBandEffect
-                    autoScroll={!ts.themeDisableCarouselAutoScroll}
+                    autoScroll={!ts.themeDisableCarouselAutoScroll && !tvMode}
                 >
                     {items.map((item, index) => (
                         <motion.div
@@ -144,10 +146,10 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
                             className="snap-start"
                             onMouseEnter={() => onHover?.(item.backdropUrl ?? null)}
                             onMouseLeave={() => onHover?.(null)}
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={tvMode ? false : { opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: "-50px" }}
-                            transition={{ 
+                            transition={tvMode ? { duration: 0 } : { 
                                 duration: 0.8,
                                 delay: Math.min(index * 0.04, 0.3),
                                 ease: [0.23, 1, 0.32, 1]

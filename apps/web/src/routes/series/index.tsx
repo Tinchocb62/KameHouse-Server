@@ -4,7 +4,7 @@ import { useGetLibraryCollection, fetchLibraryCollection } from '@/api/hooks/ani
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { API_ENDPOINTS } from '@/api/generated/endpoints';
 import { SeriesCard, getVhsColor } from './-SeriesCard';
-import { getLargeResImage } from '@/lib/helpers/images';
+import { getLargeResImage, getMediumResImage } from '@/lib/helpers/images';
 import { useIntelligenceStore } from '@/hooks/use-home-intelligence';
 import { getSeriesIdFromMedia, getSeriesYear } from '@/lib/helpers/series';
 import { Skeleton } from '@/components/ui/skeleton/skeleton';
@@ -72,20 +72,24 @@ function SeriesFullscreenIndex() {
         const mapped = filtered.map((s) => {
             const media = s.media;
             const title = media?.titleEnglish || media?.titleRomaji || media?.titleOriginal || "Sin título";
-            const totalEps = media?.totalEpisodes || 1;
-            const progress = s.listData?.progress || 0;
-            const progressPercent = Math.min(100, Math.round((progress / (totalEps > 0 ? totalEps : 1)) * 100));
+            // Metadata puede venir sin totalEpisodes (p.ej. series en emisión): usar los archivos locales como fallback.
+            const totalEps = media?.totalEpisodes || s.libraryData?.mainFileCount || 0;
+            const watchedFromLibrary = s.libraryData
+                ? Math.max(0, (s.libraryData.mainFileCount || 0) - (s.libraryData.unwatchedCount || 0))
+                : 0;
+            const watched = s.listData?.progress || watchedFromLibrary;
+            const progressPercent = totalEps > 0 ? Math.min(100, Math.round((watched / totalEps) * 100)) : 0;
             const yearVal = getSeriesYear(title, media?.year, media?.startDate);
 
             return {
                 id: s.mediaId as number,
                 title,
-                eps: media?.totalEpisodes || 0,
+                eps: totalEps,
                 year: yearVal,
                 yearNum: yearVal === 'N/A' ? 9999 : Number(yearVal),
                 progress: progressPercent,
-                img: getLargeResImage(media?.bannerImage || media?.posterImage || ''),
-                poster: getLargeResImage(media?.posterImage || media?.bannerImage || ''),
+                img: getMediumResImage(media?.bannerImage || media?.posterImage || ''),
+                poster: getMediumResImage(media?.posterImage || media?.bannerImage || ''),
                 desc: media?.description?.replace(/<[^>]*>?/gm, '') || 'Sin descripción',
                 seriesId: getSeriesIdFromMedia(media),
             };
@@ -109,7 +113,7 @@ function SeriesFullscreenIndex() {
     const selectedItem = seriesList[selectedIndex] ?? null;
 
     return (
-        <div className="w-full h-full flex flex-col bg-transparent text-on-surface font-sans overflow-hidden relative p-4 md:p-6">
+        <div className="w-full h-full flex flex-col text-on-surface font-sans overflow-hidden relative p-4 md:p-6" style={{ background: "var(--bg-primary)" }}>
             {/* Ambient Background Glow */}
             {selectedItem && (
                 <div

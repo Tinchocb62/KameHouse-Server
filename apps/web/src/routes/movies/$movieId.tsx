@@ -16,7 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton/skeleton"
 
 const VideoPlayer = React.lazy(() => import("@/components/video/player").then(m => ({ default: m.VideoPlayer })))
 import { startViewTransition } from "@/lib/helpers/transitions"
-import { FloatingMatchFlap } from "@/components/shared/floating-match-flap"
 import { MediaHero } from "@/components/ui/media-hero"
 import { useSound } from "@/hooks/use-sound"
 import { cn } from "@/components/ui/core/styling"
@@ -384,10 +383,7 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
 
     return (
         <div ref={containerRef} className="h-full w-full flex flex-col overflow-y-auto no-scrollbar text-on-surface relative select-none" data-theme={localTheme || undefined}>
-            <FloatingMatchFlap
-                directoryPath={entry.libraryData?.sharedPath || ""}
-                mediaId={entry.mediaId}
-            />
+
 
             <MediaHero
                 scrollContainerRef={containerRef}

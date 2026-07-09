@@ -58,7 +58,7 @@ export function DeferredImage(props: DeferredImageProps) {
         lowResSrc,
         className,
         placeholderColor = '#1A1A1A',
-        rootMargin = '1000px',
+        rootMargin = '400px',
         threshold = 0,
         priority = false,
         showSkeleton = true,

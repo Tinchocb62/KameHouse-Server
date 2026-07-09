@@ -264,17 +264,13 @@ func (h *Handler) HandleDeleteLogs(c echo.Context) error {
 	return h.RespondWithData(c, true)
 }
 
-func (h *Handler) HandleGetLatestLogContent(c echo.Context) error {
+func (h *Handler) latestServerLogPath() (string, error) {
 	if h.App.Config == nil || h.App.Config.Logs.Dir == "" {
-		return h.RespondWithData(c, "")
-	}
-	if h.App.OnFlushLogs != nil {
-		h.App.OnFlushLogs()
-		time.Sleep(100 * time.Millisecond)
+		return "", fmt.Errorf("logs dir not configured")
 	}
 	dirEntries, err := os.ReadDir(h.App.Config.Logs.Dir)
 	if err != nil {
-		return h.RespondWithError(c, err)
+		return "", err
 	}
 	var logFiles []string
 	for _, entry := range dirEntries {
@@ -288,15 +284,29 @@ func (h *Handler) HandleGetLatestLogContent(c echo.Context) error {
 		logFiles = append(logFiles, filepath.Join(h.App.Config.Logs.Dir, name))
 	}
 	if len(logFiles) == 0 {
-		return h.RespondWithData(c, "")
+		return "", fmt.Errorf("no log files found")
 	}
 	slices.SortFunc(logFiles, func(a, b string) int { return strings.Compare(filepath.Base(b), filepath.Base(a)) })
-	contentB, err := os.ReadFile(logFiles[0])
+	return logFiles[0], nil
+}
+
+func (h *Handler) HandleGetLatestLogContent(c echo.Context) error {
+	if h.App.OnFlushLogs != nil {
+		h.App.OnFlushLogs()
+		time.Sleep(100 * time.Millisecond)
+	}
+	logPath, err := h.latestServerLogPath()
+	if err != nil {
+		if err.Error() == "logs dir not configured" || err.Error() == "no log files found" {
+			return h.RespondWithData(c, "")
+		}
+		return h.RespondWithError(c, err)
+	}
+	contentB, err := os.ReadFile(logPath)
 	if err != nil {
 		return h.RespondWithError(c, err)
 	}
-	content := string(contentB)
-	return h.RespondWithData(c, content)
+	return h.RespondWithData(c, string(contentB))
 }
 
 func (h *Handler) HandleGetAnnouncements(c echo.Context) error {

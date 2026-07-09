@@ -117,12 +117,9 @@ export function useFocusNavigation({
         )
         // Filter out hidden elements
         return elements.filter((el) => {
-            const style = window.getComputedStyle(el)
-            return (
-                style.display !== "none" &&
-                style.visibility !== "hidden" &&
-                el.offsetParent !== null
-            )
+            if (el.offsetParent === null) return false
+            const rect = el.getBoundingClientRect()
+            return rect.width > 0 && rect.height > 0
         })
     }, [containerRef, focusableSelector])
 

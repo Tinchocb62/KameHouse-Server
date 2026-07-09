@@ -31,6 +31,7 @@ type Database struct {
 	MediaIDMappingCache      *result.Map[string, *models.MediaIDMapping]
 	OnlinestreamMappingCache *result.Map[string, *models.OnlinestreamMapping]
 	slowTraceLogger          *SlowTraceLogger
+	sqlitePath               string
 }
 
 func (db *Database) SetOnError(f func(error)) {
@@ -123,6 +124,7 @@ func NewDatabase(ctx context.Context, appDataDir, dbName string, logger *zerolog
 		CurrMediaFillers:         mo.None[map[int]*MediaFillerItem](),
 		MediaIDMappingCache:      result.NewMap[string, *models.MediaIDMapping](),
 		OnlinestreamMappingCache: result.NewMap[string, *models.OnlinestreamMapping](),
+		sqlitePath:               sqlitePath,
 	}
 
 	database.cleanupManager = NewCleanupManager(database.gormdb, database.Logger)
@@ -261,6 +263,7 @@ func migrateSchema(ctx context.Context, db *gorm.DB) error {
 		&models.EpisodeSkipTime{},
 		&models.MediaIDMapping{},
 		&models.ShelvedLocalFiles{},
+		&models.Notification{},
 	); err != nil {
 		return err
 	}

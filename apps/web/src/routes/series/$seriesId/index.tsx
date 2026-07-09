@@ -18,12 +18,14 @@ import { EmptyState } from "@/components/shared/empty-state"
 
 const VideoPlayer = React.lazy(() => import("@/components/video/player").then(m => ({ default: m.VideoPlayer })))
 import { RelationsTab, CharactersTab } from "./-series-bento-tabs"
-import { getDragonBallSpanishTitle, isDragonBallTmdbId, getSeriesEraTheme } from "@/lib/config/dragonball.config"
+import { getDragonBallSpanishTitle, isDragonBallTmdbId, getSeriesEraTheme, resolveSeriesSagas } from "@/lib/config/dragonball.config"
+import sagaSynopsisTags from "@/lib/config/saga_synopsis_tags.json"
+import { getNextInTimeline } from "@/lib/config/franchise_timeline"
+import { useGetLibraryCollection } from "@/api/hooks/anime_collection.hooks"
 import { startViewTransition } from "@/lib/helpers/transitions"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 // New Design System Components
-import { FloatingMatchFlap } from "@/components/shared/floating-match-flap"
 import { SeriesHero } from "./-components/series-hero"
 import { SagaSelector } from "./-components/saga-selector"
 import { CharacterCarousel } from "./-components/character-carousel"
@@ -40,6 +42,7 @@ export const Route = createFileRoute("/series/$seriesId/")({
         tab: (search.tab as SagaDetailSearchParams["tab"]) || "episodes",
         saga: (search.saga as string) ?? "",
         subSaga: (search.subSaga as string) ?? "",
+        autoplay: (search.autoplay as string) || undefined,
     }),
     loader: async ({ params: { seriesId }, context }) => {
         const qc = context.queryClient
@@ -87,8 +90,9 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const { playSound } = useSound()
     const queryClient = useQueryClient()
     const navigate = useNavigate()
-    const { tab: activeTab, saga: activeSagaId, subSaga: activeSubSagaId } = Route.useSearch()
+    const { tab: activeTab, saga: activeSagaId, subSaga: activeSubSagaId, autoplay: autoplayEp } = Route.useSearch()
     const { data: entry, isLoading } = useGetAnimeEntry(seriesId)
+    const { data: libraryCollection } = useGetLibraryCollection()
     const { data: continuityData, refetch: refetchContinuity } = useGetContinuityWatchHistoryItem(Number(seriesId))
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
     const ts = useThemeSettings()
@@ -211,6 +215,18 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
         }
         return [];
     }, [entry, sagas])
+
+    // Siguiente serie en la línea temporal de la franquicia (orden de emisión),
+    // resuelta contra el catálogo del usuario: solo se ofrece continuación si la
+    // serie existe realmente en la biblioteca (mapeo tmdbId → id interno).
+    const nextSeriesTarget = useMemo(() => {
+        const next = getNextInTimeline(entry?.media?.tmdbId)
+        if (!next) return null
+        const entries = libraryCollection?.lists?.flatMap(l => l.entries || []) || []
+        const match = entries.find(e => e.media?.tmdbId === next.tmdbId && e.mediaId)
+        if (!match?.mediaId) return null
+        return { seriesId: String(match.mediaId), label: next.label }
+    }, [entry?.media?.tmdbId, libraryCollection])
 
     const handlePlayEpisode = useCallback((localFile: Anime_LocalFile, episode: Anime_Episode) => {
         if (!localFile.path) {
@@ -345,10 +361,39 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
         }
     }, [computedEpisodes, entry?.localFiles, handlePlayEpisode])
 
+    // Salta a la primera entrega disponible de la siguiente serie de la línea
+    // temporal (p.ej. terminar Dragon Ball → arrancar Dragon Ball Z ep 1).
+    const continueToNextSeries = useCallback(() => {
+        if (!nextSeriesTarget) return false
+        toast.success(`Continuando con ${nextSeriesTarget.label}`)
+        startViewTransition(() => {
+            setPlayTarget(null)
+            navigate({
+                to: "/series/$seriesId",
+                params: { seriesId: nextSeriesTarget.seriesId },
+                search: { tab: "episodes", saga: "", subSaga: "", autoplay: "1" },
+            })
+        })
+        return true
+    }, [nextSeriesTarget, navigate])
+
+    // Autoplay al llegar desde la continuación entre series: reproduce el
+    // episodio indicado en la URL (?autoplay=N) una sola vez y limpia el flag.
+    const autoplayFiredRef = React.useRef(false)
+    React.useEffect(() => {
+        if (!autoplayEp || autoplayFiredRef.current) return
+        if (!computedEpisodes || computedEpisodes.length === 0) return
+        autoplayFiredRef.current = true
+        handlePlayByNumber(Number(autoplayEp))
+        setSearchParams({ autoplay: "" })
+    }, [autoplayEp, computedEpisodes, handlePlayByNumber, setSearchParams])
+
     const handleNextEpisode = () => {
         if (!computedEpisodes || !playTarget) return
         const currentEpIdx = computedEpisodes.findIndex(ep => (ep.absoluteEpisodeNumber || ep.episodeNumber) === playTarget.episodeNumber)
         if (currentEpIdx === -1 || currentEpIdx >= computedEpisodes.length - 1) {
+            // Fin de la serie: intentar encadenar con la siguiente del timeline.
+            if (continueToNextSeries()) return
             toast.info("Has llegado al final de la lista de episodios.")
             startViewTransition(() => {
                 setPlayTarget(null)
@@ -383,8 +428,10 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
         const idx = computedEpisodes.findIndex(ep =>
             (ep?.absoluteEpisodeNumber || ep?.episodeNumber) === playTarget.episodeNumber
         )
-        return idx >= 0 && idx < computedEpisodes.length - 1
-    }, [computedEpisodes, playTarget])
+        if (idx >= 0 && idx < computedEpisodes.length - 1) return true
+        // Último episodio de la serie: hay "siguiente" si el timeline encadena.
+        return idx >= 0 && !!nextSeriesTarget
+    }, [computedEpisodes, playTarget, nextSeriesTarget])
 
     const nextEp = useMemo(() => {
         if (!computedEpisodes || !playTarget) return null
@@ -430,10 +477,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
             data-theme={localTheme || undefined}
             className="h-full w-full flex flex-col overflow-y-auto no-scrollbar text-on-surface pb-16"
         >
-            <FloatingMatchFlap
-                directoryPath={entry.libraryData?.sharedPath || ""}
-                mediaId={entry.mediaId}
-            />
+
             <SeriesHero
                 entry={entry}
                 backdropUrl={heroBackdrop}
@@ -489,7 +533,11 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                 )}
 
                                 <div className="flex-grow flex flex-col min-w-0">
-                                    <SagaLoreHeader saga={sagas?.find(s => s.id === activeSagaId)} />
+                                    <SagaLoreHeader 
+                                        saga={sagas?.find(s => s.id === activeSagaId)}
+                                        media={entry?.media}
+                                        onSelectCharacter={setSelectedCharacterName}
+                                    />
 
                                     <CharacterCarousel 
                                         characters={sagas?.find(s => s.id === activeSagaId)?.keyCharacters || []}
@@ -576,7 +624,9 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
             </div>
 
             {playTarget && (() => {
-                const nextTitle = nextEp ? (nextEp.titleSpanish || nextEp.episodeMetadata?.title || nextEp.episodeTitle || nextEp.displayTitle || `Episodio ${nextEp.absoluteEpisodeNumber || nextEp.episodeNumber}`) : undefined;
+                const nextTitle = nextEp
+                    ? (nextEp.titleSpanish || nextEp.episodeMetadata?.title || nextEp.episodeTitle || nextEp.displayTitle || `Episodio ${nextEp.absoluteEpisodeNumber || nextEp.episodeNumber}`)
+                    : (nextSeriesTarget ? `Continuar con ${nextSeriesTarget.label}` : undefined);
                 return (
                     <React.Suspense fallback={
                         <div className="fixed inset-0 bg-scrim/80 backdrop-blur-[var(--blur-overlay-lg)] flex flex-col justify-center items-center z-50">
@@ -639,7 +689,7 @@ function SectionTab({ active, onClick, icon, label }: {
                 "transition-all duration-base ease-smooth-out active:scale-95",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
                 active
-                    ? "glass-liquid text-on-surface"
+                    ? "glass-liquid glass-active text-on-surface"
                     : "bg-transparent text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
             )}
         >
@@ -649,53 +699,335 @@ function SectionTab({ active, onClick, icon, label }: {
     )
 }
 
-function SagaLoreHeader({ saga }: { saga: SagaDTO | undefined }) {
+const SAGA_CHARACTER_MAPPING: Record<string, string[]> = {
+    // DB Original (12609)
+    "pilaf": ["Goku", "Bulma", "Yamcha", "Oolong", "Puar", "Roshi", "Pilaf"],
+    "torneo-21": ["Goku", "Krilin", "Roshi", "Yamcha", "Bulma"],
+    "red-ribbon": ["Goku", "Bulma", "Krilin", "Roshi", "Upa", "Tao Pai Pai", "General Blue", "Comandante Red"],
+    "uranai-baba": ["Goku", "Krilin", "Yamcha", "Roshi", "Upa", "Uranai Baba", "Gohan"],
+    "torneo-22": ["Goku", "Krilin", "Yamcha", "Roshi", "Tenshinhan", "Chaoz"],
+    "piccolo": ["Goku", "Piccolo", "Krilin", "Roshi", "Tenshinhan", "Chaoz", "Yajirobe", "Kami"],
+    "piccolo-jr": ["Goku", "Piccolo", "Krilin", "Yamcha", "Tenshinhan", "Chaoz", "Chichi"],
+
+    // DB Z (12971)
+    "saiyajin": ["Goku", "Gohan", "Piccolo", "Krilin", "Vegeta", "Nappa", "Raditz", "Yamcha", "Tenshinhan", "Chaoz"],
+    "namek-freezer": ["Goku", "Gohan", "Krilin", "Bulma", "Vegeta", "Freezer", "Piccolo", "Dende", "Ginyu"],
+    "garlic-jr": ["Gohan", "Krilin", "Piccolo", "Garlic Jr."],
+    "androides": ["Goku", "Gohan", "Vegeta", "Trunks", "Piccolo", "Krilin", "Cell", "Androide 17", "Androide 18", "Androide 16"],
+    "cell": ["Goku", "Gohan", "Vegeta", "Trunks", "Piccolo", "Krilin", "Cell", "Androide 17", "Androide 18", "Androide 16", "Satan"],
+    "trunks-androides-cell": ["Goku", "Gohan", "Vegeta", "Trunks", "Piccolo", "Krilin", "Cell", "Androide 17", "Androide 18", "Androide 16", "Satan"],
+    "torneo-otro-mundo": ["Goku", "Pikkon", "Korr"],
+    "gran-saiyaman": ["Gohan", "Videl", "Goten", "Trunks", "Goku", "Vegeta"],
+    "gran-saiyaman-torneo25": ["Gohan", "Videl", "Goten", "Trunks", "Goku", "Vegeta", "Satan"],
+    "majin-buu": ["Goku", "Vegeta", "Gohan", "Goten", "Trunks", "Majin Buu", "Babidi", "Piccolo", "Vegetto", "Satan"],
+
+    // DB GT (12697)
+    "black-star": ["Goku", "Trunks", "Pan", "Giru"],
+    "baby": ["Goku", "Vegeta", "Baby", "Gohan", "Goten", "Trunks", "Pan"],
+    "super-17": ["Goku", "Androide 18", "Super 17", "Vegeta", "Gohan", "Trunks"],
+    "shadow-dragons": ["Goku", "Pan", "Vegeta", "Syn Shenron", "Nuova Shenron", "Eis Shenron"],
+
+    // DB Super (62715)
+    "batalla-dioses": ["Goku", "Beerus", "Whis", "Vegeta", "Bulma"],
+    "resurreccion-f": ["Goku", "Vegeta", "Freezer", "Jaco", "Roshi", "Gohan", "Krilin", "Piccolo"],
+    "universo-6": ["Goku", "Vegeta", "Hit", "Cabba", "Champa", "Vados", "Beerus", "Whis"],
+    "trunks-futuro": ["Goku", "Vegeta", "Trunks", "Goku Black", "Zamasu", "Mai"],
+    "supervivencia-universal": ["Goku", "Jiren", "Vegeta", "Freezer", "Androide 17", "Gohan", "Piccolo", "Roshi", "Krilin", "Tenshinhan", "Hit", "Caulifla", "Kale", "Toppo"]
+};
+
+function getSagaCharacters(sagaId: string, charactersEdges: any[] | undefined | null) {
+    if (!charactersEdges) return [];
+    const allowedNames = SAGA_CHARACTER_MAPPING[sagaId] || [];
+    if (!allowedNames.length) return [];
+
+    return charactersEdges
+        .filter(edge => {
+            const fullName = edge.node?.name?.full?.toLowerCase() || "";
+            return allowedNames.some(allowed => fullName.includes(allowed.toLowerCase()));
+        })
+        .map(edge => {
+            const fullName = edge.node?.name?.full || "";
+            const avatarUrl = edge.node?.image?.large || "";
+            
+            let roleTag = edge.role === "MAIN" ? "Protagonista" : "Secundario";
+            const lowerName = fullName.toLowerCase();
+            if (
+                lowerName.includes("freezer") || 
+                lowerName.includes("cell") || 
+                lowerName.includes("buu") || 
+                lowerName.includes("baby") ||
+                lowerName.includes("goku black") ||
+                lowerName.includes("zamasu") ||
+                lowerName.includes("pilaf") ||
+                (sagaId === "piccolo" && lowerName.includes("piccolo")) ||
+                lowerName.includes("tao pai pai") ||
+                lowerName.includes("jiren") ||
+                lowerName.includes("raditz") ||
+                lowerName.includes("nappa") ||
+                lowerName.includes("garlic")
+            ) {
+                roleTag = "Antagonista";
+            }
+            
+            return {
+                name: fullName,
+                avatarUrl,
+                roleTag
+            };
+        });
+}
+
+const SAGA_LORE_MAPPING: Record<string, { antagonists: string[], keyEvents: string[] }> = {
+    // DB Original
+    "pilaf": {
+        antagonists: ["Emperador Pilaf", "Mai", "Shu"],
+        keyEvents: ["Goku conoce a Bulma", "Encuentro con Oolong y Yamcha", "Invocación de Shenlong", "Goku se transforma en Ozaru"]
+    },
+    "torneo-21": {
+        antagonists: ["Jackie Chun", "Krilin (Rivalidad)"],
+        keyEvents: ["Entrenamiento con el Maestro Roshi", "Goku y Krilin clasifican al Torneo", "Final épica: Goku vs Jackie Chun"]
+    },
+    "red-ribbon": {
+        antagonists: ["General Blue", "Tao Pai Pai", "Comandante Red", "General Black"],
+        keyEvents: ["Asalto a la Torre de la Fuerza", "Aventura en la Ciudad Pirata", "Tao Pai Pai derrota a Goku", "Entrenamiento en la Torre Karin"]
+    },
+    "uranai-baba": {
+        antagonists: ["La Momia", "El Demonio Akkuman", "Gohan (Abuelo)"],
+        keyEvents: ["Combate contra los 5 guerreros de la vidente", "Reencuentro emotivo con el Abuelo Gohan", "Localización de la última Esfera del Dragón"]
+    },
+    "torneo-22": {
+        antagonists: ["Tenshinhan", "Chaoz", "Maestro Tsuru"],
+        keyEvents: ["Aparición de la Escuela Grulla", "Krilin vs Chaoz", "Gran final: Goku vs Tenshinhan"]
+    },
+    "piccolo": {
+        antagonists: ["Piccolo Daimaku", "Tambourine", "Cymbal", "Drum"],
+        keyEvents: ["Muerte de Krilin, Roshi y Chaoz", "Goku bebe el Agua Ultra Sagrada", "Derrota de Piccolo Daimaku con el puño de Ozaru"]
+    },
+    "piccolo-jr": {
+        antagonists: ["Piccolo Jr. (Ma Junior)"],
+        keyEvents: ["Entrenamiento con Kami-sama", "Goku se casa con Chichi", "Batalla campal y victoria de Goku en el 23° Torneo"]
+    },
+
+    // DB Z
+    "saiyajin": {
+        antagonists: ["Vegeta", "Nappa", "Raditz"],
+        keyEvents: ["Llegada de Raditz y muerte de Goku", "Entrenamiento con Kaio-sama", "Batalla en el desierto y choque de poderes"]
+    },
+    "namek-freezer": {
+        antagonists: ["Freezer", "Fuerzas Especiales Ginyu", "Zarbon", "Dodoria"],
+        keyEvents: ["Búsqueda de las Esferas de Namek", "Llegada de Goku y derrota de las Fuerzas Ginyu", "Muerte de Vegeta y Krilin", "Goku alcanza el Super Saiyajin"]
+    },
+    "garlic-jr": {
+        antagonists: ["Garlic Jr.", "Los Cuatro Reyes de la Niebla"],
+        keyEvents: ["Liberación de la Neblina del Mal", "Gohan, Krilin y Piccolo defienden el Templo de Kami", "Destrucción de la Zona Muerta"]
+    },
+    "androides": {
+        antagonists: ["Androide 17", "Androide 18", "Androide 19", "Dr. Gero"],
+        keyEvents: ["Advertencia de Trunks del Futuro", "Goku cae enfermo del corazón", "Vegeta se transforma en Super Saiyajin"]
+    },
+    "cell": {
+        antagonists: ["Cell (Célula)"],
+        keyEvents: ["Cell absorbe a los Androides y alcanza la forma Perfecta", "Entrenamiento en la Habitación del Tiempo", "Los Juegos de Cell", "Gohan alcanza el Super Saiyajin 2", "Sacrificio de Goku", "Kamehameha Padre e Hijo"]
+    },
+    "trunks-androides-cell": {
+        antagonists: ["Cell", "Androide 17", "Androide 18", "Dr. Gero"],
+        keyEvents: ["Llegada de Trunks del Futuro", "Vegeta alcanza el Super Saiyajin", "Habitación del Tiempo", "Gohan Super Saiyajin 2", "Kamehameha Padre e Hijo"]
+    },
+    "torneo-otro-mundo": {
+        antagonists: ["Pikkon (Rival)"],
+        keyEvents: ["Inicio del torneo en el Otro Mundo", "Enfrentamiento final: Goku vs Pikkon"]
+    },
+    "gran-saiyaman": {
+        antagonists: ["Criminales locales"],
+        keyEvents: ["Gohan asiste a la preparatoria Orange Star", "Debut del Gran Saiyaman", "Videl descubre el secreto de Gohan"]
+    },
+    "gran-saiyaman-torneo25": {
+        antagonists: ["Spopovich", "Yamu"],
+        keyEvents: ["Entrenamiento de Gohan, Goten y Videl", "Inicio del 25° Torneo Mundial", "Ataque a Gohan y robo de energía"]
+    },
+    "majin-buu": {
+        antagonists: ["Majin Buu", "Babidi", "Dabura", "Majin Vegeta"],
+        keyEvents: ["Despertar de Majin Buu", "Muerte de Dabura", "Sacrificio de Vegeta", "Goku muestra el Super Saiyajin 3", "Fusión: Gotenks y Vegetto", "Genuina Genkidama final"]
+    },
+
+    // DB GT
+    "black-star": {
+        antagonists: ["Don Kee", "Giru (Temporal)"],
+        keyEvents: ["Deseo accidental de Pilaf y Goku niño", "Viaje espacial en la nave espacial", "Recolección de las esferas oscuras"]
+    },
+    "baby": {
+        antagonists: ["Baby", "Guerreros Z poseídos"],
+        keyEvents: ["Invasión de Baby a la Tierra", "Goku alcanza el Super Saiyajin 4", "Combate final y escape de los terrícolas al planeta Tsufuru"]
+    },
+    "super-17": {
+        antagonists: ["Super Androide 17", "Dr. Myuu", "Dr. Gero"],
+        keyEvents: ["Apertura del portal del Infierno", "Goku queda atrapado en el Otro Mundo", "Androide 18 y Goku derrotan a Super 17"]
+    },
+    "shadow-dragons": {
+        antagonists: ["Omega Shenron (1★)", "Eis Shenron (3★)", "Rage Shenron (5★)"],
+        keyEvents: ["Nacimiento de los Dragones Malignos", "Viaje de Goku y Pan", "Fusión en Gogeta Super Saiyajin 4", "Genkidama Universal y partida de Goku"]
+    },
+
+    // DB Super
+    "batalla-dioses": {
+        antagonists: ["Beerus (Bills)"],
+        keyEvents: ["Beerus despierta y busca al Super Saiyajin Dios", "Ritual de las 6 almas Saiyajin", "Goku se transforma en Super Saiyajin Dios"]
+    },
+    "resurreccion-f": {
+        antagonists: ["Freezer (Dorado)", "Sorbet"],
+        keyEvents: ["Resurrección de Freezer en la Tierra", "Entrenamiento de Goku y Vegeta con Whis", "Super Saiyajin Blue", "Destrucción y rebobinado de la Tierra"]
+    },
+    "universo-6": {
+        antagonists: ["Hit", "Cabba", "Frost"],
+        keyEvents: ["Torneo de los destructores", "Goku combina el Super Saiyajin Blue con el Kaio-ken x10", "Derrota de Hit"]
+    },
+    "trunks-futuro": {
+        antagonists: ["Goku Black", "Zamasu del Futuro", "Zamasu Fusionado"],
+        keyEvents: ["Llegada de Trunks en la máquina del tiempo", "Viajes al futuro en ruinas", "Fusión en Vegito Blue", "Invocación de Zeno-sama"]
+    },
+    "supervivencia-universal": {
+        antagonists: ["Jiren", "Toppo", "Dyspo", "Kefla"],
+        keyEvents: ["Convocatoria al Torneo del Poder", "Despertar del Ultra Instinto Señal", "Sacrificio de Androide 17", "Goku alcanza el Ultra Instinto Completo", "Victoria compartida con Freezer y Androide 17"]
+    }
+};
+
+interface SagaLoreHeaderProps {
+    saga: SagaDTO | undefined
+    media: any
+    onSelectCharacter?: (name: string) => void
+}
+
+function SagaLoreHeader({ saga, media, onSelectCharacter }: SagaLoreHeaderProps) {
     if (!saga) return null
 
-    const hasRichDetails = saga.antagonists?.length > 0 || saga.keyEvents?.length > 0 || saga.newCharacters?.length > 0
+    // Get the localized synopsis tags and description
+    const localSagas = media ? resolveSeriesSagas(media) : []
+    const localSagaDef = localSagas.find(s => s.id === saga.id)
+    const description = localSagaDef?.description || saga.description || ""
+    const sagaImage = localSagaDef?.image
+
+    const synopsisInfo = (sagaSynopsisTags as Record<string, any>)[saga.id]
+    const dominantVibe = synopsisInfo?.dominantVibe
+    const tags = synopsisInfo?.tags || []
+    const suggestedSwimlane = synopsisInfo?.suggestedSwimlane
+
+    const loreDef = SAGA_LORE_MAPPING[saga.id]
+    const antagonists = loreDef?.antagonists || []
+    const keyEvents = loreDef?.keyEvents || []
+
+    const characters = getSagaCharacters(saga.id, media?.characters?.edges)
 
     return (
-        <div className="glass-card p-6 md:p-8 mb-8 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="space-y-1">
-                    <span className="inline-flex items-center text-label-sm text-brand-accent uppercase bg-brand-accent/10 border border-brand-accent/20 px-3 py-1 rounded-full">
-                        Detalles del Arco
-                    </span>
-                    <h2 className="text-h3 font-display text-on-surface uppercase mt-1.5">
-                        {saga.name}
-                    </h2>
+        <div className="glass-card p-6 md:p-8 mb-8 space-y-6 overflow-visible">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Text details */}
+                <div className={cn(
+                    "space-y-4 flex flex-col justify-between",
+                    sagaImage ? "lg:col-span-8 col-span-12" : "col-span-12"
+                )}>
+                    <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center text-label-sm text-brand-accent uppercase bg-brand-accent/10 border border-brand-accent/20 px-3 py-1 rounded-full font-bold">
+                                Detalles del Arco
+                            </span>
+                            {saga.episodeRange && (
+                                <span className="inline-flex items-center gap-1.5 text-label-sm text-on-surface-variant bg-white/[0.04] border border-white/10 px-3 py-1 rounded-full">
+                                    <Icons.status.tv size={12} className="text-brand-secondary" />
+                                    Eps {saga.episodeRange}
+                                </span>
+                            )}
+                            {saga.startEp != null && saga.endEp != null && (
+                                <span className="inline-flex items-center gap-1.5 text-label-sm text-on-surface-variant bg-white/[0.04] border border-white/10 px-3 py-1 rounded-full">
+                                    <Icons.time.clock size={12} className="text-brand-success" />
+                                    {saga.endEp - saga.startEp + 1} Episodios
+                                </span>
+                            )}
+                            {dominantVibe && (
+                                <span className={cn(
+                                    "inline-flex items-center gap-1 text-label-sm uppercase border px-3 py-1 rounded-full",
+                                    dominantVibe === "Aventura" 
+                                        ? "bg-brand-magic/15 text-brand-magic border-brand-magic/25"
+                                        : dominantVibe === "Tensión Absoluta" || dominantVibe === "Épico"
+                                        ? "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
+                                        : "bg-white/[0.04] border-white/10 text-on-surface-variant"
+                                )}>
+                                    <Icons.status.sparkles size={11} />
+                                    {dominantVibe}
+                                </span>
+                            )}
+                            {suggestedSwimlane && (
+                                <span className="inline-flex items-center gap-1 text-label-sm uppercase bg-brand-secondary/10 border border-brand-secondary/20 text-brand-secondary px-3 py-1 rounded-full">
+                                    <Icons.navigation.library size={11} />
+                                    {suggestedSwimlane}
+                                </span>
+                            )}
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center justify-between gap-4 mt-2">
+                            <h2 className="text-h3 font-display text-on-surface uppercase leading-none">
+                                {saga.name}
+                            </h2>
+                            {saga.canonStatus && (
+                                <span className={cn(
+                                    "inline-flex items-center px-3 py-1 rounded-full text-label-sm uppercase border font-semibold",
+                                    saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon"
+                                        ? "bg-brand-success/15 text-brand-success border-brand-success/25"
+                                        : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false"
+                                        ? "bg-brand-destructive/15 text-brand-destructive border-brand-destructive/25"
+                                        : "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
+                                )}>
+                                    {saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon" ? "Canon" : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false" ? "Relleno" : saga.canonStatus}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {description && (
+                        <div className="space-y-3">
+                            <p className="text-body-md text-on-surface-variant leading-relaxed border-l-2 border-brand-accent/30 pl-4 py-1">
+                                {description}
+                            </p>
+                            {tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1 pl-4">
+                                    {tags.map((tag: string, idx: number) => (
+                                        <span key={idx} className="inline-flex items-center text-[10px] text-on-surface-variant/70 bg-white/[0.03] border border-white/5 px-2.5 py-0.5 rounded-full select-none uppercase tracking-wider font-semibold">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
-                {saga.canonStatus && (
-                    <span className={cn(
-                        "inline-flex items-center px-3 py-1 rounded-full text-label-sm uppercase border",
-                        saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon"
-                            ? "bg-brand-success/15 text-brand-success border-brand-success/25"
-                            : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false"
-                            ? "bg-brand-destructive/15 text-brand-destructive border-brand-destructive/25"
-                            : "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
-                    )}>
-                        {saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon" ? "Canon" : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false" ? "Relleno" : saga.canonStatus}
-                    </span>
+
+                {/* Banner image */}
+                {sagaImage && (
+                    <div className="lg:col-span-4 col-span-12 flex items-center justify-center">
+                        <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-white/10 shadow-elevated group select-none bg-white/[0.02]">
+                            <img 
+                                src={sagaImage} 
+                                alt={saga.name}
+                                className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-smooth-out"
+                                loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                        </div>
+                    </div>
                 )}
             </div>
 
-            {saga.description && (
-                <p className="text-body-md text-on-surface-variant leading-relaxed border-l-2 border-brand-accent/30 pl-4 py-1">
-                    {saga.description}
-                </p>
-            )}
-
-            {hasRichDetails && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/10 mt-2">
-                    {saga.antagonists?.length > 0 && (
-                        <div className="bg-white/[0.04] border border-white/10 p-5 rounded-2xl">
-                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/10">
+            {/* Antagonists and Key Events row */}
+            {(antagonists.length > 0 || keyEvents.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-5 border-t border-white/10">
+                    {antagonists.length > 0 && (
+                        <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl flex flex-col">
+                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/5 font-black tracking-wider">
                                 <Icons.status.skull size={14} className="text-brand-destructive" />
-                                Antagonistas
+                                Antagonistas Principales
                             </span>
                             <div className="flex flex-wrap gap-2">
-                                {saga.antagonists.map((ant: string, idx: number) => (
-                                    <span key={idx} className="inline-flex items-center px-3 py-1 bg-brand-destructive/15 text-brand-destructive border border-brand-destructive/25 text-label-sm uppercase rounded-full">
+                                {antagonists.map((ant: string, idx: number) => (
+                                    <span key={idx} className="inline-flex items-center px-3 py-1 bg-brand-destructive/10 text-brand-destructive border border-brand-destructive/20 text-label-sm uppercase rounded-full font-medium transition-all hover:bg-brand-destructive/20 select-none">
                                         {ant}
                                     </span>
                                 ))}
@@ -703,22 +1035,70 @@ function SagaLoreHeader({ saga }: { saga: SagaDTO | undefined }) {
                         </div>
                     )}
 
-                    {saga.keyEvents?.length > 0 && (
-                        <div className="bg-white/[0.04] border border-white/10 p-5 rounded-2xl md:col-span-2">
-                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/10">
-                                <Icons.status.trophy size={14} className="text-brand-secondary" />
-                                Hitos Clave
+                    {keyEvents.length > 0 && (
+                        <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl flex flex-col">
+                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/5 font-black tracking-wider">
+                                <Icons.status.trophy size={14} className="text-brand-success" />
+                                Hitos y Momentos Clave
                             </span>
-                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-body-sm text-on-surface-variant">
-                                {saga.keyEvents.map((event: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2 leading-relaxed">
-                                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-accent/60 mt-1.5 shrink-0" />
-                                        <span className="text-on-surface-variant/70">{event}</span>
+                            <ul className="space-y-2 text-body-sm text-on-surface-variant">
+                                {keyEvents.map((event: string, idx: number) => (
+                                    <li key={idx} className="flex items-start gap-2 leading-relaxed group/event">
+                                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-accent/60 mt-1.5 shrink-0 group-hover/event:bg-brand-accent transition-colors" />
+                                        <span className="text-on-surface-variant/80 group-hover/event:text-on-surface transition-colors">{event}</span>
                                     </li>
                                 ))}
                             </ul>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Key Characters */}
+            {characters.length > 0 && (
+                <div className="pt-5 border-t border-white/10 space-y-4">
+                    <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase font-black tracking-wider">
+                        <Icons.navigation.users size={14} className="text-brand-accent" />
+                        Personajes Clave del Arco
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                        {characters.map((char, idx) => (
+                            <div
+                                key={idx}
+                                onClick={() => onSelectCharacter?.(char.name)}
+                                className="flex flex-col items-center text-center gap-2 group cursor-pointer"
+                                role="button"
+                                tabIndex={0}
+                                title={`Ver detalles de ${char.name}`}
+                            >
+                                <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 group-hover:border-brand-accent/50 group-hover:shadow-[0_0_8px_hsl(var(--brand-accent)/0.3)] transition-all duration-300 relative shadow-md group-hover:-translate-y-1">
+                                    <img
+                                        src={char.avatarUrl}
+                                        alt={char.name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Icons.ui.info size={16} className="text-white" />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col w-full px-1">
+                                    <span className="text-[11px] font-bold text-on-surface group-hover:text-brand-accent tracking-wide transition-colors line-clamp-1">
+                                        {char.name}
+                                    </span>
+                                    <span className={cn(
+                                        "text-[8px] font-black uppercase tracking-wider mt-0.5 select-none",
+                                        char.roleTag === "Antagonista" 
+                                            ? "text-brand-destructive" 
+                                            : char.roleTag === "Protagonista"
+                                            ? "text-brand-success"
+                                            : "text-on-surface-variant/50"
+                                    )}>
+                                        {char.roleTag}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

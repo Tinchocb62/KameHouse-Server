@@ -17,6 +17,11 @@
   --glass-saturate-strong: 1.3;   /* fuerte */
   --glass-saturate-cinematic: 1.4; /* cinematográfico */
 
+  /* ─── Contraste y Textura para Liquid Glass ──────── */
+  --glass-contrast:        1.06;
+  --glass-contrast-subtle: 1.04;
+  --noise-texture:         url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+
   /* ─── DEPRECATED — Alias legacy (mantener por compatibilidad temporal) ─────
        Migrar a: elevation (shadows.css) + surface colors (colors.css)         */
   --blur-xs:       var(--blur-overlay-sm);
@@ -74,13 +79,8 @@
      Solo para overlays destacados (hero scrims, command palette, ítem activo
      de nav). No reemplaza el glass plano en toda la superficie. ──────────── */
 .glass-liquid {
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--brand-accent-hex) 22%, white 10%),
-    color-mix(in srgb, var(--brand-accent-hex) 14%, black 80%) 45%,
-    color-mix(in srgb, var(--brand-accent-hex) 9%, black 88%) 100%
-  );
-  backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate-cinematic));
+  background: var(--glass-liquid-bg);
+  backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate-cinematic)) contrast(var(--glass-contrast));
   border-top: 1px solid var(--glass-rim-highlight);
   border-left: 1px solid var(--glass-rim-cool);
   border-right: 1px solid var(--glass-rim-warm);
@@ -93,8 +93,8 @@
      Equivale a: bg-zinc-950/40 + backdrop-blur-overlay-xl + border-white/10
      + rounded-3xl. Para filas internas usar bg-white/[0.04] sin blur. ────── */
 .glass-card {
-  background: var(--glass-panel-bg);
-  backdrop-filter: blur(var(--blur-overlay-xl)) saturate(var(--glass-saturate));
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate)) contrast(var(--glass-contrast-subtle));
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-3xl);
 }
@@ -134,6 +134,9 @@
   --glass-saturate-strong:   1;
   --glass-saturate-cinematic: 1;
 
+  --glass-contrast:          1;
+  --glass-contrast-subtle:   1;
+
   /* ─── Filter blur decorativo se conserva en flat mode ─── */
 }
 
@@ -151,4 +154,35 @@
 
 [data-flat="true"] .glass-card {
   border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Overrides por modo de interfaz — viven acá (no en colors.css) por la misma
+   razón de orden de imports que el bloque flat de arriba.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Clásico: glass sutil — saturación mínima para sobriedad premium */
+[data-mode="classic"] {
+  --glass-saturate:           var(--glass-saturate-subtle);
+  --glass-saturate-cinematic: var(--glass-saturate-subtle);
+  --glass-contrast:           var(--glass-contrast-subtle);
+}
+
+
+/* ─── Efectos Liquid Glass Gated ─────────────────────────────────────────── */
+[data-liquid="true"] .glass-refract {
+  backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate-cinematic)) contrast(var(--glass-contrast)) url(#kh-liquid-refraction);
+}
+
+.grain-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: var(--noise-texture);
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+[data-flat="true"] .grain-overlay {
+  display: none;
 }

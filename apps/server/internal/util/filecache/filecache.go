@@ -533,3 +533,57 @@ func (c *Cacher) GetTotalSize() (int64, error) {
 
 	return totalSize, nil
 }
+
+// PruneMediastreamVideoFilesByAge removes directories inside "videofiles" that are older than maxAge
+// and not currently in use.
+func (c *Cacher) PruneMediastreamVideoFilesByAge(maxAge time.Duration, inUse func(hash string) bool) (int64, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	videofilesDir := filepath.Join(c.dir, "videofiles")
+	entries, err := os.ReadDir(videofilesDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	cutoff := time.Now().Add(-maxAge)
+	var freedBytes int64
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		hash := entry.Name()
+		if inUse(hash) {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		if info.ModTime().Before(cutoff) {
+			fullPath := filepath.Join(videofilesDir, hash)
+			
+			// Calculate size before removing
+			var dirSize int64
+			_ = filepath.Walk(fullPath, func(_ string, f os.FileInfo, err error) error {
+				if err == nil && !f.IsDir() {
+					dirSize += f.Size()
+				}
+				return nil
+			})
+
+			if err := os.RemoveAll(fullPath); err == nil {
+				freedBytes += dirSize
+			}
+		}
+	}
+
+	return freedBytes, nil
+}

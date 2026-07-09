@@ -23,7 +23,8 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
     if (typeof window !== "undefined") {
         const o = window.location?.origin ?? ""
         if (o.includes("wails.localhost") || o.startsWith("wails://")) {
-            let ret = `http://127.0.0.1:${__DEV_SERVER_PORT}`
+            const port = (window as any).__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
+            let ret = `http://127.0.0.1:${port}`
             if (removeProtocol) {
                 ret = ret.replace("http://", "").replace("https://", "")
             }
@@ -42,7 +43,8 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
                 if (o.startsWith("http://") || o.startsWith("https://")) {
                     ret = ""
                 } else {
-                    ret = `http://127.0.0.1:${__DEV_SERVER_PORT}`
+                    const port = (window as any).__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
+                    ret = `http://127.0.0.1:${port}`
                 }
             } else {
                 ret = `http://127.0.0.1:${__DEV_SERVER_PORT}`
@@ -52,7 +54,8 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
             if (o.startsWith("http://") || o.startsWith("https://")) {
                 ret = o
             } else {
-                ret = `http://127.0.0.1:${__DEV_SERVER_PORT}`
+                const port = (window as any).__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
+                ret = `http://127.0.0.1:${port}`
             }
         } else {
             ret = `http://127.0.0.1:${__DEV_SERVER_PORT}`

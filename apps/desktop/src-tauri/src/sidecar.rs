@@ -72,20 +72,6 @@ impl SidecarManager {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn get_base_url(&self) -> String {
-        format!("http://{}:{}", DESKTOP_SERVER_HOST, self.get_port())
-    }
-
-    #[allow(dead_code)]
-    async fn is_server_reachable(&self) -> bool {
-        let url = format!("{}/api/v1/status", self.get_base_url());
-        let client = reqwest::Client::new();
-        match timeout(Duration::from_secs(1), client.get(&url).send()).await {
-            Ok(Ok(resp)) => resp.status().is_success(),
-            _ => false,
-        }
-    }
 
     fn get_binary_name(&self) -> Result<String, String> {
         if self.is_dev {
@@ -288,9 +274,13 @@ impl SidecarManager {
         let app_handle = app_handle_clone;
 
         tokio::spawn(async move {
-            let mut probe_interval = tokio::time::interval(Duration::from_millis(500));
+            let mut probe_interval = tokio::time::interval(Duration::from_millis(100));
             let mut probe_count = 0;
-            const MAX_PROBES: u32 = 60; // 30 seconds max
+            const MAX_PROBES: u32 = 300; // 30 seconds max
+
+            // Build the HTTP client once and reuse it across probes (connection pooling)
+            // instead of allocating a fresh client every 500ms.
+            let client = reqwest::Client::new();
 
             loop {
                 probe_interval.tick().await;
@@ -318,7 +308,6 @@ impl SidecarManager {
 
                 // Check if server is reachable via HTTP
                 let url = format!("http://{}:{}/api/v1/status", DESKTOP_SERVER_HOST, dynamic_port.load(Ordering::SeqCst).max(if cfg!(debug_assertions) { DESKTOP_SERVER_DEV_PORT } else { DESKTOP_SERVER_DEFAULT_PORT }));
-                let client = reqwest::Client::new();
                 if let Ok(resp) = timeout(Duration::from_secs(1), client.get(&url).send()).await {
                     if let Ok(resp) = resp {
                         if resp.status().is_success() && !startup_resolved.load(Ordering::SeqCst) {

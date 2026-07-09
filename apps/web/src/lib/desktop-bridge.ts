@@ -49,6 +49,20 @@ export interface ElectronAPI {
     get: () => Promise<DesktopSettings>;
     set: (settings: Partial<DesktopSettings>) => Promise<DesktopSettings>;
   };
+  mpv: {
+    isAvailable: () => Promise<boolean>;
+    play: (request: MpvPlayRequest) => Promise<void>;
+    stop: () => Promise<void>;
+  };
+}
+
+export interface MpvPlayRequest {
+  /** Absolute file path (or URL) that mpv will open. */
+  path: string;
+  title?: string;
+  startTime?: number;
+  mediaId?: number;
+  episodeNumber?: number;
 }
 
 export interface DesktopSettings {
@@ -60,6 +74,7 @@ export interface DesktopSettings {
   windowMaximized: boolean;
   disableHardwareAcceleration: boolean;
   enableAggressiveGpuFlags: boolean;
+  mpvPath?: string | null;
 }
 
 export interface WindowBounds {
@@ -369,6 +384,32 @@ function createElectronBridge(): ElectronAPI {
           }
         }
         throw new Error('Not running in Tauri');
+      },
+    },
+    mpv: {
+      isAvailable: async () => {
+        if (isTauri()) {
+          try {
+            return await invoke<boolean>('mpv_is_available');
+          } catch (e) {
+            console.error('[Bridge] mpv availability check failed:', e);
+            return false;
+          }
+        }
+        return false;
+      },
+      play: async (request: MpvPlayRequest) => {
+        if (!isTauri()) throw new Error('mpv solo está disponible en la app de escritorio');
+        await invoke('mpv_play', { request });
+      },
+      stop: async () => {
+        if (isTauri()) {
+          try {
+            await invoke('mpv_stop');
+          } catch (e) {
+            console.error('[Bridge] mpv stop failed:', e);
+          }
+        }
       },
     },
   };

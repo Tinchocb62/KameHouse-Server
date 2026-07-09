@@ -5,6 +5,7 @@ import type { PremiumEpisode } from "@/api/types/series.types"
 import { cn } from "@/components/ui/core/styling"
 import { useHoverPreload } from "@/hooks/use-hover-preload"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
+import { useWindowVirtualizer } from "@tanstack/react-virtual"
 
 const listVariants: Variants = {
   hidden: { opacity: 0 },
@@ -94,140 +95,158 @@ export function PremiumEpisodeList({
           <p className="text-xs text-on-surface-variant/70 mt-1">Intenta con otro término de búsqueda</p>
         </div>
       ) : (
-        <motion.div
-          key={episodes[0]?.id ?? "episode-list"}
-          variants={listVariants}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-col gap-4"
-        >
-        <AnimatePresence initial={false}>
-        {filteredEpisodes.map((ep) => {
-        const isHighlighted = activeSubSagaStart != null &&
-                            activeSubSagaEnd != null &&
-                            ep.number >= activeSubSagaStart &&
-                            ep.number <= activeSubSagaEnd;
-        return (
-          <motion.div
-            key={ep.id}
-            layout
-            variants={itemVariants}
-            exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
-            id={`episode-${ep.number}`}
-            role="button"
-            tabIndex={0}
-            aria-label={`Episodio ${ep.number}, ${ep.title}${ep.isWatched ? ", visto" : ""}`}
-            onClick={() => onPlay?.(ep.number)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault()
-                onPlay?.(ep.number)
-              }
-            }}
-            onMouseEnter={() => onMouseEnter(ep.id)}
-            onMouseLeave={() => onMouseLeave(ep.id)}
-            className={cn(
-              "group flex gap-4 rounded-2xl cursor-pointer transition-all duration-base ease-smooth-out active:scale-[0.98]",
-              ts.themeUseLegacyEpisodeCard ? "p-2 items-center" : "p-3",
-              "border border-white/[0.06]",
-              !ts.themeUseLegacyEpisodeCard && "shadow-card hover:shadow-elevated hover:-translate-y-0.5",
-              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
-              isHighlighted
-                ? "bg-brand-accent/[0.08] border-l-[3px] border-l-brand-accent"
-                : "bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/[0.12]"
-            )}
-          >
-          {/* Thumbnail */}
-          <div className={cn(
-            "relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-surface-container",
-            ts.themeUseLegacyEpisodeCard ? "w-28" : "w-48 md:w-56 shadow-card"
-          )}>
-            <img
-              src={ep.thumbnailUrl}
-              alt={ep.title}
-              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-slow ease-smooth-out"
-            />
-            {/* Play Overlay */}
-            {!ts.themeUseLegacyEpisodeCard && (
-              <div className="absolute inset-0 bg-scrim/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-base cursor-pointer">
-                <div className="w-12 h-12 rounded-full glass-liquid flex items-center justify-center">
-                  <Icons.media.play className="w-6 h-6 text-white ml-1" fill="currentColor" />
-                </div>
-              </div>
-            )}
-
-            {/* Progress/Watched Indicator */}
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-container-high">
-              {ep.isWatched && <div className="h-full bg-brand-success w-full" />}
-            </div>
-          </div>
-
-            {/* Details */}
-          <div className="flex flex-col justify-center flex-grow min-w-0 py-0.5">
-            <div className="flex justify-between items-start mb-0.5">
-              <h4 className="text-sm font-bold text-on-surface truncate">
-                <span className="text-on-surface-variant mr-1.5">{ep.number}.</span>
-                {ep.title}
-              </h4>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                {/* Saga Badge */}
-                {ep.sagaName && (
-                  <span className="inline-flex items-center text-label-sm uppercase bg-brand-accent/10 text-brand-accent border border-brand-accent/20 px-3 py-1 rounded-full">
-                    {ep.sagaName}
-                  </span>
-                )}
-                {/* Type Badge */}
-                {ep.episodeType === 'Filler' && (
-                  <span className="inline-flex items-center text-label-sm uppercase bg-brand-destructive/15 text-brand-destructive border border-brand-destructive/25 px-3 py-1 rounded-full">
-                    Relleno
-                  </span>
-                )}
-                {ep.episodeType === 'Hyped' && (
-                  <span className="inline-flex items-center text-label-sm uppercase bg-brand-secondary/15 text-brand-secondary border border-brand-secondary/25 px-3 py-1 rounded-full shadow-[0_0_8px_hsl(var(--brand-secondary)/0.2)]">
-                    Premium
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {!ts.themeUseLegacyEpisodeCard && !ts.themeHideEpisodeCardDescription && (
-              <p className="text-xs text-on-surface-variant line-clamp-2 mb-2 leading-relaxed">
-                {ep.description}
-              </p>
-            )}
-
-            {!ts.themeHideDownloadedEpisodeCardFilename && ep.localFilePath && (
-              <p className="text-[9px] font-mono text-on-surface-variant/50 truncate mb-1">
-                {ep.localFilePath.split(/[\\/]/).pop()}
-              </p>
-            )}
-
-            {/* Technical Pills & Status */}
-            {!ts.themeUseLegacyEpisodeCard && (
-              <div className="flex items-center justify-between mt-auto">
-                {ts.themeShowEpisodeCardAnimeInfo && (
-                  <div className="flex items-center gap-1.5">
-                    {[ep.resolution, ep.videoCodec, ep.audioCodec].filter(Boolean).map((spec) => (
-                      <span key={spec as string} className="text-[10px] font-mono font-medium bg-white/[0.06] border border-white/[0.06] text-on-surface-variant px-2 py-0.5 rounded-md uppercase">
-                        {spec}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-center w-6 h-6 rounded-full border border-outline-variant group-hover:border-outline-variant/70 transition-colors ml-auto">
-                  {ep.isWatched && <Icons.ui.check className="w-3.5 h-3.5 text-brand-success" strokeWidth={3} />}
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-        )
-      })}
-        </AnimatePresence>
-        </motion.div>
+        <EpisodeVirtualList 
+            filteredEpisodes={filteredEpisodes}
+            activeSubSagaStart={activeSubSagaStart}
+            activeSubSagaEnd={activeSubSagaEnd}
+            ts={ts}
+            onPlay={onPlay}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+        />
       )}
     </div>
   )
+}
+
+function EpisodeVirtualList({ 
+    filteredEpisodes, activeSubSagaStart, activeSubSagaEnd, ts, onPlay, onMouseEnter, onMouseLeave 
+}: any) {
+    const listRef = React.useRef<HTMLDivElement>(null)
+    
+    const virtualizer = useWindowVirtualizer({
+        count: filteredEpisodes.length,
+        estimateSize: () => ts.themeUseLegacyEpisodeCard ? 96 : 180,
+        overscan: 5,
+    })
+
+    return (
+        <div ref={listRef} className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+                const ep = filteredEpisodes[virtualRow.index]
+                const isHighlighted = activeSubSagaStart != null &&
+                                    activeSubSagaEnd != null &&
+                                    ep.number >= activeSubSagaStart &&
+                                    ep.number <= activeSubSagaEnd;
+
+                return (
+                    <div
+                        key={ep.id}
+                        className="absolute top-0 left-0 w-full pb-4"
+                        style={{
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`,
+                        }}
+                    >
+                        <div
+                            id={`episode-${ep.number}`}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Episodio ${ep.number}, ${ep.title}${ep.isWatched ? ", visto" : ""}`}
+                            onClick={() => onPlay?.(ep.number)}
+                            onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault()
+                                onPlay?.(ep.number)
+                            }
+                            }}
+                            onMouseEnter={() => onMouseEnter(ep.id)}
+                            onMouseLeave={() => onMouseLeave(ep.id)}
+                            className={cn(
+                            "h-full group flex gap-4 rounded-2xl cursor-pointer transition-all duration-base ease-smooth-out active:scale-[0.98]",
+                            ts.themeUseLegacyEpisodeCard ? "p-2 items-center" : "p-3",
+                            "border border-white/[0.06]",
+                            !ts.themeUseLegacyEpisodeCard && "shadow-card hover:shadow-elevated hover:-translate-y-0.5",
+                            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
+                            isHighlighted
+                                ? "bg-brand-accent/[0.08] border-l-[3px] border-l-brand-accent"
+                                : "bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/[0.12]"
+                            )}
+                        >
+                            {/* Thumbnail */}
+                            <div className={cn(
+                                "relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-surface-container",
+                                ts.themeUseLegacyEpisodeCard ? "w-28" : "w-52 md:w-64 shadow-card"
+                            )}>
+                                <img
+                                src={ep.thumbnailUrl}
+                                alt={ep.title}
+                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-slow ease-smooth-out"
+                                />
+                                {/* Play Overlay */}
+                                {!ts.themeUseLegacyEpisodeCard && (
+                                <div className="absolute inset-0 bg-scrim/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-base cursor-pointer">
+                                    <div className="w-12 h-12 rounded-full glass-liquid flex items-center justify-center">
+                                    <Icons.media.play className="w-6 h-6 text-white ml-1" fill="currentColor" />
+                                    </div>
+                                </div>
+                                )}
+
+                                {/* Progress/Watched Indicator */}
+                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-container-high">
+                                {ep.isWatched && <div className="h-full bg-brand-success w-full" />}
+                                </div>
+                            </div>
+
+                            {/* Details */}
+                            <div className="flex flex-col justify-center flex-grow min-w-0 py-0.5">
+                                <div className="flex justify-between items-start mb-0.5">
+                                <h4 className="text-base font-bold text-on-surface truncate">
+                                    <span className="text-on-surface-variant mr-1.5">{ep.number}.</span>
+                                    {ep.title}
+                                </h4>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+
+                                    {/* Type Badge */}
+                                    {ep.episodeType === 'Filler' && (
+                                    <span className="inline-flex items-center text-label-sm uppercase bg-brand-destructive/15 text-brand-destructive border border-brand-destructive/25 px-3 py-1 rounded-full">
+                                        Relleno
+                                    </span>
+                                    )}
+                                    {ep.episodeType === 'Hyped' && (
+                                    <span className="inline-flex items-center text-label-sm uppercase bg-brand-secondary/15 text-brand-secondary border border-brand-secondary/25 px-3 py-1 rounded-full shadow-[0_0_8px_hsl(var(--brand-secondary)/0.2)]">
+                                        Premium
+                                    </span>
+                                    )}
+                                </div>
+                                </div>
+
+                                {!ts.themeUseLegacyEpisodeCard && !ts.themeHideEpisodeCardDescription && (
+                                <p className="text-sm text-on-surface-variant line-clamp-2 mb-2 leading-relaxed">
+                                    {ep.description}
+                                </p>
+                                )}
+
+                                {!ts.themeHideDownloadedEpisodeCardFilename && ep.localFilePath && (
+                                <p className="text-[9px] font-mono text-on-surface-variant/50 truncate mb-1">
+                                    {ep.localFilePath.split(/[\\/]/).pop()}
+                                </p>
+                                )}
+
+                                {/* Technical Pills & Status */}
+                                {!ts.themeUseLegacyEpisodeCard && (
+                                <div className="flex items-center justify-between mt-auto">
+                                    {ts.themeShowEpisodeCardAnimeInfo && (
+                                    <div className="flex items-center gap-1.5">
+                                        {[ep.resolution, ep.videoCodec, ep.audioCodec].filter(Boolean).map((spec) => (
+                                        <span key={spec as string} className="text-[10px] font-mono font-medium bg-white/[0.06] border border-white/[0.06] text-on-surface-variant px-2 py-0.5 rounded-md uppercase">
+                                            {spec}
+                                        </span>
+                                        ))}
+                                    </div>
+                                    )}
+
+                                    <div className="flex items-center justify-center w-6 h-6 rounded-full border border-outline-variant group-hover:border-outline-variant/70 transition-colors ml-auto">
+                                    {ep.isWatched && <Icons.ui.check className="w-3.5 h-3.5 text-brand-success" strokeWidth={3} />}
+                                    </div>
+                                </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })}
+        </div>
+    )
 }

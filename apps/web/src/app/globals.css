@@ -242,14 +242,29 @@ media-time-range {
   background: var(--sidebar-bg);
 }
 
-[data-sidebar-gradient="true"] .sidebar-gradient::before,
-[data-theme="era-universe"] .sidebar-gradient::before {
+/* En modo Por Era el sidebar siempre lleva el tinte de su era (antes solo
+   Universe lo tenía hardcodeado y el resto quedaba con la base negra fija).
+   El toggle "Degradado del Sidebar" ahora intensifica el gradiente
+   (ver [data-sidebar-gradient="true"] en colors.css). */
+[data-mode="era"] .sidebar-gradient::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   /* Color del preset activo sumado sobre la base negra del sidebar */
   background: var(--sidebar-accent-gradient);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Degradé de página fijo — Clásico (viñeta sutil) y Por Era.
+   Cada modo define su propio --page-gradient en colors.css. ──────────── */
+[data-mode="classic"] body::before,
+[data-mode="era"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--page-gradient);
   pointer-events: none;
   z-index: 0;
 }

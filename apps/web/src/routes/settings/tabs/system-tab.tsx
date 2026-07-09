@@ -7,6 +7,9 @@ import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
+import { useBackupDatabase } from "@/api/hooks/system.hooks"
+import { getApiUrl } from "@/api/core/hooks"
+import { API_ENDPOINTS } from "@/api/generated/endpoints"
 
 interface SystemTabProps {
     control: Control<SettingsFormValues>
@@ -21,6 +24,14 @@ const HardDriveIcon = () => (
     </svg>
 )
 
+const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 export function SystemTab({ control }: SystemTabProps) {
     const {
         bgMusicEnabled,
@@ -33,8 +44,49 @@ export function SystemTab({ control }: SystemTabProps) {
         setUiSoundsVolume,
     } = useAppStore()
 
+    const { mutate: backupDb, isPending: isBackingUp } = useBackupDatabase()
+
     const handleBackup = () => {
-        toast.success("Respaldo de base de datos generado con éxito")
+        backupDb(undefined, {
+            onSuccess: (data) => {
+                toast.success(`Respaldo generado con éxito (${formatBytes(data.sizeBytes)})`)
+            }
+        })
+    }
+
+    const handleGenerateReport = async () => {
+        toast.loading("Generando reporte...", { id: "report-toast" })
+        try {
+            const token = useAppStore.getState().token
+            const url = getApiUrl(API_ENDPOINTS.SYSTEM.GetDiagnosticsReport.endpoint)
+            const headers = new Headers()
+            if (token) {
+                headers.append("X-KameHouse-Token", token)
+            }
+            const res = await fetch(url, { headers })
+            if (!res.ok) throw new Error("Error fetching report")
+            
+            const blob = await res.blob()
+            const downloadUrl = window.URL.createObjectURL(blob)
+            
+            const contentDisposition = res.headers.get("content-disposition")
+            let filename = "kamehouse-diagnostics.zip"
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename="?([^"]+)"?/)
+                if (match && match[1]) filename = match[1]
+            }
+
+            const a = document.createElement("a")
+            a.href = downloadUrl
+            a.download = filename
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(downloadUrl)
+            a.remove()
+            toast.success("Reporte descargado", { id: "report-toast" })
+        } catch (error) {
+            toast.error("Error al generar el reporte", { id: "report-toast" })
+        }
     }
 
     const handleClearCache = () => {
@@ -47,7 +99,7 @@ export function SystemTab({ control }: SystemTabProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
                 {/* Aplicación */}
                 <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 md:col-span-2 space-y-5 divide-y divide-outline-variant/3">
-                    <h4 className="text-xs font-bold text-brand-accent uppercase tracking-wide">Aplicación</h4>
+                    <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Aplicación</h4>
                     <Controller
                         control={control}
                         name="library.openWebURLOnStart"
@@ -98,14 +150,22 @@ export function SystemTab({ control }: SystemTabProps) {
                         <button
                             type="button"
                             onClick={handleBackup}
+                            disabled={isBackingUp}
+                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-[10px] font-bold uppercase tracking-wider text-on-surface-variant rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                        >
+                            {isBackingUp ? "Respaldando..." : "Respaldar DB"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleGenerateReport}
                             className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-[10px] font-bold uppercase tracking-wider text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
                         >
-                            Respaldar DB
+                            Generar Reporte
                         </button>
                         <button
                             type="button"
                             onClick={handleClearCache}
-                            className="w-full py-2.5 bg-brand-destructive/8 hover:bg-brand-destructive/15 border border-brand-destructive/15 text-[10px] font-bold uppercase tracking-wider text-brand-destructive rounded-xl transition-all active:scale-[0.98]"
+                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-[10px] font-bold uppercase tracking-wider text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
                         >
                             Limpiar Caché Imágenes
                         </button>

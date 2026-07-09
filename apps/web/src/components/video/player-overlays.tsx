@@ -163,7 +163,7 @@ export function SkipIntroOverlay({
 
     return (
         <div className={cn(
-            "absolute bottom-24 left-4 sm:bottom-36 sm:left-10 md:left-12 z-30 transition-all duration-300 pointer-events-auto",
+            "absolute bottom-20 left-4 sm:bottom-24 sm:left-10 md:left-12 z-30 transition-all duration-300 pointer-events-auto",
             show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
             <button
@@ -175,8 +175,8 @@ export function SkipIntroOverlay({
                     onSkip()
                 }}
                 className={cn(
-                    "relative flex items-center px-6 py-3 overflow-hidden text-white",
-                    "bg-[var(--bg-secondary)] border border-[var(--glass-strong)] rounded-[22px] shadow-[var(--shadow-modal)]",
+                    "relative flex items-center px-6 py-3 overflow-hidden text-white backdrop-blur-[var(--blur-overlay-lg)]",
+                    "bg-black/60 border border-[var(--glass-strong)] rounded-[22px] shadow-[var(--shadow-modal)]",
                     isOutro
                         ? "border-brand-secondary/30 hover:border-brand-secondary/60 hover:bg-brand-secondary/15"
                         : "border-white/10 hover:border-brand-accent/40 hover:bg-brand-accent/15",

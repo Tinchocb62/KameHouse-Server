@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"kamehouse/internal/notifier"
 	"kamehouse/internal/util"
 	"strings"
 	"sync"
@@ -45,6 +46,11 @@ type head struct {
 }
 
 var deletedHead = head{segment: -1, end: -1}
+
+// ErrSegmentOutOfRange is returned when a requested segment index lies beyond the
+// pipeline's current segment table. Callers should map it to HTTP 404 (not 500):
+// clients legitimately probe segments near/past EOF.
+var ErrSegmentOutOfRange = errors.New("cassette: segment index out of range")
 
 // Pipeline manages a single encode stream
 type Pipeline struct {
@@ -176,7 +182,7 @@ func (p *Pipeline) GetIndex(token string) (string, error) {
 // to the .ts file on disk
 func (p *Pipeline) GetSegment(ctx context.Context, seg int32) (string, error) {
 	if seg < 0 || seg >= int32(p.segments.Len()) {
-		return "", fmt.Errorf("cassette: segment index %d out of bounds (len=%d)", seg, p.segments.Len())
+		return "", fmt.Errorf("%w: index %d (len=%d)", ErrSegmentOutOfRange, seg, p.segments.Len())
 	}
 
 	// Record for velocity tracking
@@ -496,7 +502,12 @@ func (p *Pipeline) runHead(start int32) error {
 			}
 		}
 	}
-	if !isCopy {
+	// Only video pipelines benefit from hardware-accelerated decoding. Audio pipelines
+	// re-encode audio only (-map 0:a with -sn -dn) and must NOT receive the video decode
+	// flags (e.g. -hwaccel cuda -hwaccel_output_format cuda): they are useless for audio
+	// and make the audio ffmpeg needlessly open a GPU decode context, competing for scarce
+	// NVDEC/NVENC sessions with the concurrent video transcode.
+	if !isCopy && p.kind == VideoKind {
 		args = append(args, p.settings.GetHwAccel().DecodeFlags...)
 	}
 
@@ -665,6 +676,8 @@ func (p *Pipeline) reapProcess(ctx context.Context, encoderID int, cmd *exec.Cmd
 			Str("ffmpeg_error", stderr.String()).
 			Msg("cassette: hardware acceleration failed or process exited with error, falling back to CPU...")
 		p.settings.SetHwAccel(FallbackToCPU("superfast"))
+		notifier.Global().Notify(notifier.TypeMediastream, "Aceleración por hardware desactivada",
+			fmt.Sprintf("FFmpeg falló usando %s; la transcodificación continúa por CPU.", hwProfile.Name))
 	}
 
 	var exitErr *exec.ExitError

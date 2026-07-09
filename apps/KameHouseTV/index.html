@@ -386,7 +386,7 @@
                 els.btnReconfig.addEventListener('click', onReconfigClick);
 
                 els.serverIP.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') onConnectClick();
+                    if (e.key === 'Enter' || e.keyCode === 13) onConnectClick();
                 });
 
                 document.addEventListener('keydown', onKeyDown);
@@ -434,21 +434,21 @@
                     }
                 }
 
-                if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+                if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight' || e.keyCode === 38 || e.keyCode === 40 || e.keyCode === 37 || e.keyCode === 39) {
                     e.preventDefault();
                     var focusable = getVisibleFocusable();
                     if (!focusable.length) return;
                     var idx = focusable.indexOf(document.activeElement);
                     if (idx === -1) { focusable[0].focus(); return; }
                     var cols = 2;
-                    if (key === 'ArrowRight')      idx = Math.min(idx + 1, focusable.length - 1);
-                    else if (key === 'ArrowLeft')  idx = Math.max(idx - 1, 0);
-                    else if (key === 'ArrowDown')  idx = Math.min(idx + cols, focusable.length - 1);
-                    else if (key === 'ArrowUp')    idx = Math.max(idx - cols, 0);
+                    if (key === 'ArrowRight' || e.keyCode === 39)      idx = Math.min(idx + 1, focusable.length - 1);
+                    else if (key === 'ArrowLeft' || e.keyCode === 37)  idx = Math.max(idx - 1, 0);
+                    else if (key === 'ArrowDown' || e.keyCode === 40)  idx = Math.min(idx + cols, focusable.length - 1);
+                    else if (key === 'ArrowUp' || e.keyCode === 38)    idx = Math.max(idx - cols, 0);
                     focusable[idx].focus();
                 }
 
-                if (key === 'Enter') {
+                if (key === 'Enter' || e.keyCode === 13) {
                     var active = document.activeElement;
                     if (active && active.tagName === 'BUTTON') {
                         e.preventDefault();
@@ -668,7 +668,7 @@
                     if (portMatch) userPort = portMatch[1];
                 }
 
-                var COMMON_SUBNETS = ['192.168.1', '192.168.0', '192.168.50', '192.168.86', '10.0.0', '10.0.1', '10.1.1', '172.16.0', '172.16.1', '172.20.10'];
+                var COMMON_SUBNETS = ['192.168.100', '192.168.1', '192.168.0', '192.168.50', '192.168.86', '10.0.0', '10.0.1', '10.1.1', '172.16.0', '172.16.1', '172.20.10'];
 
                 els.scanResults.style.display = 'block';
                 els.scanList.innerHTML = '';
@@ -735,7 +735,7 @@
             }
 
             function quickAutoScan() {
-                var COMMON_SUBNETS = ['192.168.1', '192.168.0', '192.168.50', '192.168.86', '10.0.0', '10.0.1'];
+                var COMMON_SUBNETS = ['192.168.100', '192.168.1', '192.168.0', '192.168.50', '192.168.86', '10.0.0', '10.0.1'];
                 var ports = ['43211', '43212'];
 
                 els.scanResults.style.display = 'none'; // Keep hidden during quick auto scan

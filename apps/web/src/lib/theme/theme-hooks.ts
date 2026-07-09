@@ -83,12 +83,30 @@ export const ThemeMediaPageInfoBoxSizeOptions = [
 
 export type ThemeSettings = Omit<Models_Theme, "id" | "createdAt" | "updatedAt">
 
+export type ThemeMode = "classic" | "era"
+
+/**
+ * Resolves the effective UI mode. `themeMode` is the explicit source of truth;
+ * for legacy settings saved before the field existed ("" / unknown), derive it:
+ * era users keep their palette, old "Modo Avanzado" (blur) users keep effects,
+ * everyone else lands on the premium Classic mode.
+ */
+export function resolveThemeMode(t: Pick<ThemeSettings, "themeMode" | "themeEra" | "themeEnableBlurringEffects">): ThemeMode {
+    if (t.themeMode === "classic" || t.themeMode === "era") return t.themeMode
+    if (t.themeMode === "advanced" as any) return "era"
+    if (t.themeEra?.startsWith("era-")) return "era"
+    if (t.themeEnableBlurringEffects) return "era"
+    return "classic"
+}
+
 export const THEME_DEFAULT_VALUES: ThemeSettings = {
     enableColorSettings: false,
-    backgroundColor: "#070707",
-    accentColor: "#ff6e3a",
+    backgroundColor: "#050506",
+    accentColor: "#C8102E",
     sidebarBackgroundColor: "",
-    themeEra: "",
+    themeEra: "classic",
+    themeMode: "",
+    themeEnableLiquidGlass: false,
     homeItems: [],
     themeAnimeEntryScreenLayout: "stacked",
     themeSmallerEpisodeCarouselSize: false,
@@ -127,6 +145,7 @@ export type ThemeSettingsHook = {
     hasEraTheme: boolean
     hasCustomBackground: boolean
     hasCustomAccentColor: boolean
+    effectiveMode: ThemeMode
 } & ThemeSettings
 
 /**
@@ -161,10 +180,31 @@ export function useThemeSettings(): ThemeSettingsHook {
     const rawBackgroundColor = theme?.backgroundColor ?? ""
     const rawAccentColor = theme?.accentColor ?? ""
 
+    const effectiveMode = resolveThemeMode(merged)
+    
+    let effectiveEra = merged.themeEra
+    if (effectiveMode === "era" && (!effectiveEra || !effectiveEra.startsWith("era-"))) {
+        effectiveEra = "era-universe"
+    }
+
+    // Legacy era users never saw a liquid-glass toggle — liquid was implied by
+    // the blur flag. Preserve that behavior until they save an explicit value.
+    const isLegacy = !merged.themeMode
+    const themeEnableLiquidGlass = isLegacy && effectiveMode === "era"
+        ? merged.themeEnableBlurringEffects
+        : merged.themeEnableLiquidGlass
+
     return {
         ...merged,
+        themeEra: effectiveEra,
+        themeEnableLiquidGlass,
+        // Clásico (glass sutil) siempre tiene vidrio
+        // activo — la intensidad la modulan los tokens de [data-mode]. Solo en
+        // Por Era el toggle del usuario manda.
+        themeEnableBlurringEffects: effectiveMode === "era" ? merged.themeEnableBlurringEffects : true,
+        effectiveMode,
         hasCustomBackgroundColor: merged.enableColorSettings && !!merged.backgroundColor,
-        hasEraTheme: rawThemeEra !== "",
+        hasEraTheme: effectiveEra !== "",
         hasCustomBackground: rawBackgroundColor !== "",
         hasCustomAccentColor: rawAccentColor !== "",
     }

@@ -28,6 +28,21 @@ const (
 type (
 	StreamType string
 
+	// ClientCapabilities describes the codecs/containers the requesting client can
+	// decode natively. Populated by the web player via canPlayType/MediaSource
+	// probing. A nil pointer means "unknown client" and falls back to the static
+	// Chromium-based assumptions used before capabilities existed.
+	ClientCapabilities struct {
+		Hevc      bool `json:"hevc"`      // HEVC/H.265 8-bit
+		Hevc10Bit bool `json:"hevc10Bit"` // HEVC Main 10
+		Av1       bool `json:"av1"`
+		Vp9       bool `json:"vp9"`
+		Ac3       bool `json:"ac3"`
+		Eac3      bool `json:"eac3"`
+		Dts       bool `json:"dts"`
+		Matroska  bool `json:"matroska"` // can demux .mkv in <video> (Chromium yes, Firefox/Safari no)
+	}
+
 	PlaybackManager struct {
 		logger                *zerolog.Logger
 		stateMu               sync.Mutex                 // Guards currentMediaContainer (no longer serialized by repository.reqMu).
@@ -91,15 +106,30 @@ func (p *PlaybackManager) getCurrentMediaContainer() (*MediaContainer, bool) {
 	return p.currentMediaContainer.Get()
 }
 
+// fingerprint returns a short cache-key component so containers built for
+// clients with different codec support don't leak into each other's decisions.
+func (c *ClientCapabilities) fingerprint() string {
+	if c == nil {
+		return "legacy"
+	}
+	b := func(v bool) byte {
+		if v {
+			return '1'
+		}
+		return '0'
+	}
+	return string([]byte{b(c.Hevc), b(c.Hevc10Bit), b(c.Av1), b(c.Vp9), b(c.Ac3), b(c.Eac3), b(c.Dts), b(c.Matroska)})
+}
+
 // RequestPlayback is called by the frontend to stream a media file
-func (p *PlaybackManager) RequestPlayback(filepath string, streamType StreamType, clientID string) (ret *MediaContainer, err error) {
+func (p *PlaybackManager) RequestPlayback(filepath string, streamType StreamType, clientID string, caps *ClientCapabilities) (ret *MediaContainer, err error) {
 
 	p.logger.Debug().Str("filepath", filepath).Any("type", streamType).Msg("mediastream: Requesting playback")
 
 	start := time.Now()
 
 	// Create a new media container
-	ret, err = p.newMediaContainer(filepath, streamType)
+	ret, err = p.newMediaContainer(filepath, streamType, caps)
 
 	if err != nil {
 		p.logger.Error().Err(err).Msg("mediastream: Failed to create media container")
@@ -124,7 +154,7 @@ func (p *PlaybackManager) PreloadPlayback(filepath string, streamType StreamType
 	p.logger.Debug().Str("filepath", filepath).Any("type", streamType).Str("preferredAudioLang", preferredAudioLang).Msg("mediastream: Preloading playback")
 
 	// Create a new media container
-	ret, err = p.newMediaContainer(filepath, streamType)
+	ret, err = p.newMediaContainer(filepath, streamType, nil)
 
 	if err != nil {
 		p.logger.Error().Err(err).Msg("mediastream: Failed to create media container")
@@ -228,7 +258,7 @@ func (p *PlaybackManager) PreloadPlayback(filepath string, streamType StreamType
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamType) (ret *MediaContainer, err error) {
+func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamType, caps *ClientCapabilities) (ret *MediaContainer, err error) {
 	p.logger.Debug().Str("filepath", filePath).Any("type", streamType).Msg("mediastream: New media container requested")
 	// Get the hash of the file.
 	hash, err := videofile.GetHashFromPath(filePath)
@@ -238,24 +268,29 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 
 	p.logger.Trace().Str("hash", hash).Msg("mediastream: Checking cache")
 
+	// Cache key includes the client capability fingerprint: the direct-vs-transcode
+	// decision depends on what the requesting client can decode, so a container
+	// built for a HEVC-capable client must not be reused for one that isn't.
+	cacheKey := hash + "|" + caps.fingerprint()
+
 	// Fast path: cache hit (lock-free read). Only reuse if the stream type matches.
-	if mc, ok := p.mediaContainers.Get(hash); ok && mc.StreamType == streamType {
+	if mc, ok := p.mediaContainers.Get(cacheKey); ok && mc.StreamType == streamType {
 		p.logger.Debug().Str("hash", hash).Bool("cached", true).Msg("mediastream: Media container cache HIT")
 		return mc, nil
 	}
 
-	// Slow path: dedupe concurrent identical builds. Keyed by hash:streamType so
+	// Slow path: dedupe concurrent identical builds. Keyed by hash:streamType:caps so
 	// a preload racing a play (or two clients opening the same file) runs ffprobe
 	// once and shares the result; different files still build in parallel (no global
 	// lock). This replaces the old repository-wide reqMu around the whole request.
-	key := hash + ":" + string(streamType)
+	key := cacheKey + ":" + string(streamType)
 	v, err, _ := p.containerGroup.Do(key, func() (interface{}, error) {
 		// Re-check the cache: a concurrent build may have completed while we queued.
-		if mc, ok := p.mediaContainers.Get(hash); ok && mc.StreamType == streamType {
+		if mc, ok := p.mediaContainers.Get(cacheKey); ok && mc.StreamType == streamType {
 			p.logger.Debug().Str("hash", hash).Bool("cached", true).Msg("mediastream: Media container cache HIT (deduped)")
 			return mc, nil
 		}
-		return p.buildMediaContainer(filePath, hash, streamType)
+		return p.buildMediaContainer(filePath, hash, streamType, caps, cacheKey)
 	})
 	if err != nil {
 		return nil, err
@@ -267,7 +302,7 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 // codec compatibility decision, stream-URL resolution) and caches the result. It
 // must only be called from within the containerGroup singleflight in
 // newMediaContainer so the ffprobe never runs concurrently for the same file.
-func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, streamType StreamType) (ret *MediaContainer, err error) {
+func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, streamType StreamType, caps *ClientCapabilities, cacheKey string) (ret *MediaContainer, err error) {
 	p.logger.Trace().Str("hash", hash).Msg("mediastream: Creating media container")
 
 	// Get the media information of the file.
@@ -312,43 +347,7 @@ func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, stre
 	}
 
 	if streamType == StreamTypeDirect && !isDirectPlayOnly {
-		isDirectPlayable := false
-		ext := strings.ToLower(ret.MediaInfo.Extension)
-		// Universal direct-playable containers in modern browsers (including mkv inside WebView2)
-		if ext == "mp4" || ext == "m4v" || ext == "webm" || ext == "mov" || ext == "ogg" || ext == "mkv" {
-			hasSupportedVideo := false
-			if ret.MediaInfo.Video != nil {
-				vCodec := strings.ToLower(ret.MediaInfo.Video.Codec)
-				// h264, hevc/h265, vp8, vp9, and av1 are natively supported.
-				if vCodec == "h264" || vCodec == "hevc" || vCodec == "h265" || vCodec == "vp8" || vCodec == "vp9" || vCodec == "av1" {
-					hasSupportedVideo = true
-				}
-			} else {
-				// Audio only
-				hasSupportedVideo = true
-			}
-
-			hasSupportedAudio := true
-			if len(ret.MediaInfo.Audios) > 0 {
-				hasSupportedAudio = false
-				for _, audio := range ret.MediaInfo.Audios {
-					aCodec := strings.ToLower(audio.Codec)
-					// Only codecs with decoders shipped in Chromium/WebView2 are safe for direct play.
-					// AC3, E-AC3 and DTS (dca) are proprietary and NOT decoded by Chromium (an OS
-					// Media Foundation decoder may exist on some Windows builds, but it's unreliable and
-					// absent on Firefox/Chrome), so they must fall back to Transcode HLS (re-encoded to AAC).
-					// Leaving them here caused PIPELINE_ERROR_DECODE: "Failed to send audio packet for decoding".
-					if aCodec == "aac" || aCodec == "mp3" || aCodec == "opus" || aCodec == "flac" || aCodec == "vorbis" {
-						hasSupportedAudio = true
-						break
-					}
-				}
-			}
-
-			if hasSupportedVideo && hasSupportedAudio {
-				isDirectPlayable = true
-			}
-		}
+		isDirectPlayable := isDirectPlayableByClient(ret.MediaInfo, caps)
 
 		if !isDirectPlayable {
 			vCodec := ""
@@ -363,7 +362,7 @@ func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, stre
 				}
 				aCodec = strings.Join(audioCodecs, ",")
 			}
-			p.logger.Info().Str("filepath", filePath).Str("ext", ext).Str("videoCodec", vCodec).Str("audioCodec", aCodec).Msg("mediastream: File container or codecs not natively supported by browser. Falling back to Transcode HLS.")
+			p.logger.Info().Str("filepath", filePath).Str("ext", strings.ToLower(ret.MediaInfo.Extension)).Str("videoCodec", vCodec).Str("audioCodec", aCodec).Str("caps", caps.fingerprint()).Msg("mediastream: File container or codecs not supported by this client. Falling back to Transcode HLS.")
 			streamType = StreamTypeTranscode
 			ret.StreamType = StreamTypeTranscode
 		}
@@ -401,7 +400,93 @@ func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, stre
 	ret.StreamURL = streamURL
 
 	// Store the media container in the map.
-	p.mediaContainers.Set(hash, ret)
+	p.mediaContainers.Set(cacheKey, ret)
 
 	return
+}
+
+// isDirectPlayableByClient decides whether the file can be played natively by
+// the requesting client without transcoding. When caps is nil (older clients
+// that don't report capabilities) it assumes a Chromium/WebView2 engine, which
+// matches the previous hardcoded behavior.
+func isDirectPlayableByClient(info *videofile.MediaInfo, caps *ClientCapabilities) bool {
+	switch strings.ToLower(info.Extension) {
+	case "mp4", "m4v", "webm", "mov", "ogg":
+		// Universal containers.
+	case "mkv":
+		// Chromium/WebView2 demuxes Matroska natively; Firefox and Safari do not.
+		if caps != nil && !caps.Matroska {
+			return false
+		}
+	default:
+		return false
+	}
+
+	if info.Video != nil {
+		vCodec := strings.ToLower(info.Video.Codec)
+		// 10/12-bit content needs special handling: no browser decodes Hi10P H.264,
+		// and HEVC Main 10 requires explicit hardware support on the client.
+		isHighBitDepth := strings.Contains(info.Video.PixFmt, "10") || strings.Contains(info.Video.PixFmt, "12")
+		switch vCodec {
+		case "h264":
+			if isHighBitDepth {
+				return false
+			}
+		case "hevc", "h265":
+			if caps != nil {
+				if !caps.Hevc {
+					return false
+				}
+				if isHighBitDepth && !caps.Hevc10Bit {
+					return false
+				}
+			}
+		case "vp8":
+			// Universally supported.
+		case "vp9":
+			if caps != nil && !caps.Vp9 {
+				return false
+			}
+		case "av1":
+			if caps != nil && !caps.Av1 {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+
+	// At least one audio track must be decodable by the client (the player can
+	// select which track to use during direct play).
+	if len(info.Audios) > 0 {
+		hasSupportedAudio := false
+		for _, audio := range info.Audios {
+			switch strings.ToLower(audio.Codec) {
+			case "aac", "mp3", "opus", "flac", "vorbis":
+				hasSupportedAudio = true
+			case "ac3":
+				// AC3/E-AC3/DTS are proprietary and not shipped in Chromium; only
+				// clients that explicitly probed support for them may direct-play.
+				if caps != nil && caps.Ac3 {
+					hasSupportedAudio = true
+				}
+			case "eac3", "e-ac-3":
+				if caps != nil && caps.Eac3 {
+					hasSupportedAudio = true
+				}
+			case "dts", "dca":
+				if caps != nil && caps.Dts {
+					hasSupportedAudio = true
+				}
+			}
+			if hasSupportedAudio {
+				break
+			}
+		}
+		if !hasSupportedAudio {
+			return false
+		}
+	}
+
+	return true
 }

@@ -754,6 +754,48 @@ export const API_ENDPOINTS = {
             endpoint: "/api/v1/settings/media-player",
         },
     },
+    NOTIFICATIONS: {
+        /**
+         *  @description
+         *  Route returns recent notifications.
+         *  Returns the latest in-app notifications (newest first) and the unread count.
+         */
+        GetNotifications: {
+            key: "NOTIFICATIONS-get-notifications",
+            methods: ["GET"],
+            endpoint: "/api/v1/notifications",
+        },
+        /**
+         *  @description
+         *  Route marks notifications as read.
+         */
+        MarkNotificationsRead: {
+            key: "NOTIFICATIONS-mark-notifications-read",
+            methods: ["POST"],
+            endpoint: "/api/v1/notifications/read",
+        },
+        /**
+         *  @description
+         *  Route clears all notifications.
+         */
+        ClearNotifications: {
+            key: "NOTIFICATIONS-clear-notifications",
+            methods: ["DELETE"],
+            endpoint: "/api/v1/notifications",
+        },
+    },
+    SYSTEM: {
+        BackupDatabase: {
+            key: "SYSTEM-backup-database",
+            methods: ["POST"],
+            endpoint: "/api/v1/db/backup",
+        },
+        GetDiagnosticsReport: {
+            key: "SYSTEM-get-diagnostics-report",
+            methods: ["GET"],
+            endpoint: "/api/v1/report",
+        },
+    },
     STATUS: {
         /**
          *  @description

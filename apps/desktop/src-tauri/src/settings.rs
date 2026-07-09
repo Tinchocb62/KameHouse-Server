@@ -24,6 +24,9 @@ pub struct DesktopSettings {
     pub window_maximized: bool,
     pub disable_hardware_acceleration: bool,
     pub enable_aggressive_gpu_flags: bool,
+    /// Custom path to the mpv binary; empty/None resolves "mpv" from PATH.
+    #[serde(default)]
+    pub mpv_path: Option<String>,
 }
 
 impl Default for DesktopSettings {
@@ -37,6 +40,7 @@ impl Default for DesktopSettings {
             window_maximized: true,
             disable_hardware_acceleration: false,
             enable_aggressive_gpu_flags: false,
+            mpv_path: None,
         }
     }
 }
@@ -86,6 +90,7 @@ impl SettingsManager {
                             settings.window_maximized = loaded.window_maximized;
                             settings.disable_hardware_acceleration = loaded.disable_hardware_acceleration;
                             settings.enable_aggressive_gpu_flags = loaded.enable_aggressive_gpu_flags;
+                            settings.mpv_path = loaded.mpv_path;
                             info!("[Settings] Loaded from {:?}", path);
                         }
                         Err(e) => {
@@ -160,6 +165,9 @@ impl SettingsManager {
                     if let Some(v) = value.as_bool() {
                         settings.window_maximized = v;
                     }
+                }
+                "mpvPath" | "mpv_path" => {
+                    settings.mpv_path = value.as_str().map(|s| s.to_string()).filter(|s| !s.trim().is_empty());
                 }
                 _ => {
                     warn!("[Settings] Unknown setting key: {}", key);

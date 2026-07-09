@@ -2,6 +2,7 @@
 import { getApiWebSocketUrl } from "@/api/client/server-url"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { WebSocketMessage, WSEvents, ScannerMessage } from "@/lib/server/ws-events"
+import { toast } from "sonner"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAppStore, type ScanEvent, type ScannerState } from "@/lib/store"
 import React, { useCallback, useEffect, useMemo, useRef } from "react"
@@ -240,6 +241,17 @@ export function WebsocketProvider({ children }: { children: React.ReactNode }) {
                 break
             }
                 
+            case WSEvents.NOTIFICATION_RECEIVED: {
+                const n = msg.payload
+                queryClient.invalidateQueries({
+                    queryKey: [API_ENDPOINTS.NOTIFICATIONS.GetNotifications.key]
+                })
+                if (n?.title) {
+                    toast(n.title, { description: n.message })
+                }
+                break
+            }
+
             default:
                 break
         }

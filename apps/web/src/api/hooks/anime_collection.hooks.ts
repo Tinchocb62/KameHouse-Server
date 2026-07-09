@@ -24,31 +24,13 @@ export const fetchLibraryCollection = async () => {
 }
 
 export function useGetLibraryCollection({ enabled }: { enabled?: boolean } = { enabled: true }) {
-    return useServerQuery<Anime_LibraryCollection, void, ExtendedLibraryCollection>({
+    return useServerQuery<Anime_LibraryCollection, void, Anime_LibraryCollection>({
         endpoint: API_ENDPOINTS.ANIME_COLLECTION.GetLibraryCollection.endpoint,
         method: API_ENDPOINTS.ANIME_COLLECTION.GetLibraryCollection.methods[0],
         queryKey: [API_ENDPOINTS.ANIME_COLLECTION.GetLibraryCollection.key],
         enabled: enabled,
         refetchOnWindowFocus: false,
         staleTime: 5 * 60 * 1000,
-        select: (data: Anime_LibraryCollection | undefined): ExtendedLibraryCollection => {
-            const start = performance.now()
-            if (!data) return {} as ExtendedLibraryCollection;
-            const result = {
-                ...data,
-                lists: data.lists?.map(list => ({
-                    ...list,
-                    entries: list.entries?.map(entry => {
-                        return {
-                            ...entry,
-                            customReleaseGroup: entry.mediaId === 6033 ? "Seldion Fan-Edit" : undefined,
-                            isCustomOverride: entry.mediaId === 6033 || entry.mediaId === 534
-                        }
-                    }).sort((a, b) => (a.media?.titleRomaji || "").localeCompare(b.media?.titleRomaji || ""))
-                }))
-            }
-            return result
-        }
     })
 }
 

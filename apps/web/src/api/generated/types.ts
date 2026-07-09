@@ -1069,6 +1069,52 @@ export type Mediastream_MediaContainer = {
  */
 export type Mediastream_StreamType = "transcode" | "optimized" | "direct"
 
+/**
+ * - Filepath: internal/mediastream/playback.go
+ * - Filename: playback.go
+ * - Package: mediastream
+ */
+/**
+ * - Filepath: internal/database/models/models.go
+ * - Filename: models.go
+ * - Package: models
+ * @description
+ *  Notification is a persisted in-app notification (scan completed, transcode
+ *  fallback, system events).
+ */
+export type Models_Notification = {
+    id: number
+    createdAt?: string
+    updatedAt?: string
+    /**
+     * "scanner" | "mediastream" | "system"
+     */
+    type: string
+    title: string
+    message: string
+    read: boolean
+}
+
+export type Mediastream_ClientCapabilities = {
+    /**
+     * HEVC/H.265 8-bit
+     */
+    hevc: boolean
+    /**
+     * HEVC Main 10
+     */
+    hevc10Bit: boolean
+    av1: boolean
+    vp9: boolean
+    ac3: boolean
+    eac3: boolean
+    dts: boolean
+    /**
+     * can demux .mkv in <video> (Chromium yes, Firefox/Safari no)
+     */
+    matroska: boolean
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Metadata
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1725,6 +1771,11 @@ export type Models_Theme = {
     accentColor: string
     sidebarBackgroundColor: string
     themeEra: string
+    /**
+     * "classic" | "advanced" | "era" | "" (legacy, derivado en el cliente)
+     */
+    themeMode: string
+    themeEnableLiquidGlass: boolean
     homeItems?: Array<string>
     themeAnimeEntryScreenLayout: string
     themeSmallerEpisodeCarouselSize: boolean
@@ -2244,8 +2295,7 @@ export type Subtitle = {
     isForced: boolean
     isExternal: boolean
     link?: string
-    /** True for bitmap subtitle codecs (PGS, DVB, XSUB) that cannot be extracted as text. */
-    isImageBased?: boolean
+    isImageBased: boolean
 }
 
 /**

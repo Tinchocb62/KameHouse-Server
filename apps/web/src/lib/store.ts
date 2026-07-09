@@ -68,7 +68,7 @@ export const createScannerSlice: StateCreator<UIState & PlayerState & ScannerSta
 })
 
 export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState> = (set) => ({
-    sidebarOpen: true,
+    sidebarOpen: false,
     searchQuery: "",
     isVideoActive: false,
     bgMusicEnabled: false,
@@ -263,11 +263,14 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
                 if (p && (p.aspectRatio === "fill" || p.aspectRatio === "16/9")) {
                     p.aspectRatio = "contain"
                 }
+                if (p && typeof p.sidebarOpen !== 'undefined') {
+                    delete p.sidebarOpen
+                }
                 return { ...currentState, ...p }
             },
             partialize: (state) => ({
                 // Solo persistimos lo que queremos que sobreviva
-                sidebarOpen: state.sidebarOpen,
+
                 bgMusicEnabled: state.bgMusicEnabled,
                 bgMusicVolume: state.bgMusicVolume,
                 uiSoundsEnabled: state.uiSoundsEnabled,

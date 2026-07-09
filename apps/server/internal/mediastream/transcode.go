@@ -4,12 +4,24 @@ import (
 	"errors"
 	"kamehouse/internal/events"
 	"kamehouse/internal/mediastream/cassette"
+	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 )
+
+// segmentHTTPError maps a transcode segment error to an HTTP status. An
+// out-of-range index is a 404 (clients legitimately probe near/past EOF); any
+// other failure is a 500 that surfaces the real message instead of echo's
+// generic "Internal Server Error", so the player can report an actionable cause.
+func segmentHTTPError(err error) error {
+	if errors.Is(err, cassette.ErrSegmentOutOfRange) {
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
+	}
+	return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Transcode
@@ -112,7 +124,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 		ret, err := r.transcoder.MustGet().GetVideoSegment(c.Request().Context(), mediaContainer.Filepath, mediaContainer.Hash, mediaContainer.MediaInfo, quality, segment, clientID)
 		if err != nil {
 			r.logger.Error().Err(err).Str("path", mediaContainer.Filepath).Str("quality", split[0]).Int32("segment", segment).Msg("mediastream: GetVideoSegment failed")
-			return err
+			return segmentHTTPError(err)
 		}
 
 		return c.File(ret)
@@ -139,7 +151,7 @@ func (r *Repository) ServeEchoTranscodeStream(c echo.Context, clientID string) e
 		ret, err := r.transcoder.MustGet().GetAudioSegment(c.Request().Context(), mediaContainer.Filepath, mediaContainer.Hash, mediaContainer.MediaInfo, int32(audioIndex), segment, clientID)
 		if err != nil {
 			r.logger.Error().Err(err).Str("path", mediaContainer.Filepath).Str("audio", split[1]).Int32("segment", segment).Msg("mediastream: GetAudioSegment failed")
-			return err
+			return segmentHTTPError(err)
 		}
 
 		return c.File(ret)

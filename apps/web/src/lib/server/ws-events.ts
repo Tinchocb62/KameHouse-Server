@@ -24,6 +24,7 @@ export const enum WSEvents {
     SUCCESS_TOAST = "success-toast",
     INFO_TOAST = "info-toast",
     WARNING_TOAST = "warning-toast",
+    NOTIFICATION_RECEIVED = "notification-received",
 
     OFFLINE_SNAPSHOT_CREATED = "offline-snapshot-created",
     MEDIASTREAM_SHUTDOWN_STREAM = "mediastream-shutdown-stream",
@@ -84,7 +85,17 @@ export interface SkipScanStatusPayload {
     message?: string
 }
 
+export interface NotificationPayload {
+    id: number
+    type: string
+    title: string
+    message: string
+    read: boolean
+    createdAt?: string
+}
+
 export type WebSocketMessage =
+    | { type: WSEvents.NOTIFICATION_RECEIVED; payload: NotificationPayload }
     | { type: WSEvents.SCAN_PROGRESS; payload: number }
     | { type: WSEvents.SCAN_PROGRESS_DETAILED; payload: ScanProgressDetailedPayload }
     | { type: WSEvents.SCAN_STATUS; payload: string }

@@ -206,6 +206,17 @@ type NotificationSettings struct {
 	DisableAutoDownloaderNotifications bool `gorm:"column:disable_auto_downloader_notifications" json:"disableAutoDownloaderNotifications"`
 }
 
+// Notification is a persisted in-app notification (scan completed, transcode
+// fallback, system events). Created by the notifier module and surfaced in the
+// web client's notification center.
+type Notification struct {
+	BaseModel
+	Type    string `gorm:"column:type" json:"type"` // "scanner" | "mediastream" | "system"
+	Title   string `gorm:"column:title" json:"title"`
+	Message string `gorm:"column:message" json:"message"`
+	Read    bool   `gorm:"column:read" json:"read"`
+}
+
 type PlatformSettings struct {
 	HideAudienceScore bool `gorm:"column:hide_audience_score" json:"hideAudienceScore"`
 	DisableCacheLayer bool `gorm:"column:disable_cache_layer" json:"disableCacheLayer"`
@@ -223,6 +234,8 @@ type Theme struct {
 	AccentColor            string `gorm:"column:accent_color" json:"accentColor"`
 	SidebarBackgroundColor string `gorm:"column:sidebar_background_color" json:"sidebarBackgroundColor"`
 	ThemeEra               string `gorm:"column:theme_era" json:"themeEra"`
+	ThemeMode              string `gorm:"column:theme_mode" json:"themeMode"` // "classic" | "advanced" | "era" | "" (legacy, derivado en el cliente)
+	EnableLiquidGlass      bool   `gorm:"column:enable_liquid_glass" json:"themeEnableLiquidGlass"`
 	HomeItems              []byte `gorm:"column:home_items" json:"homeItems"`
 
 	// ── Diseño y Comportamiento ──────────────────────────────────────────

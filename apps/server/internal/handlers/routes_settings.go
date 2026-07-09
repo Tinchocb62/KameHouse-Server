@@ -40,4 +40,8 @@ func (h *Handler) RegisterSettingsRoutes(v1 *echo.Group) {
 	v1FileCache.DELETE("/bucket", h.HandleRemoveFileCacheBucket)
 	v1FileCache.GET("/mediastream/videofiles/total-size", h.HandleGetFileCacheMediastreamVideoFilesTotalSize)
 	v1FileCache.DELETE("/mediastream/videofiles", h.HandleClearFileCacheMediastreamVideoFiles)
+	// System
+	v1System := v1.Group("/db")
+	v1System.POST("/backup", h.HandleBackupDatabase)
+	v1.GET("/report", h.HandleGetDiagnosticsReport)
 }

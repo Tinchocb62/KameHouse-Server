@@ -10302,6 +10302,26 @@
         "comments": []
       },
       {
+        "name": "ThemeMode",
+        "jsonName": "themeMode",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": [
+          " \"classic\" | \"advanced\" | \"era\" | \"\" (legacy, derivado en el cliente)"
+        ]
+      },
+      {
+        "name": "EnableLiquidGlass",
+        "jsonName": "themeEnableLiquidGlass",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
         "name": "HomeItems",
         "jsonName": "homeItems",
         "goType": "string",
@@ -12984,7 +13004,7 @@
         "typescriptType": "T",
         "usedTypescriptType": "T",
         "usedStructName": "handlers.T",
-        "required": false,
+        "required": true,
         "public": true,
         "comments": []
       },
@@ -13000,7 +13020,11 @@
     ],
     "comments": [
       " APIResponse is the canonical response envelope.",
-      " Use JSONSuccess / JSONError to construct; never populate both fields."
+      " Use JSONSuccess / JSONError to construct; never populate both fields.",
+      " Note: Data intentionally does NOT use `omitempty`. A nil/zero Data (e.g. a",
+      " \"record not found\" response returning nil) must still serialize as",
+      " `{\"data\":null}` so the TypeScript client's `\"data\" in json` invariant holds.",
+      " With omitempty the key vanished and the client threw \"missing 'data'\"."
     ]
   },
   {
@@ -24765,6 +24789,133 @@
     "comments": []
   },
   {
+    "filepath": "../internal/mediastream/pgsevents.go",
+    "filename": "pgsevents.go",
+    "name": "PgsEvent",
+    "formattedName": "Mediastream_PgsEvent",
+    "package": "mediastream",
+    "fields": [
+      {
+        "name": "StartTime",
+        "jsonName": "startTime",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Duration",
+        "jsonName": "duration",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "ImageData",
+        "jsonName": "imageData",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Width",
+        "jsonName": "width",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Height",
+        "jsonName": "height",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "X",
+        "jsonName": "x",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Y",
+        "jsonName": "y",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "CanvasWidth",
+        "jsonName": "canvasWidth",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "CanvasHeight",
+        "jsonName": "canvasHeight",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "CropX",
+        "jsonName": "cropX",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "CropY",
+        "jsonName": "cropY",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "CropWidth",
+        "jsonName": "cropWidth",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "CropHeight",
+        "jsonName": "cropHeight",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
     "filepath": "../internal/mediastream/playback.go",
     "filename": "playback.go",
     "name": "StreamType",
@@ -24799,6 +24950,19 @@
         "required": false,
         "public": false,
         "comments": []
+      },
+      {
+        "name": "stateMu",
+        "jsonName": "stateMu",
+        "goType": "sync.Mutex",
+        "typescriptType": "Mutex",
+        "usedTypescriptType": "Mutex",
+        "usedStructName": "sync.Mutex",
+        "required": false,
+        "public": false,
+        "comments": [
+          " Guards currentMediaContainer (no longer serialized by repository.reqMu)."
+        ]
       },
       {
         "name": "currentMediaContainer",
@@ -24838,6 +25002,17 @@
         "jsonName": "clientMediaContainers",
         "goType": "",
         "typescriptType": "any",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "containerGroup",
+        "jsonName": "containerGroup",
+        "goType": "singleflight.Group",
+        "typescriptType": "Group",
+        "usedTypescriptType": "Group",
+        "usedStructName": "singleflight.Group",
         "required": false,
         "public": false,
         "comments": []
@@ -25063,6 +25238,19 @@
         "required": false,
         "public": false,
         "comments": []
+      },
+      {
+        "name": "warmingActive",
+        "jsonName": "warmingActive",
+        "goType": "atomic.Bool",
+        "typescriptType": "Bool",
+        "usedTypescriptType": "Bool",
+        "usedStructName": "atomic.Bool",
+        "required": false,
+        "public": false,
+        "comments": [
+          " guards WarmMediaInfo against overlapping runs"
+        ]
       }
     ],
     "comments": []
@@ -25518,6 +25706,15 @@
         "goType": "string",
         "typescriptType": "string",
         "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "IsImageBased",
+        "jsonName": "isImageBased",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
         "public": true,
         "comments": []
       }

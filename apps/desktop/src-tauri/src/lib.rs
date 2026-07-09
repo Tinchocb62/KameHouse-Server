@@ -8,6 +8,7 @@ mod window_manager;
 mod tray;
 mod updater;
 mod ipc;
+mod mpv;
 
 use std::sync::Arc;
 use tauri::Manager;
@@ -18,13 +19,15 @@ use window_manager::WindowManager;
 use tray::TrayManager;
 use settings::SettingsManager;
 use updater::UpdaterManager;
+use mpv::MpvManager;
 
 pub fn run() {
     let sidecar_manager = Arc::new(SidecarManager::new());
     let settings_manager = Arc::new(SettingsManager::new());
-    let window_manager = Arc::new(WindowManager::new());
+    let window_manager = Arc::new(WindowManager::new(settings_manager.clone()));
     let tray_manager = Arc::new(TrayManager::new());
     let updater_manager = Arc::new(UpdaterManager::new());
+    let mpv_manager = Arc::new(MpvManager::new());
 
     let single_instance_window_manager = window_manager.clone();
     let setup_settings_manager = settings_manager.clone();
@@ -57,6 +60,7 @@ pub fn run() {
         .manage(window_manager.clone())
         .manage(tray_manager.clone())
         .manage(updater_manager.clone())
+        .manage(mpv_manager.clone())
         .invoke_handler(tauri::generate_handler![
             ipc::get_desktop_settings,
             ipc::set_desktop_settings,
@@ -75,6 +79,9 @@ pub fn run() {
             ipc::is_main_window,
             ipc::startup_renderer_ready,
             ipc::shell_open,
+            ipc::mpv_play,
+            ipc::mpv_stop,
+            ipc::mpv_is_available,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -89,6 +96,28 @@ pub fn run() {
             // Initialize settings
             let settings = setup_settings_manager.load(&handle);
             log::info!("[Settings] Loaded: {:?}", settings);
+
+            // Apply GPU/hardware-acceleration flags to the WebView2 renderer.
+            // These must be set before the webview environment is created (below).
+            // NOTE: this targets the webview (which does the heavy blur/animation
+            // rendering), not the Go sidecar — the sidecar does not render anything.
+            #[cfg(target_os = "windows")]
+            {
+                let mut webview_args: Vec<&str> = Vec::new();
+                if settings.disable_hardware_acceleration {
+                    webview_args.push("--disable-gpu");
+                } else if settings.enable_aggressive_gpu_flags {
+                    webview_args.push("--enable-gpu-rasterization");
+                    webview_args.push("--enable-zero-copy");
+                    webview_args.push("--ignore-gpu-blocklist");
+                    webview_args.push("--enable-accelerated-2d-canvas");
+                }
+                if !webview_args.is_empty() {
+                    let joined = webview_args.join(" ");
+                    log::info!("[WebView2] Applying browser args: {}", joined);
+                    std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", joined);
+                }
+            }
 
             // Initialize window manager
             let dev_mode = cfg!(debug_assertions);
@@ -142,6 +171,8 @@ pub fn run() {
                             api.prevent_close();
                             let _ = window.hide();
                         } else {
+                            // Persist final window bounds synchronously before we tear down.
+                            let _ = window_manager.save_window_state(&window);
                             let _ = sidecar_manager.shutdown();
                         }
                     }
@@ -153,7 +184,9 @@ pub fn run() {
                 }
                 tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Moved(_) => {
                     if label == "main" {
-                        let _ = window_manager.save_window_state(&window);
+                        // Debounced: coalesces the burst of events during a drag/resize
+                        // into a single disk write once movement settles (no per-event I/O).
+                        window_manager.queue_save_window_state(&window);
                     }
                 }
                 _ => {}

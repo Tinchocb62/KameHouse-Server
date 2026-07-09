@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 import type { Anime_Entry } from "@/api/generated/types"
 import { Icons } from "@/components/ui/icons"
-import { getMediumResImage } from "@/lib/helpers/images"
+import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
 import { MediaHero } from "@/components/ui/media-hero"
 
 interface SeriesHeroProps {
@@ -31,6 +31,7 @@ export function SeriesHero({
   const ageRating = media?.isNsfw ? "18+" : undefined
   const synopsis = media?.description ? media.description.replace(/<[^>]*>/g, "") : ""
   const hasBannerImage = !!media?.bannerImage
+  const posterUrl = getHighResImage(media?.posterImage || "")
 
   // Technical details from files
   const tech = entry?.localFiles?.[0]?.technicalInfo
@@ -181,7 +182,9 @@ export function SeriesHero({
   return (
     <MediaHero
       backdropUrl={backdropUrl}
+      posterUrl={posterUrl}
       hasBannerImage={hasBannerImage}
+      showPosterColumn={true}
       title={titleNode}
       
       metadataRow={metadataRow}

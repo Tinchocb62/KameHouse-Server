@@ -236,7 +236,7 @@ export function Section({ label, description, children }: { label: string; descr
         <section className="space-y-4">
             <div className="space-y-1">
                 <div className="flex items-center gap-3 pl-1">
-                    <div className="w-1 h-4 rounded-full bg-brand-accent/60" />
+                    <div className="w-1 h-4 rounded-full bg-on-surface-variant/30" />
                     <h2 className="text-xs font-black uppercase tracking-[0.25em] text-on-surface-variant font-mono">
                         {label}
                     </h2>

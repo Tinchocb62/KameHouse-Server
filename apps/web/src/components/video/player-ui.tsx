@@ -68,6 +68,8 @@ export interface PlayerUIProps {
     nextEpisodeTitle?: string
     nextEpisodeNumber?: number
     nextEpisodeImage?: string
+    /** Presente solo en la app de escritorio con mpv disponible: hace handoff de la reproducción a mpv. */
+    onOpenInMpv?: () => void
 }
 
 export function PlayerUI(props: PlayerUIProps) {
@@ -76,7 +78,8 @@ export function PlayerUI(props: PlayerUIProps) {
         streamType, episodeSources, onSourceSwitch, core,
         mediaId, episodeNumber, malId,
         episodes, onSelectEpisode, mediaFormat,
-        nextEpisodeTitle, nextEpisodeNumber, nextEpisodeImage
+        nextEpisodeTitle, nextEpisodeNumber, nextEpisodeImage,
+        onOpenInMpv
     } = props
 
     const {
@@ -417,7 +420,7 @@ export function PlayerUI(props: PlayerUIProps) {
             <StatsOverlay show={state.showStats} data={state.statsData!} />
 
             <SkipIntroOverlay
-                show={state.skipMode !== null}
+                show={state.skipMode !== null && controlsVisible}
                 onSkip={actions.handleSkipIntro}
                 skipMode={state.skipMode ?? "intro"}
                 remainingSeconds={state.skipRemainingSeconds}
@@ -457,6 +460,7 @@ export function PlayerUI(props: PlayerUIProps) {
                     episodeNumber={episodeNumber}
                     onClose={onClose}
                     mediaFormat={mediaFormat}
+                    onOpenInMpv={onOpenInMpv}
                 />
             </div>
 

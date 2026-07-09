@@ -1,12 +1,8 @@
-import React, { Suspense, lazy } from "react"
+import React from "react"
 import { Section, Card, OsToggle, OsSelect } from "../components"
 import { RangeSlider } from "@/components/settings/range-slider"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
-
-const ScannerDashboard = lazy(() =>
-    import("@/components/ui/scanner/ScannerDashboard").then((m) => ({ default: m.ScannerDashboard }))
-)
 
 interface ScannerTabProps {
     control: Control<SettingsFormValues>
@@ -76,15 +72,6 @@ export function ScannerTab({ control }: ScannerTabProps) {
                         )}
                     />
                 </Card>
-            </Section>
-
-            {/* Scanner Bento Dashboard */}
-            <Section label="Diagnóstico en Vivo">
-                <div className="pt-2">
-                    <Suspense fallback={<div className="h-40 rounded-container bg-surface-container border border-outline-variant animate-pulse" />}>
-                        <ScannerDashboard />
-                    </Suspense>
-                </div>
             </Section>
         </div>
     )

@@ -69,6 +69,17 @@ declare global {
                 get: () => Promise<DesktopSettings>;
                 set: (settings: Partial<DesktopSettings>) => Promise<DesktopSettings>;
             };
+            mpv: {
+                isAvailable: () => Promise<boolean>;
+                play: (request: {
+                    path: string;
+                    title?: string;
+                    startTime?: number;
+                    mediaId?: number;
+                    episodeNumber?: number;
+                }) => Promise<void>;
+                stop: () => Promise<void>;
+            };
         };
 
         __isElectronDesktop__?: boolean;

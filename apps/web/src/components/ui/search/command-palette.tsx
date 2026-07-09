@@ -47,7 +47,7 @@ export function CommandPalette() {
                 onOpenChange={setOpen} 
                 commandProps={{ 
                     label: "Search Command Palette",
-                    className: "glass-liquid rounded-corner-lg overflow-hidden"
+                    className: "glass-liquid glass-refract rounded-corner-lg overflow-hidden"
                 }}
             >
                 <div className="p-4 border-b border-outline-variant/50" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-variant) 30%, transparent)" }}>

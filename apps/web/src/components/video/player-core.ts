@@ -11,8 +11,6 @@ import { useAnimeTracking } from "@/api/hooks/useAnimeTracking"
 import { useWebSocket } from "@/hooks/use-websocket"
 import { getApiWebSocketUrl } from "@/api/client/server-url"
 import { useMediastreamShutdownTranscodeStream, usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
-import { useGetSettings } from "@/api/hooks/settings.hooks"
-import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 import { useShallow } from "zustand/react/shallow"
 import { usePlayerProgressSync } from "@/api/hooks/usePlayerProgressSync"
@@ -104,9 +102,6 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const { data: statusQuery } = useGetStatus()
     const serverIPs = statusQuery?.serverIPs
     const serverPort = statusQuery?.serverPort
-
-    const { data: settingsQuery } = useGetSettings()
-    const transcodeEnabled = settingsQuery?.mediastream?.transcodeEnabled ?? false
 
     const absoluteLanUrl = useMemo(() => {
         return getAbsoluteLanUrl(playableUrl, serverIPs, serverPort)
@@ -457,15 +452,13 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
                 }
                 return
             } else if (onRequestStreamTypeChange) {
-                // Selección manual explícita del usuario.
-                if (!transcodeEnabled) {
-                    // Transcode desactivado: mostrar aviso en vez de un request 500.
-                    toast.warning("Para cambiar de pista de audio activá la transcodificación en Ajustes → Streaming")
-                    return
-                }
-                // Transcode disponible: cambiar de stream para poder aplicar la pista.
+                // Selección manual explícita del usuario. Chromium/WebView2 no puede
+                // cambiar de pista sin reconstruir el stream, así que forzamos el salto a
+                // HLS transcode aunque el toggle global esté apagado: force:true permite al
+                // backend inicializar el transcoder on-demand. Para fuentes H264 el video se
+                // copia (-c:v copy) y solo se re-encodea el audio a AAC, así que es barato.
                 pendingAudioSelectionRef.current = track
-                onRequestStreamTypeChange("transcode")
+                onRequestStreamTypeChange("transcode", { force: true })
             }
         }
         setActiveAudioIndex(track.index)
@@ -475,7 +468,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         if (track.language && track.language.toLowerCase() !== "und") {
             setPreferredAudioLang(track.language)
         }
-    }, [setPreferredAudioLang, onRequestStreamTypeChange, streamType, transcodeEnabled])
+    }, [setPreferredAudioLang, onRequestStreamTypeChange, streamType])
 
 
     const onSelectSubtitle = useCallback((track: SubtitleTrack | null) => {

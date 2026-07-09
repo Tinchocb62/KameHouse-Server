@@ -1,13 +1,20 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useAppStore } from "@/lib/store"
+import { useLocation } from "@tanstack/react-router"
 
-/**
- * Activates global D-pad spatial navigation and sets `data-tv` on <html> when tvMode is on.
- * Uses the same euclidean-distance scoring as useFocusNavigation but scoped to document.
- */
+interface CachedNode {
+    el: HTMLElement
+    rect: DOMRect
+}
+
 export function useTvDpad() {
     const tvMode = useAppStore((state) => state.tvMode)
     const isVideoActive = useAppStore((state) => state.isVideoActive)
+    const location = useLocation()
+    
+    // Caches
+    const nodesCache = useRef<CachedNode[]>([])
+    const needsRefresh = useRef(true)
 
     useEffect(() => {
         if (tvMode) {
@@ -18,22 +25,53 @@ export function useTvDpad() {
     }, [tvMode])
 
     useEffect(() => {
-        // Yield arrow keys to the video player when it's active — it handles them for seek/volume
+        // Invalidate cache on route change
+        needsRefresh.current = true
+    }, [location.pathname])
+
+    useEffect(() => {
         if (!tvMode || isVideoActive) return
 
         const SELECTOR =
             'a[href], button:not([disabled]), [role="button"], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-        function getNodes(): HTMLElement[] {
-            return Array.from(document.querySelectorAll<HTMLElement>(SELECTOR)).filter((el) => {
-                const s = getComputedStyle(el)
-                return s.display !== "none" && s.visibility !== "hidden" && el.offsetParent !== null
+        function refreshCache() {
+            const rawNodes = Array.from(document.querySelectorAll<HTMLElement>(SELECTOR))
+            const newCache: CachedNode[] = []
+            
+            for (const el of rawNodes) {
+                if (el.offsetParent === null) continue
+                const rect = el.getBoundingClientRect()
+                if (rect.width > 0 && rect.height > 0) {
+                    newCache.push({ el, rect })
+                }
+            }
+            
+            nodesCache.current = newCache
+            needsRefresh.current = false
+        }
+
+        // Use MutationObserver to detect DOM changes and invalidate cache
+        const observer = new MutationObserver(() => {
+            needsRefresh.current = true
+        })
+        observer.observe(document.body, { childList: true, subtree: true })
+
+        // Scroll and Resize also invalidate the rect positions
+        let rafId: number | null = null
+        const handleLayoutChange = () => {
+            if (rafId !== null) return
+            rafId = requestAnimationFrame(() => {
+                needsRefresh.current = true
+                rafId = null
             })
         }
 
-        function center(el: HTMLElement) {
-            const r = el.getBoundingClientRect()
-            return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+        window.addEventListener("scroll", handleLayoutChange, { passive: true, capture: true })
+        window.addEventListener("resize", handleLayoutChange, { passive: true })
+
+        function center(rect: DOMRect) {
+            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
         }
 
         function score(
@@ -57,15 +95,20 @@ export function useTvDpad() {
             return inDir ? dist * perp : dist * 3
         }
 
-        function findBest(current: HTMLElement, dir: "up" | "down" | "left" | "right"): HTMLElement | null {
-            const nodes = getNodes()
-            const cc = center(current)
+        function findBest(currentEl: HTMLElement, dir: "up" | "down" | "left" | "right"): HTMLElement | null {
+            if (needsRefresh.current || nodesCache.current.length === 0) {
+                refreshCache()
+            }
+            
+            const currentCache = nodesCache.current.find(n => n.el === currentEl)
+            const cc = currentCache ? center(currentCache.rect) : center(currentEl.getBoundingClientRect())
+
             let bestEl: HTMLElement | null = null
             let bestScore = Infinity
 
-            for (const el of nodes) {
-                if (el === current) continue
-                const s = score(cc, center(el), dir)
+            for (const { el, rect } of nodesCache.current) {
+                if (el === currentEl) continue
+                const s = score(cc, center(rect), dir)
                 if (s < bestScore) { bestScore = s; bestEl = el }
             }
             return bestEl
@@ -80,7 +123,12 @@ export function useTvDpad() {
 
             e.preventDefault()
             const active = document.activeElement as HTMLElement
-            const nodes = getNodes()
+            
+            if (needsRefresh.current || nodesCache.current.length === 0) {
+                refreshCache()
+            }
+
+            const nodes = nodesCache.current.map(n => n.el)
 
             if (!active || !nodes.includes(active)) {
                 nodes[0]?.focus()
@@ -91,6 +139,12 @@ export function useTvDpad() {
         }
 
         document.addEventListener("keydown", handleKeyDown)
-        return () => document.removeEventListener("keydown", handleKeyDown)
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown)
+            window.removeEventListener("scroll", handleLayoutChange, { capture: true })
+            window.removeEventListener("resize", handleLayoutChange)
+            observer.disconnect()
+            if (rafId !== null) cancelAnimationFrame(rafId)
+        }
     }, [tvMode, isVideoActive])
 }

@@ -85,6 +85,10 @@ func (h *Handler) HandleRequestMediastreamMediaContainer(c echo.Context) error {
 		StreamType       mediastream.StreamType `json:"streamType"`       // The type of stream to request.
 		AudioStreamIndex int                    `json:"audioStreamIndex"` // The audio stream index to use. (unused)
 		ClientID         string                 `json:"clientID"`         // The session id
+		Force            bool                   `json:"force"`            // Force transcoder init even if TranscodeEnabled=false (explicit user action, e.g. switching audio track during direct play).
+		// Codecs the client can decode natively (probed via canPlayType/MediaSource).
+		// Omitted/null falls back to static Chromium-based assumptions.
+		ClientCapabilities *mediastream.ClientCapabilities `json:"clientCapabilities"`
 	}
 
 	var b body
@@ -97,9 +101,9 @@ func (h *Handler) HandleRequestMediastreamMediaContainer(c echo.Context) error {
 
 	switch b.StreamType {
 	case mediastream.StreamTypeDirect:
-		mediaContainer, err = h.App.MediastreamRepository.RequestDirectPlay(b.Path, b.ClientID)
+		mediaContainer, err = h.App.MediastreamRepository.RequestDirectPlay(b.Path, b.ClientID, b.ClientCapabilities)
 	case mediastream.StreamTypeTranscode:
-		mediaContainer, err = h.App.MediastreamRepository.RequestTranscodeStream(b.Path, b.ClientID)
+		mediaContainer, err = h.App.MediastreamRepository.RequestTranscodeStream(b.Path, b.ClientID, b.Force)
 	case mediastream.StreamTypeOptimized:
 		mediaContainer, err = h.App.MediastreamRepository.RequestOptimizedStream(b.Path, b.ClientID)
 	default:

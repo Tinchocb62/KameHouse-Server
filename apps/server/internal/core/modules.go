@@ -115,6 +115,11 @@ func (a *App) initModulesOnce() {
 	// |    Intelligence     |
 	// +---------------------+
 	a.IntelligenceService = anime.NewIntelligenceService(a.Database, a.FillerManager, a.Logger)
+
+	// +---------------------+
+	// |    Maintenance      |
+	// +---------------------+
+	a.startMaintenanceScheduler()
 }
 
 // HandleNewDatabaseEntries initializes essential database collections.

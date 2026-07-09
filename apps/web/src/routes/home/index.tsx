@@ -12,6 +12,7 @@ import {
 import { ErrorBanner, EmptyState } from "./home.components"
 import { MediaSpotlight } from "@/components/ui/media-spotlight"
 import { isTmdbId } from "@/lib/helpers/type-guards"
+import { Swimlane, SwimlaneSkeleton } from "@/components/ui/swimlane"
 
 export const Route = createFileRoute("/home/")({
     loader: ({ context }) => {
@@ -104,6 +105,8 @@ function HomeClient() {
                             onNavigate={handleSpotlightNavigate}
                         />
                     )}
+                    
+
                 </div>
             </div>
         </motion.div>
@@ -138,6 +141,7 @@ function HomeSkeleton() {
                     ))}
                 </div>
             </div>
+            
         </div>
     )
 }

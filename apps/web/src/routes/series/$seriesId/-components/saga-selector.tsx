@@ -58,7 +58,7 @@ export function SagaSelector({
                 "relative flex flex-col text-left p-5 rounded-2xl transition-all duration-base ease-smooth-out select-none group/saga active:scale-[0.98]",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
                 isActive
-                  ? "glass-liquid"
+                  ? "glass-liquid glass-active"
                   : "bg-transparent hover:bg-white/[0.05]",
                 saga.isFiller && !isActive && "opacity-50 hover:opacity-90"
               )}

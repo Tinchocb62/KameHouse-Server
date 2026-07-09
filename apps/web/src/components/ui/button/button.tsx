@@ -10,7 +10,7 @@ export const ButtonAnatomy = defineStyleAnatomy({
     root: cva([
         "UI-Button_root",
         "shadow-sm whitespace-nowrap font-medium transition-colors",
-        "inline-flex items-center text-white transition-all ease-standard duration-200 active:scale-[0.98] text-center text-sm justify-center",
+        "inline-flex items-center transition-all ease-standard duration-200 active:scale-[0.98] text-center text-sm justify-center",
         "focus-visible:outline-none focus-visible:ring-2 ring-primary ring-offset-background ring-offset-2",
         "disabled:opacity-50 disabled:pointer-events-none",
     ], {

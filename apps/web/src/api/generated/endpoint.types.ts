@@ -4,6 +4,7 @@ import type {
     Continuity_UpdateWatchHistoryItemOptions,
     LibraryExplorer_SuperUpdateFileOptions,
     LocalFileMetadata,
+    Mediastream_ClientCapabilities,
     Mediastream_StreamType,
     Models_HomeItem,
     Models_LibrarySettings,
@@ -459,6 +460,12 @@ export type RequestMediastreamMediaContainer_Variables = {
     streamType: Mediastream_StreamType
     audioStreamIndex: number
     clientID: string
+    force?: boolean
+    /**
+     * Codecs the client can decode natively (probed via canPlayType/MediaSource).
+     * Omitted/null falls back to static Chromium-based assumptions.
+     */
+    clientCapabilities?: Mediastream_ClientCapabilities
 }
 
 /**

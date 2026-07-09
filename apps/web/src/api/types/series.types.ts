@@ -51,6 +51,12 @@ export interface SagaDetailSearchParams {
   tab?: "episodes" | "movie" | "relations" | "characters"
   saga?: string
   subSaga?: string
+  /**
+   * Número de episodio a reproducir automáticamente al montar la página.
+   * Lo setea la continuación entre series de la línea temporal (al terminar
+   * una serie se navega a la siguiente con `autoplay=1`).
+   */
+  autoplay?: string
 }
 
 export interface PremiumEpisode {

@@ -68,10 +68,12 @@ const settingsSchema = z.object({
     }).default({}),
     theme: z.object({
         enableColorSettings: z.boolean().default(false),
-        backgroundColor: z.string().default("#070707"),
-        accentColor: z.string().default("#ff6e3a"),
+        backgroundColor: z.string().default("#050506"),
+        accentColor: z.string().default("#C8102E"),
         sidebarBackgroundColor: z.string().default(""),
         themeEra: z.string().default(""),
+        themeMode: z.string().default(""),
+        themeEnableLiquidGlass: z.boolean().default(false),
         homeItems: z.array(z.string()).nullish().transform(v => v ?? []),
         themeAnimeEntryScreenLayout: z.string().default(""),
         themeSmallerEpisodeCarouselSize: z.boolean().default(false),
@@ -202,7 +204,7 @@ function SettingsPage() {
     if (isLoading && !serverSettings) return <LoadingOverlayWithLogo />
 
     return (
-        <div className="flex h-full w-full bg-transparent text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative">
+        <div className="flex h-full w-full text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative" style={{ background: "var(--bg-primary)" }}>
             {/* ── Left Sidebar Nav ─────────────────────────────────────── */}
             <nav
                 className="relative w-[260px] shrink-0 h-full flex flex-col border-r border-outline-variant backdrop-blur-overlay-md overflow-y-auto no-scrollbar"
@@ -212,13 +214,13 @@ function SettingsPage() {
                 {/* Sidebar header */}
                 <div className="relative z-10 px-6 pt-8 pb-6">
                     <div className="flex items-center gap-2.5 mb-3">
-                        <span className="w-2 h-2 rounded-full bg-brand-secondary shadow-[0_0_10px_hsl(var(--brand-secondary))] animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-brand-accent" />
                         <span className="text-label-sm tracking-[0.3em] text-on-surface-variant uppercase font-mono">PANEL DE CONTROL</span>
                     </div>
                     <h1 className="font-bebas text-4xl tracking-wider text-on-surface select-none leading-none">
                         AJUSTES
                     </h1>
-                    <div className="h-[2px] w-10 bg-gradient-to-r from-brand-secondary to-transparent rounded-full mt-3 shadow-[0_0_10px_var(--glow-primary)]" />
+                    <div className="h-[2px] w-10 bg-gradient-to-r from-brand-accent to-transparent rounded-full mt-3" />
                 </div>
 
                 {/* Nav items */}
@@ -233,21 +235,21 @@ function SettingsPage() {
                                 className={cn(
                                     "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 group relative",
                                     isActive
-                                        ? "bg-brand-secondary/[0.1]"
+                                        ? "bg-white/[0.06]"
                                         : "hover:bg-surface-container-high"
                                 )}
                             >
                                 {isActive && (
                                     <motion.div
                                         layoutId="sidebar-active"
-                                        className="absolute inset-0 rounded-xl bg-brand-secondary/[0.1] border border-brand-secondary/20 shadow-[0_0_20px_var(--glow-primary)]"
+                                        className="absolute inset-0 rounded-xl bg-white/[0.06] border border-white/10"
                                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                     />
                                 )}
                                 <div className={cn(
                                     "relative z-10 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shrink-0",
                                     isActive
-                                        ? "bg-brand-secondary/20 text-brand-secondary shadow-[0_0_12px_var(--glow-primary)]"
+                                        ? "bg-brand-accent/20 text-brand-accent"
                                         : "bg-surface-container text-on-surface-variant group-hover:text-on-surface group-hover:bg-surface-container-high"
                                 )}>
                                     <item.icon className="w-4 h-4" />
@@ -267,7 +269,7 @@ function SettingsPage() {
                                     )}
                                 </div>
                                 {isActive && (
-                                    <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-brand-secondary shadow-[0_0_8px_hsl(var(--brand-secondary))] shrink-0" />
+                                    <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0" />
                                 )}
                             </button>
                         )
@@ -288,8 +290,8 @@ function SettingsPage() {
                             const Icon = nav.icon
                             return (
                                 <>
-                                    <div className="w-8 h-8 rounded-lg bg-brand-secondary/10 border border-brand-secondary/20 flex items-center justify-center">
-                                        <Icon className="h-4 w-4 text-brand-secondary" />
+                                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                                        <Icon className="h-4 w-4 text-white/70" />
                                     </div>
                                     <span className="text-label-sm uppercase tracking-[0.35em] text-on-surface-variant font-mono">
                                         {nav.label}
@@ -301,7 +303,7 @@ function SettingsPage() {
                     <h2 className="text-3xl md:text-4xl font-bebas tracking-wider text-on-surface leading-none">
                         {SECTION_LABELS[activeTab] || "CONFIGURACIÓN"}
                     </h2>
-                    <div className="h-[2px] w-10 bg-gradient-to-r from-brand-secondary/60 to-transparent rounded-full mt-3" />
+                    <div className="h-[2px] w-10 bg-gradient-to-r from-brand-accent/60 to-transparent rounded-full mt-3" />
                 </header>
 
                 {/* Scrollable content */}
@@ -337,8 +339,8 @@ function SettingsPage() {
                     >
                         <div className="flex items-center gap-3 pl-1">
                             <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-secondary opacity-75" />
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-secondary shadow-[0_0_8px_hsl(var(--brand-secondary))]" />
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-accent opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-accent" />
                             </span>
                             <span className="text-label-sm font-mono text-on-surface-variant uppercase tracking-widest">Cambios sin guardar</span>
                         </div>
@@ -354,7 +356,7 @@ function SettingsPage() {
                                 type="submit"
                                 form="settings-form"
                                 disabled={isSaving}
-                                className="bg-brand-secondary hover:brightness-110 text-zinc-950 px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-300 disabled:opacity-50 uppercase tracking-widest active:scale-95 shadow-[var(--shadow-brand-secondary)]"
+                                className="bg-brand-accent hover:brightness-110 text-zinc-950 px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-300 disabled:opacity-50 uppercase tracking-widest active:scale-95 shadow-[var(--shadow-brand-primary)]"
                             >
                                 {isSaving ? "Guardando..." : "Guardar"}
                             </button>

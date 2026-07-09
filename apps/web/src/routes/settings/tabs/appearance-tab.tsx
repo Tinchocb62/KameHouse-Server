@@ -9,7 +9,7 @@ import { useSound } from "@/hooks/use-sound"
 import { cn } from "@/components/ui/core/styling"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
-import { THEME_DEFAULT_VALUES, ThemeLibraryScreenBannerType } from "@/lib/theme/theme-hooks"
+import { resolveThemeMode, THEME_DEFAULT_VALUES, ThemeLibraryScreenBannerType, type ThemeMode } from "@/lib/theme/theme-hooks"
 import { SIDEBAR_ITEM_DEFS } from "@/components/ui/app-layout/app-sidebar"
 import { hexToHslTriplet } from "@/lib/theme/apply-custom-theme"
 
@@ -17,61 +17,80 @@ interface AppearanceTabProps {
     control: Control<SettingsFormValues>
 }
 
+// Modos de interfaz — cada uno con su filosofía visual propia.
+const UI_MODES = [
+    {
+        id: "classic" as const,
+        name: "Clásico",
+        desc: "Premium y sobrio: monocromo puro — negros profundos, grises y blanco. Sin colores. Vidrio sutil solo en overlays.",
+        gradient: "linear-gradient(135deg, #050506 0%, #141417 60%, #1e1e22 100%)",
+        accents: ["#D4D4D4", "#8C8C8C"],
+    },
+
+    {
+        id: "era" as const,
+        name: "Por Era",
+        desc: "Tonalidades de cada era de Dragon Ball, con vidrio líquido y efectos activables a gusto.",
+        gradient: "linear-gradient(135deg, #1E9BE0 0%, #FF6D00 25%, #E0202A 50%, #1FB6E6 75%, #C21FDE 100%)",
+        accents: ["#1E9BE0", "#FF6D00", "#C21FDE"],
+    },
+]
+
 // Presets por era Dragon Ball — colores característicos de cada saga,
 // no colores de plataformas de streaming.
 const THEME_PRESETS = [
     {
         id: "era-universe",
         name: "Universo Dragon Ball",
-        desc: "Todas las eras, todos los colores",
-        background: "#0b0b12",
-        accent: "#EAB308",
-        sidebar: "#050507",
+        desc: "Todas las eras: rosa, rojo, verde y azul",
+        background: "#140e15",
+        accent: "#EC4899",
+        sidebar: "#060407",
         themeEra: "era-universe",
     },
     {
         id: "era-db",
         name: "Dragon Ball",
         desc: "Azul Kame clásico, la aventura original",
-        background: "#060a14",
+        background: "#0d141f",
         accent: "#1E9BE0",
-        sidebar: "#03060d",
+        sidebar: "#030609",
         themeEra: "era-db",
     },
     {
         id: "era-dbz",
         name: "Dragon Ball Z",
         desc: "Naranja Saiyajin, el gi de Goku",
-        background: "#140a06",
+        background: "#1a110a",
         accent: "#FF6D00",
-        sidebar: "#0d0503",
+        sidebar: "#070503",
         themeEra: "era-dbz",
     },
     {
         id: "era-dbgt",
         name: "Dragon Ball GT",
         desc: "Rojo Super Saiyajin 4, la transformación definitiva",
-        background: "#140507",
+        background: "#1b0c0f",
         accent: "#E0202A",
-        sidebar: "#0d0204",
+        sidebar: "#070304",
         themeEra: "era-dbgt",
     },
     {
         id: "era-dbs",
         name: "Dragon Ball Super",
         desc: "Celeste Ultra Instinto, el poder de los dioses",
-        background: "#040d12",
+        background: "#0a1620",
         accent: "#1FB6E6",
-        sidebar: "#02080b",
+        sidebar: "#030709",
         themeEra: "era-dbs",
     },
     {
         id: "era-daima",
         name: "Dragon Ball Daima",
         desc: "Violeta Reino Demoníaco, la nueva era",
-        background: "#0d0514",
+        background: "#150c20",
         accent: "#C21FDE",
-        sidebar: "#06020a",
+        sidebar: "#060309",
         themeEra: "era-daima",
     },
     {
@@ -103,7 +122,15 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
     const unpinnedItems = useWatch({ control, name: "theme.themeUnpinnedMenuItems" }) || []
 
     const setDynamicBackdropEnabled = useAppStore(s => s.setDynamicBackdropEnabled)
-    const isCinematic = useWatch({ control, name: "theme.themeEnableBlurringEffects" })
+    const themeModeValue = useWatch({ control, name: "theme.themeMode" })
+    const blurEffectsValue = useWatch({ control, name: "theme.themeEnableBlurringEffects" })
+    const sidebarGradientValue = useWatch({ control, name: "theme.themeEnableSidebarGradient" })
+    const uiMode: ThemeMode = resolveThemeMode({
+        themeMode: themeModeValue,
+        themeEra: themeEraValue,
+        themeEnableBlurringEffects: !!blurEffectsValue,
+    })
+    const isEraMode = uiMode === "era"
     const activePreset = THEME_PRESETS.find(p => p.themeEra === themeEraValue)?.id ?? "custom"
 
     // Remembers the last non-empty value of a color field so re-enabling its
@@ -138,18 +165,17 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
         syncEnableColorSettings()
     }
 
-    const setCinematic = (on: boolean) => {
-        setValue("theme.themeEnableBlurringEffects", on, { shouldDirty: true })
-        setValue("theme.themeEnableSidebarGradient", on, { shouldDirty: true })
-        setValue("theme.themeEnableMediaPageBlurredBackground", on, { shouldDirty: true })
-        setDynamicBackdropEnabled(on)
+    const setMode = (mode: ThemeMode) => {
+        playSound("category")
+        setValue("theme.themeMode", mode, { shouldDirty: true })
 
-        if (on) {
+        if (mode === "era") {
+            // Al entrar a Por Era sin una era guardada, arrancar con una paleta visible.
             const currentEra = getValues("theme.themeEra")
-            if (!currentEra) {
+            if (!currentEra || !currentEra.startsWith("era-")) {
                 setValue("theme.themeEra", "era-daima", { shouldDirty: true })
-                setValue("theme.enableColorSettings", true, { shouldDirty: true })
             }
+            setValue("theme.enableColorSettings", true, { shouldDirty: true })
         }
     }
 
@@ -164,7 +190,9 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
             <AppearancePreview
-                isCinematic={!!isCinematic}
+                mode={uiMode}
+                blurEffects={!!blurEffectsValue}
+                sidebarGradient={isEraMode && !!sidebarGradientValue}
                 themeEra={getValues("theme.themeEra") || ""}
                 backgroundColor={getValues("theme.backgroundColor") || ""}
                 accentColor={getValues("theme.accentColor") || ""}
@@ -172,18 +200,47 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                 enableColorSettings={!!getValues("theme.enableColorSettings")}
             />
 
-            <Section label="Modo Avanzado (Cinematográfico)" description="Habilita efectos visuales inmersivos y opciones de diseño avanzadas para una mejor experiencia.">
-                <Card className="divide-y divide-outline-variant/3">
-                    <OsToggle
-                        label="Modo Avanzado (Cinematográfico)"
-                        description="Activa el paquete completo: Efectos de Vidrio Líquido, Fondo Dinámico Animado, Degradados de Interfaz y colores por Era."
-                        checked={isCinematic}
-                        onChange={setCinematic}
-                    />
-                </Card>
+            <Section label="Modo de Interfaz" description="Elige la filosofía visual de toda la aplicación: sobriedad premium o temática por era.">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {UI_MODES.map((mode) => {
+                        const isActive = uiMode === mode.id
+                        return (
+                            <button
+                                key={mode.id}
+                                type="button"
+                                onClick={() => setMode(mode.id)}
+                                className={cn(
+                                    "relative flex flex-col p-5 rounded-container border transition-all duration-300 group active:scale-95 overflow-hidden min-h-[140px] text-left",
+                                    isActive
+                                        ? "border-brand-accent shadow-[0_8px_30px_var(--glow-primary)]"
+                                        : "border-outline-variant hover:border-outline-variant/12"
+                                )}
+                            >
+                                <div className="absolute inset-0 opacity-25 pointer-events-none" style={{ background: mode.gradient }} />
+                                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 pointer-events-none" />
+                                <div className="relative z-10 flex flex-col h-full">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-xs font-bold text-on-surface uppercase tracking-wider">{mode.name}</span>
+                                        <div className="flex gap-1">
+                                            {mode.accents.map((c) => (
+                                                <div key={c} className="w-3 h-3 rounded-full" style={{ background: c }} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-on-surface-variant leading-relaxed font-medium flex-1">{mode.desc}</p>
+                                </div>
+                                {isActive && (
+                                    <div className="absolute inset-0 border-2 border-brand-accent rounded-container pointer-events-none" />
+                                )}
+                            </button>
+                        )
+                    })}
+                </div>
             </Section>
 
-            {isCinematic && (
+
+
+            {isEraMode && (
                 <>
                     {/* Theme Presets Grid */}
                     <Section label="Presets de Tema" description="Selecciona una paleta de colores predefinida basada en las diferentes eras de Dragon Ball.">
@@ -240,6 +297,62 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                                 )
                             })}
                         </div>
+                    </Section>
+
+                    {/* Efectos — opt-in sobre la paleta de era */}
+                    <Section label="Efectos Visuales" description="Activa efectos individuales sobre la paleta de la era elegida.">
+                        <Card className="divide-y divide-outline-variant/3">
+                            <Controller
+                                control={control}
+                                name="theme.themeEnableBlurringEffects"
+                                render={({ field }) => (
+                                    <OsToggle
+                                        label="Efectos de Vidrio (Blur)"
+                                        description="Superficies translúcidas con desenfoque en overlays. Desactivado = superficies sólidas (modo plano)."
+                                        checked={!!field.value}
+                                        onChange={field.onChange}
+                                    />
+                                )}
+                            />
+                            {!!blurEffectsValue && (
+                                <Controller
+                                    control={control}
+                                    name="theme.themeEnableLiquidGlass"
+                                    render={({ field }) => (
+                                        <OsToggle
+                                            label="Vidrio Líquido (Refracción)"
+                                            description="Efecto de refracción líquida sobre el vidrio (solo navegadores Chromium)."
+                                            checked={!!field.value}
+                                            onChange={field.onChange}
+                                        />
+                                    )}
+                                />
+                            )}
+                            <Controller
+                                control={control}
+                                name="theme.themeEnableSidebarGradient"
+                                render={({ field }) => (
+                                    <OsToggle
+                                        label="Degradado del Sidebar"
+                                        description="Intensifica el degradado con los colores de la era sobre la barra lateral (siempre hay un tinte sutil)."
+                                        checked={!!field.value}
+                                        onChange={field.onChange}
+                                    />
+                                )}
+                            />
+                            <Controller
+                                control={control}
+                                name="theme.themeEnableMediaPageBlurredBackground"
+                                render={({ field }) => (
+                                    <OsToggle
+                                        label="Fondo Difuminado en Página de Detalle"
+                                        description="Usa el arte del anime como fondo ambiental difuminado en las páginas de detalle."
+                                        checked={!!field.value}
+                                        onChange={field.onChange}
+                                    />
+                                )}
+                            />
+                        </Card>
                     </Section>
 
                     {/* Color Customization — subgrupo avanzado */}
@@ -789,6 +902,8 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                                 Object.entries(THEME_DEFAULT_VALUES).forEach(([key, value]) => {
                                     setValue(`theme.${key}` as never, value as never, { shouldDirty: true })
                                 })
+                                // El default de fábrica es el modo Clásico explícito.
+                                setValue("theme.themeMode", "classic", { shouldDirty: true })
                                 // El fondo dinámico vive en el store (localStorage), fuera del form:
                                 // apagarlo también para dejar la apariencia realmente en modo plano.
                                 setDynamicBackdropEnabled(false)
@@ -834,40 +949,53 @@ function LocalDeviceSectionAppearance() {
 }
 
 function AppearancePreview({
-    isCinematic,
+    mode,
+    blurEffects,
+    sidebarGradient,
     themeEra,
     backgroundColor,
     accentColor,
     sidebarBackgroundColor,
     enableColorSettings
 }: {
-    isCinematic: boolean
+    mode: ThemeMode
+    blurEffects: boolean
+    sidebarGradient: boolean
     themeEra: string
     backgroundColor: string
     accentColor: string
     sidebarBackgroundColor: string
     enableColorSettings: boolean
 }) {
+    const isEra = mode === "era"
     const style: React.CSSProperties & Record<string, string> = {}
-    if (enableColorSettings && backgroundColor) {
+    if (isEra && enableColorSettings && backgroundColor) {
         style["--bg-primary"] = backgroundColor
     }
-    if (enableColorSettings && accentColor) {
+    if (isEra && enableColorSettings && accentColor) {
         const hsl = hexToHslTriplet(accentColor)
         if (hsl) {
             style["--brand-accent"] = hsl
             style["--brand-accent-hex"] = accentColor
         }
     }
-    const sidebarBg = (enableColorSettings && sidebarBackgroundColor) ? sidebarBackgroundColor : undefined
+    const sidebarBg = (isEra && enableColorSettings && sidebarBackgroundColor) ? sidebarBackgroundColor : undefined
+
+    // Espeja la tabla de gating de useApplyCustomTheme() a escala del preview.
+    const previewTheme = mode === "classic" ? "classic"
+        : isEra && enableColorSettings && themeEra ? themeEra
+        : undefined
+    const previewFlat = isEra && !blurEffects
+    const previewSidebarGradient = (isEra && sidebarGradient)
 
     return (
         <Section label="Previsualización en Vivo">
-            <div 
+            <div
                 className="w-full h-56 border border-outline-variant/20 rounded-xl overflow-hidden flex relative select-none"
-                data-flat={!isCinematic ? "true" : undefined}
-                data-theme={(enableColorSettings && themeEra) ? themeEra : undefined}
-                data-sidebar-gradient={isCinematic ? "true" : undefined}
+                data-mode={mode}
+                data-flat={previewFlat ? "true" : undefined}
+                data-theme={previewTheme}
+                data-sidebar-gradient={previewSidebarGradient ? "true" : undefined}
                 style={style}
             >
                 {/* Contenedor base - bg-primary de la app */}
@@ -895,7 +1023,7 @@ function AppearancePreview({
                         <div className="px-3 py-1 rounded-full bg-brand-accent/15 text-brand-accent border border-brand-accent/30 text-[10px] font-bold uppercase tracking-wider">
                             Badge
                         </div>
-                        <div className="glass-liquid px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider">
+                        <div className="glass-liquid glass-refract px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider">
                             Liquid Glass
                         </div>
                         <div className="h-4 w-16 rounded bg-on-surface-variant/20" />

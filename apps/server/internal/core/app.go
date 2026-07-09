@@ -28,6 +28,7 @@ import (
 	"kamehouse/internal/library_explorer"
 	"kamehouse/internal/local"
 	"kamehouse/internal/mediastream"
+	"kamehouse/internal/notifier"
 	"kamehouse/internal/platforms/offline_platform"
 	"kamehouse/internal/platforms/platform"
 	"kamehouse/internal/platforms/simulated_platform"
@@ -157,6 +158,7 @@ func NewKameHouse(configOpts *ConfigOptions) *App {
 
 	tmdbClient := initTMDBClient(cfg, database)
 	_, wsEventManager := initEventSystem(logger, database)
+	notifier.Global().Init(database, wsEventManager, logger)
 	enrichers := initMetadataEnrichers(cfg)
 	fileCacher := initFileCacher(cfg, logger)
 	metadataProvider := initMetadataProvider(logger, fileCacher, database, tmdbClient)

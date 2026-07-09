@@ -1,6 +1,13 @@
 import * as React from "react"
 import { useThemeSettings } from "./theme-hooks"
-import { useDominantColors } from "@/hooks/use-dominant-colors"
+import { useAppStore } from "@/lib/store"
+
+function supportsLiquidRefraction(): boolean {
+    const brands = (navigator as any).userAgentData?.brands
+    if (brands?.some((b: any) => /Chromium/i.test(b.brand))) return true
+    const ua = navigator.userAgent
+    return /Chrome\/\d{2,}/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)
+}
 
 /** Converts a "#rrggbb" hex color into the "H S% L%" triplet format used by
  *  this design system's HSL custom properties (consumed as hsl(var(--x))). */
@@ -39,66 +46,61 @@ export function hexToHslTriplet(hex: string): string | null {
  */
 export function useApplyCustomTheme() {
     const ts = useThemeSettings()
-    const dominantColors = useDominantColors(
-        ts.themeEra === "era-universe" ? "/casa-kame-de-dragon-ball-3963.webp" : undefined,
-        5
-    )
+    const tvMode = useAppStore(state => state.tvMode)
 
     React.useEffect(() => {
         const root = document.documentElement.style
         const html = document.documentElement
 
-        // 1. Flat mode vs Vidrio
-        if (ts.themeEnableBlurringEffects === false) {
-            html.dataset.flat = "true"
-        } else {
-            delete html.dataset.flat
-        }
+        const mode = ts.effectiveMode
+        html.dataset.mode = mode
 
-        // 2. Sidebar gradient
-        if (ts.themeEnableSidebarGradient === true) {
-            html.dataset.sidebarGradient = "true"
-        } else {
-            delete html.dataset.sidebarGradient
-        }
+        // 1. Efectos por modo — Clásico: glass sutil (tokens de [data-mode="classic"]),
+        // sin liquid ni gradiente. Por Era: según toggles.
+        const flatOn = tvMode || (mode === "era" && ts.themeEnableBlurringEffects === false)
+        const liquidOn =
+            (mode === "era" && ts.themeEnableLiquidGlass) &&
+            supportsLiquidRefraction()
+        const sidebarGradientOn = mode === "era" && ts.themeEnableSidebarGradient === true
 
-        // 3. Era, fondo y acento personalizados — cada uno gated de forma
-        // independiente por enableColorSettings + su propio campo no vacío,
-        // para permitir activarlos por separado en la UI.
-        const eraOn = ts.enableColorSettings && ts.hasEraTheme
-        const bgOn = ts.enableColorSettings && ts.hasCustomBackground
-        const accentOn = ts.enableColorSettings && ts.hasCustomAccentColor
+        if (flatOn) html.dataset.flat = "true"
+        else delete html.dataset.flat
+
+        if (liquidOn && !flatOn) html.dataset.liquid = "true"
+        else delete html.dataset.liquid
+
+        if (sidebarGradientOn) html.dataset.sidebarGradient = "true"
+        else delete html.dataset.sidebarGradient
+
+        // 2. Paleta — Clásico es paleta fija (los colores custom se
+        // ignoran); Por Era aplica la era elegida + overrides del preset Personalizado.
+        const eraOn = mode === "era" && ts.hasEraTheme
+        const bgOn = mode === "era" && ts.enableColorSettings && ts.hasCustomBackground
+        const accentOn = mode === "era" && ts.enableColorSettings && ts.hasCustomAccentColor
+
+        if (mode === "classic") {
+            html.dataset.theme = "classic"
+        }
 
         if (eraOn) {
             html.dataset.theme = ts.themeEra
-            
-            if (ts.themeEra === "era-universe" && dominantColors.length >= 5) {
-                const [c1, c2, c3, c4, c5] = dominantColors
-                root.setProperty("--glow-color-1", c1)
-                root.setProperty("--glow-color-2", c2)
-                root.setProperty("--glow-color-3", c3)
-                root.setProperty("--glow-color-4", c4)
-                root.setProperty("--glow-color-5", c5)
-                root.setProperty("--sidebar-active-gradient", `linear-gradient(135deg, ${c1} 0%, ${c2} 25%, ${c3} 50%, ${c4} 75%, ${c5} 100%)`)
-                root.setProperty("--sidebar-active-bg-gradient", `linear-gradient(135deg, color-mix(in srgb, ${c1} 12%, transparent) 0%, color-mix(in srgb, ${c2} 12%, transparent) 25%, color-mix(in srgb, ${c3} 12%, transparent) 50%, color-mix(in srgb, ${c4} 12%, transparent) 75%, color-mix(in srgb, ${c5} 12%, transparent) 100%)`)
-            } else if (ts.themeEra !== "era-universe") {
-                root.removeProperty("--glow-color-1")
-                root.removeProperty("--glow-color-2")
-                root.removeProperty("--glow-color-3")
-                root.removeProperty("--glow-color-4")
-                root.removeProperty("--glow-color-5")
-                root.removeProperty("--sidebar-active-gradient")
-                root.removeProperty("--sidebar-active-bg-gradient")
-            }
-        } else {
-            delete html.dataset.theme
+
+            // Universe usa la paleta curada de todas las series (rosa/rojo/
+            // verde/azul/violeta) definida en colors.css — no se extraen
+            // colores dominantes de imágenes. Se limpian posibles inline
+            // overrides previos para que gane la cascada CSS.
             root.removeProperty("--glow-color-1")
             root.removeProperty("--glow-color-2")
             root.removeProperty("--glow-color-3")
             root.removeProperty("--glow-color-4")
             root.removeProperty("--glow-color-5")
-            root.removeProperty("--sidebar-active-gradient")
-            root.removeProperty("--sidebar-active-bg-gradient")
+        } else {
+            if (mode === "era") delete html.dataset.theme
+            root.removeProperty("--glow-color-1")
+            root.removeProperty("--glow-color-2")
+            root.removeProperty("--glow-color-3")
+            root.removeProperty("--glow-color-4")
+            root.removeProperty("--glow-color-5")
         }
 
         if (bgOn) {
@@ -119,7 +121,9 @@ export function useApplyCustomTheme() {
         }
 
         return () => {
+            delete html.dataset.mode
             delete html.dataset.flat
+            delete html.dataset.liquid
             delete html.dataset.sidebarGradient
             delete html.dataset.theme
             root.removeProperty("--bg-primary")
@@ -130,12 +134,12 @@ export function useApplyCustomTheme() {
             root.removeProperty("--glow-color-3")
             root.removeProperty("--glow-color-4")
             root.removeProperty("--glow-color-5")
-            root.removeProperty("--sidebar-active-gradient")
-            root.removeProperty("--sidebar-active-bg-gradient")
         }
     }, [
+        ts.effectiveMode,
         ts.themeEra,
         ts.themeEnableBlurringEffects,
+        ts.themeEnableLiquidGlass,
         ts.themeEnableSidebarGradient,
         ts.enableColorSettings,
         ts.hasEraTheme,
@@ -143,7 +147,7 @@ export function useApplyCustomTheme() {
         ts.hasCustomAccentColor,
         ts.backgroundColor,
         ts.accentColor,
-        dominantColors.join(","), // add colors to dependency array
+        tvMode,
     ])
 }
 

@@ -165,7 +165,7 @@ function MoviesPage() {
     }, [])
 
     return (
-        <div className="min-h-screen text-white overflow-x-hidden selection:bg-orange-500/20 relative z-10" style={{ background: "color-mix(in srgb, var(--bg-primary) 12%, transparent)" }}>
+        <div className="min-h-screen text-white overflow-x-hidden selection:bg-orange-500/20 relative z-10" style={{ background: "var(--bg-primary)" }}>
 
 
 

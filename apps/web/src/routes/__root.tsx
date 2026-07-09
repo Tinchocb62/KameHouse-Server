@@ -11,6 +11,7 @@ import { AppBottomNav } from "@/components/ui/app-layout/app-topnav"
 import { AppSidebar } from "@/components/ui/app-layout/app-sidebar"
 import { TvNavBar } from "@/components/ui/app-layout/tv-nav-bar"
 import { useTvDpad } from "@/hooks/use-tv-dpad"
+import { LiquidGlassDefs } from "@/components/shared/liquid-glass-defs"
 
 const CommandPalette = React.lazy(() =>
     import("@/components/ui/search/command-palette").then((m) => ({ default: m.CommandPalette }))
@@ -67,6 +68,7 @@ function RootComponent() {
     return (
         <AppLayout>
             <CustomThemeStyles />
+            <LiquidGlassDefs />
             <DynamicBackdrop />
             <React.Suspense fallback={null}>
                 <PerformanceMonitor />

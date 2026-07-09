@@ -4,6 +4,7 @@ use tauri::{AppHandle, Manager, State, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_opener::OpenerExt;
 
+use crate::mpv::{MpvManager, MpvPlayRequest};
 use crate::settings::{DesktopSettings, SettingsManager, WindowBounds};
 use crate::sidecar::SidecarManager;
 use crate::window_manager::WindowManager;
@@ -192,6 +193,36 @@ pub async fn startup_renderer_ready(
 ) -> Result<(), String> {
     window_manager.set_startup_ready(true);
     Ok(())
+}
+
+#[tauri::command]
+pub async fn mpv_play(
+    mpv_manager: State<'_, Arc<MpvManager>>,
+    settings_manager: State<'_, Arc<SettingsManager>>,
+    app_handle: AppHandle,
+    request: MpvPlayRequest,
+) -> Result<(), String> {
+    let path = settings_manager.get_settings_path(&app_handle);
+    let settings = settings_manager.load_from_path(&path);
+    mpv_manager.play(app_handle.clone(), settings.mpv_path, request).await
+}
+
+#[tauri::command]
+pub async fn mpv_stop(
+    mpv_manager: State<'_, Arc<MpvManager>>,
+) -> Result<(), String> {
+    mpv_manager.stop().await;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mpv_is_available(
+    settings_manager: State<'_, Arc<SettingsManager>>,
+    app_handle: AppHandle,
+) -> Result<bool, String> {
+    let path = settings_manager.get_settings_path(&app_handle);
+    let settings = settings_manager.load_from_path(&path);
+    Ok(MpvManager::is_available(&settings.mpv_path).await)
 }
 
 /// Open a URL in the system default browser.

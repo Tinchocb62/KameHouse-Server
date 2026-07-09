@@ -36,7 +36,7 @@ export interface PlayerCoreProps {
     /** Permite al core pedir un cambio de tipo de stream (ej. direct → transcode
      *  cuando el usuario elige una pista de audio y el navegador no soporta
      *  cambiarla nativamente en direct play). */
-    onRequestStreamTypeChange?: (type: "transcode" | "direct") => void
+    onRequestStreamTypeChange?: (type: "transcode" | "direct", opts?: { force?: boolean }) => void
     /** Llamado cuando direct play falla de forma irrecuperable. El orchestrator
      *  puede usarlo para hacer fallback a transcode si está habilitado. */
     onDirectPlayFailed?: () => void

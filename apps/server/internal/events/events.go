@@ -47,6 +47,8 @@ const (
 	WarningToast = "warning-toast"
 	SuccessToast = "success-toast"
 
+	NotificationReceived = "notification-received" // A new in-app notification was created (payload: models.Notification)
+
 	CheckForUpdates       = "check-for-updates"
 	CheckForAnnouncements = "check-for-announcements"
 

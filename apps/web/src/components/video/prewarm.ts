@@ -9,14 +9,24 @@
 // Call once from an eagerly-loaded surface (the root) at browser idle.
 
 let prewarmed = false
+let disposed = false
+
+if (import.meta.webpackHot) {
+    import.meta.webpackHot.dispose(() => {
+        disposed = true
+    })
+}
 
 export function prewarmVideoPlayer() {
     if (prewarmed || typeof window === "undefined") return
     prewarmed = true
 
     const run = () => {
-        void import("./player")
-        void import("./player-orchestrator")
+        if (disposed) return
+        try {
+            void import("./player").catch(() => {})
+            void import("./player-orchestrator").catch(() => {})
+        } catch (e) {}
     }
 
     if (typeof window.requestIdleCallback === "function") {

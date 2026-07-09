@@ -32,9 +32,6 @@ const config: RsbuildConfig = {
                 }])
                 opts.plugins ??= []
                 opts.plugins.push(["babel-plugin-polyfill-corejs3", { method: "usage-global", version: "3.38" }])
-                if (process.env.NODE_ENV === "production") {
-                    opts.plugins.push(["babel-plugin-react-compiler"])
-                }
             },
         }),
     ].filter(Boolean),
@@ -101,6 +98,7 @@ const config: RsbuildConfig = {
         },
         chunkSplit: process.env.NODE_ENV === "production" ? {
             forceSplitting: {
+                "react": /react|react-dom/,
                 "hls": /hls\.js/,
                 "rrweb": /rrweb/,
                 "lucide": /lucide-react/,

@@ -275,7 +275,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                 {/* Badges */}
                                 <div className="flex flex-wrap items-center [&>*:not(:first-child)]:ml-1.5">
                                     <span className={cn(
-                                        "bg-[#f59e0b] text-zinc-950 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-[6px] tracking-wider flex items-center gap-1 shadow-sm border border-[#f59e0b]/20 select-none"
+                                        "bg-brand-accent text-white text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-[6px] tracking-wider flex items-center gap-1 shadow-sm border border-brand-accent/20 select-none"
                                     )}>
                                         <Sparkles size={8} className="fill-current animate-pulse" />
                                         Destacado
@@ -315,7 +315,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                     <button
                                         onClick={() => onNavigate(activeItem)}
                                         className={cn(
-                                            "relative overflow-hidden flex items-center justify-center bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#fbbf24] hover:to-[#f97316] text-white font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 shadow-xl shadow-orange-950/20 group/play-btn font-bebas [&>*:not(:first-child)]:ml-2"
+                                            "relative overflow-hidden flex items-center justify-center bg-gradient-to-r from-[var(--era-btn-from)] to-[var(--era-btn-to)] hover:from-[var(--era-btn-hover-from)] hover:to-[var(--era-btn-hover-to)] text-white font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 shadow-xl shadow-primary/20 group/play-btn font-bebas [&>*:not(:first-child)]:ml-2"
                                         )}
                                     >
                                         <div className="absolute inset-0 w-[40px] h-full bg-on-surface/20 transform skew-x-12 -translate-x-[60px] group-hover/play-btn:translate-x-[250px] transition-transform [transition-duration:1.2s] ease-out pointer-events-none" />

@@ -101,8 +101,8 @@ func (r *Repository) InitializeModules(settings *models.MediastreamSettings, cac
 		settings.FfprobePath,
 	)
 
-	// Initialize the transcoder
-	_ = r.initializeTranscoder(r.settings)
+	// Initialize the transcoder (respects the TranscodeEnabled setting on startup)
+	_ = r.initializeTranscoder(r.settings, false)
 
 	// Purge stale transcode directory leftovers on startup
 	r.ClearTranscodeDir()
@@ -197,6 +197,29 @@ func (r *Repository) ClearTranscodeDir() {
 	r.playbackManager.clientMediaContainers.Clear()
 }
 
+// ActiveVideoFileHashes returns a set of file hashes currently active in media containers.
+// This is used by the filecacher to avoid pruning actively playing video files.
+func (r *Repository) ActiveVideoFileHashes() map[string]struct{} {
+	hashes := make(map[string]struct{})
+	
+	// Collect from mediaContainers
+	r.playbackManager.mediaContainers.Range(func(_ string, mc *MediaContainer) bool {
+		if mc != nil && mc.MediaInfo != nil {
+			hashes[mc.MediaInfo.Sha] = struct{}{}
+		}
+		return true
+	})
+
+	// Collect from clientMediaContainers
+	r.playbackManager.clientMediaContainers.Range(func(_ string, mc *MediaContainer) bool {
+		if mc != nil && mc.MediaInfo != nil {
+			hashes[mc.MediaInfo.Sha] = struct{}{}
+		}
+		return true
+	})
+
+	return hashes
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Transcode
@@ -206,8 +229,13 @@ func (r *Repository) TranscoderIsInitialized() bool {
 	return r.IsInitialized() && r.transcoder.IsPresent()
 }
 
-func (r *Repository) RequestTranscodeStream(filepath string, clientID string) (ret *MediaContainer, err error) {
-	r.logger.Debug().Str("filepath", filepath).Msg("mediastream: Transcode stream requested")
+// RequestTranscodeStream builds a transcode media container. When force is true the
+// transcoder engine is initialized on-demand even if TranscodeEnabled is off — this is
+// used for explicit user actions (e.g. switching audio track during direct play) that
+// require HLS but shouldn't demand the user flip the global setting. For H264 sources
+// the video is stream-copied and only the audio is re-encoded, so the cost is low.
+func (r *Repository) RequestTranscodeStream(filepath string, clientID string, force bool) (ret *MediaContainer, err error) {
+	r.logger.Debug().Str("filepath", filepath).Bool("force", force).Msg("mediastream: Transcode stream requested")
 
 	if !r.IsInitialized() {
 		return nil, errors.New("module not initialized")
@@ -220,9 +248,9 @@ func (r *Repository) RequestTranscodeStream(filepath string, clientID string) (r
 	if !r.transcoder.IsPresent() {
 		r.reqMu.Lock()
 		if !r.transcoder.IsPresent() { // double-check under the lock
-			if ok := r.initializeTranscoder(r.settings); !ok {
+			if ok := r.initializeTranscoder(r.settings, force); !ok {
 				r.reqMu.Unlock()
-				if !r.settings.MustGet().TranscodeEnabled {
+				if !force && !r.settings.MustGet().TranscodeEnabled {
 					return nil, errors.New("La transcodificación está desactivada. Actívala en Ajustes -> Streaming.")
 				}
 				return nil, errors.New("real-time transcoder not initialized, check your settings")
@@ -231,7 +259,7 @@ func (r *Repository) RequestTranscodeStream(filepath string, clientID string) (r
 		r.reqMu.Unlock()
 	}
 
-	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeTranscode, clientID)
+	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeTranscode, clientID, nil)
 
 	return
 }
@@ -252,7 +280,7 @@ func (r *Repository) RequestPreloadTranscodeStream(filepath string, preferredAud
 // Direct Play
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func (r *Repository) RequestDirectPlay(filepath string, clientID string) (ret *MediaContainer, err error) {
+func (r *Repository) RequestDirectPlay(filepath string, clientID string, caps *ClientCapabilities) (ret *MediaContainer, err error) {
 	r.logger.Debug().Str("filepath", filepath).Msg("mediastream: Direct play requested")
 
 	if !r.IsInitialized() {
@@ -260,7 +288,7 @@ func (r *Repository) RequestDirectPlay(filepath string, clientID string) (ret *M
 	}
 
 	// No global lock: newMediaContainer dedupes concurrent builds via singleflight.
-	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeDirect, clientID)
+	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeDirect, clientID, caps)
 
 	return
 }
@@ -289,7 +317,7 @@ func (r *Repository) RequestOptimizedStream(filepath string, clientID string) (r
 	}
 
 	// No global lock: newMediaContainer dedupes concurrent builds via singleflight.
-	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeOptimized, clientID)
+	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeOptimized, clientID, nil)
 
 	return
 }
@@ -308,7 +336,12 @@ func (r *Repository) RequestPreloadOptimizedStream(filepath string) (err error) 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-func (r *Repository) initializeTranscoder(settings mo.Option[*models.MediastreamSettings]) bool {
+// initializeTranscoder builds the transcoder engine. When force is false it respects the
+// TranscodeEnabled setting and refuses to start if transcoding is disabled. When force is
+// true (an explicit, user-initiated transcode request) it starts the engine regardless of
+// the setting, as long as ffmpeg and the temp dir are available. Constructing the engine is
+// cheap — no ffmpeg process runs until a segment is actually requested.
+func (r *Repository) initializeTranscoder(settings mo.Option[*models.MediastreamSettings], force bool) bool {
 	// Destroy the old transcoder if it exists
 	if r.transcoder.IsPresent() {
 		tc, _ := r.transcoder.Get()
@@ -317,8 +350,9 @@ func (r *Repository) initializeTranscoder(settings mo.Option[*models.Mediastream
 
 	r.transcoder = mo.None[*cassette.Cassette]()
 
-	// If the transcoder is not enabled, don't initialize the transcoder
-	if !settings.MustGet().TranscodeEnabled {
+	// If the transcoder is not enabled and this isn't an explicit (forced) request,
+	// don't initialize the transcoder.
+	if !force && !settings.MustGet().TranscodeEnabled {
 		r.logger.Warn().Msg("mediastream: transcoder disabled (TranscodeEnabled=false); files that need transcoding will fail until enabled in Settings -> Streaming")
 		return false
 	}

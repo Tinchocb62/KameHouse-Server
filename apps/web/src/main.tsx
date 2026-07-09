@@ -1,3 +1,4 @@
+import { __isDesktop__ } from "@/types/constants"
 import { ClientProviders, queryClient } from "@/app/client-providers"
 import "./app/globals.css"
 import "@/lib/desktop-bridge"
@@ -67,8 +68,24 @@ window.addEventListener("error", (event) => {
     } catch { /* non-fatal */ }
 })
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-    <ClientProviders>
-        <RouterProvider router={router} />
-    </ClientProviders>,
-)
+async function init() {
+    if (__isDesktop__) {
+        try {
+            const { invoke } = await import("@tauri-apps/api/core")
+            const port = await invoke<number>("get_local_server_port")
+            if (port) {
+                ;(window as any).__KAMEHOUSE_PORT__ = port
+            }
+        } catch (e) {
+            console.error("[Desktop] Failed to get dynamic server port", e)
+        }
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")!).render(
+        <ClientProviders>
+            <RouterProvider router={router} />
+        </ClientProviders>,
+    )
+}
+
+init()

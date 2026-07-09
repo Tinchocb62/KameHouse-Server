@@ -2,6 +2,7 @@ package autoscanner
 
 import (
 	"context"
+	"fmt"
 	"kamehouse/internal/api/metadata_provider"
 	"kamehouse/internal/database/db"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"kamehouse/internal/events"
 	"kamehouse/internal/library/scanner"
 	"kamehouse/internal/library/summary"
+	"kamehouse/internal/notifier"
 
 	"kamehouse/internal/platforms/platform"
 	"kamehouse/internal/util"
@@ -241,6 +243,7 @@ func (as *AutoScanner) TriggerScan(targets []string) {
 	allLfs, err := scn.Scan(as.shutdownCtx)
 	if err != nil {
 		as.logger.Error().Err(err).Msg("autoscanner: Failed to scan library")
+		notifier.Global().Notify(notifier.TypeScanner, "Error al escanear", fmt.Sprintf("El escaneo automático falló: %v", err))
 		return
 	}
 
@@ -260,6 +263,16 @@ func (as *AutoScanner) TriggerScan(targets []string) {
 	as.db.Gorm().Exec("PRAGMA wal_checkpoint(PASSIVE);")
 
 	as.logger.Info().Msg("autoscanner: Library scan completed")
+
+	if len(targets) > 0 {
+		noun := "archivos nuevos"
+		if len(targets) == 1 {
+			noun = "archivo nuevo"
+		}
+		notifier.Global().Notify(notifier.TypeScanner, "Escaneo completado", fmt.Sprintf("Se agregaron %d %s a la biblioteca.", len(targets), noun))
+	} else {
+		notifier.Global().Notify(notifier.TypeScanner, "Escaneo completado", fmt.Sprintf("Biblioteca actualizada (%d archivos).", len(allLfs)))
+	}
 
 	// Refresh the collection
 	if as.onRefreshCollection != nil {
