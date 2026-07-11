@@ -24,6 +24,7 @@ export interface OrchestratorProps extends VideoPlayerProps {
         audioTracks: AudioTrack[]
         subtitleTracks: SubtitleTrack[]
         chapters: Chapter[]
+        fontUrls?: string[]
     }
 }
 
@@ -102,12 +103,13 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
                 url: s.isImageBased ? undefined : `/api/v1/mediastream/subtitles?path=${encodeURIComponent(props.streamUrl)}&trackIndex=${s.index ?? i}&clientId=${clientId}`
             })) || [],
 
-            chapters: data.mediaInfo.chapters?.map((c) => ({
+            chapters: data.mediaInfo.chapters?.map((c: any) => ({
                 startTime: c.startTime || 0,
                 endTime: c.endTime || 0,
                 name: c.name || "",
                 type: c.type
-            })) || []
+            })) || [],
+            fontUrls: data.mediaInfo.fonts?.map((font: string) => `/api/v1/mediastream/att/${encodeURIComponent(font)}?clientId=${clientId}`) || []
         }
     }, [data, props.streamUrl, clientId])
 

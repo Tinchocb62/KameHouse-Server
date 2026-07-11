@@ -204,11 +204,11 @@ function SettingsPage() {
     if (isLoading && !serverSettings) return <LoadingOverlayWithLogo />
 
     return (
-        <div className="flex h-full w-full text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative" style={{ background: "var(--bg-primary)" }}>
+        <div className="flex h-full w-full text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative bg-transparent">
             {/* ── Left Sidebar Nav ─────────────────────────────────────── */}
             <nav
-                className="relative w-[260px] shrink-0 h-full flex flex-col border-r border-outline-variant backdrop-blur-overlay-md overflow-y-auto no-scrollbar"
-                style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container-low) 70%, transparent)" }}
+                className="relative w-[260px] shrink-0 h-full flex flex-col border-r border-outline-variant/30 backdrop-blur-overlay-xl overflow-y-auto no-scrollbar"
+                style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container-low) 40%, transparent)" }}
             >
 
                 {/* Sidebar header */}

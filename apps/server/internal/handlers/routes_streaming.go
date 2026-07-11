@@ -21,10 +21,11 @@ func (h *Handler) RegisterStreamingRoutes(v1 *echo.Group) {
 	v1Mediastream.GET("/subs", h.HandleMediastreamGetSubtitles)
 	v1Mediastream.GET("/subs/pgs", h.HandleMediastreamGetPGSEvents)
 	v1Mediastream.GET("/subtitles", h.HandleMediastreamGetSubtitles) // alias matching frontend requests
-	v1Mediastream.GET("/att", h.HandleMediastreamGetAttachments)
+	v1Mediastream.GET("/att/*", h.HandleMediastreamGetAttachments)
 	v1Mediastream.GET("/file", h.HandleMediastreamFile)
 	v1Mediastream.GET("/skip-times", h.HandleGetEpisodeSkipTimes)
 	v1Mediastream.POST("/skip-times", h.HandleSaveEpisodeSkipTimes)
+	v1Mediastream.GET("/skip-times/resolve-mal", h.HandleResolveMAL)
 	v1Mediastream.POST("/skip-times/scan", h.HandleScanEpisodeSkipTimes)
 
 	// Video Thumbnail

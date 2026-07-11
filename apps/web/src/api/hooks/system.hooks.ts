@@ -1,14 +1,16 @@
-import { useMutation } from "@tanstack/react-query"
-import { API_ENDPOINTS } from "../generated/endpoints"
-import { useServerMutation } from "./core/hooks"
+import { useServerMutation } from "@/api/client/requests"
+import { API_ENDPOINTS } from "@/api/generated/endpoints"
+
+export interface DatabaseBackupResult {
+    path: string
+    sizeBytes: number
+    createdAt: string
+}
 
 export function useBackupDatabase() {
-    return useServerMutation<
-        { path: string; sizeBytes: number; createdAt: string },
-        void
-    >({
+    return useServerMutation<DatabaseBackupResult, void>({
         endpoint: API_ENDPOINTS.SYSTEM.BackupDatabase.endpoint,
-        method: "POST",
+        method: API_ENDPOINTS.SYSTEM.BackupDatabase.methods[0],
         mutationKey: [API_ENDPOINTS.SYSTEM.BackupDatabase.key],
     })
 }

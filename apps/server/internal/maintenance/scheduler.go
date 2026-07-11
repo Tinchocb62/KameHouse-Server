@@ -39,7 +39,10 @@ func (s *Scheduler) Start(ctx context.Context) {
 		j := job // capture
 		go func(j Job) {
 			// Random jitter up to 10% of interval
-			jitter := time.Duration(rand.Int63n(int64(j.Interval) / 10))
+			var jitter time.Duration
+			if n := int64(j.Interval) / 10; n > 0 {
+				jitter = time.Duration(rand.Int63n(n))
+			}
 			totalDelay := j.InitialDelay + jitter
 
 			timer := time.NewTimer(totalDelay)

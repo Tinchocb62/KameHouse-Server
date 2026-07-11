@@ -84,6 +84,8 @@ export interface AniSkipTimes {
     op?: AniSkipInterval
     /** Outro / Ending timestamps */
     ed?: AniSkipInterval
+    opSource?: string
+    edSource?: string
     /** Whether any skip times were found */
     hasSkipTimes: boolean
 }
@@ -96,6 +98,8 @@ interface LocalSkipTimeResponse {
     opEnd: number
     edOffset: number
     edEnd: number
+    source: string
+    confidence: number
 }
 
 export async function getAniSkipTimes({
@@ -132,10 +136,10 @@ export async function getAniSkipTimes({
             } : undefined
 
             let ed: AniSkipInterval | undefined = undefined
-            if (localData.edOffset > 0 && episodeDuration && episodeDuration > 0) {
-                const edEndTime = (localData.edEnd && localData.edEnd > 0) ? localData.edEnd : episodeDuration
+            if (localData.edOffset > 0) {
+                const edEndTime = (localData.edEnd && localData.edEnd > 0) ? localData.edEnd : (episodeDuration ?? 0)
                 ed = {
-                    startTime: episodeDuration - localData.edOffset,
+                    startTime: localData.edOffset,
                     endTime: edEndTime,
                 }
             }
@@ -144,6 +148,8 @@ export async function getAniSkipTimes({
                 return {
                     op,
                     ed,
+                    opSource: localData.source,
+                    edSource: localData.source,
                     hasSkipTimes: true,
                 }
             }
@@ -157,26 +163,17 @@ export async function getAniSkipTimes({
 
     if (!activeMalId && mediaId) {
         try {
-            const entry = await buildSeaQuery<any, any>({
-                endpoint: `/api/v1/library/anime-entry/${mediaId}`,
+            const res = await buildSeaQuery<any, any>({
+                endpoint: `/api/v1/mediastream/skip-times/resolve-mal?mediaId=${mediaId}`,
                 method: "GET",
             })
-            if (entry?.malId) {
-                activeMalId = entry.malId
-            } else if (entry?.media?.myanimelistId) {
-                activeMalId = entry.media.myanimelistId
-            } else if (entry?.media?.titleEnglish || entry?.media?.titleOriginal || entry?.media?.titleRomaji) {
-                const searchTitle = entry.media.titleEnglish || entry.media.titleOriginal || entry.media.titleRomaji
-                const jikanRes = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(searchTitle)}&limit=1`)
-                if (jikanRes.ok) {
-                    const jikanData = (await jikanRes.json()) as any
-                    if (jikanData?.data?.[0]?.mal_id) {
-                        activeMalId = jikanData.data[0].mal_id
-                    }
-                }
+            if (res?.malId) {
+                activeMalId = res.malId
             }
         } catch (e) {
-            console.warn("Failed to dynamically map TMDB/Media ID to MyAnimeList ID:", e)
+            // Expected for media without a MAL mapping (e.g. pure TMDB/library entries);
+            // skip-times gracefully fall back to heuristics. Kept at debug to avoid noise.
+            console.debug("No MAL mapping for TMDB/Media ID:", e)
         }
     }
 
@@ -200,9 +197,9 @@ export async function getAniSkipTimes({
     if (op || ed) {
         let resolvedEdOffset = 0
         let resolvedEdEnd = 0
-        if (ed && episodeDuration && episodeDuration > 0) {
-            resolvedEdOffset = Math.max(0, episodeDuration - ed.startTime)
-            resolvedEdEnd = ed.endTime ?? episodeDuration
+        if (ed) {
+            resolvedEdOffset = ed.startTime
+            resolvedEdEnd = ed.endTime ?? (episodeDuration ?? 0)
         }
 
         buildSeaQuery<any, any>({
@@ -217,6 +214,7 @@ export async function getAniSkipTimes({
                 edOffset: resolvedEdOffset,
                 edEnd: resolvedEdEnd,
                 applyToSeason: false,
+                source: "aniskip",
             }
         }).catch(err => console.warn("Failed to cache AniSkip times in KameHouse:", err))
     }
@@ -224,6 +222,8 @@ export async function getAniSkipTimes({
     return {
         op,
         ed,
+        opSource: "aniskip",
+        edSource: "aniskip",
         hasSkipTimes: !!(op || ed),
     }
 }

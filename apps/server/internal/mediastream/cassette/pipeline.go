@@ -202,7 +202,15 @@ func (p *Pipeline) GetSegment(ctx context.Context, seg int32) (string, error) {
 		p.velocity.Record(seg)
 	}
 
-	for attempt := 0; attempt < 3; attempt++ {
+	// A kill-triggered abort is not an encode failure, so it must not consume one
+	// of the three attempts: a burst of seeks (each one calling
+	// KillAllPipelineHeads) can otherwise tear down this pipeline's heads three
+	// times in microseconds and fail the request. Aborts get their own, looser
+	// budget; the request context still bounds the total wait.
+	const maxAborts = 10
+	aborts := 0
+
+	for attempt := 0; attempt < 3; {
 		p.headsMu.Lock()
 		select {
 		case <-p.killCh:
@@ -259,6 +267,18 @@ func (p *Pipeline) GetSegment(ctx context.Context, seg int32) (string, error) {
 			return "", fmt.Errorf("cassette: %s segment %d not ready: %w", p.label, seg, err)
 		}
 
+		// Our heads were killed out from under us — by a seek in this pipeline or
+		// in a sibling one. Respawn without burning an attempt, and without
+		// killing the heads that the concurrent seek may have just started.
+		if errors.Is(err, ErrWaitAborted) {
+			aborts++
+			if aborts > maxAborts {
+				return "", fmt.Errorf("cassette: %s segment %d aborted %d times", p.label, seg, aborts)
+			}
+			continue
+		}
+
+		attempt++
 		p.logger.Warn().Int("attempt", attempt).Int32("seg", seg).Err(err).
 			Msg("cassette: segment wait failed, killing all active heads and retrying...")
 

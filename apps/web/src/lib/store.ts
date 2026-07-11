@@ -118,6 +118,8 @@ export interface PlayerState {
     setAutoSkipIntro: (auto: boolean) => void
     autoSkipOutro: boolean
     setAutoSkipOutro: (auto: boolean) => void
+    skipStepSeconds: number
+    setSkipStepSeconds: (seconds: number) => void
     playbackRate: number
     setPlaybackRate: (rate: number) => void
     preferredAudioLang: string
@@ -157,11 +159,13 @@ export const createPlayerSlice: StateCreator<UIState & PlayerState, [], [], Play
     isFullscreen: false,
     autoSkipIntro: false,
     autoSkipOutro: false,
+    skipStepSeconds: 85,
     playbackRate: 1,
     setPlayerVolume: (volume) => set({ playerVolume: volume }),
     setFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
     setAutoSkipIntro: (autoSkipIntro) => set({ autoSkipIntro }),
     setAutoSkipOutro: (autoSkipOutro) => set({ autoSkipOutro }),
+    setSkipStepSeconds: (skipStepSeconds) => set({ skipStepSeconds }),
     setPlaybackRate: (playbackRate) => set({ playbackRate }),
     preferredAudioLang: "jpn",
     setPreferredAudioLang: (preferredAudioLang) => set({ preferredAudioLang }),
@@ -278,6 +282,7 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
                 isGlobalMuted: state.isGlobalMuted,
                 autoSkipIntro: state.autoSkipIntro,
                 autoSkipOutro: state.autoSkipOutro,
+                skipStepSeconds: state.skipStepSeconds,
                 playbackRate: state.playbackRate,
                 preferredAudioLang: state.preferredAudioLang,
                 preferredSubtitleLang: state.preferredSubtitleLang,
@@ -347,20 +352,7 @@ interface SkipTimesState {
 export const useSkipTimesStore = create<SkipTimesState>()(
     persist(
         (set) => ({
-            seriesSkipTimes: (() => {
-                try {
-                    const settingsStr = typeof window !== "undefined" ? localStorage.getItem("kamehouse-app-settings") : null
-                    if (settingsStr) {
-                        const parsed = JSON.parse(settingsStr) as { state?: { seriesSkipTimes?: Record<string, { opStart?: number; opEnd?: number; edOffset?: number; edEnd?: number }> } }
-                        if (parsed?.state?.seriesSkipTimes) {
-                            return parsed.state.seriesSkipTimes
-                        }
-                    }
-                } catch (e) {
-                    console.error("Failed to migrate seriesSkipTimes", e)
-                }
-                return {}
-            })(),
+            seriesSkipTimes: {},
             saveSeriesSkipTimes: (key, opStart, opEnd, edOffset, edEnd) =>
                 set(state => ({
                     seriesSkipTimes: {
@@ -371,6 +363,13 @@ export const useSkipTimesStore = create<SkipTimesState>()(
         }),
         {
             name: "kamehouse-skip-times",
+            version: 1,
+            migrate: (persistedState: any, version: number) => {
+                if (version === 0) {
+                    return { seriesSkipTimes: {} } as SkipTimesState
+                }
+                return persistedState as SkipTimesState
+            },
         }
     )
 )

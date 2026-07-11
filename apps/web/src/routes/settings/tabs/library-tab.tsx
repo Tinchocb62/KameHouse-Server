@@ -1,14 +1,16 @@
 import React from "react"
-import { Section, Card, PathList, OsToggle, OsSelect } from "../components"
+import { Section, Card, PathList, OsToggle, OsSelect, ScanButton } from "../components"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
+import { useScanLocalFiles } from "@/api/hooks/scan.hooks"
 
 interface LibraryTabProps {
     control: Control<SettingsFormValues>
 }
 
-
 export function LibraryTab({ control }: LibraryTabProps) {
+    const { mutate: scanLibrary, isPending } = useScanLocalFiles()
+
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
             {/* 1. Directorios de Almacenamiento */}
@@ -104,6 +106,24 @@ export function LibraryTab({ control }: LibraryTabProps) {
                         )}
                     />
                 </Card>
+            </Section>
+
+            <Section label="Acciones de escaneo" description="Inicia un escaneo manual de los directorios de tu biblioteca local.">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <ScanButton
+                        title="Escanear Biblioteca"
+                        description="Busca nuevos episodios y películas en las carpetas de origen."
+                        onClick={() => scanLibrary({ mode: "fast", skipLockedFiles: false, skipIgnoredFiles: false })}
+                        loading={isPending}
+                    />
+                    <ScanButton
+                        title="Re-Scan Forzado"
+                        description="Vuelve a analizar toda la biblioteca desde cero ignorando la caché."
+                        onClick={() => scanLibrary({ mode: "deep", skipLockedFiles: false, skipIgnoredFiles: false })}
+                        loading={isPending}
+                        destructive
+                    />
+                </div>
             </Section>
 
             {/* 5. Contenido */}

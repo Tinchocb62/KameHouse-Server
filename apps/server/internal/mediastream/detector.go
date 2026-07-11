@@ -232,7 +232,7 @@ func getFpcalcDownloadURL() (string, bool, error) {
 
 // GetFingerprint extracts the fingerprint of a video chunk.
 // If isIntro is true, extracts the first 5 minutes. If false, extracts the last 5 minutes.
-func (d *SkipDetector) GetFingerprint(ctx context.Context, fpcalcBin, videoPath string, isIntro bool, fileDuration float64) ([]int, error) {
+func (d *SkipDetector) GetFingerprint(ctx context.Context, fpcalcBin, videoPath string, isIntro bool, fileDuration float64) ([]int, float64, error) {
 	chunkLen := 300.0
 	if fileDuration < 600.0 {
 		chunkLen = fileDuration / 2.0
@@ -266,14 +266,14 @@ func (d *SkipDetector) GetFingerprint(ctx context.Context, fpcalcBin, videoPath 
 		if err := ffmpegCmd.Start(); err != nil {
 			pr.Close()
 			pw.Close()
-			return nil, fmt.Errorf("failed to start ffmpeg: %w", err)
+			return nil, 0, fmt.Errorf("failed to start ffmpeg: %w", err)
 		}
 
 		if err := fpcalcCmd.Start(); err != nil {
 			pr.Close()
 			pw.Close()
 			_ = ffmpegCmd.Process.Kill()
-			return nil, fmt.Errorf("failed to start fpcalc: %w", err)
+			return nil, 0, fmt.Errorf("failed to start fpcalc: %w", err)
 		}
 
 		// Wait in background for ffmpeg to finish or error out.
@@ -290,43 +290,42 @@ func (d *SkipDetector) GetFingerprint(ctx context.Context, fpcalcBin, videoPath 
 			// Signal the pipe so the goroutine's pw.Close() unblocks immediately.
 			pr.CloseWithError(err)
 			<-errCh // wait for goroutine to finish before returning
-			return nil, fmt.Errorf("fpcalc execution failed: %w", err)
+			return nil, 0, fmt.Errorf("fpcalc execution failed: %w", err)
 		}
 		pr.Close()
 		<-errCh // wait for goroutine to finish
 
 		var res FingerprintResult
 		if err := json.Unmarshal(fpcalcOut.Bytes(), &res); err != nil {
-			return nil, fmt.Errorf("failed to parse fpcalc JSON output: %w", err)
+			return nil, 0, fmt.Errorf("failed to parse fpcalc JSON output: %w", err)
 		}
 
-		return res.Fingerprint, nil
+		return res.Fingerprint, res.Duration, nil
 	}
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to run fpcalc: %w", err)
+		return nil, 0, fmt.Errorf("failed to run fpcalc: %w", err)
 	}
 
 	var res FingerprintResult
 	if err := json.Unmarshal(out.Bytes(), &res); err != nil {
-		return nil, fmt.Errorf("failed to parse fpcalc JSON: %w", err)
+		return nil, 0, fmt.Errorf("failed to parse fpcalc JSON: %w", err)
 	}
 
-	return res.Fingerprint, nil
+	return res.Fingerprint, res.Duration, nil
 }
 
 // CompareFingerprints aligns two fingerprints and returns the matching start/end offsets in seconds.
 // Returns (startOffset1, endOffset1, startOffset2, endOffset2, matchedSeconds, ok)
-func (d *SkipDetector) CompareFingerprints(f1, f2 []int) (float64, float64, float64, float64, float64, bool) {
-	if len(f1) == 0 || len(f2) == 0 {
+func (d *SkipDetector) CompareFingerprints(f1, f2 []int, chunkDuration1 float64) (float64, float64, float64, float64, float64, bool) {
+	if len(f1) == 0 || len(f2) == 0 || chunkDuration1 <= 0 {
 		return 0, 0, 0, 0, 0, false
 	}
 
-	// Chromaprint produces ~8.33 sub-fingerprints per second.
-	// Frame size is 0.371s, but stride is ~0.12s (11025 Hz / 1323 samples or similar).
-	const secondsPerFrame = 0.12
+	// Determine seconds per frame based on the duration of the extracted chunk
+	secondsPerFrame := chunkDuration1 / float64(len(f1))
 
 	// Calculate Hamming distance threshold: 5 bits out of 32
 	const maxHammingDistance = 5
@@ -524,7 +523,9 @@ func (d *SkipDetector) ScanSeries(ctx context.Context, mediaID int) error {
 	type EpFingerprints struct {
 		EpisodeNumber int
 		IntroFP       []int
+		IntroChunkDur float64
 		OutroFP       []int
+		OutroChunkDur float64
 		Duration      float64
 	}
 
@@ -561,13 +562,13 @@ func (d *SkipDetector) ScanSeries(ctx context.Context, mediaID int) error {
 			duration = 1440.0 // Default to 24 minutes if probe fails
 		}
 
-		introFP, err := d.GetFingerprint(ctx, fpcalcBin, ep.Path, true, duration)
+		introFP, introDur, err := d.GetFingerprint(ctx, fpcalcBin, ep.Path, true, duration)
 		if err != nil {
 			d.logger.Warn().Err(err).Str("path", ep.Path).Msg("mediastream: failed to fingerprint intro")
 			continue
 		}
 
-		outroFP, err := d.GetFingerprint(ctx, fpcalcBin, ep.Path, false, duration)
+		outroFP, outroDur, err := d.GetFingerprint(ctx, fpcalcBin, ep.Path, false, duration)
 		if err != nil {
 			d.logger.Warn().Err(err).Str("path", ep.Path).Msg("mediastream: failed to fingerprint outro")
 			continue
@@ -576,7 +577,9 @@ func (d *SkipDetector) ScanSeries(ctx context.Context, mediaID int) error {
 		fps[ep.EpisodeNumber] = &EpFingerprints{
 			EpisodeNumber: ep.EpisodeNumber,
 			IntroFP:       introFP,
+			IntroChunkDur: introDur,
 			OutroFP:       outroFP,
+			OutroChunkDur: outroDur,
 			Duration:      duration,
 		}
 	}
@@ -599,7 +602,10 @@ func (d *SkipDetector) ScanSeries(ctx context.Context, mediaID int) error {
 
 		var introStarts []float64
 		var introEnds []float64
-		var outroOffsets []float64 // outro distance from end of file
+		var outroStarts []float64
+		var outroEnds []float64
+		introNeighbors := 0
+		outroNeighbors := 0
 
 		// Compare current episode against up to 3 neighbors
 		neighbors := []int{ep.EpisodeNumber - 1, ep.EpisodeNumber + 1, ep.EpisodeNumber + 2}
@@ -610,33 +616,24 @@ func (d *SkipDetector) ScanSeries(ctx context.Context, mediaID int) error {
 			}
 
 			// Intro check
-			if s1, e1, _, _, _, ok := d.CompareFingerprints(currentFP.IntroFP, neighborFP.IntroFP); ok {
+			if s1, e1, _, _, _, ok := d.CompareFingerprints(currentFP.IntroFP, neighborFP.IntroFP, currentFP.IntroChunkDur); ok {
 				introStarts = append(introStarts, s1)
 				introEnds = append(introEnds, e1)
+				introNeighbors++
 			}
 
 			// Outro check
-			if s1, _, _, _, _, ok := d.CompareFingerprints(currentFP.OutroFP, neighborFP.OutroFP); ok {
-				// Translate local outro fingerprint offset to absolute time in the file
+			if s1, e1, _, _, _, ok := d.CompareFingerprints(currentFP.OutroFP, neighborFP.OutroFP, currentFP.OutroChunkDur); ok {
 				chunkLen := 300.0
 				if currentFP.Duration < 600.0 {
 					chunkLen = currentFP.Duration / 2.0
 				}
 				absStart := (currentFP.Duration - chunkLen) + s1
+				absEnd := (currentFP.Duration - chunkLen) + e1
 
-				// EdOffset in KameHouse model represents the duration from the start of the ending song to the end of file.
-				// Wait! Let's check models.go / SkipTimesSettings to see what EdOffset represents.
-				// Let's verify: EdOffset is usually the time in seconds where the outro starts!
-				// Wait, let's look at the database models or check SkipTimesSettings.tsx to see what is stored in EdOffset.
-				// Is it the start time of the ending? Yes, in `SkipTimesSettings.tsx` it says:
-				// `edOffset: duration - edOffset` or `edOffset` represents the actual start time of the ending.
-				// Let's check the schema or routes handler code we viewed:
-				// `OpStart: b.OpStart, OpEnd: b.OpEnd, EdOffset: b.EdOffset`
-				// Wait! Let's check how `edOffset` is handled in web player/SkipTimesSettings.
-				// Usually, `edOffset` is the timestamp where the Ending begins.
-				// Let's record both start and end, but for the DB:
-				// EdOffset: absStart
-				outroOffsets = append(outroOffsets, absStart)
+				outroStarts = append(outroStarts, absStart)
+				outroEnds = append(outroEnds, absEnd)
+				outroNeighbors++
 			}
 		}
 
@@ -652,11 +649,29 @@ func (d *SkipDetector) ScanSeries(ctx context.Context, mediaID int) error {
 			// Use median to avoid outliers
 			skipTime.OpStart = introStarts[len(introStarts)/2]
 			skipTime.OpEnd = introEnds[len(introEnds)/2]
+			
+			conf := 0.5 + float64(introNeighbors)*0.15
+			if conf > 1.0 {
+				conf = 1.0
+			}
+			skipTime.Confidence = conf
+			skipTime.Source = "fingerprint"
 		}
 
-		if len(outroOffsets) > 0 {
-			sort.Float64s(outroOffsets)
-			skipTime.EdOffset = outroOffsets[len(outroOffsets)/2]
+		if len(outroStarts) > 0 {
+			sort.Float64s(outroStarts)
+			sort.Float64s(outroEnds)
+			skipTime.EdOffset = outroStarts[len(outroStarts)/2]
+			skipTime.EdEnd = outroEnds[len(outroEnds)/2]
+			
+			conf := 0.5 + float64(outroNeighbors)*0.15
+			if conf > 1.0 {
+				conf = 1.0
+			}
+			if skipTime.Confidence == 0 {
+				skipTime.Confidence = conf
+				skipTime.Source = "fingerprint"
+			}
 		}
 
 		// Only persist if we detected an intro or an outro
@@ -669,7 +684,7 @@ func (d *SkipDetector) ScanSeries(ctx context.Context, mediaID int) error {
 	if len(dbSkipTimes) > 0 {
 		err := d.db.Gorm().Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "media_id"}, {Name: "episode_number"}},
-			DoUpdates: clause.AssignmentColumns([]string{"op_start", "op_end", "ed_offset"}),
+			DoUpdates: clause.AssignmentColumns([]string{"op_start", "op_end", "ed_offset", "ed_end", "source", "confidence"}),
 		}).Create(&dbSkipTimes).Error
 
 		if err != nil {

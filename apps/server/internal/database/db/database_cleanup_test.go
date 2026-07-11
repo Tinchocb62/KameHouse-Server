@@ -58,6 +58,10 @@ func TestDatabaseCleanupManager(t *testing.T) {
 }
 
 func populateCleanupTestData(t *testing.T, database *Database) {
+	if err := database.Gorm().AutoMigrate(&models.LocalFiles{}); err != nil {
+		t.Fatalf("Failed to auto migrate legacy tables: %v", err)
+	}
+
 	tx := database.Gorm().Begin()
 	defer tx.Rollback()
 

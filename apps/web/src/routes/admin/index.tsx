@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 import * as React from "react"
 import { cn } from "@/components/ui/core/styling"
 import { Icons } from "@/components/ui/icons"
+import { useScanLocalFiles } from "@/api/hooks/scan.hooks"
 
 export const Route = createFileRoute("/admin/")({
     component: AdminPage,
@@ -118,9 +119,11 @@ function AdminSection({ title, subtitle, children }: { title: string; subtitle?:
 }
 
 function AdminActionsGrid() {
+    const { mutate: scanLibrary, isPending } = useScanLocalFiles()
+
     const actions = [
-        { label: "Escanear Biblioteca", desc: "Detectar nuevos archivos", icon: Icons.navigation.search, variant: "primary" as const, action: () => {} },
-        { label: "Re-Scan Forzado", desc: "Ignorar cache y re-escanear todo", icon: Icons.ui.refresh, variant: "secondary" as const, action: () => {} },
+        { label: "Escanear Biblioteca", desc: "Detectar nuevos archivos", icon: Icons.navigation.search, variant: "primary" as const, action: () => scanLibrary({ mode: "fast", skipLockedFiles: false, skipIgnoredFiles: false }) },
+        { label: "Re-Scan Forzado", desc: "Ignorar cache y re-escanear todo", icon: Icons.ui.refresh, variant: "secondary" as const, action: () => scanLibrary({ mode: "deep", skipLockedFiles: false, skipIgnoredFiles: false }) },
         { label: "Match Manual", desc: "Resolver archivos no vinculados", icon: Icons.ui.link, variant: "outline" as const, action: () => {} },
         { label: "Limpiar Huérfanos", desc: "Eliminar entradas sin archivo", icon: Icons.ui.delete, variant: "destructive" as const, action: () => {} },
         { label: "Actualizar Metadatos", desc: "Refrescar info de TMDB/AniList", icon: Icons.status.database, variant: "outline" as const, action: () => {} },

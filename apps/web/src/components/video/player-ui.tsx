@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react"
 import { cn } from "@/components/ui/core/styling"
 import { PlayerTopBar } from "./player-topbar"
 import { PlayerBottomBar } from "./player-bottombar"
-import { LoadingErrorOverlay, CenterPlayFlash, SkipIntroOverlay, NextEpisodeOverlay, ResumeOverlay } from "./player-overlays"
+import { LoadingErrorOverlay, CenterPlayFlash, SkipIntroOverlay, NextEpisodeOverlay, ResumeOverlay, AutoSkipToastOverlay } from "./player-overlays"
 import type { EpisodeSource } from "@/api/types/unified.types"
 import { useGetVideoInsights } from "@/api/hooks/videocore.hooks"
 import type { PlayerCore, PlayerStats } from "./player-core"
@@ -282,7 +282,10 @@ export function PlayerUI(props: PlayerUIProps) {
         <div
             ref={domElements.containerElement}
             onMouseMove={actions.triggerControlsVisibility}
-            onMouseLeave={() => actions.setControlsVisible(false)}
+            onMouseLeave={() => {
+                actions.setControlsVisible(false)
+                actions.setIsSettingsOpen(false)
+            }}
             className={cn(
                 "fixed inset-0 z-[10000] w-screen h-screen bg-black flex flex-col items-center justify-center overflow-hidden font-sans",
                 !controlsVisible && state.isPlaying ? "cursor-none" : "cursor-default"
@@ -397,23 +400,10 @@ export function PlayerUI(props: PlayerUIProps) {
                 onClose={onClose}
             />
 
-            {/* Auto-Skip Toast */}
-            {state.showAutoSkipToast && (
-                <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-none">
-                    <div className="bg-[#121216] border border-white/15 px-6 py-3 shadow-2xl flex items-center rounded-xl [&>*:not(:first-child)]:ml-3">
-                        <svg className="w-4 h-4 text-white animate-pulse" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
-                        </svg>
-                        <span className="text-[10px] font-black tracking-[0.25em] text-white uppercase">
-                            {state.showAutoSkipToast === "intro"
-                                ? "AUTO-SALTANDO INTRO"
-                                : state.showAutoSkipToast === "outro"
-                                    ? "AUTO-SALTANDO ENDING"
-                                    : "AUTO-SALTANDO PAUSA/INTERMEDIO"}
-                        </span>
-                    </div>
-                </div>
-            )}
+            <AutoSkipToastOverlay
+                showType={state.showAutoSkipToast}
+                onUndo={actions.undoSkip}
+            />
 
             <CenterPlayFlash flash={state.flash} />
 
@@ -514,6 +504,8 @@ export function PlayerUI(props: PlayerUIProps) {
                     onAutoSkipIntroChange={actions.setAutoSkipIntro}
                     autoSkipOutro={state.autoSkipOutro}
                     onAutoSkipOutroChange={actions.setAutoSkipOutro}
+                    skipStepSeconds={state.skipStepSeconds}
+                    onSkipStepSecondsChange={actions.setSkipStepSeconds}
                     hlsLevels={state.hlsLevels}
                     activeHlsLevel={state.activeHlsLevel}
                     onHlsLevelChange={actions.setHlsLevel}

@@ -58,6 +58,28 @@ export const Route = createFileRoute("/series/$seriesId/")({
     component: SeriesDetailPage,
 })
 
+// Un episodio sin sagaId no coincide con ninguna pestaña y desaparece de la interfaz, así
+// que cuando el número cae fuera de todos los rangos (episodios extra, specials mal
+// numerados, rangos desactualizados) lo adjuntamos a la saga más cercana en vez de
+// dejarlo huérfano.
+function resolveSagaId(epNum: number, sagas: SagaDTO[] | undefined): string | undefined {
+    if (!sagas || !sagas.length) return undefined;
+
+    const exactMatch = sagas.find(s => epNum >= s.startEp && epNum <= s.endEp);
+    if (exactMatch) return exactMatch.id;
+
+    let fallbackSaga: SagaDTO | undefined;
+    for (const saga of sagas) {
+        if (saga.startEp <= epNum) {
+            if (!fallbackSaga || saga.endEp > fallbackSaga.endEp) {
+                fallbackSaga = saga;
+            }
+        }
+    }
+    // Por debajo del inicio de la primera saga: cae en la primera.
+    return (fallbackSaga ?? sagas[0]).id;
+}
+
 function resolveLocalFileForEpisode(episode: Anime_Episode, localFiles: Anime_LocalFile[] | undefined | null): Anime_LocalFile | undefined {
     if (episode.localFile) return episode.localFile
     return (localFiles || []).find(f => {
@@ -169,10 +191,9 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
             return entry.episodes
                 .filter(ep => ep && typeof ep.episodeNumber === 'number')
                 .map(ep => {
-                    if (!sagas || sagas.length === 0) return ep;
                     const epNum = ep.absoluteEpisodeNumber || ep.episodeNumber;
-                    const matchingSaga = sagas.find(s => epNum >= s.startEp && epNum <= s.endEp);
-                    return matchingSaga ? { ...ep, sagaId: matchingSaga.id } : ep;
+                    const sagaId = resolveSagaId(epNum, sagas);
+                    return sagaId ? { ...ep, sagaId } : ep;
                 })
                 .sort((a, b) => (a.absoluteEpisodeNumber || a.episodeNumber) - (b.absoluteEpisodeNumber || b.episodeNumber));
         }
@@ -186,11 +207,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                 if (!epNum || isNaN(epNum)) return;
 
                 if (!epMap.has(epNum)) {
-                    let sagaId: string | undefined = undefined;
-                    if (sagas && sagas.length > 0) {
-                        const matchingSaga = sagas.find(s => epNum >= s.startEp && epNum <= s.endEp);
-                        if (matchingSaga) sagaId = matchingSaga.id;
-                    }
+                    const sagaId = resolveSagaId(epNum, sagas);
 
                     epMap.set(epNum, {
                         episodeNumber: epNum,
@@ -521,6 +538,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                     <div className="lg:w-80 flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)] h-full">
                                         <SagaSelector
                                             sagas={sagas}
+                                            localSagas={entry?.media ? resolveSeriesSagas(entry.media) : []}
                                             activeSagaId={activeSagaId}
                                             onSelectSaga={(sagaId) => {
                                                 setSearchParams({ saga: sagaId, subSaga: "" })
@@ -535,6 +553,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                 <div className="flex-grow flex flex-col min-w-0">
                                     <SagaLoreHeader 
                                         saga={sagas?.find(s => s.id === activeSagaId)}
+                                        subSaga={activeSubSaga}
                                         media={entry?.media}
                                         onSelectCharacter={setSelectedCharacterName}
                                     />
@@ -893,18 +912,24 @@ const SAGA_LORE_MAPPING: Record<string, { antagonists: string[], keyEvents: stri
 
 interface SagaLoreHeaderProps {
     saga: SagaDTO | undefined
+    subSaga?: any
     media: any
     onSelectCharacter?: (name: string) => void
 }
 
-function SagaLoreHeader({ saga, media, onSelectCharacter }: SagaLoreHeaderProps) {
+function SagaLoreHeader({ saga, subSaga, media, onSelectCharacter }: SagaLoreHeaderProps) {
+    const [isExpanded, setIsExpanded] = useState(false)
+
     if (!saga) return null
 
     // Get the localized synopsis tags and description
     const localSagas = media ? resolveSeriesSagas(media) : []
     const localSagaDef = localSagas.find(s => s.id === saga.id)
-    const description = localSagaDef?.description || saga.description || ""
-    const sagaImage = localSagaDef?.image
+    const localSubSagaDef = localSagaDef?.subSagas?.find(ss => ss.id === subSaga?.id)
+    
+    const description = localSubSagaDef?.description || subSaga?.description || localSagaDef?.description || saga.description || ""
+    const sagaImage = localSubSagaDef?.image || subSaga?.image || localSagaDef?.image
+    const displayTitle = localSubSagaDef?.title || subSaga?.title || saga.name
 
     const synopsisInfo = (sagaSynopsisTags as Record<string, any>)[saga.id]
     const dominantVibe = synopsisInfo?.dominantVibe
@@ -918,116 +943,155 @@ function SagaLoreHeader({ saga, media, onSelectCharacter }: SagaLoreHeaderProps)
     const characters = getSagaCharacters(saga.id, media?.characters?.edges)
 
     return (
-        <div className="glass-card p-6 md:p-8 mb-8 space-y-6 overflow-visible">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Text details */}
-                <div className={cn(
-                    "space-y-4 flex flex-col justify-between",
-                    sagaImage ? "lg:col-span-8 col-span-12" : "col-span-12"
-                )}>
-                    <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                            <span className="inline-flex items-center text-label-sm text-brand-accent uppercase bg-brand-accent/10 border border-brand-accent/20 px-3 py-1 rounded-full font-bold">
-                                Detalles del Arco
-                            </span>
-                            {saga.episodeRange && (
-                                <span className="inline-flex items-center gap-1.5 text-label-sm text-on-surface-variant bg-white/[0.04] border border-white/10 px-3 py-1 rounded-full">
-                                    <Icons.status.tv size={12} className="text-brand-secondary" />
-                                    Eps {saga.episodeRange}
-                                </span>
-                            )}
-                            {saga.startEp != null && saga.endEp != null && (
-                                <span className="inline-flex items-center gap-1.5 text-label-sm text-on-surface-variant bg-white/[0.04] border border-white/10 px-3 py-1 rounded-full">
-                                    <Icons.time.clock size={12} className="text-brand-success" />
-                                    {saga.endEp - saga.startEp + 1} Episodios
-                                </span>
-                            )}
-                            {dominantVibe && (
-                                <span className={cn(
-                                    "inline-flex items-center gap-1 text-label-sm uppercase border px-3 py-1 rounded-full",
-                                    dominantVibe === "Aventura" 
-                                        ? "bg-brand-magic/15 text-brand-magic border-brand-magic/25"
-                                        : dominantVibe === "Tensión Absoluta" || dominantVibe === "Épico"
-                                        ? "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
-                                        : "bg-white/[0.04] border-white/10 text-on-surface-variant"
-                                )}>
-                                    <Icons.status.sparkles size={11} />
-                                    {dominantVibe}
-                                </span>
-                            )}
-                            {suggestedSwimlane && (
-                                <span className="inline-flex items-center gap-1 text-label-sm uppercase bg-brand-secondary/10 border border-brand-secondary/20 text-brand-secondary px-3 py-1 rounded-full">
-                                    <Icons.navigation.library size={11} />
-                                    {suggestedSwimlane}
-                                </span>
-                            )}
-                        </div>
+        <div className="glass-card mb-8 overflow-visible">
+            {/* Header that is always visible and clickable */}
+            <div 
+                className="p-6 md:p-8 flex items-start justify-between cursor-pointer group"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <div className="flex-1 flex flex-col min-w-0 pr-4">
+                    <div className="flex items-center gap-4 mb-3">
+                        <span className="inline-flex items-center text-[10px] sm:text-xs text-brand-accent uppercase bg-brand-accent/10 border border-brand-accent/20 px-2.5 py-1 rounded-full font-bold tracking-widest shadow-sm shadow-brand-accent/5">
+                            Detalles del Arco
+                        </span>
                         
-                        <div className="flex flex-wrap items-center justify-between gap-4 mt-2">
-                            <h2 className="text-h3 font-display text-on-surface uppercase leading-none">
-                                {saga.name}
-                            </h2>
-                            {saga.canonStatus && (
-                                <span className={cn(
-                                    "inline-flex items-center px-3 py-1 rounded-full text-label-sm uppercase border font-semibold",
-                                    saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon"
-                                        ? "bg-brand-success/15 text-brand-success border-brand-success/25"
-                                        : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false"
-                                        ? "bg-brand-destructive/15 text-brand-destructive border-brand-destructive/25"
-                                        : "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
-                                )}>
-                                    {saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon" ? "Canon" : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false" ? "Relleno" : saga.canonStatus}
-                                </span>
-                            )}
-                        </div>
+                        {saga.canonStatus && (
+                            <span className={cn(
+                                "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] sm:text-xs uppercase border font-bold tracking-widest hidden sm:inline-flex",
+                                saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon"
+                                    ? "bg-brand-success/15 text-brand-success border-brand-success/25"
+                                    : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false"
+                                    ? "bg-brand-destructive/15 text-brand-destructive border-brand-destructive/25"
+                                    : "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
+                            )}>
+                                {saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon" ? "Canon" : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false" ? "Relleno" : saga.canonStatus}
+                            </span>
+                        )}
                     </div>
+                    
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black font-display text-on-surface uppercase tracking-tight leading-[1.1] mb-5 line-clamp-2 drop-shadow-md">
+                        {displayTitle}
+                    </h2>
+                    
+                    {subSaga && (
+                        <span className="inline-flex items-center text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mb-5 block">
+                            Parte de {saga.name}
+                        </span>
+                    )}
 
-                    {description && (
-                        <div className="space-y-3">
-                            <p className="text-body-md text-on-surface-variant leading-relaxed border-l-2 border-brand-accent/30 pl-4 py-1">
-                                {description}
-                            </p>
-                            {tags.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 pt-1 pl-4">
-                                    {tags.map((tag: string, idx: number) => (
-                                        <span key={idx} className="inline-flex items-center text-[10px] text-on-surface-variant/70 bg-white/[0.03] border border-white/5 px-2.5 py-0.5 rounded-full select-none uppercase tracking-wider font-semibold">
-                                            #{tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {saga.episodeRange && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant bg-surface-container-high/50 border border-white/5 px-3 py-1.5 rounded-lg shadow-sm">
+                                <Icons.status.tv size={14} className="text-brand-secondary" />
+                                Eps {saga.episodeRange}
+                            </span>
+                        )}
+                        {saga.startEp != null && saga.endEp != null && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant bg-surface-container-high/50 border border-white/5 px-3 py-1.5 rounded-lg shadow-sm">
+                                <Icons.time.clock size={14} className="text-brand-success" />
+                                {saga.endEp - saga.startEp + 1} Episodios
+                            </span>
+                        )}
+                        {dominantVibe && (
+                            <span className={cn(
+                                "inline-flex items-center gap-1.5 text-xs font-bold uppercase px-3 py-1.5 rounded-lg shadow-sm",
+                                dominantVibe === "Aventura" 
+                                    ? "bg-brand-magic/15 text-brand-magic border border-brand-magic/25"
+                                    : dominantVibe === "Tensión Absoluta" || dominantVibe === "Épico"
+                                    ? "bg-brand-secondary/15 text-brand-secondary border border-brand-secondary/25"
+                                    : "bg-surface-container-high/50 border border-white/5 text-on-surface-variant"
+                            )}>
+                                <Icons.status.sparkles size={14} />
+                                {dominantVibe}
+                            </span>
+                        )}
+                        {suggestedSwimlane && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase bg-brand-secondary/10 border border-brand-secondary/20 text-brand-secondary px-3 py-1.5 rounded-lg shadow-sm">
+                                <Icons.navigation.library size={14} />
+                                <span className="line-clamp-1">{suggestedSwimlane}</span>
+                            </span>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Chevron icon & Mobile Canon */}
+                <div className="flex flex-col items-end justify-between h-full min-h-[6rem]">
+                    <div className="flex items-center justify-center w-11 h-11 rounded-full bg-surface-container hover:bg-surface-container-high transition-all duration-300 border border-white/10 shrink-0 shadow-lg group-hover:scale-105 active:scale-95">
+                        <Icons.navigation.chevronDown 
+                            size={22} 
+                            className={cn("transition-transform duration-500 text-on-surface", isExpanded && "rotate-180")} 
+                        />
+                    </div>
+                    {/* Move canon pill here on mobile */}
+                    {saga.canonStatus && (
+                        <span className={cn(
+                            "inline-flex sm:hidden mt-auto items-center px-2 py-0.5 rounded text-[10px] uppercase border font-bold",
+                            saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon"
+                                ? "bg-brand-success/15 text-brand-success border-brand-success/25"
+                                : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false"
+                                ? "bg-brand-destructive/15 text-brand-destructive border-brand-destructive/25"
+                                : "bg-brand-secondary/15 text-brand-secondary border-brand-secondary/25"
+                        )}>
+                            {saga.canonStatus === "true" || saga.canonStatus.toLowerCase() === "canon" ? "Canon" : saga.canonStatus.toLowerCase() === "relleno" || saga.canonStatus === "false" ? "Relleno" : saga.canonStatus}
+                        </span>
                     )}
                 </div>
-
-                {/* Banner image */}
-                {sagaImage && (
-                    <div className="lg:col-span-4 col-span-12 flex items-center justify-center">
-                        <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-white/10 shadow-elevated group select-none bg-white/[0.02]">
-                            <img 
-                                src={sagaImage} 
-                                alt={saga.name}
-                                className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-smooth-out"
-                                loading="lazy"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-                        </div>
-                    </div>
-                )}
             </div>
+
+            <AnimatePresence initial={false}>
+                {isExpanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                    >
+                        <div className="p-6 md:p-8 pt-0 space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                {/* Text details */}
+                                <div className={cn(
+                                    "flex flex-col justify-start",
+                                    sagaImage ? "lg:col-span-8 xl:col-span-9 col-span-12" : "col-span-12"
+                                )}>
+                                    {description && (
+                                        <div className="space-y-5">
+                                            <p className="text-base md:text-lg text-on-surface/90 leading-relaxed border-l-4 border-brand-accent/50 pl-5 py-2 font-medium">
+                                                {description}
+                                            </p>
+                                            {tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-2.5 pt-2 pl-5">
+                                                    {tags.map((tag: string, idx: number) => (
+                                                        <span key={idx} className="inline-flex items-center text-xs text-brand-accent/90 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1.5 rounded-lg select-none uppercase tracking-widest font-bold shadow-sm">
+                                                            #{tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Poster image card */}
+                                {sagaImage && (
+                                    <div className="lg:col-span-4 xl:col-span-3 col-span-12 flex items-start justify-center lg:justify-end">
+                                        <SagaPosterCard src={sagaImage} alt={saga.name} />
+                                    </div>
+                                )}
+                            </div>
 
             {/* Antagonists and Key Events row */}
             {(antagonists.length > 0 || keyEvents.length > 0) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-5 border-t border-white/10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-white/10 mt-6">
                     {antagonists.length > 0 && (
-                        <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl flex flex-col">
-                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/5 font-black tracking-wider">
-                                <Icons.status.skull size={14} className="text-brand-destructive" />
+                        <div className="bg-surface-container/40 backdrop-blur-md border border-white/10 p-5 md:p-6 rounded-2xl flex flex-col shadow-sm">
+                            <h3 className="flex items-center gap-2.5 text-sm text-brand-destructive uppercase mb-4 pb-3 border-b border-white/10 font-black tracking-widest">
+                                <Icons.status.skull size={18} />
                                 Antagonistas Principales
-                            </span>
-                            <div className="flex flex-wrap gap-2">
+                            </h3>
+                            <div className="flex flex-wrap gap-2.5">
                                 {antagonists.map((ant: string, idx: number) => (
-                                    <span key={idx} className="inline-flex items-center px-3 py-1 bg-brand-destructive/10 text-brand-destructive border border-brand-destructive/20 text-label-sm uppercase rounded-full font-medium transition-all hover:bg-brand-destructive/20 select-none">
+                                    <span key={idx} className="inline-flex items-center px-4 py-1.5 bg-gradient-to-r from-brand-destructive/20 to-brand-destructive/5 text-brand-destructive border border-brand-destructive/30 text-xs uppercase rounded-lg font-bold shadow-sm transition-all hover:from-brand-destructive/30 hover:to-brand-destructive/10 hover:scale-105 select-none cursor-default">
                                         {ant}
                                     </span>
                                 ))}
@@ -1036,16 +1100,18 @@ function SagaLoreHeader({ saga, media, onSelectCharacter }: SagaLoreHeaderProps)
                     )}
 
                     {keyEvents.length > 0 && (
-                        <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl flex flex-col">
-                            <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase mb-3 pb-2 border-b border-white/5 font-black tracking-wider">
-                                <Icons.status.trophy size={14} className="text-brand-success" />
+                        <div className="bg-surface-container/40 backdrop-blur-md border border-white/10 p-5 md:p-6 rounded-2xl flex flex-col shadow-sm">
+                            <h3 className="flex items-center gap-2.5 text-sm text-brand-success uppercase mb-4 pb-3 border-b border-white/10 font-black tracking-widest">
+                                <Icons.status.trophy size={18} />
                                 Hitos y Momentos Clave
-                            </span>
-                            <ul className="space-y-2 text-body-sm text-on-surface-variant">
+                            </h3>
+                            <ul className="space-y-3 text-sm text-on-surface-variant/90">
                                 {keyEvents.map((event: string, idx: number) => (
-                                    <li key={idx} className="flex items-start gap-2 leading-relaxed group/event">
-                                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-accent/60 mt-1.5 shrink-0 group-hover/event:bg-brand-accent transition-colors" />
-                                        <span className="text-on-surface-variant/80 group-hover/event:text-on-surface transition-colors">{event}</span>
+                                    <li key={idx} className="flex items-start gap-3 leading-relaxed group/event">
+                                        <div className="mt-1 flex items-center justify-center w-4 h-4 rounded-full bg-brand-success/20 text-brand-success shrink-0 group-hover/event:bg-brand-success group-hover/event:text-on-brand transition-colors">
+                                            <Icons.ui.check size={10} strokeWidth={4} />
+                                        </div>
+                                        <span className="group-hover/event:text-on-surface font-medium transition-colors">{event}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -1056,11 +1122,11 @@ function SagaLoreHeader({ saga, media, onSelectCharacter }: SagaLoreHeaderProps)
 
             {/* Key Characters */}
             {characters.length > 0 && (
-                <div className="pt-5 border-t border-white/10 space-y-4">
-                    <span className="flex items-center gap-2 text-label-sm text-on-surface-variant/70 uppercase font-black tracking-wider">
-                        <Icons.navigation.users size={14} className="text-brand-accent" />
+                <div className="pt-6 border-t border-white/10 space-y-5 mt-6">
+                    <h3 className="flex items-center gap-2.5 text-sm text-brand-accent uppercase font-black tracking-widest">
+                        <Icons.navigation.users size={18} />
                         Personajes Clave del Arco
-                    </span>
+                    </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
                         {characters.map((char, idx) => (
                             <div
@@ -1101,6 +1167,88 @@ function SagaLoreHeader({ saga, media, onSelectCharacter }: SagaLoreHeaderProps)
                     </div>
                 </div>
             )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
+}
+
+function SagaPosterCard({ src, alt }: { src: string; alt: string }) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <>
+            <div className="w-full max-w-[320px]">
+                <div 
+                    onClick={() => setIsOpen(true)}
+                    className="relative w-full aspect-video rounded-xl overflow-hidden border border-white/10 shadow-elevated group cursor-pointer select-none bg-black transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.5)] hover:border-brand-accent/50"
+                >
+                    <img 
+                        src={src} 
+                        alt={alt}
+                        className="relative z-10 w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-smooth-out"
+                        loading="lazy"
+                    />
+                    <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none opacity-60" />
+                    
+                    {/* Hover Badge */}
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="text-label-sm uppercase bg-brand-accent text-on-brand-accent font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-md">
+                            <Icons.ui.info size={12} />
+                            Ampliar
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Lightbox Modal */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsOpen(false)}
+                        className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-[100] p-4 cursor-zoom-out"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95, y: 10 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 10 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="relative max-w-full max-h-[85vh] aspect-[2/3] rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-surface-container"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Blurred Background */}
+                            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                                <img 
+                                    src={src} 
+                                    alt=""
+                                    className="w-full h-full object-cover blur-2xl scale-110 opacity-50"
+                                />
+                                <div className="absolute inset-0 bg-black/50" />
+                            </div>
+
+                            <img 
+                                src={src} 
+                                alt={alt} 
+                                className="relative z-10 w-full h-full object-contain"
+                            />
+                            
+                            {/* Close Button */}
+                            <button 
+                                onClick={() => setIsOpen(false)}
+                                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 border border-white/10 flex items-center justify-center text-white transition-colors cursor-pointer"
+                                aria-label="Cerrar"
+                            >
+                                <Icons.ui.close size={20} />
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
+    );
 }

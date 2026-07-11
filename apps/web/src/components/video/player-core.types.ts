@@ -17,6 +17,7 @@ export interface PlayerCoreProps {
         audioTracks: AudioTrack[]
         subtitleTracks: SubtitleTrack[]
         chapters?: { startTime: number; endTime: number; name: string; type?: string }[]
+        fontUrls?: string[]
     }
     initialProgressSeconds?: number
     onProgress?: (seconds: number) => void
@@ -88,6 +89,7 @@ export interface PlayerCore {
         isSettingsOpen: boolean
         autoSkipIntro: boolean
         autoSkipOutro: boolean
+        skipStepSeconds: number
         playbackRate: number
         showHeatmap: boolean
         aspectRatio: "contain" | "fill" | "cover" | "16/9"
@@ -134,6 +136,7 @@ export interface PlayerCore {
         onSelectSubtitle: (track: SubtitleTrack | null) => void
         toggleFullscreen: () => void
         handleSkipIntro: () => void
+        undoSkip: () => void
         handleTimeUpdate: (e?: React.SyntheticEvent<HTMLVideoElement>) => void
         takeScreenshot: () => void
         togglePip: () => void
@@ -141,6 +144,7 @@ export interface PlayerCore {
         setShowStats: (show: boolean) => void
         setAutoSkipIntro: (val: boolean) => void
         setAutoSkipOutro: (val: boolean) => void
+        setSkipStepSeconds: (val: number) => void
         setHlsLevel: (level: number) => void
         setShowHeatmap: (val: boolean) => void
         setAspectRatio: (val: "contain" | "fill" | "cover" | "16/9") => void

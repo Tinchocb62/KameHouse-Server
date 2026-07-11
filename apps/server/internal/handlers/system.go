@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"kamehouse/internal/constants"
 	"os"
 	"path/filepath"
@@ -54,13 +55,21 @@ func (h *Handler) HandleGetDiagnosticsReport(c echo.Context) error {
 
 	// 2. Settings (Redacted)
 	settings, err := h.App.Database.GetSettings()
-	if err == nil {
-		// Redact sensitive keys
-		if settings.Library.TmdbApiKey != "" {
-			settings.Library.TmdbApiKey = "<redacted>"
+	if err == nil && settings != nil {
+		// GetSettings returns the shared cached pointer (db.CurrSettings); copy
+		// before redacting so the live in-memory API keys are not destroyed.
+		settingsCopy := *settings
+		redact := func(s string) string {
+			if s != "" {
+				return "<redacted>"
+			}
+			return s
 		}
-		
-		settingsJSON, _ := json.MarshalIndent(settings, "", "  ")
+		settingsCopy.Library.TmdbApiKey = redact(settingsCopy.Library.TmdbApiKey)
+		settingsCopy.Library.FanartApiKey = redact(settingsCopy.Library.FanartApiKey)
+		settingsCopy.Library.OmdbApiKey = redact(settingsCopy.Library.OmdbApiKey)
+
+		settingsJSON, _ := json.MarshalIndent(&settingsCopy, "", "  ")
 		f, _ := zipWriter.Create("settings.json")
 		_, _ = f.Write(settingsJSON)
 	}
@@ -94,9 +103,11 @@ func (h *Handler) HandleGetDiagnosticsReport(c echo.Context) error {
 	}
 
 	diskUsage := map[string]interface{}{
-		"fileCacheBytes":  fileCacheSize,
-		"videoFilesBytes": videoFilesSize,
-		"databaseBytes":   dbSize,
+		"fileCacheBytes":    fileCacheSize,
+		"videoFilesBytes":   videoFilesSize,
+		"databaseBytes":     dbSize,
+		"transcodeDirBytes": dirSizeBytes(h.App.Config.Cache.TranscodeDir),
+		"logsDirBytes":      dirSizeBytes(h.App.Config.Logs.Dir),
 	}
 	diskUsageJSON, _ := json.MarshalIndent(diskUsage, "", "  ")
 	f2, _ := zipWriter.Create("disk-usage.json")
@@ -112,4 +123,18 @@ func (h *Handler) HandleGetDiagnosticsReport(c echo.Context) error {
 	
 	_, err = c.Response().Write(buf.Bytes())
 	return err
+}
+
+func dirSizeBytes(root string) int64 {
+	var total int64
+	_ = filepath.WalkDir(root, func(_ string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		if info, e := d.Info(); e == nil {
+			total += info.Size()
+		}
+		return nil
+	})
+	return total
 }

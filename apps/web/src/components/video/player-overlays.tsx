@@ -228,6 +228,31 @@ export function SkipIntroOverlay({
     )
 }
 
+export function AutoSkipToastOverlay({
+    showType,
+    onUndo
+}: {
+    showType: "intro" | "outro" | "pause" | null
+    onUndo: () => void
+}) {
+    if (!showType) return null
+    const label = showType === "pause" ? "PAUSADO" : showType === "intro" ? "INTRO SALTADA" : "OUTRO SALTADO"
+    return (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 sm:bottom-24 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300 pointer-events-auto">
+            <div className="bg-black/80 backdrop-blur-md border border-white/10 rounded-full shadow-lg p-1 pr-4 flex items-center gap-4">
+                <div className="bg-brand-orange/20 text-brand-orange px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
+                    {label}
+                </div>
+                <button
+                    onClick={onUndo}
+                    className="text-white text-[10px] font-black uppercase tracking-widest hover:text-brand-orange transition-colors"
+                >
+                    VOLVER
+                </button>
+            </div>
+        </div>
+    )
+}
 
 export function NextEpisodeOverlay({
     show,

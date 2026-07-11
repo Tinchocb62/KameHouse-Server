@@ -10,9 +10,9 @@ import (
 )
 
 type BackupResult struct {
-	Path      string
-	SizeBytes int64
-	CreatedAt time.Time
+	Path      string    `json:"path"`
+	SizeBytes int64     `json:"sizeBytes"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // Backup creates a vacuumed copy of the database.

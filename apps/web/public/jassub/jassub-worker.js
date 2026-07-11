@@ -491,7 +491,7 @@
     );
   }
 
-  // ../../node_modules/.pnpm/jassub@2.5.1/node_modules/jassub/dist/wasm/jassub-worker.js
+  // ../../node_modules/.pnpm/jassub@2.5.1_patch_hash=3c9_a4510cd00a7c02abba8fc52d8e1d85ca/node_modules/jassub/dist/wasm/jassub-worker.js
   async function Module(moduleArg = {}) {
     var moduleRtn;
     var Module2 = moduleArg;
@@ -2382,7 +2382,7 @@
   var isPthread = globalThis.self?.name?.startsWith("em-pthread");
   isPthread && Module();
 
-  // ../../node_modules/.pnpm/jassub@2.5.1/node_modules/jassub/dist/worker/renderers/2d-renderer.js
+  // ../../node_modules/.pnpm/jassub@2.5.1_patch_hash=3c9_a4510cd00a7c02abba8fc52d8e1d85ca/node_modules/jassub/dist/worker/renderers/2d-renderer.js
   var Canvas2DRenderer = class {
     canvas = null;
     ctx = null;
@@ -2455,7 +2455,7 @@
     }
   };
 
-  // ../../node_modules/.pnpm/jassub@2.5.1/node_modules/jassub/dist/worker/util.js
+  // ../../node_modules/.pnpm/jassub@2.5.1_patch_hash=3c9_a4510cd00a7c02abba8fc52d8e1d85ca/node_modules/jassub/dist/worker/util.js
   var WEIGHT_MAP2 = [
     "thin",
     "extralight",
@@ -2580,7 +2580,7 @@
     }
   };
 
-  // ../../node_modules/.pnpm/jassub@2.5.1/node_modules/jassub/dist/worker/renderers/webgl1-renderer.js
+  // ../../node_modules/.pnpm/jassub@2.5.1_patch_hash=3c9_a4510cd00a7c02abba8fc52d8e1d85ca/node_modules/jassub/dist/worker/renderers/webgl1-renderer.js
   var VERTEX_SHADER = (
     /* glsl */
     `
@@ -2926,7 +2926,7 @@ void main() {
     }
   };
 
-  // ../../node_modules/.pnpm/jassub@2.5.1/node_modules/jassub/dist/worker/renderers/webgl2-renderer.js
+  // ../../node_modules/.pnpm/jassub@2.5.1_patch_hash=3c9_a4510cd00a7c02abba8fc52d8e1d85ca/node_modules/jassub/dist/worker/renderers/webgl2-renderer.js
   var VERTEX_SHADER2 = (
     /* glsl */
     `#version 300 es
@@ -3294,7 +3294,7 @@ void main() {
     }
   };
 
-  // ../../node_modules/.pnpm/jassub@2.5.1/node_modules/jassub/dist/worker/worker.js
+  // ../../node_modules/.pnpm/jassub@2.5.1_patch_hash=3c9_a4510cd00a7c02abba8fc52d8e1d85ca/node_modules/jassub/dist/worker/worker.js
   var constructor = /* @__PURE__ */ Symbol.for("constructor");
   var ASSRenderer = class {
     _wasm;

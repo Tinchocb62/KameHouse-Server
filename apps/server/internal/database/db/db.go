@@ -217,6 +217,7 @@ func (db *Database) runDataMigrations() {
 		return
 	}
 	migrateDefaultSettings(db.gormdb, db.Logger)
+	migrateSkipTimesSemantics(db.gormdb, db.Logger)
 	db.Logger.Info().Msg("db: migraciones de datos completadas")
 }
 
@@ -356,6 +357,58 @@ func migrateDefaultSettings(gormDB *gorm.DB, logger *zerolog.Logger) {
 		logger.Error().Err(result.Error).Msg("db: fallo al migrar auto_play_next_episode")
 	} else if result.RowsAffected > 0 {
 		logger.Info().Int64("rows", result.RowsAffected).Msg("db: auto_play_next_episode habilitado en configuración existente")
+	}
+}
+
+// migrateSkipTimesSemantics normaliza los valores relativos de edOffset a absolutos
+// y clasifica el source basado en heurísticas.
+func migrateSkipTimesSemantics(gormDB *gorm.DB, logger *zerolog.Logger) {
+	var count int64
+	gormDB.Model(&models.EpisodeSkipTime{}).Where("source = ?", "legacy").Count(&count)
+	if count == 0 {
+		return // already migrated
+	}
+
+	logger.Info().Msg("db: migrando semántica de EpisodeSkipTime (relativo -> absoluto)")
+
+	var times []models.EpisodeSkipTime
+	if err := gormDB.Where("source = ?", "legacy").Find(&times).Error; err != nil {
+		logger.Error().Err(err).Msg("db: fallo al leer EpisodeSkipTime para migrar")
+		return
+	}
+
+	migrated := 0
+	for _, t := range times {
+		updated := false
+		if t.EdEnd > 0 {
+			diff := t.EdEnd - t.EdOffset
+			if t.EdOffset < t.EdEnd && diff <= 300 {
+				// Es probable que ya sea absoluto
+				t.Source = "manual"
+				updated = true
+			} else if diff > 300 {
+				// Es un tiempo relativo (ej: offset desde el final). Suponiendo duration ~= edEnd
+				t.EdOffset = t.EdEnd - t.EdOffset
+				if t.EdOffset < 0 {
+					t.EdOffset = 0
+				}
+				t.Source = "aniskip"
+				updated = true
+			}
+		} else if t.EdOffset > 0 {
+			// Si no hay fin especificado, asume que es el resultado del detector de huella absoluta
+			t.Source = "fingerprint"
+			updated = true
+		}
+
+		if updated {
+			gormDB.Save(&t)
+			migrated++
+		}
+	}
+
+	if migrated > 0 {
+		logger.Info().Int("count", migrated).Msg("db: semántica de EpisodeSkipTime migrada correctamente")
 	}
 }
 

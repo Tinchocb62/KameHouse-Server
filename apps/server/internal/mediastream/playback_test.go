@@ -14,6 +14,16 @@ func mkInfo(ext string, video *videofile.Video, audioCodecs ...string) *videofil
 	return info
 }
 
+// mkInfoDefault is like mkInfo but marks the audio track at defaultIdx as the default,
+// so tests can verify the default-track codec check honors the flag over track order.
+func mkInfoDefault(ext string, video *videofile.Video, defaultIdx int, audioCodecs ...string) *videofile.MediaInfo {
+	info := &videofile.MediaInfo{Extension: ext, Video: video}
+	for i, c := range audioCodecs {
+		info.Audios = append(info.Audios, videofile.Audio{Codec: c, IsDefault: i == defaultIdx})
+	}
+	return info
+}
+
 func TestIsDirectPlayableByClient(t *testing.T) {
 	chromium := &ClientCapabilities{Matroska: true, Vp9: true, Av1: true}
 	firefox := &ClientCapabilities{Matroska: false, Vp9: true, Av1: true}
@@ -42,10 +52,17 @@ func TestIsDirectPlayableByClient(t *testing.T) {
 		{"hevc capable main10", mkInfo("mkv", &videofile.Video{Codec: "hevc", PixFmt: "yuv420p10le"}, "aac"), hevcCapable, true},
 		{"hevc main10 without 10bit cap", mkInfo("mkv", &videofile.Video{Codec: "hevc", PixFmt: "yuv420p10le"}, "aac"), &ClientCapabilities{Matroska: true, Hevc: true}, false},
 
-		// Audio: at least one decodable track is enough; AC3/EAC3/DTS gated by caps.
+		// Audio: the DEFAULT track (first when none is flagged) must be decodable, since
+		// direct play cannot switch away from it. AC3/EAC3/DTS are gated by caps.
 		{"ac3 with cap", mkInfo("mp4", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, "ac3"), &ClientCapabilities{Ac3: true}, true},
 		{"ac3 without cap", mkInfo("mp4", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, "ac3"), chromium, false},
-		{"ac3 plus aac fallback track", mkInfo("mp4", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, "ac3", "aac"), chromium, true},
+		// Undecodable default (ac3 first) even with a decodable secondary (aac) must fall
+		// back to transcode: the browser plays the default and cannot switch to the aac.
+		{"ac3 default plus aac secondary", mkInfo("mp4", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, "ac3", "aac"), chromium, false},
+		// Decodable default (aac first) with an undecodable secondary (ac3) is fine.
+		{"aac default plus ac3 secondary", mkInfo("mp4", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, "aac", "ac3"), chromium, true},
+		// Explicit default flag wins over track order: aac first but ac3 flagged default → transcode.
+		{"ac3 flagged default over aac first", mkInfoDefault("mp4", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, 1, "aac", "ac3"), chromium, false},
 		{"dts with cap", mkInfo("mp4", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, "dts"), &ClientCapabilities{Dts: true}, true},
 
 		// Audio-only files are playable if the container/codecs pass.

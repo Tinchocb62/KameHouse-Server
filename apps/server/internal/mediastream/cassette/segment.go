@@ -2,9 +2,16 @@ package cassette
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 )
+
+// ErrWaitAborted is returned by WaitFor when the kill channel fired instead of
+// the caller's context. It means the encoder that was going to produce the
+// segment was torn down (typically by a seek killing every head), not that the
+// segment failed to encode.
+var ErrWaitAborted = errors.New("cassette: segment wait aborted")
 
 // SegmentTable tracks which segments are ready
 type SegmentTable struct {
@@ -109,7 +116,7 @@ func (st *SegmentTable) WaitFor(ctx context.Context, seg int32, kill <-chan stru
 	st.mu.RLock()
 	if seg < 0 || int(seg) >= len(st.segments) {
 		st.mu.RUnlock()
-		return fmt.Errorf("segment %d out of range", seg)
+		return fmt.Errorf("%w: index %d (len=%d)", ErrSegmentOutOfRange, seg, len(st.segments))
 	}
 	ch := st.segments[seg].ch
 	st.mu.RUnlock()
@@ -120,6 +127,6 @@ func (st *SegmentTable) WaitFor(ctx context.Context, seg int32, kill <-chan stru
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-kill:
-		return context.Canceled
+		return ErrWaitAborted
 	}
 }

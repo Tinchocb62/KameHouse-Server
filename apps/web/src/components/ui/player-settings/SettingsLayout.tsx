@@ -16,7 +16,7 @@ export function SettingsLayout({ title, onBack, onClose, children }: SettingsLay
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="w-full max-w-80 bg-[var(--bg-secondary)] border border-[var(--glass-strong)] rounded-[22px] shadow-[var(--shadow-modal)] overflow-hidden flex flex-col"
+            className="w-full max-w-80 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_85%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] border border-outline-variant rounded-[22px] shadow-elevation-4 overflow-hidden flex flex-col"
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.02]">

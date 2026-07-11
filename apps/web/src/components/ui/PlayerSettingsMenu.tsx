@@ -39,6 +39,8 @@ export function PlayerSettingsMenu({
     onAutoSkipIntroChange,
     autoSkipOutro = false,
     onAutoSkipOutroChange,
+    skipStepSeconds = 85,
+    onSkipStepSecondsChange,
     showHeatmap = true,
     onShowHeatmapChange,
     hlsLevels = [],
@@ -75,10 +77,14 @@ export function PlayerSettingsMenu({
         } else {
             setInternalOpen(v)
         }
-        if (!v) {
-            setTimeout(() => setView("main"), 200)
-        }
     }, [isControlled, onOpenChange])
+
+    React.useEffect(() => {
+        if (!isOpen) {
+            const t = setTimeout(() => setView("main"), 200)
+            return () => clearTimeout(t)
+        }
+    }, [isOpen])
 
     const panelRef = React.useRef<HTMLDivElement>(null)
     const buttonRef = React.useRef<HTMLButtonElement>(null)
@@ -341,6 +347,8 @@ export function PlayerSettingsMenu({
                                     onAutoSkipIntroChange={onAutoSkipIntroChange ?? (() => {})}
                                     autoSkipOutro={autoSkipOutro}
                                     onAutoSkipOutroChange={onAutoSkipOutroChange ?? (() => {})}
+                                    skipStepSeconds={skipStepSeconds}
+                                    onSkipStepSecondsChange={onSkipStepSecondsChange ?? (() => {})}
                                     showHeatmap={showHeatmap}
                                     onShowHeatmapChange={onShowHeatmapChange ?? (() => {})}
                                     autoDisableSubtitlesWhenDubbed={autoDisableSubtitlesWhenDubbed}

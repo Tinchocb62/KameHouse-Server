@@ -112,6 +112,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const hlsRef = useRef<Hls | null>(null)
     const jassubRef = useRef<JASSUB | null>(null)
+    const streamSwitchResumeRef = useRef<number | null>(null)
     
     const [previewManager, setPreviewManager] = useState<PlayerPreviewManager | null>(null)
 
@@ -156,6 +157,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         setAutoSkipIntro,
         autoSkipOutro: autoSkipOutroPref,
         setAutoSkipOutro,
+        skipStepSeconds: skipStepSecondsPref,
+        setSkipStepSeconds: setSkipStepSecondsPref,
         playbackRate: playbackRatePref,
         setPlaybackRate: setPlaybackRatePref,
         preferredAudioLang,
@@ -184,6 +187,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             setAutoSkipIntro: state.setAutoSkipIntro,
             autoSkipOutro: state.autoSkipOutro,
             setAutoSkipOutro: state.setAutoSkipOutro,
+            skipStepSeconds: state.skipStepSeconds,
+            setSkipStepSeconds: state.setSkipStepSeconds,
             playbackRate: state.playbackRate,
             setPlaybackRate: state.setPlaybackRate,
             preferredAudioLang: state.preferredAudioLang,
@@ -247,6 +252,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         controlsTimeoutRef.current = setTimeout(() => {
             if (isPlaying) {
                 setControlsVisible(false)
+                setIsSettingsOpen(false)
             }
         }, 3000)
     }, [isPlaying])
@@ -269,6 +275,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         handleSetAutoSkipOutro,
         handleSetTvMode,
         handleSkipIntro,
+        undoSkip,
         showCountdown,
         processTimeUpdates,
         checkManualSkipOverrides
@@ -283,6 +290,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         mediaFormat,
         autoSkipIntroPref,
         autoSkipOutroPref,
+        skipStepSecondsPref,
         tvMode,
         hasNextEpisode,
         onNextEpisode,
@@ -370,6 +378,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         absoluteLanUrl,
         backendTracks: backendTracks || null,
         initialProgressSeconds,
+        streamSwitchResumeRef,
         episodeNumber,
         historyData,
         setStatus,
@@ -393,6 +402,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         activeSubtitleIndex,
         subtitleTracks,
         subtitleSizePref,
+        fontUrls: backendTracks?.fontUrls,
         setIsJassubLoading,
         setIsJassubActive,
     })
@@ -450,6 +460,13 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
                 if (track.language && track.language.toLowerCase() !== "und") {
                     setPreferredAudioLang(track.language)
                 }
+                if (!track.default) {
+                    streamSwitchResumeRef.current = videoRef.current?.currentTime ?? null
+                    pendingAudioSelectionRef.current = track
+                    if (onRequestStreamTypeChange) {
+                        onRequestStreamTypeChange("transcode", { force: true })
+                    }
+                }
                 return
             } else if (onRequestStreamTypeChange) {
                 // Selección manual explícita del usuario. Chromium/WebView2 no puede
@@ -457,6 +474,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
                 // HLS transcode aunque el toggle global esté apagado: force:true permite al
                 // backend inicializar el transcoder on-demand. Para fuentes H264 el video se
                 // copia (-c:v copy) y solo se re-encodea el audio a AAC, así que es barato.
+                streamSwitchResumeRef.current = videoRef.current?.currentTime ?? null
                 pendingAudioSelectionRef.current = track
                 onRequestStreamTypeChange("transcode", { force: true })
             }
@@ -570,7 +588,19 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
                     timers.push(setTimeout(() => onSelectSubtitle(null), 0))
                 }
             } else {
-                const preferred = subtitleTracks.find(t => t.language === preferredSubtitleLang)
+                // Match tolerantly: ffprobe reports Spanish subs as "spa" or "es" (and
+                // regional variants like "es-la"), so exact equality misses them. Fall
+                // back to the container's default/forced track so subs still appear.
+                const pref = preferredSubtitleLang.toLowerCase()
+                const matchesPref = (t: SubtitleTrack) => {
+                    const lang = t.language?.toLowerCase() || ""
+                    if (lang === pref || lang.startsWith(pref + "-") || pref.startsWith(lang + "-")) return true
+                    const spanish = (l: string) => l === "spa" || l === "es" || l.startsWith("spa-") || l.startsWith("es-")
+                    return (pref === "spa" || pref === "es") && spanish(lang)
+                }
+                const preferred = subtitleTracks.find(matchesPref)
+                    ?? subtitleTracks.find(t => t.default)
+                    ?? subtitleTracks.find(t => t.forced)
                 if (preferred && activeSubtitleIndex !== preferred.index) {
                     timers.push(setTimeout(() => onSelectSubtitle(preferred), 0))
                 }
@@ -811,6 +841,9 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         return () => {
             document.removeEventListener("fullscreenchange", handleFullscreenChange)
             setGlobalFullscreen(false)
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(err => console.error("Error exiting fullscreen on unmount:", err))
+            }
         }
     }, [setGlobalFullscreen])
 
@@ -895,7 +928,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         if (isSeekingRef.current) return
 
         const curr = video.currentTime
-        const total = video.duration
+        const rawDur = video.duration
+        const total = Number.isFinite(rawDur) && rawDur > 0 ? rawDur : duration
 
         if (progressBarRef.current) {
             const percent = total > 0 ? (curr / total) * 100 : 0
@@ -939,7 +973,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
                 source: playableUrl.substring(0, 50) + "...",
             })
         }
-    }, [showStats, lastStatsUpdateRef, processTimeUpdates, onProgress, onTrackingProgress, onSyncProgress, playableUrl, sendHeartbeat, formatTime])
+    }, [showStats, lastStatsUpdateRef, processTimeUpdates, onProgress, onTrackingProgress, onSyncProgress, playableUrl, sendHeartbeat, formatTime, duration])
 
     // Apply playback rate instantly
     useEffect(() => {
@@ -974,6 +1008,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             isPlaying, duration, volume, isMuted, isFullscreen, controlsVisible, status, errorMsg, isBuffering, isSeeking, flash, skipMode, skipRemainingSeconds, segmentProgress, showNextEpisode, hasNextEpisode, countdownSeconds, showCountdown, tvMode, audioTracks, activeAudioIndex, subtitleTracks, activeSubtitleIndex, isJassubLoading, isJassubActive, isPgsLoading, isPgsActive, isSettingsOpen, remainingProgress, showAutoSkipToast,
             autoSkipIntro: autoSkipIntroPref,
             autoSkipOutro: autoSkipOutroPref,
+            skipStepSeconds: skipStepSecondsPref,
             playbackRate: playbackRatePref,
             showHeatmap: showHeatmapPref,
             aspectRatio: aspectRatioPref,
@@ -1001,10 +1036,11 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             serverPort,
         },
         actions: {
-            setIsPlaying, setDuration, setIsBuffering, setIsSeeking, setControlsVisible, setIsSettingsOpen, triggerControlsVisibility, togglePlay, handleSeek, handleSeekStart, handleSeekEnd, skipTime, skipOpening, handleVolume, toggleMute, onSelectAudio, onSelectSubtitle, toggleFullscreen, handleSkipIntro, handleTimeUpdate,
+            setIsPlaying, setDuration, setIsBuffering, setIsSeeking, setControlsVisible, setIsSettingsOpen, triggerControlsVisibility, togglePlay, handleSeek, handleSeekStart, handleSeekEnd, skipTime, skipOpening, handleVolume, toggleMute, onSelectAudio, onSelectSubtitle, toggleFullscreen, handleSkipIntro, undoSkip, handleTimeUpdate,
             takeScreenshot, togglePip, changePlaybackRate, setShowStats,
             setAutoSkipIntro: handleSetAutoSkipIntro,
             setAutoSkipOutro: handleSetAutoSkipOutro,
+            setSkipStepSeconds: setSkipStepSecondsPref,
             setHlsLevel: handleSetHlsLevel,
             setShowHeatmap: setShowHeatmapPref,
             setAspectRatio: setAspectRatioPref,

@@ -1,0 +1,22 @@
+diff --git a/dist/jassub.js b/dist/jassub.js
+index 15f24d2f84c04ac6dc2852fee24af96706197a93..b15f5a2908cdf34574baf6abf80653d68fb3b866 100644
+--- a/dist/jassub.js
++++ b/dist/jassub.js
+@@ -25,6 +25,8 @@ export default class JASSUB {
+     _canvas;
+     _ro = new ResizeObserver(async () => {
+         await this.ready;
++        if (this._destroyed)
++            return;
+         this.resize();
+     });
+     _destroyed = false;
+@@ -102,6 +104,8 @@ export default class JASSUB {
+             throw new Error('WASM not supported');
+     }
+     async resize(forceRepaint = !!this._video?.paused, renderWidth = 0, renderHeight = 0) {
++        if (this._destroyed)
++            return;
+         const videoWidth = this._video?.videoWidth ?? this._videoWidth;
+         const videoHeight = this._video?.videoHeight ?? this._videoHeight;
+         const videoSize = this._getElementBoundingBox(this._video ?? this._canvas, videoWidth, videoHeight);

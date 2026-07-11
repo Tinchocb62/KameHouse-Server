@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/mediastream"
+	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -275,6 +279,45 @@ func (h *Handler) HandleGetEpisodeSkipTimes(c echo.Context) error {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Phase 5: Fill-forward heuristic
+			var siblings []models.EpisodeSkipTime
+			if err := h.App.Database.Gorm().Where("media_id = ?", mediaId).Find(&siblings).Error; err == nil && len(siblings) >= 2 {
+				var closest *models.EpisodeSkipTime
+				minDiff := 9999
+				validSiblings := 0
+				for i := range siblings {
+					if siblings[i].OpEnd > 0 {
+						validSiblings++
+						diff := siblings[i].EpisodeNumber - episodeNum
+						if diff < 0 {
+							diff = -diff
+						}
+						if diff < minDiff {
+							minDiff = diff
+							closest = &siblings[i]
+						}
+					}
+				}
+				if validSiblings >= 2 && closest != nil {
+					consistentCount := 0
+					for i := range siblings {
+						if siblings[i].OpEnd > 0 && siblings[i].OpStart >= closest.OpStart-2 && siblings[i].OpStart <= closest.OpStart+2 {
+							consistentCount++
+						}
+					}
+					if consistentCount >= 2 {
+						return h.RespondWithData(c, models.EpisodeSkipTime{
+							MediaID:       mediaId,
+							EpisodeNumber: episodeNum,
+							OpStart:       closest.OpStart,
+							OpEnd:         closest.OpEnd,
+							EdOffset:      closest.EdOffset,
+							EdEnd:         closest.EdEnd,
+							Source:        "heuristic",
+						})
+					}
+				}
+			}
 			return h.RespondWithData(c, nil)
 		}
 		return h.RespondWithError(c, err)
@@ -297,6 +340,8 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 		OpEnd         float64 `json:"opEnd"`
 		EdOffset      float64 `json:"edOffset"`
 		EdEnd         float64 `json:"edEnd"`
+		Source        string  `json:"source"`
+		Confidence    float64 `json:"confidence"`
 		ApplyToSeason bool    `json:"applyToSeason"`
 	}
 
@@ -326,11 +371,13 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 		OpEnd:         b.OpEnd,
 		EdOffset:      b.EdOffset,
 		EdEnd:         b.EdEnd,
+		Source:        b.Source,
+		Confidence:    b.Confidence,
 	}
 
 	err := h.App.Database.Gorm().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "media_id"}, {Name: "episode_number"}},
-		DoUpdates: clause.AssignmentColumns([]string{"op_start", "op_end", "ed_offset", "ed_end"}),
+		DoUpdates: clause.AssignmentColumns([]string{"op_start", "op_end", "ed_offset", "ed_end", "source", "confidence"}),
 	}).Create(&skipTime).Error
 	if err != nil {
 		return h.RespondWithError(c, err)
@@ -353,12 +400,14 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 					OpEnd:         b.OpEnd,
 					EdOffset:      b.EdOffset,
 					EdEnd:         b.EdEnd,
+					Source:        b.Source,
+					Confidence:    b.Confidence,
 				})
 			}
 			if len(skipTimes) > 0 {
 				if err := h.App.Database.Gorm().Clauses(clause.OnConflict{
 					Columns:   []clause.Column{{Name: "media_id"}, {Name: "episode_number"}},
-					DoUpdates: clause.AssignmentColumns([]string{"op_start", "op_end", "ed_offset", "ed_end"}),
+					DoUpdates: clause.AssignmentColumns([]string{"op_start", "op_end", "ed_offset", "ed_end", "source", "confidence"}),
 				}).Create(&skipTimes).Error; err != nil {
 					h.App.Logger.Error().Err(err).Msg("mediastream: failed to propagate skip times to season")
 				} else {
@@ -416,5 +465,61 @@ func (h *Handler) HandleScanEpisodeSkipTimes(c echo.Context) error {
 	}()
 
 	return h.RespondWithData(c, map[string]any{"ok": true, "message": "Scan started"})
+}
+
+// HandleResolveMAL resolves a media's MAL ID dynamically.
+//
+//	@summary resolve MAL ID.
+//	@desc Looks up MAL ID on Jikan.
+//	@route /api/v1/mediastream/skip-times/resolve-mal [GET]
+func (h *Handler) HandleResolveMAL(c echo.Context) error {
+	mediaIdStr := c.QueryParam("mediaId")
+	mediaId, _ := strconv.Atoi(mediaIdStr)
+	if mediaId == 0 {
+		return h.RespondWithError(c, fmt.Errorf("invalid mediaId"))
+	}
+
+	var lm models.LibraryMedia
+	if err := h.App.Database.Gorm().First(&lm, mediaId).Error; err != nil {
+		// Media isn't in the local library (e.g. pure TMDB/online entry) — this is an
+		// expected "no mapping" case, not a server error. Respond gracefully with nil.
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return h.RespondWithData(c, map[string]interface{}{"malId": nil})
+		}
+		return h.RespondWithError(c, err)
+	}
+	if lm.MyanimelistId > 0 {
+		return h.RespondWithData(c, map[string]interface{}{"malId": lm.MyanimelistId})
+	}
+
+	searchTitle := lm.TitleEnglish
+	if searchTitle == "" {
+		searchTitle = lm.TitleRomaji
+	}
+	if searchTitle == "" {
+		searchTitle = lm.TitleOriginal
+	}
+
+	if searchTitle != "" {
+		reqUrl := fmt.Sprintf("https://api.jikan.moe/v4/anime?q=%s&limit=1", url.QueryEscape(searchTitle))
+		resp, err := http.Get(reqUrl)
+		if err == nil {
+			defer resp.Body.Close()
+			var jikanResp struct {
+				Data []struct {
+					MalId int `json:"mal_id"`
+				} `json:"data"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&jikanResp); err == nil && len(jikanResp.Data) > 0 {
+				malId := jikanResp.Data[0].MalId
+				if malId > 0 {
+					db.UpdateLibraryMediaMappings(h.App.Database, lm.ID, lm.AnidbId, malId)
+					return h.RespondWithData(c, map[string]interface{}{"malId": malId})
+				}
+			}
+		}
+	}
+
+	return h.RespondWithData(c, map[string]interface{}{"malId": nil})
 }
 

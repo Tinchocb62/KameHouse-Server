@@ -11,6 +11,7 @@ interface UsePlayerHlsProps {
     absoluteLanUrl: string
     backendTracks: { audioTracks: AudioTrack[]; subtitleTracks: SubtitleTrack[] } | null
     initialProgressSeconds?: number
+    streamSwitchResumeRef?: React.MutableRefObject<number | null>
     episodeNumber?: number
     historyData: Continuity_WatchHistoryItemResponse | null | undefined
     setStatus: (status: "loading" | "ready" | "error") => void
@@ -43,6 +44,7 @@ export function usePlayerHls({
     absoluteLanUrl,
     backendTracks,
     initialProgressSeconds,
+    streamSwitchResumeRef,
     episodeNumber,
     historyData,
     setStatus,
@@ -129,7 +131,12 @@ export function usePlayerHls({
         const video = videoRef.current
         if (!video) return
 
-        const progressSeconds = initialProgressRef.current || 0
+        const switchResume = streamSwitchResumeRef?.current ?? null
+        const progressSeconds = (switchResume != null && switchResume > 0)
+            ? switchResume
+            : (initialProgressRef.current || 0)
+        
+        if (streamSwitchResumeRef) streamSwitchResumeRef.current = null
 
         Promise.resolve().then(() => {
             setStatus("loading")
@@ -148,6 +155,7 @@ export function usePlayerHls({
         let mediaRecoveryAttempt = 0
         let networkRecoveryAttempt = 0
         let initialSeekDone = false
+        let stalledCountRef = 0
 
         const handleCanPlay = () => {
             setStatus("ready")
@@ -236,9 +244,11 @@ export function usePlayerHls({
                 maxMaxBufferLength: 180,
                 // Hard RAM cap: never hold more than 60MB of demuxed data in memory.
                 maxBufferSize: 60 * 1024 * 1024,
-                // Tolerate timestamp gaps up to 0.5s without stalling — common in
+                // Tolerate timestamp gaps up to 1.0s without stalling — common in
                 // anime MKVs with variable keyframe spacing.
-                maxBufferHole: 0.5,
+                maxBufferHole: 1.0,
+                nudgeMaxRetry: 8,
+                highBufferWatchdogPeriod: 1,
                 // Don't request 4K segments when the video element is displayed
                 // at a lower resolution (e.g. picture-in-picture or small window).
                 capLevelToPlayerSize: true,
@@ -250,6 +260,13 @@ export function usePlayerHls({
                 backBufferLength: 90,
                 // Generous manifest load timeout for large library servers on LAN.
                 manifestLoadingTimeOut: 10000,
+                // On-the-fly transcode has a real cold start: the first .ts of a quality
+                // is only produced after ffmpeg spawns and encodes it (seconds), and a
+                // hover-preload can be competing for the transcoder's governor slots. The
+                // hls.js defaults (~10s) fire a fatal levelLoadTimeOut/fragLoadTimeOut
+                // before that first segment lands, so we widen the level/fragment budgets.
+                levelLoadingTimeOut: 30000,
+                fragLoadingTimeOut: 60000,
             })
             setRefValue(hlsRef, hls)
             hlsInstance = hls
@@ -283,6 +300,7 @@ export function usePlayerHls({
 
             hls.on(Hls.Events.FRAG_LOADED, () => {
                 networkRecoveryAttempt = 0 // Reiniciar contador si hay conexión estable
+                stalledCountRef = 0
             })
 
             hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, data) => {
@@ -365,9 +383,22 @@ export function usePlayerHls({
                         hls.destroy()
                     }
                 } else {
-                    // Errores no fatales de buffer: hls.js se recupera solo, solo logueamos
-                    if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR ||
-                        data.details === Hls.ErrorDetails.BUFFER_SEEK_OVER_HOLE) {
+                    // Errores no fatales de buffer: hls.js se recupera solo, pero con transcode forzamos
+                    if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+                        stalledCountRef++
+                        const v = videoRef.current
+                        if (v && v.buffered.length === 0) {
+                            // nada bufferizado en el playhead: forzar refetch desde la posición actual
+                            hls.startLoad(Math.max(0, v.currentTime - 0.1))
+                        } else if (v) {
+                            // hueco pequeño: nudge por encima del hole
+                            v.currentTime = v.currentTime + 0.1
+                        }
+                        if (stalledCountRef > 12) { // ~ varios segundos sin recuperar
+                            hls.recoverMediaError()
+                            stalledCountRef = 0
+                        }
+                    } else if (data.details === Hls.ErrorDetails.BUFFER_SEEK_OVER_HOLE) {
                         console.warn("HLS: Non-fatal buffer stall, waiting for recovery:", data.details)
                     }
                 }

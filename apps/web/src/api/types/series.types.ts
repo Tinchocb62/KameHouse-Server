@@ -16,6 +16,8 @@ export interface SubSagaDTO {
   episodeRange: string
   startEp: number
   endEp: number
+  image?: string
+  description?: string
 }
 
 export interface SagaDTO {

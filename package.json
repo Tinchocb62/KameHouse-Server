@@ -12,6 +12,12 @@
     "clean": "pnpm --recursive exec rm -rf node_modules && rm -rf node_modules"
   },
   "pnpm": {
-    "overrides": {}
+    "overrides": {},
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
+  },
+  "devDependencies": {
+    "react-devtools": "^7.0.1"
   }
 }

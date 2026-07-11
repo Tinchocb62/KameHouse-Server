@@ -2,6 +2,7 @@
 import { useEffect } from "react"
 import JASSUB from "jassub"
 import { SubtitleTrack } from "@/components/ui/track-types"
+import { convertToAss } from "./subtitle-convert"
 
 interface UsePlayerJassubProps {
     videoRef: React.RefObject<HTMLVideoElement | null>
@@ -10,19 +11,13 @@ interface UsePlayerJassubProps {
     activeSubtitleIndex: number | null
     subtitleTracks: SubtitleTrack[]
     subtitleSizePref: number
+    fontUrls?: string[]
     setIsJassubLoading: (loading: boolean) => void
     setIsJassubActive: (active: boolean) => void
 }
 
 function setRefValue<T>(ref: React.MutableRefObject<T>, value: T) {
     ref.current = value
-}
-
-function setCanvasDimensions(canvas: HTMLCanvasElement, width: number, height: number) {
-    canvas.width = width
-    canvas.height = height
-    canvas.style.width = "100%"
-    canvas.style.height = "100%"
 }
 
 export function usePlayerJassub({
@@ -32,6 +27,7 @@ export function usePlayerJassub({
     activeSubtitleIndex,
     subtitleTracks,
     subtitleSizePref,
+    fontUrls,
     setIsJassubLoading,
     setIsJassubActive,
 }: UsePlayerJassubProps) {
@@ -91,8 +87,18 @@ export function usePlayerJassub({
 
         const initJassub = async () => {
             try {
-                const res = await fetch(trackUrl)
-                const assContent = await res.text()
+                const fetchSubtitle = async (): Promise<string> => {
+                    for (let i = 0; i < 20; i++) {
+                        if (isCancelled) throw new Error("cancelled")
+                        const res = await fetch(trackUrl)
+                        if (res.ok) return await res.text()
+                        await new Promise(r => setTimeout(r, Math.min(2000 * (i + 1), 6000)))
+                    }
+                    throw new Error("subtitle never became available")
+                }
+                const rawContent = await fetchSubtitle()
+                // libass only parses ASS/SSA; convert SubRip/WebVTT to ASS so it renders.
+                const assContent = convertToAss(rawContent, trackCodec)
 
                 if (isCancelled) return
 
@@ -102,17 +108,21 @@ export function usePlayerJassub({
                     setIsJassubActive(false)
                 }
 
+                // Let JASSUB create and manage its OWN canvas (inserted after the video
+                // and torn down on destroy). We must NOT hand it our persistent <canvas>:
+                // JASSUB calls transferControlToOffscreen() on it, which can only ever run
+                // once per element — reusing the same node on the next track/size change
+                // throws "Cannot transfer control from a canvas for more than one time"
+                // and cascades into worker "reading 'apply' of undefined" errors.
+                // defaultFont already falls back to the bundled "liberation sans".
                 const jassub = new JASSUB({
                     video,
                     subContent: assContent,
                     workerUrl: "/jassub/jassub-worker.js",
                     wasmUrl: "/jassub/jassub-worker.wasm",
                     modernWasmUrl: "/jassub/jassub-worker-modern.wasm",
-                    canvas: canvasRef.current ?? undefined,
-                    useOffscreen: true,
                     prescaleFactor: subtitleSizePref / 100,
-                    width: video.videoWidth || 1920,
-                    height: video.videoHeight || 1080,
+                    fonts: fontUrls ?? [],
                 })
 
                 setRefValue(currentJassubRef, jassub)
@@ -138,22 +148,9 @@ export function usePlayerJassub({
                 setIsJassubActive(false)
             }
         }
-    }, [activeSubtitleIndex, trackUrl, trackCodec, subtitleSizePref, videoRef, canvasRef, jassubRef, setIsJassubLoading, setIsJassubActive])
-
-    // Canvas size updating
-    useEffect(() => {
-        const video = videoRef.current
-        if (!video || !jassubRef.current) return
-
-        const updateCanvasSize = () => {
-            if (canvasRef.current && video.videoWidth > 0) {
-                setCanvasDimensions(canvasRef.current, video.videoWidth, video.videoHeight)
-            }
-        }
-
-        video.addEventListener("resize", updateCanvasSize)
-        updateCanvasSize()
-
-        return () => video.removeEventListener("resize", updateCanvasSize)
-    }, [videoRef, canvasRef, jassubRef])
+    }, [activeSubtitleIndex, trackUrl, trackCodec, subtitleSizePref, fontUrls, videoRef, canvasRef, jassubRef, setIsJassubLoading, setIsJassubActive])
+    // Note: JASSUB owns canvas sizing via its internal ResizeObserver. Because the
+    // canvas control is transferred to the offscreen worker (useOffscreen + app-supplied
+    // canvas), writing canvas.width/height on the main thread throws InvalidStateError
+    // and fights the library — so we deliberately do not resize the canvas manually here.
 }

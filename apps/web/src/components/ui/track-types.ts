@@ -157,6 +157,9 @@ export interface PlayerSettingsMenuProps {
     autoSkipOutro?: boolean
     onAutoSkipOutroChange?: (auto: boolean) => void
 
+    skipStepSeconds?: number
+    onSkipStepSecondsChange?: (seconds: number) => void
+
     showHeatmap?: boolean
     onShowHeatmapChange?: (show: boolean) => void
 

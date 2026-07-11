@@ -5,7 +5,20 @@ import type { PremiumEpisode } from "@/api/types/series.types"
 import { cn } from "@/components/ui/core/styling"
 import { useHoverPreload } from "@/hooks/use-hover-preload"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
-import { useWindowVirtualizer } from "@tanstack/react-virtual"
+import { useVirtualizer } from "@tanstack/react-virtual"
+
+// Alto del `pb-4` de cada fila, que estimateSize tiene que contar junto con la tarjeta.
+const ROW_GAP_PX = 16
+
+function findScrollParent(el: HTMLElement): HTMLElement | null {
+    let node = el.parentElement
+    while (node) {
+        const overflowY = getComputedStyle(node).overflowY
+        if (overflowY === "auto" || overflowY === "scroll") return node
+        node = node.parentElement
+    }
+    return null
+}
 
 const listVariants: Variants = {
   hidden: { opacity: 0 },
@@ -113,11 +126,43 @@ function EpisodeVirtualList({
     filteredEpisodes, activeSubSagaStart, activeSubSagaEnd, ts, onPlay, onMouseEnter, onMouseLeave 
 }: any) {
     const listRef = React.useRef<HTMLDivElement>(null)
-    
-    const virtualizer = useWindowVirtualizer({
+    // El detalle de serie scrollea dentro de su propio contenedor, no con la ventana, así
+    // que hay que virtualizar contra ese elemento: window.scrollY nunca cambia.
+    const [scrollEl, setScrollEl] = React.useState<HTMLElement | null>(null)
+    const [scrollMargin, setScrollMargin] = React.useState(0)
+
+    React.useLayoutEffect(() => {
+        const el = listRef.current
+        if (!el) return
+
+        const scroller = findScrollParent(el)
+        setScrollEl(scroller)
+
+        // Distancia entre el tope de la lista y el tope del contenido scrolleable.
+        const updateOffset = () => {
+            if (!listRef.current) return
+            const listTop = listRef.current.getBoundingClientRect().top
+            if (scroller) {
+                setScrollMargin(listTop - scroller.getBoundingClientRect().top + scroller.scrollTop)
+            } else {
+                setScrollMargin(listTop + window.scrollY)
+            }
+        }
+        updateOffset()
+
+        // La altura de lo que está arriba (SagaLoreHeader, carrusel) cambia por saga y al
+        // cargar las imágenes.
+        const observer = new ResizeObserver(updateOffset)
+        observer.observe(scroller ?? document.body)
+        return () => observer.disconnect()
+    }, [filteredEpisodes.length])
+
+    const virtualizer = useVirtualizer({
         count: filteredEpisodes.length,
-        estimateSize: () => ts.themeUseLegacyEpisodeCard ? 96 : 180,
+        getScrollElement: () => scrollEl,
+        estimateSize: () => (ts.themeUseLegacyEpisodeCard ? 96 : 180) + ROW_GAP_PX,
         overscan: 5,
+        scrollMargin,
     })
 
     return (
@@ -135,7 +180,7 @@ function EpisodeVirtualList({
                         className="absolute top-0 left-0 w-full pb-4"
                         style={{
                             height: `${virtualRow.size}px`,
-                            transform: `translateY(${virtualRow.start}px)`,
+                            transform: `translateY(${virtualRow.start - (virtualizer.options.scrollMargin || 0)}px)`,
                         }}
                     >
                         <div

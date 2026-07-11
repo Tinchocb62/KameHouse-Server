@@ -34,7 +34,7 @@ export function PlayerTopBar({ title, episodeLabel, episodeNumber, mediaFormat, 
 return (
         <div className="absolute inset-x-0 top-0 flex items-center justify-between p-6 md:p-8 pointer-events-none z-[100] bg-gradient-to-b from-black/70 to-transparent">
             <div className="flex flex-col ml-2 pointer-events-auto select-none [&>*:not(:first-child)]:mt-1">
-                <span className="text-on-surface-variant text-[10px] font-black uppercase tracking-[0.25em]" style={{ fontFamily: "'Space Mono', monospace" }}>
+                <span className="text-brand-accent/50 text-[10px] font-black uppercase tracking-[0.25em]" style={{ fontFamily: "'Space Mono', monospace" }}>
                     {isMovie ? "Película" : `Episodio ${episodeNumber ?? ""}`}
                 </span>
                 <h2 className="text-on-surface text-lg md:text-xl font-bold uppercase tracking-wider truncate max-w-[250px] sm:max-w-md md:max-w-xl lg:max-w-3xl">

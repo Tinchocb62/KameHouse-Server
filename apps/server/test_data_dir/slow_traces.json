@@ -1,0 +1,713 @@
+[
+  {
+    "timestamp": "2026-07-10T23:32:50.1997644Z",
+    "duration": "547.7763ms",
+    "duration_ms": 547,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:32:50.3987163Z",
+    "duration": "734.5806ms",
+    "duration_ms": 734,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:32:57.7489213Z",
+    "duration": "1.1308718s",
+    "duration_ms": 1130,
+    "sql": "SELECT * FROM `accounts` ORDER BY `accounts`.`id` DESC LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:33:05.6572334Z",
+    "duration": "897.5342ms",
+    "duration_ms": 897,
+    "sql": "SELECT * FROM `metadata_caches` WHERE provider = ? AND key = ? ORDER BY `metadata_caches`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:33:06.8505547Z",
+    "duration": "1.007074s",
+    "duration_ms": 1007,
+    "sql": "SELECT * FROM `metadata_caches` WHERE provider = ? AND key = ? ORDER BY `metadata_caches`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:33:08.6597754Z",
+    "duration": "1.0735961s",
+    "duration_ms": 1073,
+    "sql": "SELECT * FROM `metadata_caches` WHERE provider = ? AND key = ? ORDER BY `metadata_caches`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:33:09.3593127Z",
+    "duration": "511.8005ms",
+    "duration_ms": 511,
+    "sql": "SELECT * FROM `metadata_caches` WHERE provider = ? AND key = ? ORDER BY `metadata_caches`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:33:11.9562517Z",
+    "duration": "2.412395s",
+    "duration_ms": 2412,
+    "sql": "SELECT * FROM `metadata_caches` WHERE provider = ? AND key = ? ORDER BY `metadata_caches`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:33:15.8268217Z",
+    "duration": "503.9415ms",
+    "duration_ms": 503,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:33:17.7975876Z",
+    "duration": "828.0421ms",
+    "duration_ms": 828,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:33:24.3682762Z",
+    "duration": "1.6564896s",
+    "duration_ms": 1656,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:33:27.2984558Z",
+    "duration": "1.3141231s",
+    "duration_ms": 1314,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:33:27.8966929Z",
+    "duration": "1.0336007s",
+    "duration_ms": 1033,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:33:27.9015804Z",
+    "duration": "551.5549ms",
+    "duration_ms": 551,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:33:29.5733321Z",
+    "duration": "1.6049444s",
+    "duration_ms": 1604,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:33:29.7004394Z",
+    "duration": "1.6372965s",
+    "duration_ms": 1637,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:14.6146874Z",
+    "duration": "2.2527915s",
+    "duration_ms": 2252,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:14.6406109Z",
+    "duration": "2.1671268s",
+    "duration_ms": 2167,
+    "sql": "SELECT * FROM `episode_skip_times` WHERE media_id = ? AND episode_number = ? ORDER BY `episode_skip_times`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:34:14.6574497Z",
+    "duration": "2.1749515s",
+    "duration_ms": 2174,
+    "sql": "SELECT * FROM `accounts` ORDER BY `accounts`.`id` DESC LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:34:15.6398172Z",
+    "duration": "534.2396ms",
+    "duration_ms": 534,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:15.7607414Z",
+    "duration": "534.8579ms",
+    "duration_ms": 534,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:15.9257372Z",
+    "duration": "3.5638413s",
+    "duration_ms": 3563,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:19.1683909Z",
+    "duration": "1.0113723s",
+    "duration_ms": 1011,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:19.4251283Z",
+    "duration": "1.3844459s",
+    "duration_ms": 1384,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:22.5485991Z",
+    "duration": "534.0303ms",
+    "duration_ms": 534,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:27.8654375Z",
+    "duration": "619.0034ms",
+    "duration_ms": 619,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:29.2397508Z",
+    "duration": "1.167637s",
+    "duration_ms": 1167,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:29.3428079Z",
+    "duration": "1.0446178s",
+    "duration_ms": 1044,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:30.7363408Z",
+    "duration": "759.9938ms",
+    "duration_ms": 759,
+    "sql": "INSERT INTO `watch_histories` (`created_at`,`updated_at`,`account_id`,`media_id`,`episode_number`,`current_time`,`duration`) VALUES (?,?,?,?,?,?,?) ON CONFLICT (`account_id`,`media_id`,`episode_number`) DO UPDATE SET `current_time`=`excluded`.`current_time`,`duration`=`excluded`.`duration` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:30.812454Z",
+    "duration": "1.3403595s",
+    "duration_ms": 1340,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:30.8323848Z",
+    "duration": "1.4419774s",
+    "duration_ms": 1441,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:35.7638249Z",
+    "duration": "556.0333ms",
+    "duration_ms": 556,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:40.0999346Z",
+    "duration": "747.3287ms",
+    "duration_ms": 747,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:41.1194333Z",
+    "duration": "934.7206ms",
+    "duration_ms": 934,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:45.1805284Z",
+    "duration": "2.185563s",
+    "duration_ms": 2185,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:45.9140711Z",
+    "duration": "2.6126474s",
+    "duration_ms": 2612,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:45.972728Z",
+    "duration": "2.7479304s",
+    "duration_ms": 2747,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:46.7189953Z",
+    "duration": "1.436295s",
+    "duration_ms": 1436,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:46.7571378Z",
+    "duration": "733.1525ms",
+    "duration_ms": 733,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:51.8785461Z",
+    "duration": "3.5997179s",
+    "duration_ms": 3599,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:51.8785461Z",
+    "duration": "5.5436771s",
+    "duration_ms": 5543,
+    "sql": "SELECT * FROM `local_file` WHERE media_id = ?",
+    "rows": 20
+  },
+  {
+    "timestamp": "2026-07-10T23:34:53.2923439Z",
+    "duration": "1.4026058s",
+    "duration_ms": 1402,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:53.6481584Z",
+    "duration": "1.7696123s",
+    "duration_ms": 1769,
+    "sql": "SELECT * FROM `library_seasons` WHERE library_media_id = ? ORDER BY season_number ASC",
+    "rows": 0
+  },
+  {
+    "timestamp": "2026-07-10T23:34:54.7345366Z",
+    "duration": "1.0863782s",
+    "duration_ms": 1086,
+    "sql": "SELECT * FROM `media_entry_list_data` WHERE library_media_id = ? ORDER BY `media_entry_list_data`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:34:55.5246462Z",
+    "duration": "790.1096ms",
+    "duration_ms": 790,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:56.0163692Z",
+    "duration": "1.2818326s",
+    "duration_ms": 1281,
+    "sql": "SELECT * FROM `library_episodes` WHERE library_media_id = ?",
+    "rows": 0
+  },
+  {
+    "timestamp": "2026-07-10T23:34:56.8187487Z",
+    "duration": "641.871ms",
+    "duration_ms": 641,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:57.557604Z",
+    "duration": "538.2112ms",
+    "duration_ms": 538,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:58.4521777Z",
+    "duration": "2.4358085s",
+    "duration_ms": 2435,
+    "sql": "SELECT * FROM `metadata_caches` WHERE provider = ? AND key = ? ORDER BY `metadata_caches`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:34:58.4521777Z",
+    "duration": "692.1057ms",
+    "duration_ms": 692,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:59.9122038Z",
+    "duration": "1.2994325s",
+    "duration_ms": 1299,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:34:59.9127785Z",
+    "duration": "1.2830942s",
+    "duration_ms": 1283,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:00.5131446Z",
+    "duration": "1.000078s",
+    "duration_ms": 1000,
+    "sql": "INSERT INTO `settings` (`created_at`,`updated_at`,`library_series_paths`,`library_movie_paths`,`library_disable_anime_card_trailers`,`library_open_web_url_on_start`,`library_refresh_library_on_start`,`library_auto_play_next_episode`,`library_enable_watch_continuity`,`library_scanner_matching_threshold`,`library_scanner_matching_algorithm`,`library_use_fallback_metadata_provider`,`library_primary_metadata_provider`,`library_tmdb_api_key`,`library_tmdb_language`,`library_scanner_strict_structure`,`library_scanner_config`,`library_scanner_provider`,`library_disable_local_scanning`,`library_scanner_use_legacy_matching`,`library_fanart_api_key`,`library_omdb_api_key`,`library_last_scan_at`,`notifications_disable_notifications`,`notifications_disable_auto_scanner_notifications`,`notifications_disable_auto_downloader_notifications`,`platform_hide_audience_score`,`platform_disable_cache_layer`,`id`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (`id`) DO UPDATE SET `updated_at`=?,`library_series_paths`=`excluded`.`library_series_paths`,`library_movie_paths`=`excluded`.`library_movie_paths`,`library_disable_anime_card_trailers`=`excluded`.`library_disable_anime_card_trailers`,`library_open_web_url_on_start`=`excluded`.`library_open_web_url_on_start`,`library_refresh_library_on_start`=`excluded`.`library_refresh_library_on_start`,`library_auto_play_next_episode`=`excluded`.`library_auto_play_next_episode`,`library_enable_watch_continuity`=`excluded`.`library_enable_watch_continuity`,`library_scanner_matching_threshold`=`excluded`.`library_scanner_matching_threshold`,`library_scanner_matching_algorithm`=`excluded`.`library_scanner_matching_algorithm`,`library_use_fallback_metadata_provider`=`excluded`.`library_use_fallback_metadata_provider`,`library_primary_metadata_provider`=`excluded`.`library_primary_metadata_provider`,`library_tmdb_api_key`=`excluded`.`library_tmdb_api_key`,`library_tmdb_language`=`excluded`.`library_tmdb_language`,`library_scanner_strict_structure`=`excluded`.`library_scanner_strict_structure`,`library_scanner_config`=`excluded`.`library_scanner_config`,`library_scanner_provider`=`excluded`.`library_scanner_provider`,`library_disable_local_scanning`=`excluded`.`library_disable_local_scanning`,`library_scanner_use_legacy_matching`=`excluded`.`library_scanner_use_legacy_matching`,`library_fanart_api_key`=`excluded`.`library_fanart_api_key`,`library_omdb_api_key`=`excluded`.`library_omdb_api_key`,`library_last_scan_at`=`excluded`.`library_last_scan_at`,`notifications_disable_notifications`=`excluded`.`notifications_disable_notifications`,`notifications_disable_auto_scanner_notifications`=`excluded`.`notifications_disable_auto_scanner_notifications`,`notifications_disable_auto_downloader_notifications`=`excluded`.`notifications_disable_auto_downloader_notifications`,`platform_hide_audience_score`=`excluded`.`platform_hide_audience_score`,`platform_disable_cache_layer`=`excluded`.`platform_disable_cache_layer` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:00.5146279Z",
+    "duration": "1.0883107s",
+    "duration_ms": 1088,
+    "sql": "SELECT * FROM `media_entry_list_data` WHERE library_media_id = ? ORDER BY `media_entry_list_data`.`id` LIMIT 1",
+    "rows": 0,
+    "error": "record not found"
+  },
+  {
+    "timestamp": "2026-07-10T23:35:01.2460467Z",
+    "duration": "732.9021ms",
+    "duration_ms": 732,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:01.272366Z",
+    "duration": "757.1766ms",
+    "duration_ms": 757,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:02.7780603Z",
+    "duration": "2.2639367s",
+    "duration_ms": 2263,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0137802Z",
+    "duration": "3.4991523s",
+    "duration_ms": 3499,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0693384Z",
+    "duration": "3.5547105s",
+    "duration_ms": 3554,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0693384Z",
+    "duration": "3.5547105s",
+    "duration_ms": 3554,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0693384Z",
+    "duration": "3.5547105s",
+    "duration_ms": 3554,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0693384Z",
+    "duration": "3.5547105s",
+    "duration_ms": 3554,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0693384Z",
+    "duration": "3.5547105s",
+    "duration_ms": 3554,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0698429Z",
+    "duration": "3.555215s",
+    "duration_ms": 3555,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0698429Z",
+    "duration": "3.555215s",
+    "duration_ms": 3555,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0698429Z",
+    "duration": "3.555215s",
+    "duration_ms": 3555,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0698429Z",
+    "duration": "3.555215s",
+    "duration_ms": 3555,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.0698429Z",
+    "duration": "3.555215s",
+    "duration_ms": 3555,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1765753Z",
+    "duration": "3.6619474s",
+    "duration_ms": 3661,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1765753Z",
+    "duration": "3.6619474s",
+    "duration_ms": 3661,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1765753Z",
+    "duration": "3.6619474s",
+    "duration_ms": 3661,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1771022Z",
+    "duration": "3.6624743s",
+    "duration_ms": 3662,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1777801Z",
+    "duration": "3.6631522s",
+    "duration_ms": 3663,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1783309Z",
+    "duration": "3.663703s",
+    "duration_ms": 3663,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1790162Z",
+    "duration": "3.6643883s",
+    "duration_ms": 3664,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1851745Z",
+    "duration": "3.6705466s",
+    "duration_ms": 3670,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:04.1870521Z",
+    "duration": "3.6724242s",
+    "duration_ms": 3672,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:05.4576887Z",
+    "duration": "4.9445441s",
+    "duration_ms": 4944,
+    "sql": "INSERT INTO `mediastream_settings` (`created_at`,`updated_at`,`transcode_enabled`,`ffmpeg_path`,`ffprobe_path`,`pre_transcode_library_dir`,`transcode_hw_accel`,`transcode_preset`,`transcode_hw_accel_custom_settings`,`pre_transcode_enabled`,`transcode_threads`,`direct_play_only`,`id`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (`id`) DO UPDATE SET `updated_at`=?,`transcode_enabled`=`excluded`.`transcode_enabled`,`ffmpeg_path`=`excluded`.`ffmpeg_path`,`ffprobe_path`=`excluded`.`ffprobe_path`,`pre_transcode_library_dir`=`excluded`.`pre_transcode_library_dir`,`transcode_hw_accel`=`excluded`.`transcode_hw_accel`,`transcode_preset`=`excluded`.`transcode_preset`,`transcode_hw_accel_custom_settings`=`excluded`.`transcode_hw_accel_custom_settings`,`pre_transcode_enabled`=`excluded`.`pre_transcode_enabled`,`transcode_threads`=`excluded`.`transcode_threads`,`direct_play_only`=`excluded`.`direct_play_only` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:05.5058556Z",
+    "duration": "1.4360127s",
+    "duration_ms": 1436,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:07.909014Z",
+    "duration": "2.4513253s",
+    "duration_ms": 2451,
+    "sql": "INSERT INTO `themes` (`created_at`,`updated_at`,`enable_color_settings`,`background_color`,`accent_color`,`sidebar_background_color`,`theme_era`,`theme_mode`,`enable_liquid_glass`,`home_items`,`anime_entry_screen_layout`,`smaller_episode_carousel_size`,`expand_sidebar_on_hover`,`disable_sidebar_transparency`,`enable_blurring_effects`,`enable_sidebar_gradient`,`disable_carousel_auto_scroll`,`use_legacy_episode_card`,`library_screen_banner_type`,`library_screen_custom_banner_image`,`library_screen_custom_banner_position`,`library_screen_custom_banner_opacity`,`library_screen_custom_background_image`,`library_screen_custom_background_opacity`,`library_screen_custom_background_blur`,`disable_library_screen_genre_selector`,`media_page_banner_type`,`media_page_banner_size`,`media_page_banner_info_box_size`,`enable_media_page_blurred_background`,`show_episode_card_anime_info`,`show_anime_unwatched_count`,`hide_episode_card_description`,`hide_downloaded_episode_card_filename`,`continue_watching_default_sorting`,`anime_library_collection_default_sorting`,`custom_css`,`mobile_custom_css`,`unpinned_menu_items`,`id`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (`id`) DO UPDATE SET `updated_at`=?,`enable_color_settings`=`excluded`.`enable_color_settings`,`background_color`=`excluded`.`background_color`,`accent_color`=`excluded`.`accent_color`,`sidebar_background_color`=`excluded`.`sidebar_background_color`,`theme_era`=`excluded`.`theme_era`,`theme_mode`=`excluded`.`theme_mode`,`enable_liquid_glass`=`excluded`.`enable_liquid_glass`,`home_items`=`excluded`.`home_items`,`anime_entry_screen_layout`=`excluded`.`anime_entry_screen_layout`,`smaller_episode_carousel_size`=`excluded`.`smaller_episode_carousel_size`,`expand_sidebar_on_hover`=`excluded`.`expand_sidebar_on_hover`,`disable_sidebar_transparency`=`excluded`.`disable_sidebar_transparency`,`enable_blurring_effects`=`excluded`.`enable_blurring_effects`,`enable_sidebar_gradient`=`excluded`.`enable_sidebar_gradient`,`disable_carousel_auto_scroll`=`excluded`.`disable_carousel_auto_scroll`,`use_legacy_episode_card`=`excluded`.`use_legacy_episode_card`,`library_screen_banner_type`=`excluded`.`library_screen_banner_type`,`library_screen_custom_banner_image`=`excluded`.`library_screen_custom_banner_image`,`library_screen_custom_banner_position`=`excluded`.`library_screen_custom_banner_position`,`library_screen_custom_banner_opacity`=`excluded`.`library_screen_custom_banner_opacity`,`library_screen_custom_background_image`=`excluded`.`library_screen_custom_background_image`,`library_screen_custom_background_opacity`=`excluded`.`library_screen_custom_background_opacity`,`library_screen_custom_background_blur`=`excluded`.`library_screen_custom_background_blur`,`disable_library_screen_genre_selector`=`excluded`.`disable_library_screen_genre_selector`,`media_page_banner_type`=`excluded`.`media_page_banner_type`,`media_page_banner_size`=`excluded`.`media_page_banner_size`,`media_page_banner_info_box_size`=`excluded`.`media_page_banner_info_box_size`,`enable_media_page_blurred_background`=`excluded`.`enable_media_page_blurred_background`,`show_episode_card_anime_info`=`excluded`.`show_episode_card_anime_info`,`show_anime_unwatched_count`=`excluded`.`show_anime_unwatched_count`,`hide_episode_card_description`=`excluded`.`hide_episode_card_description`,`hide_downloaded_episode_card_filename`=`excluded`.`hide_downloaded_episode_card_filename`,`continue_watching_default_sorting`=`excluded`.`continue_watching_default_sorting`,`anime_library_collection_default_sorting`=`excluded`.`anime_library_collection_default_sorting`,`custom_css`=`excluded`.`custom_css`,`mobile_custom_css`=`excluded`.`mobile_custom_css`,`unpinned_menu_items`=`excluded`.`unpinned_menu_items` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:07.9095189Z",
+    "duration": "3.8401805s",
+    "duration_ms": 3840,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:07.9100314Z",
+    "duration": "3.7229793s",
+    "duration_ms": 3722,
+    "sql": "SELECT * FROM `library_media` WHERE id = ? ORDER BY `library_media`.`id` LIMIT 1",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:07.9267237Z",
+    "duration": "3.8568808s",
+    "duration_ms": 3856,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:07.952552Z",
+    "duration": "3.7654999s",
+    "duration_ms": 3765,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:08.648453Z",
+    "duration": "639.6147ms",
+    "duration_ms": 639,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:08.9132993Z",
+    "duration": "684.4739ms",
+    "duration_ms": 684,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:10.1612886Z",
+    "duration": "1.1971404s",
+    "duration_ms": 1197,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:10.1707702Z",
+    "duration": "1.2286654s",
+    "duration_ms": 1228,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:11.4414597Z",
+    "duration": "1.047388s",
+    "duration_ms": 1047,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:15.8418011Z",
+    "duration": "1.3429715s",
+    "duration_ms": 1342,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:16.3098411Z",
+    "duration": "1.7809622s",
+    "duration_ms": 1780,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:17.5846759Z",
+    "duration": "1.0375121s",
+    "duration_ms": 1037,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:17.6082534Z",
+    "duration": "1.1384645s",
+    "duration_ms": 1138,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:18.2320864Z",
+    "duration": "533.4262ms",
+    "duration_ms": 533,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:18.2674081Z",
+    "duration": "535.0498ms",
+    "duration_ms": 535,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:24.2919936Z",
+    "duration": "815.5164ms",
+    "duration_ms": 815,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:24.5417791Z",
+    "duration": "1.0110721s",
+    "duration_ms": 1011,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:25.9111178Z",
+    "duration": "1.5202132s",
+    "duration_ms": 1520,
+    "sql": "INSERT INTO `settings` (`created_at`,`updated_at`,`library_series_paths`,`library_movie_paths`,`library_disable_anime_card_trailers`,`library_open_web_url_on_start`,`library_refresh_library_on_start`,`library_auto_play_next_episode`,`library_enable_watch_continuity`,`library_scanner_matching_threshold`,`library_scanner_matching_algorithm`,`library_use_fallback_metadata_provider`,`library_primary_metadata_provider`,`library_tmdb_api_key`,`library_tmdb_language`,`library_scanner_strict_structure`,`library_scanner_config`,`library_scanner_provider`,`library_disable_local_scanning`,`library_scanner_use_legacy_matching`,`library_fanart_api_key`,`library_omdb_api_key`,`library_last_scan_at`,`notifications_disable_notifications`,`notifications_disable_auto_scanner_notifications`,`notifications_disable_auto_downloader_notifications`,`platform_hide_audience_score`,`platform_disable_cache_layer`,`id`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (`id`) DO UPDATE SET `updated_at`=?,`library_series_paths`=`excluded`.`library_series_paths`,`library_movie_paths`=`excluded`.`library_movie_paths`,`library_disable_anime_card_trailers`=`excluded`.`library_disable_anime_card_trailers`,`library_open_web_url_on_start`=`excluded`.`library_open_web_url_on_start`,`library_refresh_library_on_start`=`excluded`.`library_refresh_library_on_start`,`library_auto_play_next_episode`=`excluded`.`library_auto_play_next_episode`,`library_enable_watch_continuity`=`excluded`.`library_enable_watch_continuity`,`library_scanner_matching_threshold`=`excluded`.`library_scanner_matching_threshold`,`library_scanner_matching_algorithm`=`excluded`.`library_scanner_matching_algorithm`,`library_use_fallback_metadata_provider`=`excluded`.`library_use_fallback_metadata_provider`,`library_primary_metadata_provider`=`excluded`.`library_primary_metadata_provider`,`library_tmdb_api_key`=`excluded`.`library_tmdb_api_key`,`library_tmdb_language`=`excluded`.`library_tmdb_language`,`library_scanner_strict_structure`=`excluded`.`library_scanner_strict_structure`,`library_scanner_config`=`excluded`.`library_scanner_config`,`library_scanner_provider`=`excluded`.`library_scanner_provider`,`library_disable_local_scanning`=`excluded`.`library_disable_local_scanning`,`library_scanner_use_legacy_matching`=`excluded`.`library_scanner_use_legacy_matching`,`library_fanart_api_key`=`excluded`.`library_fanart_api_key`,`library_omdb_api_key`=`excluded`.`library_omdb_api_key`,`library_last_scan_at`=`excluded`.`library_last_scan_at`,`notifications_disable_notifications`=`excluded`.`notifications_disable_notifications`,`notifications_disable_auto_scanner_notifications`=`excluded`.`notifications_disable_auto_scanner_notifications`,`notifications_disable_auto_downloader_notifications`=`excluded`.`notifications_disable_auto_downloader_notifications`,`platform_hide_audience_score`=`excluded`.`platform_hide_audience_score`,`platform_disable_cache_layer`=`excluded`.`platform_disable_cache_layer` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:28.3190162Z",
+    "duration": "655.6213ms",
+    "duration_ms": 655,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  },
+  {
+    "timestamp": "2026-07-10T23:35:28.4086335Z",
+    "duration": "645.8941ms",
+    "duration_ms": 645,
+    "sql": "INSERT INTO `local_file` (`created_at`,`updated_at`,`path`,`name`,`file_hash`,`file_size`,`file_mod_time`,`locked`,`ignored`,`library_media_id`,`media_id`,`parsed_data`,`parsed_folder_data`,`embedded_metadata`,`metadata`,`technical_info`,`tags`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,(NULL),?,?,?) ON CONFLICT (`path`) DO UPDATE SET `updated_at`=?,`path`=`excluded`.`path`,`name`=`excluded`.`name`,`file_hash`=`excluded`.`file_hash`,`file_size`=`excluded`.`file_size`,`file_mod_time`=`excluded`.`file_mod_time`,`locked`=`excluded`.`locked`,`ignored`=`excluded`.`ignored`,`library_media_id`=`excluded`.`library_media_id`,`media_id`=`excluded`.`media_id`,`parsed_data`=`excluded`.`parsed_data`,`parsed_folder_data`=`excluded`.`parsed_folder_data`,`embedded_metadata`=`excluded`.`embedded_metadata`,`metadata`=`excluded`.`metadata`,`technical_info`=`excluded`.`technical_info`,`tags`=`excluded`.`tags` RETURNING `id`",
+    "rows": 1
+  }
+]

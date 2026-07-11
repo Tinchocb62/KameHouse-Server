@@ -17,6 +17,7 @@ tmp/
 .run/
 testdata/
 scratch/
+apps/server/test_data_dir/cache/
 
 # Environment and secrets
 .env

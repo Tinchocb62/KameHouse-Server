@@ -81,8 +81,7 @@ export function AppSidebar() {
 
     // Sidebar is "glass" (translucent + blurred) when cinematic effects are enabled globally.
     const isGlass = ts.themeEnableBlurringEffects
-    // El color de sidebar personalizado es exclusivo del modo Por Era (Clásico/Avanzado usan paletas fijas).
-    const sidebarBgStyle = ts.effectiveMode === "era" && ts.enableColorSettings && ts.sidebarBackgroundColor ? { backgroundColor: ts.sidebarBackgroundColor } : undefined
+    const sidebarBgStyle = ts.effectiveMode === "era" && ts.sidebarBackgroundColor ? { backgroundColor: ts.sidebarBackgroundColor } : undefined
 
     // Temporary expand-on-hover for the collapsed desktop sidebar (does not
     // touch the persisted sidebarOpen preference — collapses back on leave).

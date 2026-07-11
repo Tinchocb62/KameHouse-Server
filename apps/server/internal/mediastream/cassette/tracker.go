@@ -259,12 +259,19 @@ func (t *ClientTracker) killAudioIfDead(path string, audio int32) bool {
 	if s == nil {
 		return false
 	}
+	// Remove from the map under the lock, but run the (blocking) Kill OUTSIDE it:
+	// Pipeline.Kill waits for ffmpeg processes to fully exit, which can be slow on
+	// Windows. Holding audiosMu across that wait stalls every other audio pipeline
+	// access for this file until teardown completes.
 	s.audiosMu.Lock()
-	if p, ok := s.audios[audio]; ok {
-		p.Kill()
+	p, ok := s.audios[audio]
+	if ok {
 		delete(s.audios, audio)
 	}
 	s.audiosMu.Unlock()
+	if ok {
+		p.Kill()
+	}
 	return true
 }
 
@@ -280,12 +287,19 @@ func (t *ClientTracker) killQualityIfDead(path string, q Quality) bool {
 	if s == nil {
 		return false
 	}
+	// Same reasoning as killAudioIfDead: never hold videosMu across the blocking
+	// Pipeline.Kill (ffmpeg teardown). Holding it here is what stalls all video
+	// index/segment requests — the player then "loads forever" while the reaper
+	// waits on a slow-to-die ffmpeg process.
 	s.videosMu.Lock()
-	if p, ok := s.videos[q]; ok {
-		p.Kill()
+	p, ok := s.videos[q]
+	if ok {
 		delete(s.videos, q)
 	}
 	s.videosMu.Unlock()
+	if ok {
+		p.Kill()
+	}
 	return true
 }
 

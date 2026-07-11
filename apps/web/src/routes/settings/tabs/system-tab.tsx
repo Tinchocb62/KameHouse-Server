@@ -8,7 +8,7 @@ import { type SettingsFormValues } from "../index"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 import { useBackupDatabase } from "@/api/hooks/system.hooks"
-import { getApiUrl } from "@/api/core/hooks"
+import { getServerBaseUrl } from "@/api/client/server-url"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 
 interface SystemTabProps {
@@ -49,7 +49,11 @@ export function SystemTab({ control }: SystemTabProps) {
     const handleBackup = () => {
         backupDb(undefined, {
             onSuccess: (data) => {
-                toast.success(`Respaldo generado con éxito (${formatBytes(data.sizeBytes)})`)
+                if (data) {
+                    toast.success(`Respaldo generado con éxito (${formatBytes(data.sizeBytes)})`)
+                } else {
+                    toast.success(`Respaldo generado con éxito`)
+                }
             }
         })
     }
@@ -57,13 +61,8 @@ export function SystemTab({ control }: SystemTabProps) {
     const handleGenerateReport = async () => {
         toast.loading("Generando reporte...", { id: "report-toast" })
         try {
-            const token = useAppStore.getState().token
-            const url = getApiUrl(API_ENDPOINTS.SYSTEM.GetDiagnosticsReport.endpoint)
-            const headers = new Headers()
-            if (token) {
-                headers.append("X-KameHouse-Token", token)
-            }
-            const res = await fetch(url, { headers })
+            const url = `${getServerBaseUrl() || window.location.origin}${API_ENDPOINTS.SYSTEM.GetDiagnosticsReport.endpoint}`
+            const res = await fetch(url)
             if (!res.ok) throw new Error("Error fetching report")
             
             const blob = await res.blob()

@@ -53,6 +53,11 @@ type (
 		// Dedupes concurrent identical newMediaContainer builds (keyed by hash:streamType)
 		// so a hover-preload racing the play click runs ffprobe once instead of twice.
 		containerGroup singleflight.Group
+		// Tracks in-flight attachment/subtitle extractions keyed by file hash. The value
+		// is a chan struct{} that is closed when extraction finishes successfully; on
+		// failure the entry is deleted so a later request can retry. The subtitles/PGS
+		// endpoints block on this (WaitForExtraction) instead of racing an empty dir.
+		extractionJobs sync.Map // hash -> chan struct{}
 	}
 
 	PlaybackState struct {
@@ -128,8 +133,9 @@ func (p *PlaybackManager) RequestPlayback(filepath string, streamType StreamType
 
 	start := time.Now()
 
-	// Create a new media container
-	ret, err = p.newMediaContainer(filepath, streamType, caps)
+	// Create a new media container. priority=true: this is the episode being played,
+	// so its attachment extraction skips the preload semaphore and starts immediately.
+	ret, err = p.newMediaContainer(filepath, streamType, caps, true)
 
 	if err != nil {
 		p.logger.Error().Err(err).Msg("mediastream: Failed to create media container")
@@ -153,8 +159,9 @@ func (p *PlaybackManager) PreloadPlayback(filepath string, streamType StreamType
 
 	p.logger.Debug().Str("filepath", filepath).Any("type", streamType).Str("preferredAudioLang", preferredAudioLang).Msg("mediastream: Preloading playback")
 
-	// Create a new media container
-	ret, err = p.newMediaContainer(filepath, streamType, nil)
+	// Create a new media container. priority=false: preloads (hover) must not jump the
+	// extraction queue ahead of the episode currently playing.
+	ret, err = p.newMediaContainer(filepath, streamType, nil, false)
 
 	if err != nil {
 		p.logger.Error().Err(err).Msg("mediastream: Failed to create media container")
@@ -258,7 +265,7 @@ func (p *PlaybackManager) PreloadPlayback(filepath string, streamType StreamType
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamType, caps *ClientCapabilities) (ret *MediaContainer, err error) {
+func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamType, caps *ClientCapabilities, priority bool) (ret *MediaContainer, err error) {
 	p.logger.Debug().Str("filepath", filePath).Any("type", streamType).Msg("mediastream: New media container requested")
 	// Get the hash of the file.
 	hash, err := videofile.GetHashFromPath(filePath)
@@ -290,7 +297,7 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 			p.logger.Debug().Str("hash", hash).Bool("cached", true).Msg("mediastream: Media container cache HIT (deduped)")
 			return mc, nil
 		}
-		return p.buildMediaContainer(filePath, hash, streamType, caps, cacheKey)
+		return p.buildMediaContainer(filePath, hash, streamType, caps, cacheKey, priority)
 	})
 	if err != nil {
 		return nil, err
@@ -302,7 +309,7 @@ func (p *PlaybackManager) newMediaContainer(filePath string, streamType StreamTy
 // codec compatibility decision, stream-URL resolution) and caches the result. It
 // must only be called from within the containerGroup singleflight in
 // newMediaContainer so the ffprobe never runs concurrently for the same file.
-func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, streamType StreamType, caps *ClientCapabilities, cacheKey string) (ret *MediaContainer, err error) {
+func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, streamType StreamType, caps *ClientCapabilities, cacheKey string, priority bool) (ret *MediaContainer, err error) {
 	p.logger.Trace().Str("hash", hash).Msg("mediastream: Creating media container")
 
 	// Get the media information of the file.
@@ -321,21 +328,14 @@ func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, stre
 	}
 	p.logger.Debug().Str("hash", hash).Bool("cached", false).Dur("mediaInfo", time.Since(ffprobeStart)).Msg("mediastream: Media info extracted")
 
-	p.logger.Debug().Msg("mediastream: Extracted media info, deferring attachment extraction to background")
+	p.logger.Debug().Msg("mediastream: Extracted media info, starting attachment extraction")
 
-	// Extract attachments (fonts, embedded subtitles) in background so it doesn't block playback start.
-	// The subtitles endpoint will still work once extraction completes; if the user requests subs before
-	// extraction finishes, the file will simply not be ready yet (handled by the serve endpoint).
-	go func() {
-		attachmentSemaphore <- struct{}{}
-		defer func() { <-attachmentSemaphore }()
-
-		if err := videofile.ExtractAttachment(p.repository.settings.MustGet().FfmpegPath, filePath, hash, ret.MediaInfo, p.repository.cacheDir, p.logger); err != nil {
-			p.logger.Error().Err(err).Str("filepath", filePath).Msg("mediastream: Background attachment extraction failed")
-		} else {
-			p.logger.Debug().Str("filepath", filePath).Msg("mediastream: Background attachment extraction completed")
-		}
-	}()
+	// Extract attachments (fonts, embedded subtitles) in the background so it doesn't block
+	// playback start. Exactly one extraction runs per file hash: the subtitles/PGS endpoints
+	// wait on the tracked channel (WaitForExtraction) instead of racing a half-written dir,
+	// and preloads (priority=false) queue behind the playback semaphore so the episode being
+	// watched extracts first.
+	p.startAttachmentExtraction(filePath, hash, ret.MediaInfo, priority)
 
 	// Dynamic fallback from Direct Play to Transcode if the browser doesn't support the container/codecs natively.
 	// We bypass this check if DirectPlayOnly is set to true in settings.
@@ -405,6 +405,58 @@ func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, stre
 	return
 }
 
+// startAttachmentExtraction launches (at most once per hash) the ffmpeg demux that
+// writes embedded subtitles and fonts to the cache. The registered channel is closed
+// when extraction succeeds so waiters can proceed; on failure the entry is removed so
+// a subsequent request can retry. priority=false routes the work through the global
+// attachmentSemaphore (preloads), priority=true bypasses it (the episode being played).
+func (p *PlaybackManager) startAttachmentExtraction(filePath string, hash string, mediaInfo *videofile.MediaInfo, priority bool) {
+	ch := make(chan struct{})
+	actual, loaded := p.extractionJobs.LoadOrStore(hash, ch)
+	if loaded {
+		// Another request already started (or finished) extraction for this hash.
+		_ = actual
+		return
+	}
+
+	go func() {
+		defer close(ch)
+
+		if !priority {
+			attachmentSemaphore <- struct{}{}
+			defer func() { <-attachmentSemaphore }()
+		}
+
+		if err := videofile.ExtractAttachment(p.repository.settings.MustGet().FfmpegPath, filePath, hash, mediaInfo, p.repository.cacheDir, p.logger); err != nil {
+			p.logger.Error().Err(err).Str("filepath", filePath).Msg("mediastream: Attachment extraction failed")
+			// Allow a later request to retry by dropping the (about-to-close) job entry.
+			p.extractionJobs.Delete(hash)
+		} else {
+			p.logger.Debug().Str("filepath", filePath).Msg("mediastream: Attachment extraction completed")
+		}
+	}()
+}
+
+// WaitForExtraction blocks until the attachment/subtitle extraction for the given hash
+// has finished, ctx is cancelled, or there is no extraction in flight. It returns nil
+// when extraction is done (or was never needed) and ctx.Err() when the wait times out.
+func (p *PlaybackManager) WaitForExtraction(ctx context.Context, hash string) error {
+	v, ok := p.extractionJobs.Load(hash)
+	if !ok {
+		// No job tracked for this hash. Either extraction was never triggered or it
+		// failed (entry deleted); if the subs dir already exists the caller will find
+		// the files, otherwise it will report the appropriate error.
+		return nil
+	}
+	ch := v.(chan struct{})
+	select {
+	case <-ch:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 // isDirectPlayableByClient decides whether the file can be played natively by
 // the requesting client without transcoding. When caps is nil (older clients
 // that don't report capabilities) it assumes a Chromium/WebView2 engine, which
@@ -456,37 +508,41 @@ func isDirectPlayableByClient(info *videofile.MediaInfo, caps *ClientCapabilitie
 		}
 	}
 
-	// At least one audio track must be decodable by the client (the player can
-	// select which track to use during direct play).
+	// The DEFAULT audio track must be decodable by the client. In direct play the
+	// browser plays whichever track the container marks as default and exposes no API
+	// to switch it (Chromium/WebView2), so it is not enough that *some* track is
+	// supported: if the default is e.g. E-AC3 while a secondary FLAC track exists, the
+	// browser would still try (and fail) to play the E-AC3 default → black screen /
+	// silence. Falling back to transcode here lets hls.js expose both tracks switchably.
 	if len(info.Audios) > 0 {
-		hasSupportedAudio := false
+		defaultAudio := info.Audios[0]
 		for _, audio := range info.Audios {
-			switch strings.ToLower(audio.Codec) {
-			case "aac", "mp3", "opus", "flac", "vorbis":
-				hasSupportedAudio = true
-			case "ac3":
-				// AC3/E-AC3/DTS are proprietary and not shipped in Chromium; only
-				// clients that explicitly probed support for them may direct-play.
-				if caps != nil && caps.Ac3 {
-					hasSupportedAudio = true
-				}
-			case "eac3", "e-ac-3":
-				if caps != nil && caps.Eac3 {
-					hasSupportedAudio = true
-				}
-			case "dts", "dca":
-				if caps != nil && caps.Dts {
-					hasSupportedAudio = true
-				}
-			}
-			if hasSupportedAudio {
+			if audio.IsDefault {
+				defaultAudio = audio
 				break
 			}
 		}
-		if !hasSupportedAudio {
+		if !isAudioCodecSupported(defaultAudio.Codec, caps) {
 			return false
 		}
 	}
 
 	return true
+}
+
+// isAudioCodecSupported reports whether the client can natively decode the given audio
+// codec. AC3/E-AC3/DTS are proprietary and not shipped in Chromium, so only clients that
+// explicitly probed support for them may direct-play those.
+func isAudioCodecSupported(codec string, caps *ClientCapabilities) bool {
+	switch strings.ToLower(codec) {
+	case "aac", "mp3", "opus", "flac", "vorbis":
+		return true
+	case "ac3":
+		return caps != nil && caps.Ac3
+	case "eac3", "e-ac-3":
+		return caps != nil && caps.Eac3
+	case "dts", "dca":
+		return caps != nil && caps.Dts
+	}
+	return false
 }

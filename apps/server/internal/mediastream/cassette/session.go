@@ -338,32 +338,39 @@ func (s *Session) KillAllPipelineHeads() {
 
 // KillAllPipelines kills all running encode pipelines across video and audio.
 func (s *Session) KillAllPipelines() {
-	s.videosMu.Lock()
-	for _, p := range s.videos {
-		p.Kill()
-	}
-	s.videosMu.Unlock()
-
-	s.audiosMu.Lock()
-	for _, p := range s.audios {
-		p.Kill()
-	}
-	s.audiosMu.Unlock()
+	s.killAllPipelines()
 }
 
 // Kill stops all running encode pipelines
 func (s *Session) Kill() {
+	s.killAllPipelines()
+}
+
+// killAllPipelines snapshots the pipelines under their locks, then runs the
+// blocking Pipeline.Kill (which waits for ffmpeg to exit) OUTSIDE the locks.
+// Holding videosMu/audiosMu across that wait is what lets a single slow ffmpeg
+// teardown stall every other pipeline access for the file.
+func (s *Session) killAllPipelines() {
 	s.videosMu.Lock()
+	videos := make([]*Pipeline, 0, len(s.videos))
 	for _, p := range s.videos {
-		p.Kill()
+		videos = append(videos, p)
 	}
 	s.videosMu.Unlock()
 
 	s.audiosMu.Lock()
+	audios := make([]*Pipeline, 0, len(s.audios))
 	for _, p := range s.audios {
-		p.Kill()
+		audios = append(audios, p)
 	}
 	s.audiosMu.Unlock()
+
+	for _, p := range videos {
+		p.Kill()
+	}
+	for _, p := range audios {
+		p.Kill()
+	}
 }
 
 // Destroy stops everything and removes output directory

@@ -92,24 +92,24 @@
   --spotlight-border-daima: color-mix(in srgb, var(--spotlight-daima) 70%, transparent);
 
   /* ─── Era Colors — Dragon Ball (HSL para Tailwind/shadcn) ─────────────── */
-  --era-db-hsl:       201 77% 50%;    /* Celeste/Turquesa Bulma */
-  --era-dbz-hsl:      24 100% 50%;    /* Naranja Gi Z */
-  --era-dbgt-hsl:     357 75% 50%;    /* Rojo */
-  --era-dbs-hsl:      195 100% 50%;   /* Celeste UI */
-  --era-daima-hsl:    291 76% 50%;    /* Violeta */
+  --era-db-hsl:       201.3 76.4% 49.8%;
+  --era-dbz-hsl:      32 100% 50%;
+  --era-dbgt-hsl:     347 77% 50%;
+  --era-dbs-hsl:      194.6 76.6% 51.2%;
+  --era-daima-hsl:    258 90% 66%;
 
   --era-db-hex:       #1E9BE0;
-  --era-dbz-hex:      #FF6D00;
-  --era-dbgt-hex:     #E0202A;
+  --era-dbz-hex:      #FF8A00;
+  --era-dbgt-hex:     #E11D48;
   --era-dbs-hex:      #1FB6E6;
-  --era-daima-hex:    #C21FDE;
+  --era-daima-hex:    #8B5CF6;
 
   /* Glows por Era (RGBA) — sincronizados con los hex de arriba */
-  --glow-db:       rgba(30, 155, 224, 0.40);
-  --glow-dbz:      rgba(255, 109, 0, 0.40);
-  --glow-dbgt:     rgba(224, 32, 42, 0.40);
-  --glow-dbs:      rgba(31, 182, 230, 0.40);
-  --glow-daima:    rgba(194, 31, 222, 0.40);
+  --glow-db:       color-mix(in srgb, var(--era-db-hex) 40%, transparent);
+  --glow-dbz:      color-mix(in srgb, var(--era-dbz-hex) 40%, transparent);
+  --glow-dbgt:     color-mix(in srgb, var(--era-dbgt-hex) 40%, transparent);
+  --glow-dbs:      color-mix(in srgb, var(--era-dbs-hex) 40%, transparent);
+  --glow-daima:    color-mix(in srgb, var(--era-daima-hex) 40%, transparent);
 
   /* ─── Brand Accent (Rojo KameHouse; controlado por [data-theme="era-*"]) ── */
   --brand-accent:       350 86% 42%;
@@ -121,8 +121,6 @@
   --brand-secondary-hex:  #EC4899; /* rosa KameHouse */
   --brand-tertiary:       0 0% 55%;
   --brand-tertiary-hex:   #8a8a8a;
-
-
 
   /* ─── Botón Reproducir por era (Clásico: rojo sólido, sin degradé) ────── */
   --era-btn-from:     #C8102E;
@@ -227,6 +225,10 @@
   --brand-secondary:      0 0% 60%;
   --brand-secondary-hex:  #999999;
 
+  /* Contraste oscuro sobre el acento gris claro */
+  --md-sys-color-on-primary: #111111;
+  --on-primary-rgb:          17, 17, 17;
+
   /* Negros profundos (no #000 plano): el canvas casi-negro deja que las
      superficies y scrims negros se separen en vez de fundirse en un vacío. */
   --bg-primary:       #050506;
@@ -256,12 +258,10 @@
 
 [data-theme="era-db"] {
   /* ─── Primario: Azul Kame ─── */
-  --brand-accent:       201 77% 50%;
+  --brand-accent:       201.3 76.4% 49.8%;
   --brand-accent-hex:   #1E9BE0;
   --brand-glow:         var(--glow-db);
-  --primary:            201 77% 50%;
   --primary-foreground: 0 0% 100%;
-  --ring:               201 77% 50%;
   /* ─── Secundario: Dorado aventura ─── */
   --brand-secondary:      38 92% 50%;
   --brand-secondary-hex:  #F59E0B;
@@ -286,12 +286,10 @@
 
 [data-theme="era-dbz"] {
   /* ─── Primario: Naranja Gi Saiyan ─── */
-  --brand-accent:       24 100% 50%;
+  --brand-accent:       25.6 100% 50%;
   --brand-accent-hex:   #FF6D00;
   --brand-glow:         var(--glow-dbz);
-  --primary:            24 100% 50%;
   --primary-foreground: 0 0% 100%;
-  --ring:               24 100% 50%;
   /* ─── Secundario: Amarillo Ki ─── */
   --brand-secondary:      45 93% 47%;
   --brand-secondary-hex:  #FBBF24;
@@ -316,12 +314,10 @@
 
 [data-theme="era-dbgt"] {
   /* ─── Primario: Rojo SSJ4 ─── */
-  --brand-accent:       357 75% 50%;
+  --brand-accent:       356.9 75.5% 50.2%;
   --brand-accent-hex:   #E0202A;
   --brand-glow:         var(--glow-dbgt);
-  --primary:            357 75% 50%;
   --primary-foreground: 0 0% 100%;
-  --ring:               357 75% 50%;
   /* ─── Secundario: Naranja/Ámbar ─── */
   --brand-secondary:      25 95% 53%;
   --brand-secondary-hex:  #F97316;
@@ -346,12 +342,10 @@
 
 [data-theme="era-dbs"] {
   /* ─── Primario: Celeste Ultra Instinto ─── */
-  --brand-accent:       195 100% 50%;
+  --brand-accent:       194.6 76.6% 51.2%;
   --brand-accent-hex:   #1FB6E6;
   --brand-glow:         var(--glow-dbs);
-  --primary:            195 100% 50%;
   --primary-foreground: 0 0% 100%;
-  --ring:               195 100% 50%;
   /* ─── Secundario: Plateado/Violeta UI ─── */
   --brand-secondary:      292 84% 61%;
   --brand-secondary-hex:  #D946EF;
@@ -376,12 +370,10 @@
 
 [data-theme="era-daima"] {
   /* ─── Primario: Violeta Reino Demonio ─── */
-  --brand-accent:       291 76% 50%;
+  --brand-accent:       291.2 75.5% 49.6%;
   --brand-accent-hex:   #C21FDE;
   --brand-glow:         var(--glow-daima);
-  --primary:            291 76% 50%;
   --primary-foreground: 0 0% 100%;
-  --ring:               291 76% 50%;
   /* ─── Secundario: Dorado Mágico ─── */
   --brand-secondary:      45 93% 47%;
   --brand-secondary-hex:  #FACC15;
@@ -411,10 +403,8 @@
   --brand-accent:         330 81% 60%; /* Rosa KameHouse HSL */
   --brand-accent-hex:     #EC4899;
   --brand-glow:           rgba(236, 72, 153, 0.40);
-  --primary:              330 81% 60%;
   --primary-foreground:   0 0% 100%;
-  --ring:                 330 81% 60%;
-  --brand-secondary:      357 75% 50%; /* Rojo GT */
+  --brand-secondary:      356.9 75.5% 50.2%; /* Rojo GT */
   --brand-secondary-hex:  #E0202A;
   --brand-tertiary:       160 84% 39%; /* Verde Namek */
   --brand-tertiary-hex:   #10B981;
@@ -534,7 +524,7 @@
   --md-sys-color-surface-container-high: color-mix(in srgb, var(--brand-accent-hex) 9%, rgba(44, 44, 48, 0.76));
 
   /* ─── Sidebar: fondo que cambia según la Era/Fondo del Tema ─── */
-  --sidebar-bg: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  --sidebar-bg: color-mix(in srgb, var(--bg-primary) 50%, transparent);
 
   /* ─── Sidebar en degradé sutil de 2 tonos ─── */
   --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, var(--brand-accent-hex) 10%, transparent) 0%, color-mix(in srgb, var(--brand-secondary-hex) 4%, transparent) 45%, transparent 72%);
@@ -650,6 +640,6 @@
 }
 
 [data-mode="era"][data-flat="true"] {
-  --sidebar-bg:         color-mix(in srgb, var(--bg-primary) 96%, transparent);
+  --sidebar-bg:         color-mix(in srgb, var(--bg-primary) 50%, transparent);
 }
 

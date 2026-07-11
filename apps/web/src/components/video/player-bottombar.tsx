@@ -73,6 +73,8 @@ export interface PlayerBottomBarProps {
     onAutoSkipIntroChange?: (enabled: boolean) => void
     autoSkipOutro?: boolean
     onAutoSkipOutroChange?: (enabled: boolean) => void
+    skipStepSeconds?: number
+    onSkipStepSecondsChange?: (seconds: number) => void
 
     onNextEpisode?: () => void
     hasNextEpisode?: boolean
@@ -104,8 +106,8 @@ export interface PlayerBottomBarProps {
     onAmbientModeEnabledChange?: (enabled: boolean) => void
 
     /** AniSkip intervals for rendering visual markers on the timeline */
-    skipTimesOp?: { startTime: number; endTime: number }
-    skipTimesEd?: { startTime: number; endTime: number }
+    skipTimesOp?: { startTime: number; endTime: number; source?: string }
+    skipTimesEd?: { startTime: number; endTime: number; source?: string }
 
     // Chapters
     chapters?: Chapter[]
@@ -154,6 +156,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
     playbackRate = 1, onPlaybackRateChange,
     autoSkipIntro = false, onAutoSkipIntroChange,
     autoSkipOutro = false, onAutoSkipOutroChange,
+    skipStepSeconds = 85, onSkipStepSecondsChange,
     onNextEpisode,
     hasNextEpisode,
     hlsLevels = [], activeHlsLevel = -1, onHlsLevelChange,
@@ -205,8 +208,10 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
     return (
         <div className={cn(
             "absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] flex flex-col pointer-events-auto select-none",
-            "bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_85%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] border border-outline-variant rounded-full shadow-elevation-4 px-5 py-2.5 z-30",
+            "px-5 py-2.5 z-30",
         )}>
+            {/* Background Layer to prevent backdrop-filter stacking context bugs with children */}
+            <div className="absolute inset-0 -z-10 pointer-events-none bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_85%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] border border-outline-variant rounded-full shadow-elevation-4" />
 
             <PlayerSeekPreview 
                 previewManager={previewManager || null} 
@@ -234,7 +239,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                     {/* Skip segment markers — rendered behind the playback bar */}
                     {duration > 0 && skipTimesOp && (
                         <div
-                            className="absolute top-0 bottom-0 bg-brand-accent/25 pointer-events-none rounded-sm"
+                            className={cn("absolute top-0 bottom-0 bg-brand-accent/25 pointer-events-none rounded-sm", skipTimesOp.source === "heuristic" && "opacity-30")}
                             title={`Intro: ${Math.round(skipTimesOp.startTime)}s – ${Math.round(skipTimesOp.endTime)}s`}
                             style={{
                                 left: `${(skipTimesOp.startTime / duration) * 100}%`,
@@ -244,7 +249,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                     )}
                     {duration > 0 && skipTimesEd && (
                         <div
-                            className="absolute top-0 bottom-0 bg-brand-secondary/25 pointer-events-none rounded-sm"
+                            className={cn("absolute top-0 bottom-0 bg-brand-secondary/25 pointer-events-none rounded-sm", skipTimesEd.source === "heuristic" && "opacity-30")}
                             title={`Outro: ${Math.round(skipTimesEd.startTime)}s – ${Math.round(skipTimesEd.endTime)}s`}
                             style={{
                                 left: `${(skipTimesEd.startTime / duration) * 100}%`,
@@ -456,6 +461,8 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                         onAutoSkipIntroChange={onAutoSkipIntroChange}
                         autoSkipOutro={autoSkipOutro}
                         onAutoSkipOutroChange={onAutoSkipOutroChange}
+                        skipStepSeconds={skipStepSeconds}
+                        onSkipStepSecondsChange={onSkipStepSecondsChange}
                         hlsLevels={hlsLevels}
                         activeHlsLevel={activeHlsLevel}
                         onHlsLevelChange={onHlsLevelChange}

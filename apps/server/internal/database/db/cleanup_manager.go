@@ -69,8 +69,16 @@ func (cm *CleanupManager) trimScanSummaryEntries() {
 	}
 }
 
-// trimLocalFileEntries trims local file entries in the legacy blob table
+// trimLocalFileEntries trims local file entries in the legacy blob table.
+// The legacy `local_files` blob table is dropped during schema migration once
+// its data has been ported to the relational `local_file` model, so on any
+// migrated database it simply won't exist. Skip silently in that case instead
+// of logging a spurious error on every startup.
 func (cm *CleanupManager) trimLocalFileEntries() {
+	if !cm.gormdb.Migrator().HasTable("local_files") {
+		return
+	}
+
 	var count int64
 	// Explicitly use the legacy table name to avoid any ambiguity
 	err := cm.gormdb.Table("local_files").Count(&count).Error

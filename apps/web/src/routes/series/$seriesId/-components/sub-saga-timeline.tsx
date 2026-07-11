@@ -4,6 +4,7 @@ export interface SubSagaTimelineItem {
   id: string
   title: string
   episodeRange: string
+  image?: string
 }
 
 interface SubSagaTimelineProps {
@@ -56,7 +57,7 @@ export function SubSagaTimeline({ items, activeId, onSelect }: SubSagaTimelinePr
               )} />
             </div>
 
-            <div className="space-y-0.5">
+            <div className="flex-1 space-y-0.5 pb-1">
               <span className={cn(
                 "block text-xs font-bold transition-colors duration-300 leading-normal",
                 isActive ? "text-on-surface" : "text-on-surface-variant group-hover/subsaga:text-on-surface"
@@ -69,6 +70,16 @@ export function SubSagaTimeline({ items, activeId, onSelect }: SubSagaTimelinePr
               )}>
                 {item.episodeRange}
               </span>
+              
+              {isActive && item.image && (
+                <div className="pt-2">
+                  <img 
+                    src={item.image} 
+                    alt={item.title}
+                    className="w-full aspect-video object-cover rounded-md border border-outline-variant/10 shadow-md"
+                  />
+                </div>
+              )}
             </div>
           </div>
         )

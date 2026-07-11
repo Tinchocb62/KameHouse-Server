@@ -3,11 +3,12 @@ import { cn } from "@/components/ui/core/styling"
 import { useSkipTimesStore } from "@/lib/store"
 import { useShallow } from "zustand/react/shallow"
 import { Play, Save, Trash2 } from "lucide-react"
-import { buildSeaQuery } from "@/api/client/requests"
 import { useQueryClient } from "@tanstack/react-query"
 import { useWebSocket } from "@/hooks/use-websocket"
 import { getApiWebSocketUrl } from "@/api/client/server-url"
 import { WSEvents } from "@/lib/server/ws-events"
+import { useAniSkipTimes } from "@/api/hooks/aniskip.hooks"
+import { buildSeaQuery } from "@/api/client/requests"
 
 interface SkipTimesSettingsProps {
     videoRef?: React.RefObject<HTMLVideoElement | null>
@@ -16,6 +17,148 @@ interface SkipTimesSettingsProps {
     mediaId?: number
     episodeNumber?: number
     onClose: () => void
+}
+
+function TimeInputBlock({
+    label,
+    value,
+    onChange,
+    onTest,
+    themeColor,
+    isEpisodeEnd,
+    onToggleEpisodeEnd
+}: {
+    label: string
+    value: number | null
+    onChange: (val: number | null) => void
+    onTest: (val: number | null) => void
+    themeColor: "orange" | "purple"
+    isEpisodeEnd?: boolean
+    onToggleEpisodeEnd?: () => void
+}) {
+    const handleMinChange = (valStr: string) => {
+        const cleanVal = valStr.replace(/\D/g, "")
+        if (cleanVal === "") {
+            const currentSec = value !== null ? value % 60 : null
+            if (currentSec === null || currentSec === 0) {
+                onChange(null)
+            } else {
+                onChange(currentSec)
+            }
+        } else {
+            const min = Math.max(0, parseInt(cleanVal) || 0)
+            const currentSec = value !== null ? value % 60 : 0
+            onChange(min * 60 + currentSec)
+        }
+    }
+
+    const handleSecChange = (valStr: string) => {
+        const cleanVal = valStr.replace(/\D/g, "")
+        if (cleanVal === "") {
+            const currentMin = value !== null ? Math.floor(value / 60) : null
+            if (currentMin === null || currentMin === 0) {
+                onChange(null)
+            } else {
+                onChange(currentMin * 60)
+            }
+        } else {
+            let sec = Math.max(0, parseInt(cleanVal) || 0)
+            if (sec > 59) sec = 59
+            const currentMin = value !== null ? Math.floor(value / 60) : 0
+            onChange(currentMin * 60 + sec)
+        }
+    }
+
+    const adjustTime = (amount: number) => {
+        if (value === null) return
+        onChange(Math.max(0, value + amount))
+    }
+
+    const isOrange = themeColor === "orange"
+    const textThemeClass = isOrange ? "text-brand-orange" : "text-purple-400"
+    const borderThemeClass = isOrange ? "focus:border-brand-orange/50" : "focus:border-purple-500/50"
+    const btnBgClass = isOrange 
+        ? "bg-brand-orange/10 hover:bg-brand-orange/20 border-brand-orange/20 text-brand-orange" 
+        : "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20 text-purple-400"
+
+    return (
+        <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
+                <span className="uppercase tracking-wider">{label}</span>
+                {isEpisodeEnd ? (
+                    <span className={`text-[9px] ${textThemeClass} font-bold uppercase`}>Final del episodio</span>
+                ) : (
+                    value === null && <span className="text-[9px] text-zinc-600 font-bold uppercase">No asignado</span>
+                )}
+            </div>
+
+            {isEpisodeEnd ? (
+                onToggleEpisodeEnd && (
+                    <button
+                        onClick={onToggleEpisodeEnd}
+                        className={`flex items-center gap-1.5 text-[9px] text-zinc-500 hover:${textThemeClass} transition-colors py-1 w-fit`}
+                    >
+                        <span className="text-[9px] text-zinc-400 font-bold">Final del episodio</span>
+                        <span className="text-zinc-600">—</span>
+                        <span className="underline decoration-dotted font-medium">Fijar hora específica</span>
+                    </button>
+                )
+            ) : (
+                <>
+                    <div className="flex items-center justify-between gap-2 w-full">
+                        <div className="flex items-center gap-1">
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                placeholder="MM"
+                                value={value !== null ? Math.floor(value / 60) : ""}
+                                onChange={(e) => handleMinChange(e.target.value)}
+                                className={`w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs ${textThemeClass} font-bold focus:outline-none ${borderThemeClass} focus:bg-white/10 transition-colors`}
+                            />
+                            <span className="text-zinc-600 font-bold">:</span>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                placeholder="SS"
+                                value={value !== null ? Math.floor(value % 60) : ""}
+                                onChange={(e) => handleSecChange(e.target.value)}
+                                className={`w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs ${textThemeClass} font-bold focus:outline-none ${borderThemeClass} focus:bg-white/10 transition-colors`}
+                            />
+                            {onToggleEpisodeEnd && (
+                                <button
+                                    onClick={onToggleEpisodeEnd}
+                                    className={`ml-2 text-[9px] text-zinc-500 hover:${textThemeClass} underline decoration-dotted transition-colors font-bold`}
+                                    title="Saltar al final del episodio"
+                                >
+                                    Final
+                                </button>
+                            )}
+                        </div>
+
+                        {value !== null && (
+                            <button
+                                onClick={() => onTest(value)}
+                                className={`px-2 py-0.5 border rounded text-[9px] font-black uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95 ${btnBgClass}`}
+                            >
+                                <Play className="w-2.5 h-2.5 fill-current" /> Probar
+                            </button>
+                        )}
+                    </div>
+
+                    {value !== null && (
+                        <div className="flex gap-1 w-full mt-1">
+                            <button onClick={() => adjustTime(-5)} className="flex-1 py-0.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[9px] text-zinc-400 font-bold transition-all">-5s</button>
+                            <button onClick={() => adjustTime(-1)} className="flex-1 py-0.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[9px] text-zinc-400 font-bold transition-all">-1s</button>
+                            <button onClick={() => adjustTime(1)} className="flex-1 py-0.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[9px] text-zinc-400 font-bold transition-all">+1s</button>
+                            <button onClick={() => adjustTime(5)} className="flex-1 py-0.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-[9px] text-zinc-400 font-bold transition-all">+5s</button>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    )
 }
 
 
@@ -35,63 +178,63 @@ export function SkipTimesSettings({
         }))
     )
 
-    const storeKey = malId || mediaId
-    const seriesData = storeKey ? seriesSkipTimes[String(storeKey)] : null
+    const [opStart, setOpStart] = React.useState<number | null>(null)
+    const [opEnd, setOpEnd] = React.useState<number | null>(null)
+    const [edStart, setEdStart] = React.useState<number | null>(null)
+    const [edEnd, setEdEnd] = React.useState<number | null>(null)
+    const [edEndIsEpisodeEnd, setEdEndIsEpisodeEnd] = React.useState<boolean>(true)
+    const [sourceName, setSourceName] = React.useState<string | undefined>(undefined)
 
-    // Initial state setup from stored series data
-    const [opStart, setOpStart] = React.useState<number | null>(seriesData?.opStart && seriesData.opStart > 0 ? seriesData.opStart : null)
-    const [opEnd, setOpEnd] = React.useState<number | null>(seriesData?.opEnd && seriesData.opEnd > 0 ? seriesData.opEnd : null)
-    
-    // In store, edOffset represents the absolute start time of the outro.
-    const [edStart, setEdStart] = React.useState<number | null>(
-        seriesData?.edOffset && seriesData.edOffset > 0 ? seriesData.edOffset : null
-    )
-    const [edEnd, setEdEnd] = React.useState<number | null>(
-        seriesData?.edEnd && seriesData.edEnd > 0 ? seriesData.edEnd : null
-    )
-    const [edEndIsEpisodeEnd, setEdEndIsEpisodeEnd] = React.useState<boolean>(
-        !(seriesData?.edEnd && seriesData.edEnd > 0)
-    )
-
-    const handleMinChange = (
-        value: string,
-        currentVal: number | null,
-        setter: (val: number | null) => void
-    ) => {
-        const cleanVal = value.replace(/\D/g, "")
-        if (cleanVal === "") {
-            const currentSec = currentVal !== null ? currentVal % 60 : null
-            if (currentSec === null || currentSec === 0) {
-                setter(null)
-            } else {
-                setter(currentSec)
+    // Sync initial data once loaded
+    React.useEffect(() => {
+        let mounted = true
+        async function loadTimes() {
+            try {
+                const data = await buildSeaQuery<any, any>({
+                    endpoint: "/api/v1/mediastream/skip-times",
+                    method: "GET",
+                    params: { mediaId: mediaId || undefined, malId: malId || undefined, episodeNumber }
+                })
+                if (mounted && data && (data.opEnd > 0 || data.edOffset > 0)) {
+                    setOpStart(data.opStart > 0 ? data.opStart : null)
+                    setOpEnd(data.opEnd > 0 ? data.opEnd : null)
+                    setEdStart(data.edOffset > 0 ? data.edOffset : null)
+                    setEdEnd(data.edEnd > 0 ? data.edEnd : null)
+                    setEdEndIsEpisodeEnd(!data.edEnd)
+                    setSourceName(data.source)
+                    return
+                }
+            } catch (err) {
+                // Ignore and fallback
             }
-        } else {
-            const min = Math.max(0, parseInt(cleanVal) || 0)
-            const currentSec = currentVal !== null ? currentVal % 60 : 0
-            setter(min * 60 + currentSec)
-        }
-    }
-
-    const handleSecChange = (
-        value: string,
-        currentVal: number | null,
-        setter: (val: number | null) => void
-    ) => {
-        const cleanVal = value.replace(/\D/g, "")
-        if (cleanVal === "") {
-            const currentMin = currentVal !== null ? Math.floor(currentVal / 60) : null
-            if (currentMin === null || currentMin === 0) {
-                setter(null)
-            } else {
-                setter(currentMin * 60)
+            if (mounted) {
+                const storeKey = malId || mediaId
+                if (storeKey) {
+                    const cached = seriesSkipTimes[String(storeKey)]
+                    if (cached) {
+                        setOpStart(cached.opStart && cached.opStart > 0 ? cached.opStart : null)
+                        setOpEnd(cached.opEnd && cached.opEnd > 0 ? cached.opEnd : null)
+                        setEdStart(cached.edOffset && cached.edOffset > 0 ? cached.edOffset : null)
+                        setEdEnd(cached.edEnd && cached.edEnd > 0 ? cached.edEnd : null)
+                        setEdEndIsEpisodeEnd(!cached.edEnd)
+                        setSourceName("propagated")
+                    }
+                }
             }
-        } else {
-            let sec = Math.max(0, parseInt(cleanVal) || 0)
-            if (sec > 59) sec = 59
-            const currentMin = currentVal !== null ? Math.floor(currentVal / 60) : 0
-            setter(currentMin * 60 + sec)
         }
+        if ((mediaId || malId) && episodeNumber) {
+            loadTimes()
+        }
+    }, [mediaId, malId, episodeNumber])
+
+    const formatSource = (source?: string) => {
+        if (!source) return null
+        if (source === "manual") return <span className="px-1.5 py-0.5 bg-brand-orange/20 text-brand-orange text-[8px] font-black uppercase rounded tracking-wider">Manual</span>
+        if (source === "aniskip") return <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[8px] font-black uppercase rounded tracking-wider">AniSkip</span>
+        if (source === "chapters") return <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-[8px] font-black uppercase rounded tracking-wider">Capítulos</span>
+        if (source === "fingerprint") return <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-[8px] font-black uppercase rounded tracking-wider">Auto-Scan</span>
+        if (source === "heuristic") return <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-500 text-[8px] font-black uppercase rounded tracking-wider">Estimado</span>
+        return <span className="px-1.5 py-0.5 bg-white/10 text-zinc-400 text-[8px] font-black uppercase rounded tracking-wider">{source}</span>
     }
 
     const [activeTab, setActiveTab] = React.useState<"intro" | "outro">("intro")
@@ -168,6 +311,13 @@ export function SkipTimesSettings({
         }
     }
 
+    const testTime = (time: number | null) => {
+        if (time !== null && videoRef?.current) {
+            videoRef.current.currentTime = time
+            videoRef.current.play().catch(() => {})
+        }
+    }
+
     const handleSave = async () => {
         if ((!malId && !mediaId) || !episodeNumber) return
         setIsSaving(true)
@@ -206,6 +356,8 @@ export function SkipTimesSettings({
                     edOffset: resolvedEdOffset,
                     edEnd: resolvedEdEnd,
                     applyToSeason,
+                    source: "manual",
+                    confidence: 1.0,
                 }
             })
 
@@ -250,6 +402,8 @@ export function SkipTimesSettings({
                     edOffset: 0,
                     edEnd: 0,
                     applyToSeason: false,
+                    source: "manual",
+                    confidence: 1.0,
                 }
             })
 
@@ -339,62 +493,26 @@ export function SkipTimesSettings({
                 {activeTab === "intro" ? (
                     <>
                         <div className="flex flex-col gap-2">
-                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Marcas de la Intro</span>
-                            <div className="grid grid-cols-2 gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
-                                        <span>Inicio:</span>
-                                        {opStart === null && <span className="text-[9px] text-zinc-600 font-bold uppercase">No asignado</span>}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            placeholder="MM"
-                                            value={opStart !== null ? Math.floor(opStart / 60) : ""}
-                                            onChange={(e) => handleMinChange(e.target.value, opStart, setOpStart)}
-                                            className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-brand-orange font-bold focus:outline-none focus:border-brand-orange/50 focus:bg-white/10 transition-colors"
-                                        />
-                                        <span className="text-zinc-600 font-bold">:</span>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            placeholder="SS"
-                                            value={opStart !== null ? Math.floor(opStart % 60) : ""}
-                                            onChange={(e) => handleSecChange(e.target.value, opStart, setOpStart)}
-                                            className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-brand-orange font-bold focus:outline-none focus:border-brand-orange/50 focus:bg-white/10 transition-colors"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
-                                        <span>Fin:</span>
-                                        {opEnd === null && <span className="text-[9px] text-zinc-600 font-bold uppercase">No asignado</span>}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            placeholder="MM"
-                                            value={opEnd !== null ? Math.floor(opEnd / 60) : ""}
-                                            onChange={(e) => handleMinChange(e.target.value, opEnd, setOpEnd)}
-                                            className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-brand-orange font-bold focus:outline-none focus:border-brand-orange/50 focus:bg-white/10 transition-colors"
-                                        />
-                                        <span className="text-zinc-600 font-bold">:</span>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            placeholder="SS"
-                                            value={opEnd !== null ? Math.floor(opEnd % 60) : ""}
-                                            onChange={(e) => handleSecChange(e.target.value, opEnd, setOpEnd)}
-                                            className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-brand-orange font-bold focus:outline-none focus:border-brand-orange/50 focus:bg-white/10 transition-colors"
-                                        />
-                                    </div>
-                                </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Marcas de la Intro</span>
+                                {formatSource(sourceName)}
+                            </div>
+                            <div className="flex flex-col gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
+                                <TimeInputBlock
+                                    label="Inicio:"
+                                    value={opStart}
+                                    onChange={setOpStart}
+                                    onTest={testTime}
+                                    themeColor="orange"
+                                />
+                                <div className="h-px bg-white/5 w-full" />
+                                <TimeInputBlock
+                                    label="Fin:"
+                                    value={opEnd}
+                                    onChange={setOpEnd}
+                                    onTest={testTime}
+                                    themeColor="orange"
+                                />
                             </div>
                         </div>
 
@@ -418,82 +536,28 @@ export function SkipTimesSettings({
                 ) : (
                     <>
                         <div className="flex flex-col gap-2">
-                            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Marcas de la Outro / Ending</span>
-                            <div className="grid grid-cols-2 gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
-                                        <span>Inicio:</span>
-                                        {edStart === null && <span className="text-[9px] text-zinc-600 font-bold uppercase">No asignado</span>}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            placeholder="MM"
-                                            value={edStart !== null ? Math.floor(edStart / 60) : ""}
-                                            onChange={(e) => handleMinChange(e.target.value, edStart, setEdStart)}
-                                            className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-purple-400 font-bold focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-colors"
-                                        />
-                                        <span className="text-zinc-600 font-bold">:</span>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            placeholder="SS"
-                                            value={edStart !== null ? Math.floor(edStart % 60) : ""}
-                                            onChange={(e) => handleSecChange(e.target.value, edStart, setEdStart)}
-                                            className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-purple-400 font-bold focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-colors"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
-                                        <span>Fin:</span>
-                                        {edEndIsEpisodeEnd
-                                            ? <span className="text-[9px] text-purple-400 font-bold uppercase">Final del episodio</span>
-                                            : edEnd === null && <span className="text-[9px] text-zinc-600 font-bold uppercase">No asignado</span>}
-                                    </div>
-                                    {edEndIsEpisodeEnd ? (
-                                        <button
-                                            onClick={() => setEdEndIsEpisodeEnd(false)}
-                                            className="flex items-center gap-1 text-[9px] text-zinc-500 hover:text-purple-400 transition-colors"
-                                        >
-                                            <span className="text-[9px] text-zinc-400 font-bold">Final del episodio</span>
-                                            <span className="text-zinc-600 mx-1">—</span>
-                                            <span className="underline decoration-dotted">Fijar hora específica</span>
-                                        </button>
-                                    ) : (
-                                        <div className="flex items-center gap-1">
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                                placeholder="MM"
-                                                value={edEnd !== null ? Math.floor(edEnd / 60) : ""}
-                                                onChange={(e) => handleMinChange(e.target.value, edEnd, setEdEnd)}
-                                                className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-purple-400 font-bold focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-colors"
-                                            />
-                                            <span className="text-zinc-600 font-bold">:</span>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                                placeholder="SS"
-                                                value={edEnd !== null ? Math.floor(edEnd % 60) : ""}
-                                                onChange={(e) => handleSecChange(e.target.value, edEnd, setEdEnd)}
-                                                className="w-12 bg-white/5 border border-white/10 rounded px-1.5 py-1 text-center font-mono text-xs text-purple-400 font-bold focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-colors"
-                                            />
-                                            <button
-                                                onClick={() => setEdEndIsEpisodeEnd(true)}
-                                                className="ml-1 text-[9px] text-zinc-500 hover:text-purple-400 underline decoration-dotted transition-colors"
-                                                title="Saltar al final del episodio"
-                                            >
-                                                Final
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Marcas de la Outro / Ending</span>
+                                {formatSource(sourceName)}
+                            </div>
+                            <div className="flex flex-col gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
+                                <TimeInputBlock
+                                    label="Inicio:"
+                                    value={edStart}
+                                    onChange={setEdStart}
+                                    onTest={testTime}
+                                    themeColor="purple"
+                                />
+                                <div className="h-px bg-white/5 w-full" />
+                                <TimeInputBlock
+                                    label="Fin:"
+                                    value={edEnd}
+                                    onChange={setEdEnd}
+                                    onTest={testTime}
+                                    themeColor="purple"
+                                    isEpisodeEnd={edEndIsEpisodeEnd}
+                                    onToggleEpisodeEnd={() => setEdEndIsEpisodeEnd(!edEndIsEpisodeEnd)}
+                                />
                             </div>
                         </div>
 

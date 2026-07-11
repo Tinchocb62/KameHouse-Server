@@ -289,6 +289,25 @@ func (r *Repository) RequestDirectPlay(filepath string, clientID string, caps *C
 
 	// No global lock: newMediaContainer dedupes concurrent builds via singleflight.
 	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeDirect, clientID, caps)
+	if err != nil {
+		return nil, err
+	}
+
+	// The client asked for direct play but the server decided the file must be
+	// transcoded (e.g. undecodable default audio codec, see isDirectPlayableByClient).
+	// The returned container already points at the HLS master playlist, but the
+	// transcoder engine may be dormant when TranscodeEnabled=false — serving that
+	// playlist with a dead transcoder would guarantee a black screen. Initialize it
+	// on-demand with force=true: the server, not the user, decided direct is impossible.
+	if ret != nil && ret.StreamType == StreamTypeTranscode && !r.transcoder.IsPresent() {
+		r.reqMu.Lock()
+		if !r.transcoder.IsPresent() { // double-check under the lock
+			if ok := r.initializeTranscoder(r.settings, true); !ok {
+				r.logger.Error().Str("filepath", filepath).Msg("mediastream: Direct→transcode fallback could not initialize the transcoder on-demand")
+			}
+		}
+		r.reqMu.Unlock()
+	}
 
 	return
 }

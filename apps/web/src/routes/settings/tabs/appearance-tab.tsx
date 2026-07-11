@@ -12,6 +12,7 @@ import { useAppStore } from "@/lib/store"
 import { resolveThemeMode, THEME_DEFAULT_VALUES, ThemeLibraryScreenBannerType, type ThemeMode } from "@/lib/theme/theme-hooks"
 import { SIDEBAR_ITEM_DEFS } from "@/components/ui/app-layout/app-sidebar"
 import { hexToHslTriplet } from "@/lib/theme/apply-custom-theme"
+import { X } from "lucide-react"
 
 interface AppearanceTabProps {
     control: Control<SettingsFormValues>
@@ -61,18 +62,18 @@ const THEME_PRESETS = [
         id: "era-dbz",
         name: "Dragon Ball Z",
         desc: "Naranja Saiyajin, el gi de Goku",
-        background: "#1a110a",
-        accent: "#FF6D00",
-        sidebar: "#070503",
+        background: "#2A180E",
+        accent: "#FF8A00",
+        sidebar: "#130A05",
         themeEra: "era-dbz",
     },
     {
         id: "era-dbgt",
         name: "Dragon Ball GT",
         desc: "Rojo Super Saiyajin 4, la transformación definitiva",
-        background: "#1b0c0f",
-        accent: "#E0202A",
-        sidebar: "#070304",
+        background: "#2B1015",
+        accent: "#E11D48",
+        sidebar: "#140608",
         themeEra: "era-dbgt",
     },
     {
@@ -88,9 +89,9 @@ const THEME_PRESETS = [
         id: "era-daima",
         name: "Dragon Ball Daima",
         desc: "Violeta Reino Demoníaco, la nueva era",
-        background: "#150c20",
-        accent: "#C21FDE",
-        sidebar: "#060309",
+        background: "#201130",
+        accent: "#8B5CF6",
+        sidebar: "#10081A",
         themeEra: "era-daima",
     },
     {
@@ -155,6 +156,9 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
         } else {
             lastValues.current[field] = current
             setValue(`theme.${field}`, "", { shouldDirty: true })
+            if (field === "backgroundColor") {
+                setValue("theme.sidebarBackgroundColor", "", { shouldDirty: true })
+            }
         }
         syncEnableColorSettings()
     }
@@ -212,8 +216,8 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                                 className={cn(
                                     "relative flex flex-col p-5 rounded-container border transition-all duration-300 group active:scale-95 overflow-hidden min-h-[140px] text-left",
                                     isActive
-                                        ? "border-brand-accent shadow-[0_8px_30px_var(--glow-primary)]"
-                                        : "border-outline-variant hover:border-outline-variant/12"
+                                        ? "border-brand-accent bg-white/[0.06] shadow-[0_8px_30px_var(--glow-primary)]"
+                                        : "glass-card border-outline-variant/30 hover:border-outline-variant/50 hover:bg-white/[0.04]"
                                 )}
                             >
                                 <div className="absolute inset-0 opacity-25 pointer-events-none" style={{ background: mode.gradient }} />
@@ -256,8 +260,8 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                                         className={cn(
                                             "relative flex flex-col p-5 rounded-container border transition-all duration-300 group active:scale-95 overflow-hidden min-h-[160px]",
                                             isActive
-                                                ? "border-brand-accent bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-variant)_30%,transparent)] shadow-[0_8px_30px_var(--glow-primary)]"
-                                                : "bg-surface-container border border-outline-variant rounded-container hover:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-variant)_40%,transparent)] hover:border-outline-variant/12"
+                                                ? "border-brand-accent shadow-[0_8px_30px_var(--glow-primary)]"
+                                                : "glass-card border-outline-variant/30 hover:border-outline-variant/50 hover:bg-white/[0.04]"
                                         )}
                                         style={
                                             !isCustom && preset.background
@@ -461,6 +465,16 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
                                             className="bg-surface-container border border-outline-variant/5 rounded-xl px-4 py-2.5 w-36 text-on-surface placeholder:text-on-surface-variant/70 text-xs font-mono focus:outline-none focus:border-brand-accent/40"
                                             placeholder="#0b0f19"
                                         />
+                                        {field.value && (
+                                            <button 
+                                                type="button"
+                                                onClick={() => field.onChange("")}
+                                                className="p-1.5 ml-1 text-on-surface-variant hover:text-brand-destructive hover:bg-brand-destructive/10 rounded-md transition-colors"
+                                                title="Limpiar color"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -983,7 +997,7 @@ function AppearancePreview({
 
     // Espeja la tabla de gating de useApplyCustomTheme() a escala del preview.
     const previewTheme = mode === "classic" ? "classic"
-        : isEra && enableColorSettings && themeEra ? themeEra
+        : isEra && themeEra ? themeEra
         : undefined
     const previewFlat = isEra && !blurEffects
     const previewSidebarGradient = (isEra && sidebarGradient)
@@ -991,7 +1005,7 @@ function AppearancePreview({
     return (
         <Section label="Previsualización en Vivo">
             <div
-                className="w-full h-56 border border-outline-variant/20 rounded-xl overflow-hidden flex relative select-none"
+                className="w-full h-56 border border-brand-accent/20 rounded-xl overflow-hidden flex relative select-none shadow-[0_0_40px_var(--glow-secondary)]"
                 data-mode={mode}
                 data-flat={previewFlat ? "true" : undefined}
                 data-theme={previewTheme}
@@ -1002,7 +1016,7 @@ function AppearancePreview({
                 <div className="absolute inset-0 bg-[var(--bg-primary)] transition-colors duration-500 z-[-2]" />
                 
                 {/* Simulación del fondo dinámico */}
-                <div className="absolute inset-0 opacity-50 transition-opacity duration-500 z-[-1]" style={{ background: "radial-gradient(circle at 20% 20%, var(--glow-color-1) 0%, transparent 60%), radial-gradient(circle at 80% 80%, var(--glow-color-2) 0%, transparent 60%), linear-gradient(135deg, transparent, hsl(var(--brand-accent)/0.1))" }} />
+                <div className="absolute inset-0 opacity-100 transition-opacity duration-500 z-[-1]" style={{ background: "var(--page-gradient)" }} />
 
                 {/* Sidebar */}
                 <div 

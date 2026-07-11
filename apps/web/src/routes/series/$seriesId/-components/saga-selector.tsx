@@ -5,6 +5,7 @@ import { motion, AnimatePresence, type Variants } from "framer-motion"
 
 interface SagaSelectorProps {
   sagas: SagaDTO[]
+  localSagas?: any[]
   activeSagaId?: string
   onSelectSaga: (sagaId: string) => void
   activeSubSagaId?: string
@@ -23,6 +24,7 @@ const itemVariants: Variants = {
 
 export function SagaSelector({
   sagas,
+  localSagas,
   activeSagaId,
   onSelectSaga,
   activeSubSagaId,
@@ -105,11 +107,15 @@ export function SagaSelector({
                 >
                   <SubSagaTimeline
                     activeId={activeSubSagaId}
-                    items={saga.subSagas.map(sub => ({
-                      id: sub.id,
-                      title: sub.name,
-                      episodeRange: `Eps ${sub.episodeRange}`,
-                    }))}
+                    items={saga.subSagas.map(sub => {
+                      const localSub = localSagas?.find(s => s.id === saga.id)?.subSagas?.find((ss: any) => ss.id === sub.id)
+                      return {
+                        id: sub.id,
+                        title: localSub?.title || sub.name || sub.title,
+                        episodeRange: `Eps ${sub.episodeRange || (sub.startEp + '-' + sub.endEp)}`,
+                        image: localSub?.image || sub.image,
+                      }
+                    })}
                     onSelect={(subId) => {
                       const sub = saga.subSagas?.find(s => s.id === subId)
                       if (!sub) return

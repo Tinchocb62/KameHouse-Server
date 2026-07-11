@@ -376,8 +376,12 @@ type EpisodeSkipTime struct {
 	EpisodeNumber int     `gorm:"column:episode_number;uniqueIndex:idx_media_skip" json:"episodeNumber"`
 	OpStart       float64 `gorm:"column:op_start" json:"opStart"`
 	OpEnd         float64 `gorm:"column:op_end" json:"opEnd"`
+	// EdOffset es el tiempo absoluto (en segundos) de inicio del outro.
 	EdOffset      float64 `gorm:"column:ed_offset" json:"edOffset"`
+	// EdEnd es el tiempo absoluto (en segundos) de fin del outro. 0 significa hasta el final.
 	EdEnd         float64 `gorm:"column:ed_end" json:"edEnd"`
+	Source        string  `gorm:"column:source;default:legacy" json:"source"`
+	Confidence    float64 `gorm:"column:confidence;default:0" json:"confidence"`
 }
 
 // MediaIDMapping centraliza el mapeo de IDs entre plataformas (TMDB, MAL, Jellyfin).
