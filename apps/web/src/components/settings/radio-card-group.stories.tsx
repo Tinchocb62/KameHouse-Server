@@ -27,9 +27,11 @@ const meta: Meta<typeof RadioCardGroup> = {
 export default meta
 type Story = StoryObj<typeof RadioCardGroup>
 
+function ControlledRadioCardGroup(args: React.ComponentProps<typeof RadioCardGroup>) {
+    const [value, setValue] = React.useState(args.value)
+    return <RadioCardGroup {...args} value={value} onChange={setValue} />
+}
+
 export const Default: Story = {
-    render: (args) => {
-        const [value, setValue] = React.useState(args.value)
-        return <RadioCardGroup {...args} value={value} onChange={setValue} />
-    }
+    render: (args) => <ControlledRadioCardGroup {...args} />
 }

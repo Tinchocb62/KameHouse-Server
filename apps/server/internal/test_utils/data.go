@@ -61,7 +61,9 @@ type (
 	FlagFunc func() bool
 )
 
-// InitTestProvider populates the ConfigData and skips the test if the given flags are not set
+// InitTestProvider populates the ConfigData and skips the test if the given flags are not set.
+// Tests that reach it without a local test config are skipped: the config points at real media
+// paths on the developer's machine and is not checked into the repo.
 func InitTestProvider(t *testing.T, args ...FlagFunc) {
 	if os.Getenv("TEST_CONFIG_PATH") == "" {
 		err := os.Setenv("TEST_CONFIG_PATH", ConfigPath)
@@ -69,7 +71,12 @@ func InitTestProvider(t *testing.T, args ...FlagFunc) {
 			log.Fatalf("couldn't set TEST_CONFIG_PATH: %s", err)
 		}
 	}
-	ConfigData = getConfig()
+
+	c, err := getConfig()
+	if err != nil {
+		t.Skipf("skipping: no test config found (%s). Create %s/config.toml to run this test.", err, os.Getenv("TEST_CONFIG_PATH"))
+	}
+	ConfigData = c
 
 	for _, fn := range args {
 		if !fn() {
@@ -91,21 +98,21 @@ func SetTwoLevelDeep() {
 	DataPath = TwoLevelDeepDataPath
 }
 
-func getConfig() *Config {
+func getConfig() (*Config, error) {
 	configPath, exists := os.LookupEnv("TEST_CONFIG_PATH")
 	if !exists {
-		log.Fatalf("TEST_CONFIG_PATH not set")
+		return nil, fmt.Errorf("TEST_CONFIG_PATH not set")
 	}
 
 	v := viper.New()
 	v.SetConfigName("config")
 	v.AddConfigPath(configPath)
 	if err := v.ReadInConfig(); err != nil {
-		log.Fatalf("couldn't load config: %s", err)
+		return nil, err
 	}
 	var c Config
 	if err := v.Unmarshal(&c); err != nil {
-		fmt.Printf("couldn't read config: %s", err)
+		return nil, fmt.Errorf("couldn't read config: %w", err)
 	}
-	return &c
+	return &c, nil
 }

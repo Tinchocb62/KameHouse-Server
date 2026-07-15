@@ -210,17 +210,30 @@
     "dominantVibe": "Emocionante",
     "suggestedSwimlane": "Aventuras en el Universo Dragon Ball"
   },
-  "cell": {
-    "id": "cell",
-    "title": "Saga Androides y Cell",
+  "androides": {
+    "id": "androides",
+    "title": "Saga de los Androides",
     "seriesId": 12971,
-    "description": "Un misterioso joven del futuro advierte sobre la llegada de unos androides asesinos creados por la Patrulla Roja y la aparición accidental de la bio-arma perfecta: Cell.",
+    "description": "Un misterioso joven del futuro advierte sobre la llegada de unos androides asesinos creados por la Patrulla Roja.",
     "tags": [
       "Viajes en el Tiempo",
-      "Invasión a la Tierra",
       "La Patrulla Roja",
       "Shonen Clásico",
       "Artes Marciales"
+    ],
+    "dominantVibe": "Tensión",
+    "suggestedSwimlane": "La Patrulla Roja: Androides y Cell"
+  },
+  "cell": {
+    "id": "cell",
+    "title": "Saga de Cell",
+    "seriesId": 12971,
+    "description": "Aparición de la bio-arma perfecta Cell, quien busca absorber a los androides para alcanzar su forma definitiva.",
+    "tags": [
+      "Invasión a la Tierra",
+      "Shonen Clásico",
+      "Artes Marciales",
+      "Superación Personal"
     ],
     "dominantVibe": "Emocionante",
     "suggestedSwimlane": "La Patrulla Roja: Androides y Cell"
@@ -255,19 +268,61 @@
     "dominantVibe": "Relajado",
     "suggestedSwimlane": "Aventuras en el Universo Dragon Ball"
   },
-  "majin-buu": {
-    "id": "majin-buu",
-    "title": "Saga Majin Buu",
+  "babidi": {
+    "id": "babidi",
+    "title": "Saga de Babidi",
     "seriesId": 12971,
-    "description": "Siete años después del juego de Cell, el malvado mago Babidi busca despertar al monstruo más temible que jamás haya existido en el universo: Majin Buu.",
+    "description": "El mago Babidi y Dabura buscan liberar a Majin Buu. Vegeta permite ser poseído para tener su revancha definitiva contra Goku.",
     "tags": [
       "Súper Saiyajin",
       "Magia y Hechizos",
       "Mundo de los Demonios",
-      "La Patrulla Roja",
+      "Torneo de las Artes Marciales",
       "Shonen Clásico"
     ],
-    "dominantVibe": "Aventura",
+    "dominantVibe": "Tensión",
+    "suggestedSwimlane": "Más Allá del Límite: Transformaciones Saiyajin"
+  },
+  "majin-buu": {
+    "id": "majin-buu",
+    "title": "Saga de Majin Buu",
+    "seriesId": 12971,
+    "description": "Majin Buu despierta y demuestra un poder destructivo increíble, obligando a Vegeta a tomar la decisión de sacrificarse.",
+    "tags": [
+      "Sacrificio",
+      "Magia y Hechizos",
+      "Poder Incontrolable",
+      "Shonen Clásico"
+    ],
+    "dominantVibe": "Drama",
+    "suggestedSwimlane": "Más Allá del Límite: Transformaciones Saiyajin"
+  },
+  "fusion": {
+    "id": "fusion",
+    "title": "Saga de la Fusión",
+    "seriesId": 12971,
+    "description": "Goten y Trunks aprenden la danza de la fusión, y más tarde Goku y Vegeta utilizan los pendientes Potara para enfrentar a Super Buu.",
+    "tags": [
+      "Fusión",
+      "Súper Saiyajin 3",
+      "Magia y Hechizos",
+      "Superación Personal"
+    ],
+    "dominantVibe": "Emocionante",
+    "suggestedSwimlane": "Más Allá del Límite: Transformaciones Saiyajin"
+  },
+  "kid-buu": {
+    "id": "kid-buu",
+    "title": "Saga de Kid Buu",
+    "seriesId": 12971,
+    "description": "La forma original y más pura de Buu amenaza el universo entero. Goku prepara la Genki-Dama definitiva en el Planeta Supremo.",
+    "tags": [
+      "Batalla Final",
+      "Genki-Dama",
+      "Salvar el Universo",
+      "Shonen Clásico"
+    ],
+    "dominantVibe": "Épico",
     "suggestedSwimlane": "Más Allá del Límite: Transformaciones Saiyajin"
   },
   "batalla-dioses": {
@@ -315,6 +370,20 @@
     "dominantVibe": "Aventura",
     "suggestedSwimlane": "¡Fuera del Ring!: Los Grandes Torneos"
   },
+  "copy-vegeta": {
+    "id": "copy-vegeta",
+    "title": "Saga del Agua Sobrenatural (Vegeta Copia)",
+    "seriesId": 62715,
+    "description": "Un agua sobrenatural toma la forma de Vegeta y absorbe su poder. Goku debe vencer al clon antes de que Vegeta desaparezca para siempre.",
+    "tags": [
+      "Clones",
+      "Los Guerreros Z",
+      "Artes Marciales",
+      "Acción"
+    ],
+    "dominantVibe": "Misterio",
+    "suggestedSwimlane": "Rivales de otro Mundo"
+  },
   "trunks-futuro": {
     "id": "trunks-futuro",
     "title": "Saga de Goku Black",
@@ -330,14 +399,42 @@
     "dominantVibe": "Emocionante",
     "suggestedSwimlane": "Espadachines y Guerreros con Armas"
   },
-  "supervivencia-universal": {
-    "id": "supervivencia-universal",
-    "title": "Saga Supervivencia Universal",
+  "exhibicion-zen": {
+    "id": "exhibicion-zen",
+    "title": "Saga de Exhibición Zen",
+    "seriesId": 62715,
+    "description": "Zeno-Sama organiza un torneo de exhibición para prepararse antes del Torneo del Poder. Goku y sus amigos deben demostrar sus habilidades ante los dioses.",
+    "tags": [
+      "Torneo de Exhibición",
+      "Cruce de Universos",
+      "Dioses de la Destrucción",
+      "Shonen Clásico"
+    ],
+    "dominantVibe": "Tensión",
+    "suggestedSwimlane": "¡Fuera del Ring!: Los Grandes Torneos"
+  },
+  "reclutamiento-u7": {
+    "id": "reclutamiento-u7",
+    "title": "Saga de Reclutamiento",
+    "seriesId": 62715,
+    "description": "Goku debe reunir a los diez mejores guerreros del Universo 7, recurriendo a viejos aliados e incluso enemigos letales como Freezer para luchar en el Torneo del Poder.",
+    "tags": [
+      "Reclutamiento",
+      "Entrenamiento Extremo",
+      "Los Guerreros Z",
+      "Cruce de Universos"
+    ],
+    "dominantVibe": "Aventura",
+    "suggestedSwimlane": "¡Fuera del Ring!: Los Grandes Torneos"
+  },
+  "torneo-poder": {
+    "id": "torneo-poder",
+    "title": "Saga del Torneo del Poder",
     "seriesId": 62715,
     "description": "Zeno-Sama organiza el Torneo del Poder donde 8 universos batallarán. El universo perdedor será aniquilado inmediatamente.",
     "tags": [
       "Batalla Épica",
-      "Artes Marciales Clásicas",
+      "Torneo del Poder",
       "Supervivencia Universal",
       "Dioses de la Destrucción",
       "Shonen Clásico"

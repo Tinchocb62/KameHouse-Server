@@ -44,6 +44,11 @@ export interface PlayerCoreProps {
     nextEpisodeTitle?: string
     nextEpisodeNumber?: number
     nextEpisodeImage?: string
+    /** Duración real del archivo según ffprobe (mediaInfo.duration del server).
+     *  Fallback cuando el navegador reporta Infinity/NaN (MKV directo sin
+     *  duración en el header): sin esto, todas las lógicas de "cerca del final"
+     *  (auto-skip de outro, avance marathon, panel de siguiente episodio) mueren. */
+    metadataDuration?: number
 }
 
 export interface PlayerCore {
@@ -52,6 +57,7 @@ export interface PlayerCore {
         containerElement: React.RefObject<HTMLDivElement>
         canvasElement: React.RefObject<HTMLCanvasElement>
         progressBarElement: React.RefObject<HTMLDivElement>
+        thumbElement: React.RefObject<HTMLDivElement>
         progressInputElement: React.RefObject<HTMLInputElement>
         timeTextElement: React.RefObject<HTMLSpanElement>
     }
@@ -64,6 +70,10 @@ export interface PlayerCore {
         isFullscreen: boolean
         controlsVisible: boolean
         status: "loading" | "ready" | "error"
+        /** true cuando el loading corresponde a un cambio de stream mid-playback (ej. audio track switch),
+         *  en oposición al loading inicial del player. El overlay usa esto para mostrar un fondo semitransparente
+         *  en vez de negro sólido, manteniendo la imagen congelada del video visible. */
+        isStreamSwitching: boolean
         errorMsg: string
         isBuffering: boolean
         isSeeking: boolean
@@ -133,7 +143,7 @@ export interface PlayerCore {
         handleVolume: (e: React.ChangeEvent<HTMLInputElement>) => void
         toggleMute: () => void
         onSelectAudio: (track: AudioTrack, opts?: { auto?: boolean }) => void
-        onSelectSubtitle: (track: SubtitleTrack | null) => void
+        onSelectSubtitle: (track: SubtitleTrack | null, opts?: { auto?: boolean }) => void
         toggleFullscreen: () => void
         handleSkipIntro: () => void
         undoSkip: () => void

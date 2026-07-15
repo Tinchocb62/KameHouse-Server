@@ -39,9 +39,6 @@ function PlayerLoadingScreen() {
     return (
         <div className="fixed inset-0 z-[10000] bg-black w-screen h-screen flex flex-col items-center justify-center gap-4 text-white">
             <Icons.ui.spinner className="w-14 h-14 text-white animate-spin" />
-            <p className="font-bold tracking-widest uppercase text-[10px] opacity-80 animate-pulse">
-                Cargando Reproductor
-            </p>
         </div>
     )
 }
@@ -53,17 +50,58 @@ const VideoPlayerOrchestrator = lazy(() =>
 export function VideoPlayer(props: VideoPlayerProps) {
     const setVideoActive = useAppStore(state => state.setVideoActive)
     const [mounted, setMounted] = useState(false)
-
     useEffect(() => {
+        // Attempt to enter fullscreen
+        try {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch((err: any) => {
+                    console.warn("Fullscreen request failed:", err)
+                })
+            }
+        } catch (err: any) {
+            console.warn("Fullscreen error:", err)
+        }
+
+        // Try lock screen orientation to landscape
+        try {
+            const screenAny = window.screen as any
+            if (screenAny && screenAny.orientation && screenAny.orientation.lock) {
+                screenAny.orientation.lock("landscape").catch((err: any) => {
+                    console.warn("Orientation lock failed:", err)
+                })
+            }
+        } catch (err: any) {
+            console.warn("Orientation lock error:", err)
+        }
+
         Promise.resolve().then(() => {
             setMounted(true)
             setVideoActive(true)
         })
+        
         return () => {
             setVideoActive(false)
+            // Unlock screen orientation
+            try {
+                const screenAny = window.screen as any
+                if (screenAny && screenAny.orientation && screenAny.orientation.unlock) {
+                    screenAny.orientation.unlock()
+                }
+            } catch (err: any) {
+                console.warn("Orientation unlock error:", err)
+            }
+            // Attempt to exit fullscreen when closing player
+            try {
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch((err: any) => {
+                        console.warn("Exit fullscreen failed:", err)
+                    })
+                }
+            } catch (err: any) {
+                console.warn("Exit fullscreen error:", err)
+            }
         }
     }, [setVideoActive])
-
     const isLocal = !props.isExternalStream && Boolean(props.streamUrl) && props.streamType !== "online"
 
     const playerContent = isLocal ? (
@@ -81,9 +119,11 @@ export function VideoPlayer(props: VideoPlayerProps) {
 
     return createPortal(
         <PlayerErrorBoundary label="Video Player">
-            <Suspense fallback={<PlayerLoadingScreen />}>
-                {playerContent}
-            </Suspense>
+            <div className="fixed inset-0 z-[10000] animate-in fade-in zoom-in-95 duration-500 fill-mode-forwards">
+                <Suspense fallback={<PlayerLoadingScreen />}>
+                    {playerContent}
+                </Suspense>
+            </div>
         </PlayerErrorBoundary>,
         document.body
     )

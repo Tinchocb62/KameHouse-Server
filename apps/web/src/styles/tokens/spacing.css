@@ -41,6 +41,11 @@
   --space-80:  320px;
   --space-96:  384px;
 
+  /* Ancho máximo del contenido de página (cap ultrawide). Fuente única del
+     valor que antes estaba hardcodeado como max-w-[1800px] en ~12 archivos.
+     Usar la utility `max-w-content` de Tailwind (mapeada a este token). */
+  --content-max: 1800px;
+
   /* Alias semánticos para uso común */
   --space-xs:     var(--space-1);    /* 4px  */
   --space-sm:     var(--space-2);    /* 8px  */

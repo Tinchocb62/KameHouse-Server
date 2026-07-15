@@ -32,16 +32,20 @@ const itemVariants: Variants = {
 
 interface PremiumEpisodeListProps {
   episodes: PremiumEpisode[]
+  activeSagaId?: string
   activeSubSagaStart?: number
   activeSubSagaEnd?: number
+  scrollToEp?: number
   onPlay?: (episodeNumber: number) => void
   onPreload?: (filePath: string) => void
 }
 
 export function PremiumEpisodeList({
   episodes,
+  activeSagaId,
   activeSubSagaStart,
   activeSubSagaEnd,
+  scrollToEp,
   onPlay,
   onPreload
 }: PremiumEpisodeListProps) {
@@ -108,10 +112,13 @@ export function PremiumEpisodeList({
           <p className="text-xs text-on-surface-variant/70 mt-1">Intenta con otro término de búsqueda</p>
         </div>
       ) : (
-        <EpisodeVirtualList 
+        <EpisodeVirtualList
             filteredEpisodes={filteredEpisodes}
+            activeSagaId={activeSagaId}
             activeSubSagaStart={activeSubSagaStart}
             activeSubSagaEnd={activeSubSagaEnd}
+            scrollToEp={scrollToEp}
+            searchActive={!!searchQuery.trim()}
             ts={ts}
             onPlay={onPlay}
             onMouseEnter={onMouseEnter}
@@ -122,8 +129,8 @@ export function PremiumEpisodeList({
   )
 }
 
-function EpisodeVirtualList({ 
-    filteredEpisodes, activeSubSagaStart, activeSubSagaEnd, ts, onPlay, onMouseEnter, onMouseLeave 
+function EpisodeVirtualList({
+    filteredEpisodes, activeSagaId, activeSubSagaStart, activeSubSagaEnd, scrollToEp, searchActive, ts, onPlay, onMouseEnter, onMouseLeave
 }: any) {
     const listRef = React.useRef<HTMLDivElement>(null)
     // El detalle de serie scrollea dentro de su propio contenedor, no con la ventana, así
@@ -160,10 +167,48 @@ function EpisodeVirtualList({
     const virtualizer = useVirtualizer({
         count: filteredEpisodes.length,
         getScrollElement: () => scrollEl,
-        estimateSize: () => (ts.themeUseLegacyEpisodeCard ? 96 : 180) + ROW_GAP_PX,
+        estimateSize: () => {
+            if (ts.themeUseLegacyEpisodeCard) return 96 + ROW_GAP_PX;
+            const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+            return (isSmallScreen ? 110 : 220) + ROW_GAP_PX;
+        },
         overscan: 5,
         scrollMargin,
     })
+
+    // Al cambiar de saga o sub-saga, scrollear al primer episodio correspondiente.
+    // No se puede usar getElementById + scrollIntoView porque la lista está
+    // virtualizada (el episodio destino puede no estar montado) y scrollea dentro de
+    // un contenedor propio, no la ventana. El virtualizer.scrollToIndex maneja ambas
+    // cosas (conta scrollMargin y monta la fila destino). Se saltea el primer render
+    // (mount inicial) para no robar el scroll del hero al abrir la serie, y se ignora
+    // mientras hay una búsqueda activa.
+    const didMountRef = React.useRef(false)
+    React.useEffect(() => {
+        if (!scrollEl) return
+        if (!didMountRef.current) {
+            didMountRef.current = true
+            return
+        }
+        if (searchActive) return
+        
+        let targetIndex = -1
+        if (scrollToEp != null) {
+            const idx = filteredEpisodes.findIndex((e: PremiumEpisode) => e.number === scrollToEp)
+            if (idx >= 0) targetIndex = idx
+        } else if (activeSubSagaStart != null) {
+            const idx = filteredEpisodes.findIndex((e: PremiumEpisode) => e.number === activeSubSagaStart)
+            if (idx >= 0) targetIndex = idx
+        }
+
+        if (targetIndex >= 0) {
+            // rAF: dejar que el layoutEffect actualice scrollMargin (la altura del header
+            // de saga cambia por saga) antes de calcular el offset del scroll.
+            const raf = requestAnimationFrame(() => virtualizer.scrollToIndex(targetIndex, { align: "start" }))
+            return () => cancelAnimationFrame(raf)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeSagaId, activeSubSagaStart, scrollToEp, scrollEl])
 
     return (
         <div ref={listRef} className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
@@ -211,7 +256,7 @@ function EpisodeVirtualList({
                             {/* Thumbnail */}
                             <div className={cn(
                                 "relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-surface-container",
-                                ts.themeUseLegacyEpisodeCard ? "w-28" : "w-52 md:w-64 shadow-card"
+                                ts.themeUseLegacyEpisodeCard ? "w-28" : "w-32 sm:w-40 md:w-52 lg:w-64 shadow-card"
                             )}>
                                 <img
                                 src={ep.thumbnailUrl}
@@ -220,9 +265,9 @@ function EpisodeVirtualList({
                                 />
                                 {/* Play Overlay */}
                                 {!ts.themeUseLegacyEpisodeCard && (
-                                <div className="absolute inset-0 bg-scrim/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-base cursor-pointer">
-                                    <div className="w-12 h-12 rounded-full glass-liquid flex items-center justify-center">
-                                    <Icons.media.play className="w-6 h-6 text-white ml-1" fill="currentColor" />
+                                <div className="absolute inset-0 bg-scrim/20 md:bg-scrim/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center justify-center transition-opacity duration-base cursor-pointer">
+                                    <div className="w-9 h-9 md:w-12 md:h-12 rounded-full glass-liquid flex items-center justify-center">
+                                    <Icons.media.play className="w-4 h-4 md:w-6 md:h-6 text-white ml-0.5 md:ml-1" fill="currentColor" />
                                     </div>
                                 </div>
                                 )}

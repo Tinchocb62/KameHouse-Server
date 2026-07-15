@@ -133,6 +133,7 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
         mediaFormat: props.mediaFormat,
         onRequestStreamTypeChange: requestStreamType,
         onDirectPlayFailed: handleDirectPlayFailed,
+        metadataDuration: data?.mediaInfo?.duration,
     })
 
     // External mpv playback (desktop app only): hands the local file off to an

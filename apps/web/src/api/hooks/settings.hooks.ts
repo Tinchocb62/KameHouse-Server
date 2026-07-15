@@ -10,6 +10,7 @@ export function useGetStatus() {
         method: API_ENDPOINTS.STATUS.GetStatus.methods[0],
         queryKey: [API_ENDPOINTS.STATUS.GetStatus.key],
         enabled: true,
+        muteError: true,
     })
 }
 
@@ -19,6 +20,7 @@ export function useGetSettings() {
         method: API_ENDPOINTS.SETTINGS.GetSettings.methods[0],
         queryKey: [API_ENDPOINTS.SETTINGS.GetSettings.key],
         enabled: true,
+        muteError: true,
     })
 }
 

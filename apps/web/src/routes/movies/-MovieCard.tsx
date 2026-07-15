@@ -2,6 +2,8 @@ import { memo, useState } from "react"
 import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
 import { DeferredImage } from "@/components/shared/deferred-image"
+import { useResponsive } from "@/hooks/use-responsive"
+import { Vaul, VaulContent } from "@/components/vaul"
 import { useSound } from "@/hooks/use-sound"
 import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
 import { fetchAnimeEntry } from "@/api/hooks/anime_entries.hooks"
@@ -38,6 +40,8 @@ export const MovieCard = memo(function MovieCard({
     onHoverCard: (entry: (Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null) => void
 }) {
     const { playSound } = useSound()
+    const { isMobile } = useResponsive()
+    const [drawerOpen, setDrawerOpen] = useState(false)
     const [isHovered, setIsHovered] = useState(false)
     const movie = entry.media
     if (!movie || !entry.mediaId) return null
@@ -60,15 +64,18 @@ export const MovieCard = memo(function MovieCard({
     const posterUrl = getMediumResImage(movie.posterImage || "")
  
     return (
-        <div
+        <>
+            <div
             className="group relative cursor-pointer flex flex-col transition-all duration-300"
             onClick={handleCardClick}
             onMouseEnter={() => {
+                if (isMobile) return
                 setIsHovered(true)
                 onHoverCard({ ...entry, era, startedAtTimestamp: entry.listData?.startedAt ? new Date(entry.listData.startedAt).getTime() : 0 })
                 playSound("hover", 0.15)
             }}
             onMouseLeave={() => {
+                if (isMobile) return
                 setIsHovered(false)
                 onHoverCard(null)
             }}
@@ -78,7 +85,7 @@ export const MovieCard = memo(function MovieCard({
                 className={cn(
                     "relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-container border transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] transform-gpu will-change-transform",
                     "group-hover:scale-[1.03] group-hover:-translate-y-1",
-                    !hasLocalFiles && "grayscale opacity-45 group-hover:grayscale-0 group-hover:opacity-100",
+                    !hasLocalFiles && !isMobile && "grayscale opacity-45 group-hover:grayscale-0 group-hover:opacity-100",
                 )}
                 style={{
                     borderColor: isHovered ? eraConfig.color : "var(--glass-border-side)",
@@ -117,64 +124,66 @@ export const MovieCard = memo(function MovieCard({
                     />
                 </div>
  
-                {/* Action buttons (neon play / add queue) */}
-                <div 
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 z-30"
-                    style={{
-                        transition: "opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)",
-                    }}
-                >
-                    <div
-                        onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
-                        className="w-11 h-11 rounded-full flex items-center justify-center shadow-elevation-5 active:scale-[0.93] transform-gpu border bg-surface-container text-on-surface border-outline-variant cursor-pointer hover:scale-110 transition-transform"
-                        style={{ 
-                            boxShadow: `0 0 20px ${eraConfig.glow}`,
+                {/* Action buttons (neon play / add queue) - only on desktop */}
+                {!isMobile && (
+                    <div 
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 z-30"
+                        style={{
+                            transition: "opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)",
                         }}
                     >
-                                        <Icons.media.play className="size-[18px] fill-current ml-0.5 text-on-surface" />
-                    </div>
- 
-                    {hasLocalFiles && (
                         <div
-                            onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                    const fullEntry = await fetchAnimeEntry(String(entry.mediaId));
-                                    const localFile = fullEntry?.localFiles?.[0];
-                                    if (localFile && localFile.path) {
-                                        const epNum = localFile.parsedInfo?.episode || localFile.metadata?.episode || 1;
-                                        useAppStore.getState().addToQueue({
-                                            id: entry.mediaId!,
-                                            title: title,
-                                            playableUrl: localFile.path,
-                                            thumbnail: getHighResImage(movie.posterImage || ""),
-                                            mediaId: entry.mediaId!,
-                                            episodeNumber: Number(epNum),
-                                            malId: movie.idMal ?? null,
-                                            mediaFormat: movie.format ?? "MOVIE"
-                                        });
-                                        const { toast } = await import("sonner");
-                                        toast.success("Añadido a la cola de reproducción");
-                                    } else {
-                                        const { toast } = await import("sonner");
-                                        toast.error("No hay archivos locales.");
-                                    }
-                                } catch (err) {
-                                    console.error(err);
-                                }
+                            onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
+                            className="w-11 h-11 rounded-full flex items-center justify-center shadow-elevation-5 active:scale-[0.93] transform-gpu border bg-surface-container text-on-surface border-outline-variant cursor-pointer hover:scale-110 transition-transform"
+                            style={{ 
+                                boxShadow: `0 0 20px ${eraConfig.glow}`,
                             }}
-                            className="px-2.5 py-1 rounded-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_60%,transparent)] hover:bg-white hover:text-black border border-outline-variant/10 flex items-center gap-1.5 shadow-elevation-5 text-[8px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer"
                         >
-                            <Icons.ui.listPlus className="w-2.5 h-2.5" />
-                            <span>Cola</span>
+                            <Icons.media.play className="size-[18px] fill-current ml-0.5 text-on-surface" />
                         </div>
-                    )}
-                </div>
+     
+                        {hasLocalFiles && (
+                            <div
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                        const fullEntry = await fetchAnimeEntry(String(entry.mediaId));
+                                        const localFile = fullEntry?.localFiles?.[0];
+                                        if (localFile && localFile.path) {
+                                            const epNum = localFile.parsedInfo?.episode || localFile.metadata?.episode || 1;
+                                            useAppStore.getState().addToQueue({
+                                                id: entry.mediaId!,
+                                                title: title,
+                                                playableUrl: localFile.path,
+                                                thumbnail: getHighResImage(movie.posterImage || ""),
+                                                mediaId: entry.mediaId!,
+                                                episodeNumber: Number(epNum),
+                                                malId: movie.idMal ?? null,
+                                                mediaFormat: movie.format ?? "MOVIE"
+                                            });
+                                            const { toast } = await import("sonner");
+                                            toast.success("Añadido a la cola de reproducción");
+                                        } else {
+                                            const { toast } = await import("sonner");
+                                            toast.error("No hay archivos locales.");
+                                        }
+                                    } catch (err) {
+                                        console.error(err);
+                                    }
+                                }}
+                                className="px-2.5 py-1 rounded-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_60%,transparent)] hover:bg-white hover:text-black border border-outline-variant/10 flex items-center gap-1.5 shadow-elevation-5 text-badge transition-all duration-300 cursor-pointer"
+                            >
+                                <Icons.ui.listPlus className="w-2.5 h-2.5" />
+                                <span>Cola</span>
+                            </div>
+                        )}
+                    </div>
+                )}
  
                 {/* Sticker de Categoría de Videoclub */}
                 <div className="absolute top-2.5 left-2.5 z-20 flex flex-col gap-1 items-start">
                     <span 
-                        className="text-[7.5px] font-mono font-black uppercase px-2 py-0.5 rounded shadow-elevation-2 border bg-surface-container backdrop-blur-overlay-sm" 
+                        className="text-badge font-mono px-2 py-0.5 rounded shadow-elevation-2 border bg-surface-container backdrop-blur-overlay-sm" 
                         style={{ borderColor: `color-mix(in srgb, ${eraConfig.color} 25%, transparent)`, color: eraConfig.color }}
                     >
                         {eraConfig.shortLabel}
@@ -182,19 +191,31 @@ export const MovieCard = memo(function MovieCard({
                 </div>
  
                 {/* Status badges */}
-                <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1 z-10">
+                <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1 z-20">
+                    {isMobile && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setDrawerOpen(true)
+                            }}
+                            className="p-1.5 rounded-full bg-zinc-950/60 backdrop-blur-[var(--blur-overlay-sm)] border border-white/10 text-white/70 active:scale-95 transition-all mb-1"
+                            aria-label="Más opciones"
+                        >
+                            <Icons.ui.moreHorizontal className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                     {isCompleted && (
-                        <div className="px-1.5 py-0.5 rounded bg-green-500 text-[6.5px] font-black text-on-surface uppercase tracking-wider leading-none shadow-sm">
+                        <div className="px-1.5 py-0.5 rounded bg-green-500 text-badge text-on-surface shadow-sm">
                             visto
                         </div>
                     )}
                     {!isCompleted && hasProgress && (
-                        <div className="px-1.5 py-0.5 rounded bg-brand-secondary text-[6.5px] font-black text-on-surface uppercase tracking-wider leading-none shadow-sm">
+                        <div className="px-1.5 py-0.5 rounded bg-brand-secondary text-badge text-on-surface shadow-sm">
                             {Math.round(progressPercent)}%
                         </div>
                     )}
                     {!hasLocalFiles && (
-                        <div className="px-1.5 py-0.5 rounded bg-surface-container text-[6.5px] font-black text-on-surface-variant uppercase tracking-wider leading-none shadow-sm border border-outline-variant/5">
+                        <div className="px-1.5 py-0.5 rounded bg-surface-container text-badge text-on-surface-variant shadow-sm border border-outline-variant/5">
                             NO LOCAL
                         </div>
                     )}
@@ -213,18 +234,111 @@ export const MovieCard = memo(function MovieCard({
  
             {/* Title / Info block */}
             <div className="mt-3.5 space-y-1.5 px-1">
-                {/* Fixed height and line-clamp-2 keeps titles aligned without shifting layout */}
                 <div className="h-9 min-h-[36px] flex flex-col justify-start">
-                    <h3 className="font-sans text-[11px] font-bold text-on-surface-variant line-clamp-2 uppercase tracking-wide leading-tight group-hover:text-on-surface transition-colors duration-300">
+                    <h3 className="font-sans text-label-sm text-on-surface-variant line-clamp-2 uppercase group-hover:text-on-surface transition-colors duration-300">
                         {title}
                     </h3>
                 </div>
-                <div className="flex items-center justify-between text-[9px] font-mono text-on-surface-variant font-medium">
+                <div className="flex items-center justify-between text-caption font-mono text-on-surface-variant uppercase">
                     <span>AÑO {movie.year || "----"}</span>
                     {movie.runtime && <span className="text-on-surface-variant/80">{movie.runtime} MIN</span>}
                 </div>
             </div>
         </div>
+
+        {isMobile && (
+            <Vaul open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <VaulContent className="bg-zinc-950/95 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/10 p-5 pb-8 flex flex-col focus:outline-none">
+                    <div className="flex gap-4 mb-4">
+                        <img
+                            src={posterUrl}
+                            alt={title}
+                            className="w-20 aspect-[2/3] object-cover rounded-xl border border-white/10 shrink-0"
+                        />
+                        <div className="flex flex-col min-w-0">
+                            <h3 className="font-bebas text-2xl text-on-surface uppercase tracking-wide truncate">
+                                {title}
+                            </h3>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mt-1">
+                                {eraConfig.label}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                                {movie.score && (
+                                    <span className="text-brand-success font-extrabold">
+                                        {(movie.score / 10).toFixed(0)}% COINCIDENCIA
+                                    </span>
+                                )}
+                                {movie.year && <span className="text-on-surface-variant font-medium">{movie.year}</span>}
+                                <span className="border border-outline-variant/10 bg-surface-variant px-1.5 py-0.5 rounded text-on-surface-variant text-[8px]">
+                                    PELÍCULA
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {movie.description && (
+                        <p className="text-[11px] leading-relaxed text-on-surface-variant line-clamp-4 mb-6">
+                            {movie.description.replace(/<[^>]*>?/gm, '')}
+                        </p>
+                    )}
+
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => {
+                                setDrawerOpen(false)
+                                handleCardClick()
+                            }}
+                            className="w-full py-3 bg-primary text-on-surface font-black uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                        >
+                            <Icons.media.play className="w-4 h-4 fill-current" />
+                            <span>Ver Detalles</span>
+                        </button>
+
+                        {hasLocalFiles && (
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation()
+                                    setDrawerOpen(false)
+                                    try {
+                                        const fullEntry = await fetchAnimeEntry(String(entry.mediaId))
+                                        const localFile = fullEntry?.localFiles?.[0]
+                                        if (localFile && localFile.path) {
+                                            const epNum = localFile.parsedInfo?.episode || localFile.metadata?.episode || 1
+                                            useAppStore.getState().addToQueue({
+                                                id: entry.mediaId!,
+                                                title: title,
+                                                playableUrl: localFile.path,
+                                                thumbnail: getHighResImage(movie.posterImage || ""),
+                                                mediaId: entry.mediaId!,
+                                                episodeNumber: Number(epNum),
+                                                malId: movie.idMal ?? null,
+                                                mediaFormat: movie.format ?? "MOVIE"
+                                            })
+                                            const { toast } = await import("sonner")
+                                            toast.success("Añadido a la cola de reproducción")
+                                        }
+                                    } catch (err) {
+                                        console.error(err)
+                                    }
+                                }}
+                                className="w-full py-3 border border-outline-variant/30 text-on-surface font-bold uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                            >
+                                <Icons.ui.listPlus className="w-4 h-4" />
+                                <span>Añadir a la cola</span>
+                            </button>
+                        )}
+
+                        <button
+                            onClick={() => setDrawerOpen(false)}
+                            className="w-full py-3 border border-outline-variant/30 text-on-surface-variant font-bold uppercase tracking-wider text-xs rounded-xl active:scale-95 transition-all"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </VaulContent>
+            </Vaul>
+        )}
+        </>
     )
 })
 MovieCard.displayName = "MovieCard"

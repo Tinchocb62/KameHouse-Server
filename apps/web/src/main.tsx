@@ -6,8 +6,8 @@ import { createRouter, RouterProvider } from "@tanstack/react-router"
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { routeTree } from "./routeTree.gen"
-import "@fontsource-variable/inter"
-import "@fontsource-variable/plus-jakarta-sans"
+import "@fontsource-variable/inter/wght.css"
+import "@fontsource-variable/plus-jakarta-sans/wght.css"
 import "@fontsource/bebas-neue/latin-400.css"
 import "@fontsource/space-mono/400.css"
 import "@fontsource/space-mono/700.css"
@@ -43,9 +43,24 @@ if (import.meta.env.DEV && import.meta.env.VITE_REACT_SCAN === "true") {
 // In desktop (Tauri) mode the errors are also emitted to the Rust-side event
 // bus so they appear in the app's native log file.
 window.addEventListener("unhandledrejection", (event) => {
-    const reason = event.reason instanceof Error
-        ? { message: event.reason.message, stack: event.reason.stack }
-        : { message: String(event.reason) }
+    const raw = event.reason
+    let reason: { message: string; stack?: string }
+    if (raw instanceof Error) {
+        reason = { message: raw.message, stack: raw.stack }
+    } else if (raw && typeof raw === "object") {
+        // Non-Error rejections (e.g. a rejected fetch/Response or an API error
+        // object) stringify to "[object Object]" and lose all info. Serialize the
+        // object so the log is actually actionable.
+        let serialized: string
+        try {
+            serialized = JSON.stringify(raw, Object.getOwnPropertyNames(raw))
+        } catch {
+            serialized = String(raw)
+        }
+        reason = { message: serialized }
+    } else {
+        reason = { message: String(raw) }
+    }
     console.error("[global] Unhandled promise rejection:", reason)
     try {
         if (typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== "undefined") {
@@ -69,7 +84,13 @@ window.addEventListener("error", (event) => {
 })
 
 async function init() {
-    if (__isDesktop__) {
+    // El build "desktop" (SEA_PUBLIC_PLATFORM=desktop) también se sirve en un
+    // navegador normal durante `npm run dev`. En ese contexto el runtime de Tauri
+    // no existe, así que `invoke` sería undefined y tiraría. Solo intentamos obtener
+    // el puerto dinámico cuando Tauri está realmente presente; si no, el fallback de
+    // `getServerBaseUrl` (rutas relativas / __DEV_SERVER_PORT) ya resuelve el backend.
+    const hasTauriRuntime = typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== "undefined"
+    if (__isDesktop__ && hasTauriRuntime) {
         try {
             const { invoke } = await import("@tauri-apps/api/core")
             const port = await invoke<number>("get_local_server_port")

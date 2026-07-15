@@ -15,14 +15,15 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/components/ui/core/styling"
 import type { SaveSettings_Variables } from "@/api/generated/endpoint.types"
 
-// Import extracted tabs
-import { LibraryTab } from "./tabs/library-tab"
-import { ScannerTab } from "./tabs/scanner-tab"
-import { IntegrationsTab } from "./tabs/integrations-tab"
-import { SystemTab } from "./tabs/system-tab"
-import { PlayerTab } from "./tabs/player-tab"
-import { StreamingTab } from "./tabs/streaming-tab"
-import { AppearanceTab } from "./tabs/appearance-tab"
+import React, { Suspense } from "react"
+// Import extracted tabs with lazy loading
+const LibraryTab = React.lazy(() => import("./tabs/library-tab").then(m => ({ default: m.LibraryTab })))
+const ScannerTab = React.lazy(() => import("./tabs/scanner-tab").then(m => ({ default: m.ScannerTab })))
+const IntegrationsTab = React.lazy(() => import("./tabs/integrations-tab").then(m => ({ default: m.IntegrationsTab })))
+const SystemTab = React.lazy(() => import("./tabs/system-tab").then(m => ({ default: m.SystemTab })))
+const PlayerTab = React.lazy(() => import("./tabs/player-tab").then(m => ({ default: m.PlayerTab })))
+const StreamingTab = React.lazy(() => import("./tabs/streaming-tab").then(m => ({ default: m.StreamingTab })))
+const AppearanceTab = React.lazy(() => import("./tabs/appearance-tab").then(m => ({ default: m.AppearanceTab })))
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 // Matches backend Models_Settings exactly
@@ -55,7 +56,7 @@ const settingsSchema = z.object({
     mediaPlayer: z.object({}).default({}),
     mediastream: z.object({
         transcodeEnabled: z.boolean().default(false),
-        transcodeHwAccel: z.string().default(""),
+        transcodeHwAccel: z.string().default("auto"),
         transcodeThreads: z.number().default(0),
         transcodePreset: z.string().default(""),
         disableAutoSwitchToDirectPlay: z.boolean().default(false),
@@ -104,6 +105,7 @@ const settingsSchema = z.object({
         themeUnpinnedMenuItems: z.array(z.string()).nullish().transform(v => v ?? []),
         themeEnableSidebarGradient: z.boolean().default(false),
         themeEnableBlurringEffects: z.boolean().default(false),
+        themeEnableCinematicGrain: z.boolean().default(false),
     }).default({}),
 
     notifications: z.object({
@@ -204,15 +206,15 @@ function SettingsPage() {
     if (isLoading && !serverSettings) return <LoadingOverlayWithLogo />
 
     return (
-        <div className="flex h-full w-full text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative bg-transparent">
+        <div className="flex flex-col md:flex-row h-full w-full text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative bg-transparent">
             {/* ── Left Sidebar Nav ─────────────────────────────────────── */}
             <nav
-                className="relative w-[260px] shrink-0 h-full flex flex-col border-r border-outline-variant/30 backdrop-blur-overlay-xl overflow-y-auto no-scrollbar"
+                className="relative w-full md:w-[260px] shrink-0 h-auto md:h-full flex flex-row md:flex-col border-b md:border-b-0 md:border-r border-outline-variant/30 backdrop-blur-overlay-xl overflow-x-auto md:overflow-y-auto md:overflow-x-hidden no-scrollbar"
                 style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container-low) 40%, transparent)" }}
             >
 
                 {/* Sidebar header */}
-                <div className="relative z-10 px-6 pt-8 pb-6">
+                <div className="relative z-10 px-6 pt-8 pb-6 hidden md:block">
                     <div className="flex items-center gap-2.5 mb-3">
                         <span className="w-2 h-2 rounded-full bg-brand-accent" />
                         <span className="text-label-sm tracking-[0.3em] text-on-surface-variant uppercase font-mono">PANEL DE CONTROL</span>
@@ -224,7 +226,7 @@ function SettingsPage() {
                 </div>
 
                 {/* Nav items */}
-                <div className="relative z-10 flex-1 px-3 pb-4 space-y-0.5">
+                <div className="relative z-10 flex-1 px-3 py-3 md:pb-4 flex flex-row md:flex-col items-center md:items-stretch space-x-2 md:space-x-0 md:space-y-0.5 w-max md:w-auto">
                     {NAV_ITEMS.map((item) => {
                         const isActive = activeTab === item.id
                         return (
@@ -233,7 +235,7 @@ function SettingsPage() {
                                 type="button"
                                 onClick={() => setActiveTab(item.id)}
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 group relative",
+                                    "w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-full md:rounded-xl text-left transition-all duration-200 group relative shrink-0",
                                     isActive
                                         ? "bg-white/[0.06]"
                                         : "hover:bg-surface-container-high"
@@ -242,7 +244,7 @@ function SettingsPage() {
                                 {isActive && (
                                     <motion.div
                                         layoutId="sidebar-active"
-                                        className="absolute inset-0 rounded-xl bg-white/[0.06] border border-white/10"
+                                        className="absolute inset-0 rounded-full md:rounded-xl bg-white/[0.06] border border-white/10"
                                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                     />
                                 )}
@@ -254,7 +256,7 @@ function SettingsPage() {
                                 )}>
                                     <item.icon className="w-4 h-4" />
                                 </div>
-                                <div className="relative z-10 flex-1 min-w-0">
+                                <div className="relative z-10 flex-1 min-w-0 hidden md:block">
                                     <span className={cn(
                                         "text-caption font-bold uppercase tracking-wider block transition-colors duration-200",
                                         isActive ? "text-on-surface" : "text-on-surface-variant group-hover:text-on-surface"
@@ -268,8 +270,16 @@ function SettingsPage() {
                                         )}>{item.desc}</span>
                                     )}
                                 </div>
+                                <div className="relative z-10 flex-1 min-w-0 md:hidden">
+                                    <span className={cn(
+                                        "text-caption font-bold uppercase tracking-wider block transition-colors duration-200",
+                                        isActive ? "text-on-surface" : "text-on-surface-variant group-hover:text-on-surface"
+                                    )}>
+                                        {item.label}
+                                    </span>
+                                </div>
                                 {isActive && (
-                                    <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0" />
+                                    <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 hidden md:block" />
                                 )}
                             </button>
                         )
@@ -282,7 +292,7 @@ function SettingsPage() {
             {/* ── Main Content Area ────────────────────────────────────── */}
             <main className="flex-1 flex flex-col h-full overflow-hidden">
                 {/* Content header */}
-                <header className="shrink-0 px-8 md:px-12 lg:px-16 pt-8 pb-6 border-b border-outline-variant">
+                <header className="shrink-0 page-px pt-8 pb-6 border-b border-outline-variant">
                     <div className="flex items-center gap-2 mb-2">
                         {(() => {
                             const nav = NAV_ITEMS.find(n => n.id === activeTab)
@@ -312,15 +322,17 @@ function SettingsPage() {
                         <form
                             id="settings-form"
                             onSubmit={handleSubmit(onSubmit as unknown as SubmitHandler<FieldValues>, onFormError)}
-                            className="px-8 md:px-12 lg:px-16 py-8 pb-32 space-y-10 min-h-full"
+                            className="page-px py-8 pb-32 md:pb-32 space-y-10 min-h-full"
                         >
-                            {activeTab === "general"      && <SystemTab control={control} />}
-                            {activeTab === "library"      && <LibraryTab control={control} />}
-                            {activeTab === "player"       && <PlayerTab control={control} />}
-                            {activeTab === "scanner"      && <ScannerTab control={control} />}
-                            {activeTab === "streaming"    && <StreamingTab control={control} />}
-                            {activeTab === "integrations" && <IntegrationsTab control={control} />}
-                            {activeTab === "appearance"   && <AppearanceTab control={control} />}
+                            <Suspense fallback={<div className="flex items-center justify-center w-full h-64"><div className="w-8 h-8 rounded-full border-2 border-brand-accent border-t-transparent animate-spin" /></div>}>
+                                {activeTab === "general"      && <SystemTab control={control} />}
+                                {activeTab === "library"      && <LibraryTab control={control} />}
+                                {activeTab === "player"       && <PlayerTab control={control} />}
+                                {activeTab === "scanner"      && <ScannerTab control={control} />}
+                                {activeTab === "streaming"    && <StreamingTab control={control} />}
+                                {activeTab === "integrations" && <IntegrationsTab control={control} />}
+                                {activeTab === "appearance"   && <AppearanceTab control={control} />}
+                            </Suspense>
                         </form>
                     </FormProvider>
                 </div>
@@ -334,7 +346,7 @@ function SettingsPage() {
                         animate={{ opacity: 1, y: 0, x: "-50%" }}
                         exit={{ opacity: 0, y: 50, x: "-50%" }}
                         transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 backdrop-blur-overlay-md border border-outline-variant rounded-container px-6 py-4 shadow-elevation-3"
+                        className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col md:flex-row items-center gap-3 md:gap-8 backdrop-blur-overlay-md border border-outline-variant rounded-container px-4 md:px-6 py-3 md:py-4 shadow-elevation-3 max-w-[calc(100vw-2rem)] w-max"
                         style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 80%, transparent)" }}
                     >
                         <div className="flex items-center gap-3 pl-1">

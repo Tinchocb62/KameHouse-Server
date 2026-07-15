@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/components/ui/core/styling"
-import { Gauge, FastForward, Repeat, ChevronRight, Minus, Plus } from "lucide-react"
+import { Gauge, FastForward, Repeat, Minus, Plus } from "lucide-react"
 
 interface PlaybackSettingsProps {
     playbackRate: number
@@ -20,7 +20,6 @@ interface PlaybackSettingsProps {
     ambientModeEnabled?: boolean
     onAmbientModeEnabledChange?: (enabled: boolean) => void
     showSeparator?: boolean
-    onAdjustSkipTimes?: () => void
     mediaFormat?: string | null
     tvMode?: boolean
     onTvModeChange?: (enabled: boolean) => void
@@ -84,7 +83,6 @@ export function PlaybackSettings({
     ambientModeEnabled = true,
     onAmbientModeEnabledChange = () => {},
     showSeparator = true,
-    onAdjustSkipTimes,
     mediaFormat,
     tvMode,
     onTvModeChange,
@@ -137,19 +135,6 @@ export function PlaybackSettings({
                         </button>
                     </div>
                 </div>
-            )}
-
-            {onAdjustSkipTimes && (
-                <button
-                    onClick={onAdjustSkipTimes}
-                    className="flex items-center justify-between w-full px-6 py-3 transition-all duration-300 ease-out group text-left relative overflow-hidden hover:bg-white/5 active:scale-[0.98] text-zinc-400 hover:text-white"
-                >
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-0 bg-brand-orange group-hover:h-1/2 transition-all duration-300 ease-out rounded-r-md" />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-left group-hover:translate-x-1.5 transition-transform duration-300 ease-out">
-                        Ajustar Skip Times
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors duration-300 mr-2" />
-                </button>
             )}
         </div>
     )

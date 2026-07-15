@@ -202,7 +202,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
             </div>
 
             {/* Main content grid: Left Column (Artwork + Info Side-by-Side) & Right Column (Era Selector) */}
-            <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch z-10 w-full px-6 md:px-10 lg:px-14 xl:px-16">
+            <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch z-10 w-full page-px max-w-content mx-auto">
 
                 {/* ─── LADO IZQUIERDO (8/12): Hero + Info lado a lado ─── */}
                 <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
@@ -275,7 +275,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                 {/* Badges */}
                                 <div className="flex flex-wrap items-center [&>*:not(:first-child)]:ml-1.5">
                                     <span className={cn(
-                                        "bg-brand-accent text-white text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-[6px] tracking-wider flex items-center gap-1 shadow-sm border border-brand-accent/20 select-none"
+                                        "bg-brand-accent text-primary-foreground text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-[6px] tracking-wider flex items-center gap-1 shadow-sm border border-brand-accent/20 select-none"
                                     )}>
                                         <Sparkles size={8} className="fill-current animate-pulse" />
                                         Destacado
@@ -315,7 +315,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                     <button
                                         onClick={() => onNavigate(activeItem)}
                                         className={cn(
-                                            "relative overflow-hidden flex items-center justify-center bg-gradient-to-r from-[var(--era-btn-from)] to-[var(--era-btn-to)] hover:from-[var(--era-btn-hover-from)] hover:to-[var(--era-btn-hover-to)] text-white font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 shadow-xl shadow-primary/20 group/play-btn font-bebas [&>*:not(:first-child)]:ml-2"
+                                            "relative overflow-hidden flex items-center justify-center bg-gradient-to-r from-[var(--era-btn-from)] to-[var(--era-btn-to)] hover:from-[var(--era-btn-hover-from)] hover:to-[var(--era-btn-hover-to)] text-primary-foreground font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 shadow-xl shadow-primary/20 group/play-btn font-bebas [&>*:not(:first-child)]:ml-2"
                                         )}
                                     >
                                         <div className="absolute inset-0 w-[40px] h-full bg-on-surface/20 transform skew-x-12 -translate-x-[60px] group-hover/play-btn:translate-x-[250px] transition-transform [transition-duration:1.2s] ease-out pointer-events-none" />
@@ -413,7 +413,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -15 }}
                         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                        className="relative z-10 text-left space-y-4 mt-14 px-6 md:px-10 lg:px-14 xl:px-16 w-full"
+                        className="relative z-10 text-left space-y-4 mt-14 page-px max-w-content mx-auto w-full"
                     >
                         <h4 className="font-bebas text-lg md:text-xl tracking-wider text-zinc-300 uppercase flex items-center gap-2">
                             <span>Películas disponibles de</span>

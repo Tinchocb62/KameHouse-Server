@@ -55,11 +55,11 @@
   --bg-quaternary:    #141417;     /* Hover/Active surface */
 
   /* ─── Glassmorphism (rojo sutil por defecto, tintado por era) ─────────────────────────────── */
-  --glass-card-bg:      rgba(0, 0, 0, 0.55);
-  --glass-liquid-bg:    linear-gradient(165deg, rgba(255,255,255,0.10), rgba(22,22,26,0.35) 45%, rgba(15,15,18,0.48) 100%);
-  --glass-rim-accent:   color-mix(in srgb, var(--brand-accent-hex) 45%, rgba(255,255,255,0.12));
-  --glass-panel-bg:     rgba(0, 0, 0, 0.40);
-  --glass-panel-bg-strong: rgba(0, 0, 0, 0.70);
+  --glass-card-bg:      linear-gradient(165deg, color-mix(in srgb, var(--brand-accent-hex) 3%, rgba(255, 255, 255, 0.03)), rgba(5, 5, 6, 0.62) 55%, color-mix(in srgb, var(--brand-secondary-hex) 2%, rgba(255, 255, 255, 0.01)) 100%);
+  --glass-liquid-bg:    linear-gradient(165deg, rgba(255, 255, 255, 0.11), color-mix(in srgb, var(--brand-accent-hex) 3.5%, rgba(255, 255, 255, 0.04)) 45%, color-mix(in srgb, var(--brand-tertiary-hex) 2%, rgba(255, 255, 255, 0.02)) 100%);
+  --glass-rim-accent:   color-mix(in srgb, var(--brand-accent-hex) 45%, rgba(255, 255, 255, 0.12));
+  --glass-panel-bg:     linear-gradient(165deg, color-mix(in srgb, var(--brand-accent-hex) 2%, rgba(255, 255, 255, 0.02)), rgba(5, 5, 6, 0.58) 100%);
+  --glass-panel-bg-strong: linear-gradient(165deg, color-mix(in srgb, var(--brand-accent-hex) 4%, rgba(255, 255, 255, 0.03)), rgba(5, 5, 6, 0.82) 100%);
   --glass-bg:           rgba(200, 16, 46, 0.05);
   --glass-bg-strong:    rgba(200, 16, 46, 0.10);
   --glass-bg-hover:     rgba(200, 16, 46, 0.08);
@@ -92,17 +92,17 @@
   --spotlight-border-daima: color-mix(in srgb, var(--spotlight-daima) 70%, transparent);
 
   /* ─── Era Colors — Dragon Ball (HSL para Tailwind/shadcn) ─────────────── */
-  --era-db-hsl:       201.3 76.4% 49.8%;
-  --era-dbz-hsl:      32 100% 50%;
-  --era-dbgt-hsl:     347 77% 50%;
-  --era-dbs-hsl:      194.6 76.6% 51.2%;
-  --era-daima-hsl:    258 90% 66%;
+  --era-db-hsl:       32.8 56.3% 51.6%;
+  --era-dbz-hsl:      42.7 70.0% 50.4%;
+  --era-dbgt-hsl:     262.1 34.7% 47.5%;
+  --era-dbs-hsl:      196.2 49.6% 48.2%;
+  --era-daima-hsl:    150.0 29.0% 42.0%;
 
-  --era-db-hex:       #1E9BE0;
-  --era-dbz-hex:      #FF8A00;
-  --era-dbgt-hex:     #E11D48;
-  --era-dbs-hex:      #1FB6E6;
-  --era-daima-hex:    #8B5CF6;
+  --era-db-hex:       #C98A3E;
+  --era-dbz-hex:      #D9A628;
+  --era-dbgt-hex:     #6E4FA3;
+  --era-dbs-hex:      #3E97B8;
+  --era-daima-hex:    #4C8A6B;
 
   /* Glows por Era (RGBA) — sincronizados con los hex de arriba */
   --glow-db:       color-mix(in srgb, var(--era-db-hex) 40%, transparent);
@@ -228,13 +228,14 @@
   /* Contraste oscuro sobre el acento gris claro */
   --md-sys-color-on-primary: #111111;
   --on-primary-rgb:          17, 17, 17;
+  --primary-foreground:      0 0% 10%;
 
   /* Negros profundos (no #000 plano): el canvas casi-negro deja que las
      superficies y scrims negros se separen en vez de fundirse en un vacío. */
-  --bg-primary:       #050506;
-  --bg-secondary:     #0a0a0d;
-  --bg-tertiary:      #111014;
-  --bg-quaternary:    #18161b;
+  --bg-primary:       #0F0F10;
+  --bg-secondary:     #1A1A1C;
+  --bg-tertiary:      #2C2C2F;
+  --bg-quaternary:    #3A3A3D;
 
   /* Glass neutro (blanco a baja alpha): el tinte rojo sobre negro se veía
      amarronado; en Clásico el rojo queda solo para acentos interactivos. */
@@ -257,172 +258,171 @@
 }
 
 [data-theme="era-db"] {
-  /* ─── Primario: Azul Kame ─── */
-  --brand-accent:       201.3 76.4% 49.8%;
-  --brand-accent-hex:   #1E9BE0;
+  /* ─── Primario: Ámbar Kinto ─── */
+  --brand-accent:       var(--era-db-hsl);
+  --brand-accent-hex:   var(--era-db-hex);
   --brand-glow:         var(--glow-db);
   --primary-foreground: 0 0% 100%;
-  /* ─── Secundario: Dorado aventura ─── */
-  --brand-secondary:      38 92% 50%;
-  --brand-secondary-hex:  #F59E0B;
-  /* ─── Terciario: Turquesa Bulma ─── */
-  --brand-tertiary:       179 56% 68%;
-  --brand-tertiary-hex:   #7FDBDA;
-  /* ─── Fondos Temáticos de Era (escalera Clásico, teñida azul) ─── */
-  --bg-primary:           #030609;
-  --bg-secondary:         #070c14;
-  --bg-tertiary:          #0d141f;
-  --bg-quaternary:        #131c2b;
-  /* ─── Botón Reproducir: Azul Kame ─── */
-  --era-btn-from:         #0062A3;
-  --era-btn-to:           #1E9BE0;
-  --era-btn-hover-from:   #0077C2;
-  --era-btn-hover-to:     #23aaff;
-  /* ─── Shimmer título: azul→dorado→azul ─── */
-  --era-shimmer-1:        #1E9BE0;
-  --era-shimmer-2:        #f59e0b;
-  --era-shimmer-3:        #7FDBDA;
+  /* ─── Secundario: Tierra oscura ─── */
+  --brand-secondary:      32.2 33.3% 40.6%;
+  --brand-secondary-hex:  #8A6A45;
+  /* ─── Terciario: Neutro claro ─── */
+  --brand-tertiary:       0 0% 70%;
+  --brand-tertiary-hex:   #B3B3B3;
+  /* ─── Fondos Temáticos de Era ─── */
+  --bg-primary:           #1C1A16;
+  --bg-secondary:         #2B2822;
+  --bg-tertiary:          #36332C;
+  --bg-quaternary:        #45413A;
+  /* ─── Botón Reproducir ─── */
+  --era-btn-from:         #9D6C31;
+  --era-btn-to:           #C98A3E;
+  --era-btn-hover-from:   #B37A38;
+  --era-btn-hover-to:     #DB9B4A;
+  /* ─── Shimmer título ─── */
+  --era-shimmer-1:        #C98A3E;
+  --era-shimmer-2:        #8A6A45;
+  --era-shimmer-3:        #C98A3E;
 }
 
 [data-theme="era-dbz"] {
-  /* ─── Primario: Naranja Gi Saiyan ─── */
-  --brand-accent:       25.6 100% 50%;
-  --brand-accent-hex:   #FF6D00;
+  /* ─── Primario: Amarillo Super Saiyan ─── */
+  --brand-accent:       var(--era-dbz-hsl);
+  --brand-accent-hex:   var(--era-dbz-hex);
   --brand-glow:         var(--glow-dbz);
   --primary-foreground: 0 0% 100%;
-  /* ─── Secundario: Amarillo Ki ─── */
-  --brand-secondary:      45 93% 47%;
-  --brand-secondary-hex:  #FBBF24;
-  /* ─── Terciario: Rojo Fuego ─── */
+  /* ─── Secundario: Azul Gi ─── */
+  --brand-secondary:      213.9 37.7% 47.8%;
+  --brand-secondary-hex:  #4C74A8;
+  /* ─── Terciario: Rojo Ki ─── */
   --brand-tertiary:       0 72% 51%;
   --brand-tertiary-hex:   #DC2626;
-  /* ─── Fondos Temáticos de Era (escalera Clásico, teñida naranja) ─── */
-  --bg-primary:           #070503;
-  --bg-secondary:         #100a06;
-  --bg-tertiary:          #1a110a;
-  --bg-quaternary:        #24170e;
-  /* ─── Botón: Amber→Naranja ─── */
-  --era-btn-from:         #f59e0b;
-  --era-btn-to:           #ea580c;
-  --era-btn-hover-from:   #fbbf24;
-  --era-btn-hover-to:     #f97316;
-  /* ─── Shimmer: naranja→amarillo→naranja ─── */
-  --era-shimmer-1:        #FF6D00;
-  --era-shimmer-2:        #eab308;
-  --era-shimmer-3:        #FF6D00;
+  /* ─── Fondos Temáticos de Era ─── */
+  --bg-primary:           #151719;
+  --bg-secondary:         #22262B;
+  --bg-tertiary:          #2F343A;
+  --bg-quaternary:        #3D434A;
+  /* ─── Botón ─── */
+  --era-btn-from:         #A8801F;
+  --era-btn-to:           #D9A628;
+  --era-btn-hover-from:   #B88E23;
+  --era-btn-hover-to:     #E8B632;
+  /* ─── Shimmer ─── */
+  --era-shimmer-1:        #D9A628;
+  --era-shimmer-2:        #4C74A8;
+  --era-shimmer-3:        #D9A628;
 }
 
 [data-theme="era-dbgt"] {
-  /* ─── Primario: Rojo SSJ4 ─── */
-  --brand-accent:       356.9 75.5% 50.2%;
-  --brand-accent-hex:   #E0202A;
+  /* ─── Primario: Violeta Espacio ─── */
+  --brand-accent:       var(--era-dbgt-hsl);
+  --brand-accent-hex:   var(--era-dbgt-hex);
   --brand-glow:         var(--glow-dbgt);
   --primary-foreground: 0 0% 100%;
-  /* ─── Secundario: Naranja/Ámbar ─── */
-  --brand-secondary:      25 95% 53%;
-  --brand-secondary-hex:  #F97316;
-  /* ─── Terciario: Violeta Baby ─── */
-  --brand-tertiary:       271 63% 54%;
-  --brand-tertiary-hex:   #8B3DD4;
-  /* ─── Fondos Temáticos de Era (escalera Clásico, teñida rojo) ─── */
-  --bg-primary:           #070304;
-  --bg-secondary:         #110709;
-  --bg-tertiary:          #1b0c0f;
-  --bg-quaternary:        #251115;
-  /* ─── Botón: Rojo oscuro → Rojo SSJ4 ─── */
-  --era-btn-from:         #7f1d1d;
-  --era-btn-to:           #E0202A;
-  --era-btn-hover-from:   #991b1b;
-  --era-btn-hover-to:     #ef4444;
-  /* ─── Shimmer: rojo→naranja→violeta ─── */
-  --era-shimmer-1:        #E0202A;
-  --era-shimmer-2:        #f97316;
-  --era-shimmer-3:        #8B3DD4;
+  /* ─── Secundario: Cian Nave ─── */
+  --brand-secondary:      180.0 38.0% 39.2%;
+  --brand-secondary-hex:  #3E8A8A;
+  /* ─── Terciario: Amarillo Dragón ─── */
+  --brand-tertiary:       45 93% 47%;
+  --brand-tertiary-hex:   #FBBF24;
+  /* ─── Fondos Temáticos de Era ─── */
+  --bg-primary:           #16151F;
+  --bg-secondary:         #242235;
+  --bg-tertiary:          #302D45;
+  --bg-quaternary:        #3D3A55;
+  /* ─── Botón ─── */
+  --era-btn-from:         #513A78;
+  --era-btn-to:           #6E4FA3;
+  --era-btn-hover-from:   #5D438A;
+  --era-btn-hover-to:     #7F5EBA;
+  /* ─── Shimmer ─── */
+  --era-shimmer-1:        #6E4FA3;
+  --era-shimmer-2:        #3E8A8A;
+  --era-shimmer-3:        #6E4FA3;
 }
 
 [data-theme="era-dbs"] {
-  /* ─── Primario: Celeste Ultra Instinto ─── */
-  --brand-accent:       194.6 76.6% 51.2%;
-  --brand-accent-hex:   #1FB6E6;
+  /* ─── Primario: Celeste Suave ─── */
+  --brand-accent:       var(--era-dbs-hsl);
+  --brand-accent-hex:   var(--era-dbs-hex);
   --brand-glow:         var(--glow-dbs);
   --primary-foreground: 0 0% 100%;
-  /* ─── Secundario: Plateado/Violeta UI ─── */
-  --brand-secondary:      292 84% 61%;
-  --brand-secondary-hex:  #D946EF;
-  /* ─── Terciario: Azul Vegeta ─── */
-  --brand-tertiary:       221 83% 53%;
-  --brand-tertiary-hex:   #2563EB;
-  /* ─── Fondos Temáticos de Era (escalera Clásico, teñida celeste) ─── */
-  --bg-primary:           #030709;
-  --bg-secondary:         #060e14;
-  --bg-tertiary:          #0a1620;
-  --bg-quaternary:        #0e1e2c;
-  /* ─── Botón: Azul marino → Celeste Instinto ─── */
-  --era-btn-from:         #0891b2;
-  --era-btn-to:           #1FB6E6;
-  --era-btn-hover-from:   #06b6d4;
-  --era-btn-hover-to:     #67e8f9;
-  /* ─── Shimmer: celeste→plateado→azul ─── */
-  --era-shimmer-1:        #1FB6E6;
-  --era-shimmer-2:        #e2e8f0;
-  --era-shimmer-3:        #2563EB;
+  /* ─── Secundario: Magenta Suave ─── */
+  --brand-secondary:      332.0 39.3% 54.1%;
+  --brand-secondary-hex:  #B85C87;
+  /* ─── Terciario: Blanco Plata ─── */
+  --brand-tertiary:       0 0% 90%;
+  --brand-tertiary-hex:   #E5E5E5;
+  /* ─── Fondos Temáticos de Era ─── */
+  --bg-primary:           #14181C;
+  --bg-secondary:         #20262C;
+  --bg-tertiary:          #2A323A;
+  --bg-quaternary:        #364049;
+  /* ─── Botón ─── */
+  --era-btn-from:         #2E728B;
+  --era-btn-to:           #3E97B8;
+  --era-btn-hover-from:   #34829E;
+  --era-btn-hover-to:     #49ABCE;
+  /* ─── Shimmer ─── */
+  --era-shimmer-1:        #3E97B8;
+  --era-shimmer-2:        #B85C87;
+  --era-shimmer-3:        #3E97B8;
 }
 
 [data-theme="era-daima"] {
-  /* ─── Primario: Violeta Reino Demonio ─── */
-  --brand-accent:       291.2 75.5% 49.6%;
-  --brand-accent-hex:   #C21FDE;
+  /* ─── Primario: Verde Reino Daima ─── */
+  --brand-accent:       var(--era-daima-hsl);
+  --brand-accent-hex:   var(--era-daima-hex);
   --brand-glow:         var(--glow-daima);
   --primary-foreground: 0 0% 100%;
-  /* ─── Secundario: Dorado Mágico ─── */
-  --brand-secondary:      45 93% 47%;
-  --brand-secondary-hex:  #FACC15;
-  /* ─── Terciario: Rosa Demoníaco ─── */
+  /* ─── Secundario: Naranja Terroso ─── */
+  --brand-secondary:      28.0 48.4% 48.6%;
+  --brand-secondary-hex:  #B87840;
+  /* ─── Terciario: Rosa Fantasía ─── */
   --brand-tertiary:       325 73% 54%;
   --brand-tertiary-hex:   #E0369A;
-  /* ─── Fondos Temáticos de Era (escalera Clásico, teñida violeta) ─── */
-  --bg-primary:           #060309;
-  --bg-secondary:         #0d0714;
-  --bg-tertiary:          #150c20;
-  --bg-quaternary:        #1d112c;
-  /* ─── Botón: Violeta oscuro → Violeta demonio ─── */
-  --era-btn-from:         #581c87;
-  --era-btn-to:           #C21FDE;
-  --era-btn-hover-from:   #6b21a8;
-  --era-btn-hover-to:     #a855f7;
-  /* ─── Shimmer: violeta→dorado→pink ─── */
-  --era-shimmer-1:        #C21FDE;
-  --era-shimmer-2:        #FACC15;
-  --era-shimmer-3:        #E0369A;
+  /* ─── Fondos Temáticos de Era ─── */
+  --bg-primary:           #181420;
+  --bg-secondary:         #26203A;
+  --bg-tertiary:          #322A4C;
+  --bg-quaternary:        #40375E;
+  /* ─── Botón ─── */
+  --era-btn-from:         #3A6851;
+  --era-btn-to:           #4C8A6B;
+  --era-btn-hover-from:   #42775C;
+  --era-btn-hover-to:     #589E7B;
+  /* ─── Shimmer ─── */
+  --era-shimmer-1:        #4C8A6B;
+  --era-shimmer-2:        #B87840;
+  --era-shimmer-3:        #4C8A6B;
 }
 
 [data-theme="era-universe"] {
-  /* Tonalidades de todas las series: rosa (KameHouse) como primario,
-     rojo (GT) secundario, verde (Namek/Piccolo) terciario y azul (Kame/UI)
-     en shimmer, hover y orbes. Los 4 tonos se reparten el chrome. */
-  --brand-accent:         330 81% 60%; /* Rosa KameHouse HSL */
-  --brand-accent-hex:     #EC4899;
-  --brand-glow:           rgba(236, 72, 153, 0.40);
+  /* Temática Cinematic Universe (Nebulosa/Aurora Boreal)
+     Violeta suave, rosa polvo estelar y teal. */
+  --brand-accent:         259 62.0% 58.0%; /* Violeta Nebulosa */
+  --brand-accent-hex:     #7C52D6;
+  --brand-glow:           rgba(124, 82, 214, 0.40);
   --primary-foreground:   0 0% 100%;
-  --brand-secondary:      356.9 75.5% 50.2%; /* Rojo GT */
-  --brand-secondary-hex:  #E0202A;
-  --brand-tertiary:       160 84% 39%; /* Verde Namek */
-  --brand-tertiary-hex:   #10B981;
-  /* Escalera de negros del Clásico, apenas teñida a rosa */
-  --bg-primary:           #060407;
-  --bg-secondary:         #0c080d;
-  --bg-tertiary:          #140e15;
-  --bg-quaternary:        #1c141d;
-  --sidebar-active-border: color-mix(in srgb, #EC4899 30%, transparent);
-  /* ─── Botón: Rosa → Rojo; hover vira hacia azul ─── */
-  --era-btn-from:         #EC4899;
-  --era-btn-to:           #E0202A;
-  --era-btn-hover-from:   #ff60b6;
-  --era-btn-hover-to:     #ef4444;
-  /* ─── Shimmer: rosa→azul→verde (el rojo ya vive en el botón) ─── */
-  --era-shimmer-1:        #EC4899;
-  --era-shimmer-2:        #00BFFF;
-  --era-shimmer-3:        #10B981;
+  --brand-secondary:      330 55.0% 54.0%; /* Rosa Polvo Estelar */
+  --brand-secondary-hex:  #C94A8A;
+  --brand-tertiary:       174 59.0% 36.0%; /* Teal Aurora */
+  --brand-tertiary-hex:   #269389;
+  /* Escalera de negros */
+  --bg-primary:           #131018;
+  --bg-secondary:         #1C1724;
+  --bg-tertiary:          #282133;
+  --bg-quaternary:        #352C42;
+  --sidebar-active-border: color-mix(in srgb, #7C52D6 45%, transparent);
+  /* ─── Botón: Violeta → Rosa ─── */
+  --era-btn-from:         #613AA8;
+  --era-btn-to:           #7C52D6;
+  --era-btn-hover-from:   #865FE3;
+  --era-btn-hover-to:     #9A77EB;
+  /* ─── Shimmer: violeta→rosa→teal ─── */
+  --era-shimmer-1:        #7C52D6;
+  --era-shimmer-2:        #C94A8A;
+  --era-shimmer-3:        #269389;
 }
 
 /* ─── Temas Especiales ─────────────────────────────────────────────────── */
@@ -523,12 +523,12 @@
   --md-sys-color-surface-container:      color-mix(in srgb, var(--brand-accent-hex) 6%, rgba(28, 28, 32, 0.66));
   --md-sys-color-surface-container-high: color-mix(in srgb, var(--brand-accent-hex) 9%, rgba(44, 44, 48, 0.76));
 
-  /* ─── Sidebar: fondo que cambia según la Era/Fondo del Tema ─── */
-  --sidebar-bg: color-mix(in srgb, var(--bg-primary) 50%, transparent);
+  /* ─── Sidebar: Fondo totalmente transparente para que herede el color del fondo principal ─── */
+  --sidebar-bg: transparent;
 
-  /* ─── Sidebar en degradé sutil de 2 tonos ─── */
-  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, var(--brand-accent-hex) 10%, transparent) 0%, color-mix(in srgb, var(--brand-secondary-hex) 4%, transparent) 45%, transparent 72%);
-  --sidebar-active-border: color-mix(in srgb, var(--brand-accent-hex) 30%, transparent);
+  /* ─── Sidebar en degradé sutil (Mismo color que la esquina superior del fondo) ─── */
+  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, var(--brand-accent-hex) 20%, transparent) 0%, color-mix(in srgb, var(--brand-accent-hex) 8%, transparent) 50%, transparent 100%);
+  --sidebar-active-border: color-mix(in srgb, var(--brand-accent-hex) 45%, transparent);
 
   /* ─── Fondo Estático --page-gradient ─── */
   --page-gradient: radial-gradient(120% 90% at 15% -5%, color-mix(in srgb, var(--brand-accent-hex) 6%, transparent), transparent 55%),
@@ -543,34 +543,33 @@
   --glow-color-5: transparent;
 }
 
-/* Excepción para Universe (conserva su arcoíris refinado) */
+/* Excepción para Universe (Aurora Boreal / Nebulosa Cinematic) */
 [data-mode="era"][data-theme="era-universe"] {
-  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, #EC4899 26%, transparent) 0%, color-mix(in srgb, #E0202A 14%, transparent) 25%, transparent 50%, color-mix(in srgb, #10B981 14%, transparent) 75%, color-mix(in srgb, #00BFFF 18%, transparent) 100%);
+  /* Mezcla suave de 3 colores en el sidebar en lugar de 5 */
+  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, #7C52D6 25%, transparent) 0%, color-mix(in srgb, #C94A8A 20%, transparent) 40%, transparent 60%, color-mix(in srgb, #269389 20%, transparent) 100%);
 
-  /* Viñeta propia con los 4 tonos en las esquinas (rosa/azul dominantes,
-     rojo/verde de soporte), en lugar de la genérica de 3 tonos por era. */
-  --page-gradient: radial-gradient(120% 90% at 15% -5%, color-mix(in srgb, #EC4899 7%, transparent), transparent 55%),
-                   radial-gradient(110% 85% at 90% 105%, color-mix(in srgb, #00BFFF 6%, transparent), transparent 58%),
-                   radial-gradient(85% 65% at 92% -5%, color-mix(in srgb, #E0202A 4%, transparent), transparent 50%),
-                   radial-gradient(85% 65% at 8% 105%, color-mix(in srgb, #10B981 4%, transparent), transparent 50%),
-                   linear-gradient(150deg, transparent 40%, rgba(14, 9, 13, 0.5) 100%);
+  /* Viñeta propia con 3 tonos */
+  --page-gradient: radial-gradient(120% 90% at 15% -5%, color-mix(in srgb, #7C52D6 12%, transparent), transparent 55%),
+                   radial-gradient(110% 85% at 90% 105%, color-mix(in srgb, #C94A8A 10%, transparent), transparent 58%),
+                   radial-gradient(85% 65% at 8% 105%, color-mix(in srgb, #269389 8%, transparent), transparent 50%),
+                   linear-gradient(150deg, transparent 40%, rgba(19, 16, 24, 0.6) 100%);
 
-  --glow-color-1: #EC4899; /* Rosa */
-  --glow-color-2: #E0202A; /* Rojo */
-  --glow-color-3: #10B981; /* Verde */
-  --glow-color-4: #00BFFF; /* Azul */
-  --glow-color-5: #8A2BE2; /* Violeta */
+  --glow-color-1: #7C52D6; /* Violeta */
+  --glow-color-2: #C94A8A; /* Rosa */
+  --glow-color-3: #269389; /* Teal */
+  --glow-color-4: transparent;
+  --glow-color-5: transparent;
 }
 
 /* ─── Toggle "Degradado del Sidebar" — intensifica el tinte de la era.
    El overlay del sidebar está siempre activo en modo Por Era (sutil);
    con el toggle ON sube la presencia del acento. ───────────────────────── */
 [data-mode="era"][data-sidebar-gradient="true"] {
-  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, var(--brand-accent-hex) 22%, transparent) 0%, color-mix(in srgb, var(--brand-secondary-hex) 9%, transparent) 45%, transparent 80%);
+  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, var(--brand-accent-hex) 40%, transparent) 0%, color-mix(in srgb, var(--brand-accent-hex) 20%, transparent) 50%, transparent 100%);
 }
 
 [data-mode="era"][data-theme="era-universe"][data-sidebar-gradient="true"] {
-  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, #EC4899 34%, transparent) 0%, color-mix(in srgb, #E0202A 20%, transparent) 30%, color-mix(in srgb, #10B981 16%, transparent) 65%, color-mix(in srgb, #00BFFF 26%, transparent) 100%);
+  --sidebar-accent-gradient: linear-gradient(180deg, color-mix(in srgb, #7C52D6 40%, transparent) 0%, color-mix(in srgb, #C94A8A 30%, transparent) 40%, transparent 60%, color-mix(in srgb, #269389 30%, transparent) 100%);
 }
 
 /* ─── Utilidades de color por Era (para uso directo en componentes) ─────── */

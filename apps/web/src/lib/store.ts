@@ -124,12 +124,21 @@ export interface PlayerState {
     setPlaybackRate: (rate: number) => void
     preferredAudioLang: string
     setPreferredAudioLang: (lang: string) => void
+    preferredAudioTrackIndex: Record<number, number>
+    setPreferredAudioTrackIndex: (mediaId: number, index: number) => void
     preferredSubtitleLang: string
     setPreferredSubtitleLang: (lang: string) => void
+    subtitlesEnabled: boolean
+    setSubtitlesEnabled: (enabled: boolean) => void
     showHeatmap: boolean
     setShowHeatmap: (show: boolean) => void
     aspectRatio: "contain" | "fill" | "cover" | "16/9"
     setAspectRatio: (ratio: "contain" | "fill" | "cover" | "16/9") => void
+    // Override por serie (keyed por mediaId): cada serie tiene su propio formato
+    // de imagen (4:3 en DB/DBZ vs 16:9 en Super), así que el ajuste se recuerda
+    // por serie en vez de global. El global queda como fallback.
+    aspectRatioBySeries: Record<number, "contain" | "fill" | "cover" | "16/9">
+    setAspectRatioForSeries: (mediaId: number, ratio: "contain" | "fill" | "cover" | "16/9") => void
     subtitleSize: number
     setSubtitleSize: (size: number) => void
     loopEnabled: boolean
@@ -140,6 +149,9 @@ export interface PlayerState {
     setMarathonMode: (enabled: boolean) => void
     tvMode: boolean
     setTvMode: (enabled: boolean) => void
+    // Snapshot of the skip/marathon prefs before TV mode force-enabled them,
+    // so they can be restored when TV mode is turned off. Not persisted.
+    tvModePrevPrefs: { autoSkipIntro: boolean; autoSkipOutro: boolean; marathonMode: boolean } | null
     ambientModeEnabled: boolean
     setAmbientModeEnabled: (enabled: boolean) => void
 
@@ -169,12 +181,22 @@ export const createPlayerSlice: StateCreator<UIState & PlayerState, [], [], Play
     setPlaybackRate: (playbackRate) => set({ playbackRate }),
     preferredAudioLang: "jpn",
     setPreferredAudioLang: (preferredAudioLang) => set({ preferredAudioLang }),
+    preferredAudioTrackIndex: {},
+    setPreferredAudioTrackIndex: (mediaId, index) => set((state) => ({ 
+        preferredAudioTrackIndex: { ...state.preferredAudioTrackIndex, [mediaId]: index } 
+    })),
     preferredSubtitleLang: "spa",
     setPreferredSubtitleLang: (preferredSubtitleLang) => set({ preferredSubtitleLang }),
+    subtitlesEnabled: true,
+    setSubtitlesEnabled: (subtitlesEnabled) => set({ subtitlesEnabled }),
     showHeatmap: true,
     setShowHeatmap: (showHeatmap) => set({ showHeatmap }),
     aspectRatio: "contain",
     setAspectRatio: (aspectRatio) => set({ aspectRatio }),
+    aspectRatioBySeries: {},
+    setAspectRatioForSeries: (mediaId, ratio) => set((state) => ({
+        aspectRatioBySeries: { ...state.aspectRatioBySeries, [mediaId]: ratio }
+    })),
     subtitleSize: 100,
     setSubtitleSize: (subtitleSize) => set({ subtitleSize }),
     loopEnabled: false,
@@ -184,14 +206,34 @@ export const createPlayerSlice: StateCreator<UIState & PlayerState, [], [], Play
     marathonMode: false,
     setMarathonMode: (marathonMode) => set({ marathonMode }),
     tvMode: false,
-    setTvMode: (tvMode) => set((state) => ({
-        tvMode,
-        ...(tvMode ? {
-            autoSkipIntro: true,
-            autoSkipOutro: true,
-            marathonMode: true,
-        } : {}),
-    })),
+    tvModePrevPrefs: null,
+    setTvMode: (tvMode) => set((state) => {
+        if (tvMode) {
+            // Entering TV mode: snapshot current prefs (unless already in TV mode)
+            // and force-enable the lean-back behavior.
+            return {
+                tvMode: true,
+                tvModePrevPrefs: state.tvModePrevPrefs ?? {
+                    autoSkipIntro: state.autoSkipIntro,
+                    autoSkipOutro: state.autoSkipOutro,
+                    marathonMode: state.marathonMode,
+                },
+                autoSkipIntro: true,
+                autoSkipOutro: true,
+                marathonMode: true,
+            }
+        }
+        // Leaving TV mode: restore the snapshot (fallback to defaults if TV mode
+        // was enabled via ?tvMode=true without a prior snapshot).
+        const prev = state.tvModePrevPrefs ?? { autoSkipIntro: false, autoSkipOutro: false, marathonMode: false }
+        return {
+            tvMode: false,
+            tvModePrevPrefs: null,
+            autoSkipIntro: prev.autoSkipIntro,
+            autoSkipOutro: prev.autoSkipOutro,
+            marathonMode: prev.marathonMode,
+        }
+    }),
     ambientModeEnabled: true,
     setAmbientModeEnabled: (ambientModeEnabled) => set({ ambientModeEnabled }),
 
@@ -285,9 +327,12 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
                 skipStepSeconds: state.skipStepSeconds,
                 playbackRate: state.playbackRate,
                 preferredAudioLang: state.preferredAudioLang,
+                preferredAudioTrackIndex: state.preferredAudioTrackIndex,
                 preferredSubtitleLang: state.preferredSubtitleLang,
+                subtitlesEnabled: state.subtitlesEnabled,
                 showHeatmap: state.showHeatmap,
                 aspectRatio: state.aspectRatio,
+                aspectRatioBySeries: state.aspectRatioBySeries,
                 subtitleSize: state.subtitleSize,
                 loopEnabled: state.loopEnabled,
                 autoDisableSubtitlesWhenDubbed: state.autoDisableSubtitlesWhenDubbed,
@@ -363,9 +408,12 @@ export const useSkipTimesStore = create<SkipTimesState>()(
         }),
         {
             name: "kamehouse-skip-times",
-            version: 1,
+            version: 2,
             migrate: (persistedState: any, version: number) => {
-                if (version === 0) {
+                // v1 → v2: purge corrupt marks produced by the acoustic fingerprint scanner
+                // (which stored intro-end at ~9:03 due to a secondsPerFrame scaling bug).
+                // v0 → v1: same, clear everything.
+                if (version < 2) {
                     return { seriesSkipTimes: {} } as SkipTimesState
                 }
                 return persistedState as SkipTimesState

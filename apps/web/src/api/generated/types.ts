@@ -462,6 +462,21 @@ export type INTERNAL_FeatureKey = "ManageOfflineMode" |
     "PushRequests"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Db
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * - Filepath: internal/database/db/backup.go
+ * - Filename: backup.go
+ * - Package: db
+ */
+export type DB_BackupResult = {
+    path: string
+    sizeBytes: number
+    createdAt?: string
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Dto
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -882,6 +897,18 @@ export type MemoryStatsResponse = {
 }
 
 /**
+ * - Filepath: internal/handlers/notifications.go
+ * - Filename: notifications.go
+ * - Package: handlers
+ * @description
+ *  NotificationList is the payload returned by the notifications endpoint.
+ */
+export type NotificationList = {
+    notifications?: Array<Models_Notification>
+    unreadCount: number
+}
+
+/**
  * - Filepath: internal/handlers/status.go
  * - Filename: status.go
  * - Package: handlers
@@ -1048,6 +1075,31 @@ export type Local_TrackedMediaItem = {
  * - Filename: playback.go
  * - Package: mediastream
  */
+export type Mediastream_ClientCapabilities = {
+    /**
+     * HEVC/H.265 8-bit
+     */
+    hevc: boolean
+    /**
+     * HEVC Main 10
+     */
+    hevc10Bit: boolean
+    av1: boolean
+    vp9: boolean
+    ac3: boolean
+    eac3: boolean
+    dts: boolean
+    /**
+     * can demux .mkv in <video> (Chromium yes, Firefox/Safari no)
+     */
+    matroska: boolean
+}
+
+/**
+ * - Filepath: internal/mediastream/playback.go
+ * - Filename: playback.go
+ * - Package: mediastream
+ */
 export type Mediastream_MediaContainer = {
     filePath: string
     hash: string
@@ -1068,52 +1120,6 @@ export type Mediastream_MediaContainer = {
  * - Package: mediastream
  */
 export type Mediastream_StreamType = "transcode" | "optimized" | "direct"
-
-/**
- * - Filepath: internal/mediastream/playback.go
- * - Filename: playback.go
- * - Package: mediastream
- */
-/**
- * - Filepath: internal/database/models/models.go
- * - Filename: models.go
- * - Package: models
- * @description
- *  Notification is a persisted in-app notification (scan completed, transcode
- *  fallback, system events).
- */
-export type Models_Notification = {
-    id: number
-    createdAt?: string
-    updatedAt?: string
-    /**
-     * "scanner" | "mediastream" | "system"
-     */
-    type: string
-    title: string
-    message: string
-    read: boolean
-}
-
-export type Mediastream_ClientCapabilities = {
-    /**
-     * HEVC/H.265 8-bit
-     */
-    hevc: boolean
-    /**
-     * HEVC Main 10
-     */
-    hevc10Bit: boolean
-    av1: boolean
-    vp9: boolean
-    ac3: boolean
-    eac3: boolean
-    dts: boolean
-    /**
-     * can demux .mkv in <video> (Chromium yes, Firefox/Safari no)
-     */
-    matroska: boolean
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Metadata
@@ -1411,6 +1417,8 @@ export type Models_EpisodeSkipTime = {
     opEnd: number
     edOffset: number
     edEnd: number
+    source: string
+    confidence: number
     id: number
     createdAt?: string
     updatedAt?: string
@@ -1718,6 +1726,28 @@ export type Models_MediastreamSettings = {
  * - Filepath: internal/database/models/models.go
  * - Filename: models.go
  * - Package: models
+ * @description
+ *  Notification is a persisted in-app notification (scan completed, transcode
+ *  fallback, system events). Created by the notifier module and surfaced in the
+ *  web client's notification center.
+ */
+export type Models_Notification = {
+    /**
+     * "scanner" | "mediastream" | "system"
+     */
+    type: string
+    title: string
+    message: string
+    read: boolean
+    id: number
+    createdAt?: string
+    updatedAt?: string
+}
+
+/**
+ * - Filepath: internal/database/models/models.go
+ * - Filename: models.go
+ * - Package: models
  */
 export type Models_NotificationSettings = {
     disableNotifications: boolean
@@ -1785,6 +1815,7 @@ export type Models_Theme = {
     themeEnableSidebarGradient: boolean
     themeDisableCarouselAutoScroll: boolean
     themeUseLegacyEpisodeCard: boolean
+    themeEnableCinematicGrain: boolean
     themeLibraryScreenBannerType: string
     themeLibraryScreenCustomBannerImage: string
     themeLibraryScreenCustomBannerPosition: string

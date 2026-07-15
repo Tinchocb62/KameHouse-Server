@@ -19,7 +19,7 @@ const spineThemes: Record<string, SpineTheme> = {
         subtitle: "DB ORIGINAL",
         borderColor: "#0d47a1",
         colIndex: 0,
-        rawImg: "/icons/series-icons/goku-raw-db.png",
+        rawImg: "/icons/series-icons/goku-raw-db.webp",
         colors: ["#42a5f5", "#1565c0", "#0d47a1"]
     },
     "dragon_ball_z": {
@@ -30,7 +30,7 @@ const spineThemes: Record<string, SpineTheme> = {
         subtitle: "DRAGON BALL Z",
         borderColor: "#b71c1c",
         colIndex: 1,
-        rawImg: "/icons/series-icons/goku-raw-dbz.png",
+        rawImg: "/icons/series-icons/goku-raw-dbz.webp",
         colors: ["#ff7043", "#d84315", "#b71c1c"]
     },
     "dragon_ball_gt": {
@@ -41,7 +41,7 @@ const spineThemes: Record<string, SpineTheme> = {
         subtitle: "SAGA GT",
         borderColor: "#1a237e",
         colIndex: 2,
-        rawImg: "/icons/series-icons/goku-raw-dbgt.png",
+        rawImg: "/icons/series-icons/goku-raw-dbgt.webp",
         colors: ["#7e57c2", "#4a148c", "#1a237e"]
     },
     "dragon_ball_super": {
@@ -52,7 +52,7 @@ const spineThemes: Record<string, SpineTheme> = {
         subtitle: "SUPER",
         borderColor: "#004d40",
         colIndex: 3,
-        rawImg: "/icons/series-icons/goku-raw-dbs.png",
+        rawImg: "/icons/series-icons/goku-raw-dbs.webp",
         colors: ["#26c6da", "#00838f", "#004d40"]
     },
     "dragon_ball_daima": {
@@ -63,7 +63,7 @@ const spineThemes: Record<string, SpineTheme> = {
         subtitle: "DAIMA",
         borderColor: "#e65100",
         colIndex: 4,
-        rawImg: "/icons/series-icons/goku-raw-daima.png",
+        rawImg: "/icons/series-icons/goku-raw-daima.webp",
         colors: ["#ffca28", "#f57f17", "#e65100"]
     }
 };

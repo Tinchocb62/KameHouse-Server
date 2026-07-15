@@ -137,7 +137,7 @@ export interface PlayerSettingsMenuProps {
     
     subtitleTracks: SubtitleTrack[]
     activeSubtitleIndex: number | null
-    onSelectSubtitle: (track: SubtitleTrack | null) => void
+    onSelectSubtitle: (track: SubtitleTrack | null, opts?: { auto?: boolean }) => void
     isLoadingSubtitle?: boolean
 
     sources?: import("@/api/types/unified.types").EpisodeSource[]

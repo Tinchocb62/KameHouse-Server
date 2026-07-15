@@ -218,6 +218,8 @@ func (db *Database) runDataMigrations() {
 	}
 	migrateDefaultSettings(db.gormdb, db.Logger)
 	migrateSkipTimesSemantics(db.gormdb, db.Logger)
+	seedDragonBallMalIds(db.gormdb, db.Logger)
+	purgeStaleSkipTimes(db.gormdb, db.Logger)
 	db.Logger.Info().Msg("db: migraciones de datos completadas")
 }
 
@@ -409,6 +411,52 @@ func migrateSkipTimesSemantics(gormDB *gorm.DB, logger *zerolog.Logger) {
 
 	if migrated > 0 {
 		logger.Info().Int("count", migrated).Msg("db: semántica de EpisodeSkipTime migrada correctamente")
+	}
+}
+
+// seedDragonBallMalIds corrige de forma autoritativa el myanimelist_id para las 5 series
+// Dragon Ball usando el mapeo TMDB→MAL hardcodeado. Es idempotente: solo actualiza filas
+// cuyo myanimelist_id no coincida con el valor correcto.
+func seedDragonBallMalIds(gormDB *gorm.DB, logger *zerolog.Logger) {
+	// Mapa TMDB ID → MAL ID. Coextensivo con dragonBallArcs en
+	// internal/library/anime/intelligence.go.
+	dragonBallMap := map[int]int{
+		12609:  223,   // Dragon Ball
+		12971:  813,   // Dragon Ball Z
+		12697:  225,   // Dragon Ball GT
+		62715:  30694, // Dragon Ball Super
+		236994: 58567, // Dragon Ball Daima
+	}
+	total := int64(0)
+	for tmdbID, malID := range dragonBallMap {
+		result := gormDB.Exec(
+			"UPDATE library_media SET myanimelist_id = ? WHERE tmdb_id = ? AND myanimelist_id <> ?",
+			malID, tmdbID, malID,
+		)
+		if result.Error != nil {
+			logger.Error().Err(result.Error).
+				Int("tmdbID", tmdbID).Int("malID", malID).
+				Msg("db: fallo al sembrar MAL ID para Dragon Ball")
+		} else if result.RowsAffected > 0 {
+			logger.Info().
+				Int("tmdbID", tmdbID).Int("malID", malID).Int64("rows", result.RowsAffected).
+				Msg("db: MAL ID de Dragon Ball corregido")
+			total += result.RowsAffected
+		}
+	}
+	if total > 0 {
+		logger.Info().Int64("total", total).Msg("db: MAL IDs Dragon Ball sembrados correctamente")
+	}
+}
+
+// purgeStaleSkipTimes borra las marcas de skip corruptas generadas por el
+// fingerprint acústico o guardadas manualmente. Es idempotente.
+func purgeStaleSkipTimes(gormDB *gorm.DB, logger *zerolog.Logger) {
+	result := gormDB.Exec("DELETE FROM episode_skip_times WHERE source IN ('fingerprint','manual')")
+	if result.Error != nil {
+		logger.Error().Err(result.Error).Msg("db: fallo al purgar skip times obsoletos")
+	} else if result.RowsAffected > 0 {
+		logger.Info().Int64("rows", result.RowsAffected).Msg("db: skip times fingerprint/manual purgados")
 	}
 }
 

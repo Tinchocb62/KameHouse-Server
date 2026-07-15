@@ -34,6 +34,7 @@ export interface PlayerBottomBarProps {
     duration: number
     insights: InsightNode[]
     progressBarRef: React.RefObject<HTMLDivElement>
+    thumbRef: React.RefObject<HTMLDivElement>
     progressInputRef: React.RefObject<HTMLInputElement>
     handleSeek: (e: React.ChangeEvent<HTMLInputElement>) => void
     handleSeekStart?: () => void
@@ -53,7 +54,7 @@ export interface PlayerBottomBarProps {
     onSelectAudio: (track: AudioTrack) => void
     subtitleTracks: SubtitleTrack[]
     activeSubtitleIndex: number | null
-    onSelectSubtitle: (track: SubtitleTrack | null) => void
+    onSelectSubtitle: (track: SubtitleTrack | null, opts?: { auto?: boolean }) => void
     isJassubLoading: boolean
     episodeSources: EpisodeSource[]
     activeStreamUrl: string
@@ -143,7 +144,7 @@ const SkipNextChapterIcon = () => (
 
 export const PlayerBottomBar = React.memo(function PlayerBottomBar({
     title, episodeNumber, episodeLabel, mediaFormat,
-    duration, insights, progressBarRef, progressInputRef, handleSeek, handleSeekStart, handleSeekEnd,
+    duration, insights, progressBarRef, thumbRef, progressInputRef, handleSeek, handleSeekStart, handleSeekEnd,
     isPlaying, togglePlay, skipTime: _skipTime,
     isMuted, toggleMute, volume, handleVolume,
     timeTextRef,
@@ -207,11 +208,13 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
 
     return (
         <div className={cn(
-            "absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] flex flex-col pointer-events-auto select-none",
+            // NOTE: no CSS transform here — a transformed ancestor isolates the backdrop
+            // and disables the frosted-glass backdrop-filter below. Center via inset-x-4 instead.
+            "absolute bottom-6 inset-x-4 flex flex-col pointer-events-auto select-none",
             "px-5 py-2.5 z-30",
         )}>
             {/* Background Layer to prevent backdrop-filter stacking context bugs with children */}
-            <div className="absolute inset-0 -z-10 pointer-events-none bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_85%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] border border-outline-variant rounded-full shadow-elevation-4" />
+            <div className="absolute inset-0 -z-10 pointer-events-none bg-black/60 backdrop-blur-md will-change-[backdrop-filter] [transform:translateZ(0)] border border-white/10 rounded-full shadow-[var(--shadow-glass-liquid)]" />
 
             <PlayerSeekPreview 
                 previewManager={previewManager || null} 
@@ -275,12 +278,15 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
 
                     <div 
                         ref={progressBarRef}
-                        className="h-full bg-brand-accent rounded-full transition-all duration-100 relative"
-                        style={{ width: '0%' }}
-                    >
-                        {/* Thumb indicator - always visible but subtle */}
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-white opacity-60 scale-90 transition-all duration-200 shadow-md ring-2 ring-zinc-950/40 pointer-events-none" />
-                    </div>
+                        className="w-full h-full bg-brand-accent rounded-full relative"
+                        style={{ transform: 'scaleX(0)', transformOrigin: 'left', transition: 'transform 100ms linear' }}
+                    />
+                    {/* Thumb indicator - always visible but subtle */}
+                    <div
+                        ref={thumbRef}
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-white opacity-60 scale-90 transition-all duration-200 shadow-md ring-2 ring-zinc-950/40 pointer-events-none"
+                        style={{ left: '0%', transition: 'left 100ms linear' }}
+                    />
                 </div>
                 <input
                     ref={progressInputRef}
@@ -310,7 +316,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                         tabIndex={0}
                         onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                         aria-label={isPlaying ? "Pausar" : "Reproducir"}
-                        className="text-white hover:text-primary transition-all duration-200 flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-full bg-surface-variant hover:bg-surface-container active:scale-[0.95] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+                        className="text-white hover:text-primary transition-all duration-200 flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-full bg-surface-variant hover:bg-surface-container active:scale-[0.95] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
                         {isPlaying
                             ? <Icons.media.pause className="w-4 h-4 md:w-3.5 md:h-3.5 fill-current" />
                             : <Icons.media.play className="w-4 h-4 md:w-3.5 md:h-3.5 fill-current ml-0.5" />
@@ -327,7 +333,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                                 onClick={(e) => { e.stopPropagation(); skipToPrevChapter?.(); }}
                                 aria-label="Capítulo anterior"
                                 title="Capítulo anterior [[ ]"
-                                className="text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-full hover:bg-surface-container active:scale-[0.95] duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+                                className="text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-full hover:bg-surface-container active:scale-[0.95] duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
                                 <Icons.media.skipPrevious className="w-4 h-4 md:w-3.5 md:h-3.5 fill-current" />
                             </button>
                             <button
@@ -335,7 +341,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                                 onClick={(e) => { e.stopPropagation(); skipToNextChapter?.(); }}
                                 aria-label="Siguiente capítulo"
                                 title="Siguiente capítulo [ ] ]"
-                                className="text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-full hover:bg-surface-container active:scale-[0.95] duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
+                                className="text-on-surface-variant hover:text-on-surface transition-all flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-full hover:bg-surface-container active:scale-[0.95] duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
                                 <SkipNextChapterIcon />
                             </button>
                         </div>
@@ -399,7 +405,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                             aria-label="Ver cola de reproducción"
                             title="Ver cola de reproducción"
                             className={cn(
-                                "transition-all duration-300 flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-full active:scale-90 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
+                                "transition-all duration-300 flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-full active:scale-90 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
                                 isQueueSidebarOpen
                                     ? "text-brand-orange bg-brand-orange/10 shadow-[0_0_12px_hsl(var(--brand-orange)/0.4)] animate-pulse"
                                     : "text-zinc-500 hover:text-white hover:bg-white/5"
@@ -416,7 +422,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                             onClick={(e) => { e.stopPropagation(); onNextEpisode(); }}
                             aria-label="Siguiente episodio [N]"
                             title="Siguiente episodio [N]"
-                            className="text-zinc-500 hover:text-white transition-all flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-lg hover:bg-white/5 active:scale-90 duration-300 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
+                            className="text-zinc-500 hover:text-white transition-all flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-lg hover:bg-white/5 active:scale-90 duration-300 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
                             <Icons.media.skipNext className="w-4 h-4 md:w-3.5 md:h-3.5" />
                         </button>
                     )}
@@ -431,7 +437,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                         aria-label={marathonMode ? "Desactivar Modo Maratón" : "Activar Modo Maratón"}
                         title={marathonMode ? "Desactivar Modo Maratón" : "Activar Modo Maratón"}
                         className={cn(
-                            "transition-all duration-300 flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-lg active:scale-90 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
+                            "transition-all duration-300 flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-lg active:scale-90 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
                             marathonMode
                                 ? "text-brand-orange bg-brand-orange/10 hover:bg-brand-orange/20"
                                 : "text-zinc-500 hover:text-white hover:bg-white/5"
@@ -496,7 +502,7 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                         onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
                         aria-label={isFullscreen ? "Salir de pantalla completa [F]" : "Pantalla completa [F]"}
                         title={isFullscreen ? "Salir de pantalla completa [F]" : "Pantalla completa [F]"}
-                        className="text-zinc-500 hover:text-white transition-all flex items-center justify-center w-10 h-10 md:w-8 md:h-8 rounded-lg hover:bg-white/5 active:scale-90 duration-300 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
+                        className="text-zinc-500 hover:text-white transition-all flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-lg hover:bg-white/5 active:scale-90 duration-300 focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950">
                         {isFullscreen ? <Icons.media.minimize className="w-4 h-4 md:w-3.5 md:h-3.5" /> : <Icons.media.maximize className="w-4 h-4 md:w-3.5 md:h-3.5" />}
                     </button>
                 </div>

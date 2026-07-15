@@ -9,6 +9,8 @@ import { useIntelligenceStore } from '@/hooks/use-home-intelligence';
 import { getSeriesIdFromMedia, getSeriesYear } from '@/lib/helpers/series';
 import { Skeleton } from '@/components/ui/skeleton/skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
+import { useResponsive } from '@/hooks/use-responsive';
+import { MediaCard } from '@/components/ui/media-card';
 
 export const Route = createFileRoute('/series/')({
     loader: ({ context }) => {
@@ -45,6 +47,11 @@ function SeriesFullscreenIndex() {
     const navigate = useNavigate();
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl);
+    // Tablet (768-1023) se trata como "móvil grande": usa el grid de posters en vez
+    // del "VHS shelf" horizontal, que queda apretado en ese ancho. Toda la lógica
+    // downstream que ramifica por `isMobile` hereda este criterio compacto.
+    const { isMobile: isPhone, isTablet } = useResponsive();
+    const isMobile = isPhone || isTablet;
 
     const { data: collection, isLoading } = useGetLibraryCollection();
 
@@ -98,26 +105,22 @@ function SeriesFullscreenIndex() {
         return mapped.sort((a, b) => a.yearNum - b.yearNum);
     }, [collection]);
 
-    // Selecciona el primer item apenas llega la data, solo si todavía no hay selección.
-    // (Antes esto se resolvía comparando `seriesList` con una copia en estado guardada
-    // en el propio render, un patrón frágil que dispara un render extra cada vez.)
-    useEffect(() => {
-        if (selectedId === null && seriesList.length > 0) {
-            setSelectedId(seriesList[0].id);
-        }
-    }, [seriesList, selectedId]);
+    // Sin selección explícita del usuario, cae al primer item de la lista. Derivarlo en
+    // el render (en vez de sincronizarlo con un effect) evita el render extra que se
+    // dispara al llegar la data.
+    const effectiveSelectedId = selectedId ?? seriesList[0]?.id ?? null;
 
     const selectedIndex = useMemo(() => {
-        return seriesList.findIndex(item => item.id === selectedId);
-    }, [seriesList, selectedId]);
+        return seriesList.findIndex(item => item.id === effectiveSelectedId);
+    }, [seriesList, effectiveSelectedId]);
     const selectedItem = seriesList[selectedIndex] ?? null;
 
     return (
-        <div className="w-full h-full flex flex-col text-on-surface font-sans overflow-hidden relative p-4 md:p-6" style={{ background: "var(--bg-primary)" }}>
+        <div className="w-full h-full flex flex-col text-on-surface font-sans overflow-hidden relative md:p-6" style={{ background: "var(--bg-primary)" }}>
             {/* Ambient Background Glow */}
-            {selectedItem && (
+            {selectedItem && !isMobile && (
                 <div
-                    className="absolute top-1/2 left-0 w-[700px] h-[700px] pointer-events-none blur-[100px] z-0"
+                    className="absolute top-1/2 left-0 w-[700px] h-[700px] pointer-events-none blur-[48px] z-0"
                     style={{
                         opacity: 0.06,
                         background: `radial-gradient(circle, ${getVhsColor(selectedItem.id)} 0%, transparent 70%)`,
@@ -136,7 +139,9 @@ function SeriesFullscreenIndex() {
                 style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 50%, transparent)" }}
             >
                 <main
-                    className="vhs-shelf w-full h-full flex bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar relative z-10 scroll-smooth"
+                    className={isMobile 
+                        ? "w-full h-full bg-transparent overflow-y-auto no-scrollbar relative z-10 p-4" 
+                        : "vhs-shelf w-full h-full flex bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar relative z-10 scroll-smooth"}
                     role="listbox"
                     aria-orientation="horizontal"
                     aria-label="Colección de series"
@@ -144,9 +149,9 @@ function SeriesFullscreenIndex() {
                     style={{ scrollSnapType: 'x proximity', scrollPadding: '0 16px' }}
                 >
                     {/* Backlight Glow inside shelf */}
-                    {selectedItem && (
+                    {selectedItem && !isMobile && (
                         <div
-                            className="absolute top-1/2 left-0 w-[500px] h-[500px] pointer-events-none blur-[80px] z-0"
+                            className="absolute top-1/2 left-0 w-[500px] h-[500px] pointer-events-none blur-[48px] z-0"
                             style={{
                                 opacity: 0.12,
                                 background: `radial-gradient(circle, ${getVhsColor(selectedItem.id)} 0%, transparent 60%)`,
@@ -157,11 +162,10 @@ function SeriesFullscreenIndex() {
                     )}
 
                     {isLoading && seriesList.length === 0 ? (
-                        <div className="w-full h-full flex items-stretch gap-0 relative z-10 p-2">
-                            {Array.from({ length: 8 }).map((_, i) => (
-                                <div key={i} className="h-full flex flex-col gap-2 p-2 shrink-0" style={{ flex: '1 0 150px' }}>
-                                    <Skeleton className="flex-1 h-auto rounded-t-lg rounded-b-none" />
-                                    <Skeleton className="h-[110px] rounded-t-none" />
+                        <div className={isMobile ? "w-full grid grid-cols-2 sm:grid-cols-3 gap-4" : "w-full h-full flex items-stretch gap-0 relative z-10 p-2"}>
+                            {Array.from({ length: isMobile ? 6 : 8 }).map((_, i) => (
+                                <div key={i} className={isMobile ? "flex flex-col gap-2" : "h-full flex flex-col gap-2 p-2 shrink-0"} style={isMobile ? {} : { flex: '1 0 150px' }}>
+                                    <Skeleton className={isMobile ? "aspect-[2/3] w-full rounded-xl" : "flex-1 h-auto rounded-t-lg rounded-b-none"} />
                                 </div>
                             ))}
                         </div>
@@ -172,12 +176,30 @@ function SeriesFullscreenIndex() {
                                 message="Agregá series a tu biblioteca para verlas acá."
                             />
                         </div>
+                    ) : isMobile ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 w-full h-max pb-24">
+                            {seriesList.map((item) => (
+                                <MediaCard
+                                    key={item.id}
+                                    artwork={item.poster || item.img}
+                                    title={item.title}
+                                    badge="Serie"
+                                    episodeNumber={item.eps}
+                                    progress={item.progress}
+                                    description={item.desc}
+                                    year={item.year}
+                                    onClick={() => handleNavigate(item.id.toString())}
+                                    aspect="poster"
+                                    className="w-full h-auto aspect-auto"
+                                />
+                            ))}
+                        </div>
                     ) : (
                         seriesList.map((item, i) => (
                             <SeriesCard
                                 key={item.id}
                                 item={item}
-                                isSelected={item.id === selectedId}
+                                isSelected={item.id === effectiveSelectedId}
                                 onNavigate={handleNavigate}
                                 onSelect={setSelectedId}
                                 entryDelayMs={i < ENTRY_STAGGER_MAX_ITEMS ? i * ENTRY_STAGGER_MS : 0}

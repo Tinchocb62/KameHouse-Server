@@ -219,12 +219,14 @@ export function RandomPlayButton() {
                             align="end"
                             sideOffset={16}
                             className={cn(
-                                "z-[999] w-56 bg-surface-container border border-outline-variant rounded-2xl p-1.5 outline-none",
+                                "z-[999] w-56 border border-outline-variant rounded-2xl p-1.5 outline-none",
+                                "backdrop-blur-[var(--blur-overlay-xl)] backdrop-saturate-[var(--glass-saturate)]",
                                 "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                                 "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                                 "data-[side=right]:slide-in-from-left-4 data-[side=bottom]:slide-in-from-top-4",
                                 "duration-300 ease-out"
                             )}
+                            style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 80%, transparent)" }}
                         >
                             {/* Header */}
                             <div className="px-3 pt-2.5 pb-2">

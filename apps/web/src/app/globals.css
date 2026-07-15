@@ -80,6 +80,7 @@
 
 /* ─── Utilities ──────────────────────────────────────────────────────── */
 @layer utilities {
+  .page-px         { @apply px-4 md:px-8 lg:px-16 xl:px-20 2xl:px-24 3xl:px-32 4xl:px-40; }
   .text-balance    { text-wrap: balance; }
   .text-pretty     { text-wrap: pretty; }
   .gpu             { will-change: transform; transform: translateZ(0); }
@@ -229,13 +230,7 @@ media-time-range {
   pointer-events: none;
 }
 
-/* ─── Container Queries for Swimlanes ────────────────────────────────── */
-@container (min-width: 320px)  { .swimlane { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@container (min-width: 640px)  { .swimlane { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@container (min-width: 768px)  { .swimlane { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@container (min-width: 1024px) { .swimlane { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-@container (min-width: 1440px) { .swimlane { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-@container (min-width: 1920px) { .swimlane { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+/* ─── Removed Container Queries for Swimlanes ────────────────────────────────── */
 
 /* ─── Sidebar Gradient — base negra + acento del preset activo ──────── */
 .sidebar-gradient {
@@ -288,29 +283,22 @@ media-time-range {
 .safe-area-pl { padding-left: env(safe-area-inset-left); }
 .safe-area-pr { padding-right: env(safe-area-inset-right); }
 
-/* ─── Surface Glassmorphism ────────────────────────────────────────────── */
-@layer utilities {
-  .bg-surface,
-  .bg-surface-variant,
-  .bg-surface-container,
-  .bg-surface-container-low,
-  .bg-surface-container-high,
-  .bg-surface-container-highest {
-    backdrop-filter: blur(var(--blur-overlay-md));
-    -webkit-backdrop-filter: blur(var(--blur-overlay-md));
-    backdrop-saturate: 150%;
+/* ─── Global Touch Targets & Scroll Consistency ────────────────────── */
+@media (hover: none) {
+  /* Force interactive elements to have a minimum touch target size of 44px */
+  button,
+  a,
+  [role="button"],
+  input,
+  select {
+    min-height: 44px;
+    min-width: 44px;
   }
 
-  /* ─── Flat Mode: remover backdrop-filter de bg-surface* ────── */
-  [data-flat="true"] .bg-surface,
-  [data-flat="true"] .bg-surface-variant,
-  [data-flat="true"] .bg-surface-container,
-  [data-flat="true"] .bg-surface-container-low,
-  [data-flat="true"] .bg-surface-container-high,
-  [data-flat="true"] .bg-surface-container-highest {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-saturate: 1 !important;
+  /* Ensure carousels and swipe areas have smooth momentum scrolling */
+  .scroll-snap-carousel {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 }
 

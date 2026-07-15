@@ -36,8 +36,13 @@ export function CommandPalette() {
                 setOpen((open) => !open)
             }
         }
+        const handleOpen = () => setOpen(true)
         document.addEventListener("keydown", down)
-        return () => document.removeEventListener("keydown", down)
+        window.addEventListener("open-command-palette", handleOpen)
+        return () => {
+            document.removeEventListener("keydown", down)
+            window.removeEventListener("open-command-palette", handleOpen)
+        }
     }, [])
 
     return (

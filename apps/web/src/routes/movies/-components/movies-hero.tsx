@@ -60,7 +60,7 @@ export function MoviesHero({
         <section
             ref={heroRef}
             // h- fija la altura exacta; min-h permite que crezca con el contenido
-            className="relative w-full h-[150vh] max-h-[600px] flex flex-col justify-center overflow-hidden bg-transparent select-none"
+            className="relative w-full min-h-[60dvh] md:min-h-[70vh] max-h-[600px] flex flex-col justify-center overflow-hidden bg-transparent select-none"
             onMouseEnter={() => setIsHeroHovered(true)}
             onMouseLeave={() => setIsHeroHovered(false)}
         >
@@ -144,7 +144,7 @@ export function MoviesHero({
             <div className="grain-overlay z-20" />
 
             {/* Contenido */}
-            <div className="relative z-30 w-full max-w-[1800px] mx-auto px-6 md:px-12 flex flex-col pointer-events-none">
+            <div className="relative z-30 w-full max-w-content mx-auto page-px flex flex-col pointer-events-none">
                 <div className="max-w-xl space-y-2.5 pointer-events-auto">
 
                     {/* Era badge */}

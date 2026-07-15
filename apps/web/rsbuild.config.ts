@@ -6,6 +6,7 @@ import { TanStackRouterRspack } from "@tanstack/router-plugin/rspack"
 import path from "path"
 import { pluginJassubTranspile } from "./rsbuild.jassub"
 import { getPwaPlugin } from "./rsbuild.pwa"
+import { pluginImageCompress } from "@rsbuild/plugin-image-compress"
 
 const { publicVars } = loadEnv({ prefixes: ["SEA_"] })
 
@@ -21,17 +22,20 @@ const config: RsbuildConfig = {
     plugins: [
         pluginReact(),
         pluginJassubTranspile(),
+        pluginImageCompress(),
         pluginBabel({
             include: /\.(?:jsx|tsx|m?js|m?jsx)$/,
             exclude: [/[\\/]node_modules[\\/]/],
             babelLoaderOptions(opts) {
                 opts.presets ??= []
                 opts.presets.push(["@babel/preset-env", {
-                    targets: ["chrome >= 47"],
+                    targets: ["chrome >= 100"],
                     modules: false,
                 }])
                 opts.plugins ??= []
-                opts.plugins.push(["babel-plugin-polyfill-corejs3", { method: "usage-global", version: "3.38" }])
+                // React Compiler — must be first plugin so it runs on untransformed source.
+                // Files with 'use no memo' are automatically skipped (e.g. usePlayerHls, debug).
+                opts.plugins.unshift(["babel-plugin-react-compiler", { target: "19" }])
             },
         }),
     ].filter(Boolean),
@@ -48,6 +52,9 @@ const config: RsbuildConfig = {
         alias: {
             "@": path.resolve(__dirname, "./src"),
         },
+    },
+    dev: {
+        lazyCompilation: false,
     },
     server: { // dev server
         port: Number(process.env.PORT) || 43210,
@@ -76,7 +83,7 @@ const config: RsbuildConfig = {
         },
     },
     output: {
-        polyfill: "usage",
+        polyfill: "off",
         dataUriLimit: 1024,
         cleanDistPath: true,
         sourceMap: process.env.NODE_ENV === "production" ? "hidden" : !!process.env.RSDOCTOR,
@@ -104,7 +111,8 @@ const config: RsbuildConfig = {
                 "lucide": /lucide-react/,
                 "tanstack-query": /@tanstack\/react-query/,
                 "tanstack-router": /@tanstack\/react-router/,
-                "framer-motion": /framer-motion/,
+                "framer-motion": /framer-motion|[\/\\]motion[\/\\]/,
+                "fontsource": /fontsource/,
                 "gsap": /gsap/,
                 "zod": /zod/,
             },

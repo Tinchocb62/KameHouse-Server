@@ -157,7 +157,7 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         if (isLoading) {
             return (
                 <div className="h-full w-full pb-16 p-6 md:p-12 flex flex-col justify-end min-h-screen gap-6">
-                    <div className="flex flex-col lg:flex-row items-center lg:items-end gap-10 max-w-[1800px] w-full mx-auto">
+                    <div className="flex flex-col lg:flex-row items-center lg:items-end gap-10 max-w-content w-full mx-auto">
                         <Skeleton className="w-56 md:w-64 shrink-0 aspect-[2/3] h-auto rounded-container" />
                         <div className="flex-1 w-full flex flex-col gap-4">
                             <Skeleton className="h-6 w-32 rounded-lg" />
@@ -319,12 +319,13 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     )
 
     const actionButtons = (
-        <>
+        <div className="w-full flex flex-col gap-3 md:flex-row md:items-center md:gap-4 pointer-events-auto">
+            {/* Play Button - Full width on mobile, auto on desktop */}
             <button
                 onClick={handlePlayDefault}
                 onPointerEnter={preloadTarget}
                 onFocus={preloadTarget}
-                className="group/play relative flex items-center gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95"
+                className="group/play relative flex items-center justify-center md:justify-start gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95 w-full md:w-auto shrink-0"
                 style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
             >
                 <div className="absolute inset-0 transition-opacity duration-300 opacity-0 group-hover/play:opacity-100 z-0" style={{ background: `linear-gradient(to right, var(--era-btn-hover-from), var(--era-btn-hover-to))` }} />
@@ -344,41 +345,41 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
                 </div>
             </button>
 
-            {/* Queue Button */}
-            {entry.localFiles && entry.localFiles.length > 0 && (
+            {/* Row of secondary actions - full width and distributed on mobile */}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+                {entry.localFiles && entry.localFiles.length > 0 && (
+                    <button
+                        onClick={handleAddToQueue}
+                        className="group/queue flex-1 md:flex-initial flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 text-on-surface/70 hover:text-on-surface hover:scale-[1.03] active:scale-95 min-h-[44px]"
+                        title="Añadir a la cola"
+                    >
+                        <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
+                    </button>
+                )}
+
                 <button
-                    onClick={handleAddToQueue}
-                    className="group/queue flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 text-on-surface/70 hover:text-on-surface hover:scale-[1.03] active:scale-95"
-                    title="Añadir a la cola"
+                    onClick={handleToggleWatched}
+                    className={cn(
+                        "flex-1 md:flex-initial flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95 min-h-[44px]",
+                        isWatched ? "text-brand-success" : "text-on-surface/70 hover:text-on-surface"
+                    )}
+                    title={isWatched ? "Marcar como no vista" : "Marcar como vista"}
                 >
-                    <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
+                    {isWatched ? <Icons.ui.check className="w-5 h-5 stroke-[3px]" /> : <Icons.ui.plus className="w-5 h-5 stroke-[2.5px]" />}
                 </button>
-            )}
 
-            {/* Watch Status */}
-            <button
-                onClick={handleToggleWatched}
-                className={cn(
-                    "flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95",
-                    isWatched ? "text-brand-success" : "text-on-surface/70 hover:text-on-surface"
-                )}
-                title={isWatched ? "Marcar como no vista" : "Marcar como vista"}
-            >
-                {isWatched ? <Icons.ui.check className="w-5 h-5 stroke-[3px]" /> : <Icons.ui.plus className="w-5 h-5 stroke-[2.5px]" />}
-            </button>
-
-            {/* Favorite Button */}
-            <button
-                onClick={handleToggleFavorite}
-                className={cn(
-                    "flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95",
-                    isFavorite ? "text-brand-destructive" : "text-on-surface/70 hover:text-on-surface"
-                )}
-                title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-            >
-                <Icons.ui.heart className={cn("w-5 h-5", isFavorite && "fill-current")} />
-            </button>
-        </>
+                <button
+                    onClick={handleToggleFavorite}
+                    className={cn(
+                        "flex-1 md:flex-initial flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95 min-h-[44px]",
+                        isFavorite ? "text-brand-destructive" : "text-on-surface/70 hover:text-on-surface"
+                    )}
+                    title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+                >
+                    <Icons.ui.heart className={cn("w-5 h-5", isFavorite && "fill-current")} />
+                </button>
+            </div>
+        </div>
     )
 
     return (
@@ -401,7 +402,7 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
 
             {/* Progress bar */}
             {continuityData?.item?.currentTime && continuityData.item.duration && (
-                <div className="w-full max-w-[1800px] mx-auto px-8 md:px-16 lg:px-20 xl:px-24 mt-12 pb-24 relative z-20">
+                <div className="w-full max-w-content mx-auto px-8 md:px-16 lg:px-20 xl:px-24 mt-12 pb-24 relative z-20">
                     <div className="movie-animate w-full h-[5px] rounded-full overflow-hidden relative z-10" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 20%, transparent)" }}>
                         <div
                             className="h-full bg-brand-secondary"
@@ -414,9 +415,8 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
             {/* Video Player */}
             {playTarget && (
                 <React.Suspense fallback={
-                    <div className="fixed inset-0 bg-scrim/80 backdrop-blur-[var(--blur-overlay-lg)] flex flex-col justify-center items-center z-50">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-secondary mb-4"></div>
-                        <p className="text-on-surface-variant/70 text-label-md uppercase">Cargando reproductor...</p>
+                    <div className="fixed inset-0 bg-black flex flex-col justify-center items-center z-50">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-secondary"></div>
                     </div>
                 }>
                     <VideoPlayer

@@ -4,26 +4,30 @@ import { __isDesktop__ } from "@/types/constants"
 import React, { useEffect, useState } from "react"
 import { Settings, RefreshCw } from "lucide-react"
 
-const CONNECTION_TIMEOUT_MS = 15000 // 15 seconds
+const CONNECTION_TIMEOUT_MS = 20000 // 20 seconds
 
 export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: () => void, title?: string, isError?: boolean }) {
     const [timedOut, setTimedOut] = useState(false)
 
-    const [prevIsError, setPrevIsError] = useState(isError)
-    if (isError !== prevIsError) {
-        setPrevIsError(isError)
-        if (isError) {
-            setTimedOut(true)
-        }
-    }
-
     useEffect(() => {
-        if (isError) return
+        // Start a single timeout when mounted. If the backend doesn't load within CONNECTION_TIMEOUT_MS, set timedOut to true.
         const timer = setTimeout(() => {
             setTimedOut(true)
         }, CONNECTION_TIMEOUT_MS)
         return () => clearTimeout(timer)
-    }, [isError])
+    }, [])
+
+    useEffect(() => {
+        // If we have an error and haven't timed out yet, poll the backend every 1.5 seconds.
+        if (isError && !timedOut) {
+            const interval = setInterval(() => {
+                if (refetch) {
+                    refetch()
+                }
+            }, 1500)
+            return () => clearInterval(interval)
+        }
+    }, [isError, timedOut, refetch])
 
     return (
         <LoadingOverlay showSpinner={false} className="bg-zinc-950 flex flex-col justify-center items-center">

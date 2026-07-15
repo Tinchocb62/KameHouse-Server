@@ -149,7 +149,12 @@ func cpuProfile(preset string) HwAccelProfile {
 			"-c:v", "libx264",
 			"-preset", preset,
 			"-profile:v", "high",
-			"-tune", "fastdecode,zerolatency",
+			// "animation" es el tune de x264 para dibujos/anime (menos deblocking,
+			// mejor manejo de líneas y color plano). Combinado con "zerolatency"
+			// para priorizar arranque rápido: desactiva sync-lookahead, rc-lookahead
+			// y el buffering de B-frames, evitando el "queda cargando" al arrancar/
+			// seekear. En CPU es además necesario para transcode en tiempo real.
+			"-tune", "animation,zerolatency",
 			"-sc_threshold", "0",
 			"-pix_fmt", "yuv420p",
 		},
@@ -248,13 +253,17 @@ func nvidiaProfile(preset string) HwAccelProfile {
 		EncodeFlags: []string{
 			"-c:v", "h264_nvenc",
 			"-preset", preset,
+			"-tune", "hq",
 			"-profile:v", "high",
 			"-rc:v", "vbr",
-			"-bf", "0",
+			// Priorizamos baja latencia de arranque y seek (delay 0, lookahead 0)
+			// pero mantenemos los B-frames para calidad/eficiencia.
+			"-delay", "0",
+			"-bf", "3",
+			"-b_ref_mode", "middle",
 			"-spatial-aq", "1",
 			"-temporal-aq", "1",
 			"-rc-lookahead", "0",
-			"-delay", "0",
 			"-no-scenecut", "1",
 		},
 		ScaleFilter:   "scale_cuda=%d:%d",
@@ -308,6 +317,13 @@ func BuildVideoFilter(hw *HwAccelProfile, video *videofile.Video, width, height 
 	}
 
 	var filter string
+	if hw.Name == "nvidia" && is10Bit {
+		if noScale {
+			return "scale_cuda=" + fmt.Sprintf("%d:%d", width, height) + ":format=nv12"
+		}
+		return fmt.Sprintf("scale_cuda=%d:%d:format=nv12", width, height)
+	}
+
 	if noScale && hw.NoScaleFilter != "" {
 		filter = hw.NoScaleFilter
 	} else {
@@ -332,20 +348,59 @@ func FallbackToCPU(preset string) HwAccelProfile {
 	return cpuProfile(preset)
 }
 
-// DetectHwAccelFailure checks for hardware acceleration failures
+// encoderName returns the video encoder (-c:v value) configured in a profile, or
+// "" if none is present. Shared by FormatHwAccelSummary and the re-probe logic.
+func encoderName(p HwAccelProfile) string {
+	for i, f := range p.EncodeFlags {
+		if f == "-c:v" && i+1 < len(p.EncodeFlags) {
+			return p.EncodeFlags[i+1]
+		}
+	}
+	return ""
+}
+
+// qualityRateControl returns the ffmpeg rate-control flags for a given encoder,
+// targeting constant perceptual quality capped by a bitrate ceiling (capped-CRF /
+// capped-CQ) instead of a fixed average bitrate. Easy scenes spend fewer bits,
+// complex scenes fill up to the ceiling, so quality improves at the same bandwidth
+// cap and the same encode speed. `avg` is only used by encoders without a
+// quality-based mode. `max` is the VBV peak (bits/s); `bufsize` is derived from it.
+func qualityRateControl(encoder string, avg, max uint32) []string {
+	maxStr := fmt.Sprint(max)
+	bufStr := fmt.Sprint(max * 5)
+	switch encoder {
+	case "libx264":
+		return []string{"-crf", "20", "-maxrate", maxStr, "-bufsize", bufStr}
+	case "h264_nvenc":
+		// EncodeFlags already sets "-rc:v vbr"; -cq caps quality.
+		return []string{"-cq", "21", "-maxrate", maxStr, "-bufsize", bufStr}
+	case "h264_qsv":
+		return []string{"-global_quality", "23", "-maxrate", maxStr, "-bufsize", bufStr}
+	case "h264_vaapi":
+		return []string{"-qp", "23"}
+	default:
+		// videotoolbox and any unknown encoder: keep the classic ABR/VBV model.
+		return []string{"-b:v", fmt.Sprint(avg), "-maxrate", maxStr, "-bufsize", bufStr}
+	}
+}
+
+// DetectHwAccelFailure checks for hardware acceleration failures in ffmpeg's stderr.
+// It requires both a hardware-specific keyword AND a failure indicator so that
+// informational lines mentioning e.g. "cuda" but not indicating an error are ignored.
 func DetectHwAccelFailure(stderr string) bool {
 	lower := strings.ToLower(stderr)
-	failureSignals := []string{
+	// Fast exit: if there is no failure/error word at all, it cannot be a hwaccel failure.
+	if !strings.Contains(lower, "failed") && !strings.Contains(lower, "error") {
+		return false
+	}
+	hwSignals := []string{
 		"hwaccel", "vaapi", "cuvid", "vdpau", "qsv",
 		"cuda", "nvenc", "videotoolbox",
 		"no capable devices found",
 		"device creation failed",
 		"initialization failed",
 	}
-	if !strings.Contains(lower, "failed") && !strings.Contains(lower, "error") {
-		return false
-	}
-	for _, sig := range failureSignals {
+	for _, sig := range hwSignals {
 		if strings.Contains(lower, sig) {
 			return true
 		}
@@ -358,12 +413,9 @@ func FormatHwAccelSummary(p HwAccelProfile) string {
 	if p.Name == "disabled" {
 		return "CPU (software encoding)"
 	}
-	encoder := "unknown"
-	for i, f := range p.EncodeFlags {
-		if f == "-c:v" && i+1 < len(p.EncodeFlags) {
-			encoder = p.EncodeFlags[i+1]
-			break
-		}
+	encoder := encoderName(p)
+	if encoder == "" {
+		encoder = "unknown"
 	}
 	return fmt.Sprintf("%s (%s)", strings.ToUpper(p.Name), encoder)
 }

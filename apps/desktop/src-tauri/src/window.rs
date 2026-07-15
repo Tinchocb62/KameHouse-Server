@@ -42,9 +42,6 @@ impl WindowManager {
         // Create main window
         self.create_main_window(app_handle, is_dev, &settings)?;
 
-        // Create splash screen
-        self.create_splash_window(app_handle, is_dev, &settings)?;
-
         // Create crash screen
         self.create_crash_window(app_handle, is_dev)?;
 
@@ -73,10 +70,8 @@ impl WindowManager {
             .min_inner_size(800.0, 600.0)
             .resizable(true)
             .fullscreen(false)
-            // Created hidden; shown once the server/renderer is ready (finalize_startup)
-            // to avoid a flash of an empty window before content is available.
-            .visible(false)
-            .background_color(tauri::window::Color(17, 17, 17, 255))
+            .visible(!settings.open_in_background)
+            .background_color(tauri::window::Color(9, 9, 11, 255))
             .decorations(true)
             .transparent(false);
 
@@ -121,33 +116,6 @@ impl WindowManager {
         Ok(())
     }
 
-    fn create_splash_window<R: Runtime>(
-        &self,
-        app_handle: &AppHandle<R>,
-        is_dev: bool,
-        settings: &DesktopSettings,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        info!("[WindowManager] Creating splash window");
-
-        let url = if is_dev {
-            WebviewUrl::External("http://127.0.0.1:43210/splashscreen".parse().unwrap())
-        } else {
-            WebviewUrl::App("app://-/splashscreen".into())
-        };
-
-        WebviewWindowBuilder::new(app_handle, "splash", url)
-            .title("KameHouse")
-            .inner_size(800.0, 600.0)
-            .resizable(false)
-            .decorations(false)
-            .transparent(true)
-            .visible(!settings.open_in_background)
-            .center()
-            .build()?;
-
-        Ok(())
-    }
-
     fn create_crash_window<R: Runtime>(
         &self,
         app_handle: &AppHandle<R>,
@@ -176,28 +144,9 @@ impl WindowManager {
     pub fn finalize_startup<R: Runtime>(&self, app_handle: &AppHandle<R>, source: &str) {
         info!("[WindowManager] Finalizing startup from: {}", source);
         *self.startup_ready.write().unwrap() = true;
-
-        if let Some(splash) = app_handle.get_webview_window("splash") {
-            let _ = splash.close();
-        }
-
-        // Show the main window now that the server/renderer is ready. The main window
-        // is created hidden with a dark background, so showing it immediately here (no
-        // arbitrary delay) avoids both the empty-window flash and the startup lag.
-        let settings = self.settings_manager.load(app_handle);
-        if !settings.open_in_background {
-            if let Some(main) = app_handle.get_webview_window("main") {
-                let _ = main.show();
-                let _ = main.set_focus();
-            }
-        }
     }
 
     pub fn show_crash_screen<R: Runtime>(&self, app_handle: &AppHandle<R>, message: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        if let Some(splash) = app_handle.get_webview_window("splash") {
-            let _ = splash.close();
-        }
-
         if let Some(main) = app_handle.get_webview_window("main") {
             let _ = main.destroy();
         }

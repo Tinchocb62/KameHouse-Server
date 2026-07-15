@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 import { getSeriesName } from "@/lib/helpers/media"
 
 interface UsePlayerMediaSessionProps {
@@ -28,7 +28,13 @@ export function usePlayerMediaSession({
 }: UsePlayerMediaSessionProps) {
     const isActive = useRef(false)
     const isPlayingRef = useRef(isPlaying)
-    isPlayingRef.current = isPlaying
+
+    // El ref se sincroniza después del commit, no en el cuerpo del render: un render
+    // interrumpido (modo concurrente / StrictMode) dejaría el ref con un valor que
+    // nunca se pintó.
+    useLayoutEffect(() => {
+        isPlayingRef.current = isPlaying
+    }, [isPlaying])
 
     // Initialize media session action handlers
     useEffect(() => {

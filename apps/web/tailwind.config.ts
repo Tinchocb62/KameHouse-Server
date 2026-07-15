@@ -42,6 +42,10 @@ const config: Config = {
             highlighted: "highlighted",
         },
         extend: {
+            screens: {
+                "3xl": "1600px",
+                "4xl": "1800px",
+            },
             fontFamily: {
                 sans: ["Inter Variable", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue",
                     "Arial", "sans-serif"],
@@ -139,6 +143,9 @@ const config: Config = {
                 pill: "9999px",
                 container: "16px",
                 "corner-lg": "28px",
+            },
+            maxWidth: {
+                content: "var(--content-max)",
             },
             backdropBlur: {
                 "overlay-sm": "var(--blur-overlay-sm)",

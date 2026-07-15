@@ -114,8 +114,8 @@ export function MediaHero({
         <section
             ref={heroRef}
             className={cn(
-                "relative w-full flex flex-col justify-end overflow-hidden pb-16 pt-32 shrink-0 select-none",
-                isSmallBanner ? "min-h-[60vh] md:min-h-[260px]" : "min-h-[100vh]",
+                "relative w-full flex flex-col justify-end overflow-hidden pb-16 pt-20 md:pt-32 shrink-0 select-none",
+                isSmallBanner ? "min-h-[60dvh] md:min-h-[260px]" : "min-h-[70dvh] md:min-h-[100vh]",
                 className
             )}
         >
@@ -186,11 +186,11 @@ export function MediaHero({
 
             {/* Content Container */}
             <div className={cn(
-                "relative z-20 w-full max-w-[1800px] mx-auto px-8 md:px-16 lg:px-20 xl:px-24 flex",
-                showPosterColumn ? "flex-col lg:flex-row items-center lg:items-end gap-10 lg:gap-14" : "flex-col pointer-events-none"
+                "relative z-20 w-full max-w-content mx-auto page-px flex",
+                showPosterColumn ? "flex-col lg:flex-row items-center lg:items-end gap-6 md:gap-10 lg:gap-14" : "flex-col pointer-events-none"
             )}>
                 {showPosterColumn && posterUrl && (
-                    <div className="media-hero-animate w-56 md:w-64 shrink-0 aspect-[2/3] rounded-container overflow-hidden border border-white/10 bg-surface-container shadow-elevation-5 pointer-events-auto">
+                    <div className="media-hero-animate w-40 sm:w-44 md:w-56 lg:w-64 shrink-0 aspect-[2/3] rounded-container overflow-hidden border border-white/10 bg-surface-container shadow-elevation-5 pointer-events-auto">
                         <DeferredImage
                             src={posterUrl}
                             alt="Poster"

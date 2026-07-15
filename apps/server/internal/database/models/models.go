@@ -85,7 +85,7 @@ type LibrarySettings struct {
 	FanartApiKey                    string       `gorm:"column:fanart_api_key" json:"fanartApiKey"`
 	OmdbApiKey                      string       `gorm:"column:omdb_api_key" json:"omdbApiKey"`
 	LastScanAt                      time.Time    `gorm:"column:last_scan_at" json:"lastScanAt"`
-	AutoScan                        bool         `gorm:"-" json:"autoScan"`
+	AutoScan                        bool         `gorm:"column:auto_scan" json:"autoScan"`
 }
 
 func (s *LibrarySettings) GetAllPaths() []string {
@@ -247,6 +247,7 @@ type Theme struct {
 	EnableSidebarGradient      bool   `gorm:"column:enable_sidebar_gradient" json:"themeEnableSidebarGradient"`
 	DisableCarouselAutoScroll  bool   `gorm:"column:disable_carousel_auto_scroll" json:"themeDisableCarouselAutoScroll"`
 	UseLegacyEpisodeCard       bool   `gorm:"column:use_legacy_episode_card" json:"themeUseLegacyEpisodeCard"`
+	EnableCinematicGrain       bool   `gorm:"column:enable_cinematic_grain" json:"themeEnableCinematicGrain"`
 
 	// ── Pantalla de Biblioteca ───────────────────────────────────────────
 	LibraryScreenBannerType              string `gorm:"column:library_screen_banner_type;default:dynamic" json:"themeLibraryScreenBannerType"`

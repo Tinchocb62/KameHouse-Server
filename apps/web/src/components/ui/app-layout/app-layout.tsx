@@ -68,6 +68,7 @@ export const AppLayoutGridAnatomy = defineStyleAnatomy({
                 lg: "lg:grid lg:space-y-0",
                 xl: "xl:grid xl:space-y-0",
                 "2xl": "2xl:grid 2xl:space-y-0",
+                "3xl": "3xl:grid 3xl:space-y-0",
             },
             spacing: {
                 sm: "gap-2",
@@ -108,6 +109,12 @@ export const AppLayoutGridAnatomy = defineStyleAnatomy({
             { breakBelow: "xl", cols: 4, className: "xl:grid-cols-4" },
             { breakBelow: "xl", cols: 5, className: "xl:grid-cols-5" },
             { breakBelow: "xl", cols: 6, className: "xl:grid-cols-6" },
+            { breakBelow: "3xl", cols: 1, className: "3xl:grid-cols-1" },
+            { breakBelow: "3xl", cols: 2, className: "3xl:grid-cols-2" },
+            { breakBelow: "3xl", cols: 3, className: "3xl:grid-cols-3" },
+            { breakBelow: "3xl", cols: 4, className: "3xl:grid-cols-4" },
+            { breakBelow: "3xl", cols: 5, className: "3xl:grid-cols-5" },
+            { breakBelow: "3xl", cols: 6, className: "3xl:grid-cols-6" },
         ],
     }),
 })

@@ -105,7 +105,31 @@ impl SidecarManager {
                 .path()
                 .resource_dir()
                 .map_err(|e| format!("Failed to get resource dir: {}", e))?;
-            Ok(resource_dir.join("binaries").join(binary_name))
+
+            // Try to find the binary at the resource root first, then under "binaries" folder,
+            // and try with both ".exe.exe" and ".exe" suffixes for Windows.
+            let paths_to_try = if cfg!(target_os = "windows") {
+                vec![
+                    resource_dir.join("kamehouse-server-windows.exe.exe"),
+                    resource_dir.join("kamehouse-server-windows.exe"),
+                    resource_dir.join("binaries").join("kamehouse-server-windows.exe.exe"),
+                    resource_dir.join("binaries").join("kamehouse-server-windows.exe"),
+                ]
+            } else {
+                vec![
+                    resource_dir.join(&binary_name),
+                    resource_dir.join("binaries").join(&binary_name),
+                ]
+            };
+
+            for path in &paths_to_try {
+                if path.exists() {
+                    return Ok(path.clone());
+                }
+            }
+
+            // If none of the paths exist, return the primary one so the error message points to it
+            Ok(paths_to_try[0].clone())
         }
     }
 

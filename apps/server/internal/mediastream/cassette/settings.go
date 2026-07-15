@@ -28,6 +28,8 @@ type Settings struct {
 	FfmpegPath string
 	// FfprobePath is the path to the ffprobe binary
 	FfprobePath string
+	// Preset is the quality preset
+	Preset string
 
 	hwAccelMu sync.RWMutex
 	hwAccel   HwAccelProfile

@@ -11,7 +11,7 @@ interface StreamingTabProps {
 }
 
 const HW_ACCEL_OPTIONS = [
-    { value: "", label: "Automático (Recomendado)", desc: "Detecta Nvidia NVENC, Intel QuickSync, VAAPI, AMD AMF", badge: "AUTO" },
+    { value: "auto", label: "Automático (Recomendado)", desc: "Detecta Nvidia NVENC, Intel QuickSync, VAAPI, AMD AMF", badge: "AUTO" },
     { value: "nvenc", label: "NVIDIA NVENC", desc: "Tarjetas GeForce GTX/RTX series", badge: "NVEN" },
     { value: "qsv", label: "Intel QuickSync (QSV)", desc: "Gráficos integrados Intel (6th gen+)", badge: "QSV" },
     { value: "qsv-low-power", label: "Intel QuickSync (Low Power)", desc: "Menor consumo de energía (QSV)", badge: "QSV-LP" },
@@ -60,7 +60,11 @@ export function StreamingTab({ control }: StreamingTabProps) {
                             <RadioCardGroup
                                 name="transcodeHwAccel"
                                 options={HW_ACCEL_OPTIONS}
-                                value={field.value}
+                                // El backend usa "auto" como valor canónico de automático
+                                // (y normaliza "" → "auto"). Mapear vacío/legacy a "auto"
+                                // para que la tarjeta "Automático" quede marcada por defecto
+                                // en vez de aparecer desmarcada.
+                                value={field.value || "auto"}
                                 onChange={field.onChange}
                             />
                         )}
@@ -89,8 +93,8 @@ export function StreamingTab({ control }: StreamingTabProps) {
                         name="mediastream.transcodeThreads"
                         render={({ field }) => (
                             <RangeSlider
-                                label="Hilos de Transcodificación (Threads)"
-                                description="0 = automático (usa todos los núcleos lógicos disponibles)."
+                                label="Procesos de transcodificación máximos"
+                                description="0 = automático. Limita cuántos procesos ffmpeg corren en paralelo. Con GPU habilitada, los procesos extra usan CPU (libx264) automáticamente."
                                 min={0}
                                 max={16}
                                 value={field.value || 0}
@@ -234,7 +238,7 @@ export function StreamingTab({ control }: StreamingTabProps) {
                         label="Transcodificación"
                         value={mediastream?.transcodeEnabled ? "ACTIVO" : "INACTIVO"}
                         tone={mediastream?.transcodeEnabled ? "ok" : "off"}
-                        hint={`HW: ${hwAccelLabel(mediastream?.transcodeHwAccel || "")} · ${mediastream?.transcodeThreads || 0 || "auto"} threads · ${mediastream?.transcodePreset || "fast"}`}
+                        hint={`HW: ${hwAccelLabel(mediastream?.transcodeHwAccel || "auto")} · ${mediastream?.transcodeThreads || 0 || "auto"} threads · ${mediastream?.transcodePreset || "fast"}`}
                     />
                     <StatusCard
                         icon={LucideCpu}

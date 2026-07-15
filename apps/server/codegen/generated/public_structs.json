@@ -5369,6 +5369,44 @@
     ]
   },
   {
+    "filepath": "../internal/database/db/backup.go",
+    "filename": "backup.go",
+    "name": "BackupResult",
+    "formattedName": "DB_BackupResult",
+    "package": "db",
+    "fields": [
+      {
+        "name": "Path",
+        "jsonName": "path",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "SizeBytes",
+        "jsonName": "sizeBytes",
+        "goType": "int64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "CreatedAt",
+        "jsonName": "createdAt",
+        "goType": "time.Time",
+        "typescriptType": "string",
+        "usedStructName": "time.Time",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
     "filepath": "../internal/database/db/buffered_writer.go",
     "filename": "buffered_writer.go",
     "name": "BufferedWriter",
@@ -5622,6 +5660,15 @@
         "usedTypescriptType": "DB_SlowTraceLogger",
         "usedStructName": "db.SlowTraceLogger",
         "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "sqlitePath",
+        "jsonName": "sqlitePath",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
         "public": false,
         "comments": []
       }
@@ -10202,6 +10249,61 @@
   {
     "filepath": "../internal/database/models/models.go",
     "filename": "models.go",
+    "name": "Notification",
+    "formattedName": "Models_Notification",
+    "package": "models",
+    "fields": [
+      {
+        "name": "Type",
+        "jsonName": "type",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": [
+          " \"scanner\" | \"mediastream\" | \"system\""
+        ]
+      },
+      {
+        "name": "Title",
+        "jsonName": "title",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Message",
+        "jsonName": "message",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Read",
+        "jsonName": "read",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " Notification is a persisted in-app notification (scan completed, transcode",
+      " fallback, system events). Created by the notifier module and surfaced in the",
+      " web client's notification center."
+    ],
+    "embeddedStructNames": [
+      "models.BaseModel"
+    ]
+  },
+  {
+    "filepath": "../internal/database/models/models.go",
+    "filename": "models.go",
     "name": "PlatformSettings",
     "formattedName": "Models_PlatformSettings",
     "package": "models",
@@ -10396,6 +10498,15 @@
       {
         "name": "UseLegacyEpisodeCard",
         "jsonName": "themeUseLegacyEpisodeCard",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "EnableCinematicGrain",
+        "jsonName": "themeEnableCinematicGrain",
         "goType": "bool",
         "typescriptType": "boolean",
         "required": true,
@@ -11196,6 +11307,24 @@
       {
         "name": "EdEnd",
         "jsonName": "edEnd",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Source",
+        "jsonName": "source",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Confidence",
+        "jsonName": "confidence",
         "goType": "float64",
         "typescriptType": "number",
         "required": true,
@@ -12943,6 +13072,38 @@
       }
     ],
     "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/notifications.go",
+    "filename": "notifications.go",
+    "name": "NotificationList",
+    "formattedName": "NotificationList",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "Notifications",
+        "jsonName": "notifications",
+        "goType": "[]models.Notification",
+        "typescriptType": "Array\u003cModels_Notification\u003e",
+        "usedTypescriptType": "Models_Notification",
+        "usedStructName": "models.Notification",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "UnreadCount",
+        "jsonName": "unreadCount",
+        "goType": "int64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " NotificationList is the payload returned by the notifications endpoint."
+    ]
   },
   {
     "filepath": "../internal/handlers/progress.go",
@@ -21573,6 +21734,86 @@
     "comments": []
   },
   {
+    "filepath": "../internal/maintenance/scheduler.go",
+    "filename": "scheduler.go",
+    "name": "Job",
+    "formattedName": "Job",
+    "package": "maintenance",
+    "fields": [
+      {
+        "name": "Name",
+        "jsonName": "Name",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Interval",
+        "jsonName": "Interval",
+        "goType": "time.Duration",
+        "typescriptType": "number",
+        "usedStructName": "time.Duration",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "InitialDelay",
+        "jsonName": "InitialDelay",
+        "goType": "time.Duration",
+        "typescriptType": "number",
+        "usedStructName": "time.Duration",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Run",
+        "jsonName": "Run",
+        "goType": "",
+        "typescriptType": "any",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/maintenance/scheduler.go",
+    "filename": "scheduler.go",
+    "name": "Scheduler",
+    "formattedName": "Scheduler",
+    "package": "maintenance",
+    "fields": [
+      {
+        "name": "logger",
+        "jsonName": "logger",
+        "goType": "zerolog.Logger",
+        "typescriptType": "Logger",
+        "usedTypescriptType": "Logger",
+        "usedStructName": "zerolog.Logger",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "jobs",
+        "jsonName": "jobs",
+        "goType": "[]Job",
+        "typescriptType": "Array\u003cJob\u003e",
+        "usedTypescriptType": "Job",
+        "usedStructName": "maintenance.Job",
+        "required": false,
+        "public": false,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
     "filepath": "../internal/matroska/ebml.go",
     "filename": "ebml.go",
     "name": "EBMLElement",
@@ -23451,6 +23692,15 @@
         "comments": []
       },
       {
+        "name": "nvencSem",
+        "jsonName": "nvencSem",
+        "goType": "",
+        "typescriptType": "any",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
         "name": "active",
         "jsonName": "active",
         "goType": "atomic.Int32",
@@ -23464,6 +23714,15 @@
       {
         "name": "maxSlot",
         "jsonName": "maxSlot",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "nvencCap",
+        "jsonName": "nvencCap",
         "goType": "int",
         "typescriptType": "number",
         "required": true,
@@ -23527,6 +23786,24 @@
       {
         "name": "MaxConcurrency",
         "jsonName": "maxConcurrency",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "ActiveNVENC",
+        "jsonName": "activeNvenc",
+        "goType": "int32",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "NVENCCap",
+        "jsonName": "nvencCap",
         "goType": "int",
         "typescriptType": "number",
         "required": true,
@@ -24421,6 +24698,15 @@
         "comments": []
       },
       {
+        "name": "Preset",
+        "jsonName": "Preset",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
         "name": "hwAccelMu",
         "jsonName": "hwAccelMu",
         "goType": "sync.RWMutex",
@@ -24671,124 +24957,6 @@
     ]
   },
   {
-    "filepath": "../internal/mediastream/detector.go",
-    "filename": "detector.go",
-    "name": "SkipDetector",
-    "formattedName": "Mediastream_SkipDetector",
-    "package": "mediastream",
-    "fields": [
-      {
-        "name": "db",
-        "jsonName": "db",
-        "goType": "db.Database",
-        "typescriptType": "DB_Database",
-        "usedTypescriptType": "DB_Database",
-        "usedStructName": "db.Database",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "logger",
-        "jsonName": "logger",
-        "goType": "zerolog.Logger",
-        "typescriptType": "Logger",
-        "usedTypescriptType": "Logger",
-        "usedStructName": "zerolog.Logger",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "wsEventManager",
-        "jsonName": "wsEventManager",
-        "goType": "events.WSEventManagerInterface",
-        "typescriptType": "Events_WSEventManagerInterface",
-        "usedTypescriptType": "Events_WSEventManagerInterface",
-        "usedStructName": "events.WSEventManagerInterface",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "cacheDir",
-        "jsonName": "cacheDir",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "ffmpegPath",
-        "jsonName": "ffmpegPath",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "ffprobePath",
-        "jsonName": "ffprobePath",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "scanMu",
-        "jsonName": "scanMu",
-        "goType": "sync.Mutex",
-        "typescriptType": "Mutex",
-        "usedTypescriptType": "Mutex",
-        "usedStructName": "sync.Mutex",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "isScanning",
-        "jsonName": "isScanning",
-        "goType": "map[int]bool",
-        "typescriptType": "Record\u003cnumber, boolean\u003e",
-        "required": false,
-        "public": false,
-        "comments": []
-      }
-    ],
-    "comments": []
-  },
-  {
-    "filepath": "../internal/mediastream/detector.go",
-    "filename": "detector.go",
-    "name": "FingerprintResult",
-    "formattedName": "Mediastream_FingerprintResult",
-    "package": "mediastream",
-    "fields": [
-      {
-        "name": "Duration",
-        "jsonName": "duration",
-        "goType": "float64",
-        "typescriptType": "number",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "Fingerprint",
-        "jsonName": "fingerprint",
-        "goType": "[]int",
-        "typescriptType": "Array\u003cnumber\u003e",
-        "required": false,
-        "public": true,
-        "comments": []
-      }
-    ],
-    "comments": []
-  },
-  {
     "filepath": "../internal/mediastream/pgsevents.go",
     "filename": "pgsevents.go",
     "name": "PgsEvent",
@@ -24936,6 +25104,94 @@
   {
     "filepath": "../internal/mediastream/playback.go",
     "filename": "playback.go",
+    "name": "ClientCapabilities",
+    "formattedName": "Mediastream_ClientCapabilities",
+    "package": "mediastream",
+    "fields": [
+      {
+        "name": "Hevc",
+        "jsonName": "hevc",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": [
+          " HEVC/H.265 8-bit"
+        ]
+      },
+      {
+        "name": "Hevc10Bit",
+        "jsonName": "hevc10Bit",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": [
+          " HEVC Main 10"
+        ]
+      },
+      {
+        "name": "Av1",
+        "jsonName": "av1",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Vp9",
+        "jsonName": "vp9",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Ac3",
+        "jsonName": "ac3",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Eac3",
+        "jsonName": "eac3",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Dts",
+        "jsonName": "dts",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Matroska",
+        "jsonName": "matroska",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": [
+          " can demux .mkv in \u003cvideo\u003e (Chromium yes, Firefox/Safari no)"
+        ]
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/mediastream/playback.go",
+    "filename": "playback.go",
     "name": "PlaybackManager",
     "formattedName": "Mediastream_PlaybackManager",
     "package": "mediastream",
@@ -25016,6 +25272,19 @@
         "required": false,
         "public": false,
         "comments": []
+      },
+      {
+        "name": "extractionJobs",
+        "jsonName": "extractionJobs",
+        "goType": "sync.Map",
+        "typescriptType": "Map",
+        "usedTypescriptType": "Map",
+        "usedStructName": "sync.Map",
+        "required": false,
+        "public": false,
+        "comments": [
+          " hash -\u003e chan struct{}"
+        ]
       }
     ],
     "comments": []
@@ -25224,17 +25493,6 @@
         "typescriptType": "DB_Database",
         "usedTypescriptType": "DB_Database",
         "usedStructName": "db.Database",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "skipDetector",
-        "jsonName": "skipDetector",
-        "goType": "SkipDetector",
-        "typescriptType": "Mediastream_SkipDetector",
-        "usedTypescriptType": "Mediastream_SkipDetector",
-        "usedStructName": "mediastream.SkipDetector",
         "required": false,
         "public": false,
         "comments": []
@@ -27220,6 +27478,87 @@
     "comments": [
       " Tracks element and its children"
     ]
+  },
+  {
+    "filepath": "../internal/notifier/notifier.go",
+    "filename": "notifier.go",
+    "name": "NotificationType",
+    "formattedName": "NotificationType",
+    "package": "notifier",
+    "fields": [],
+    "aliasOf": {
+      "goType": "string",
+      "typescriptType": "string",
+      "declaredValues": [
+        "\"scanner\"",
+        "\"mediastream\"",
+        "\"system\""
+      ]
+    },
+    "comments": []
+  },
+  {
+    "filepath": "../internal/notifier/notifier.go",
+    "filename": "notifier.go",
+    "name": "Notifier",
+    "formattedName": "Notifier",
+    "package": "notifier",
+    "fields": [
+      {
+        "name": "mu",
+        "jsonName": "mu",
+        "goType": "sync.RWMutex",
+        "typescriptType": "RWMutex",
+        "usedTypescriptType": "RWMutex",
+        "usedStructName": "sync.RWMutex",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "database",
+        "jsonName": "database",
+        "goType": "db.Database",
+        "typescriptType": "DB_Database",
+        "usedTypescriptType": "DB_Database",
+        "usedStructName": "db.Database",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "ws",
+        "jsonName": "ws",
+        "goType": "events.WSEventManagerInterface",
+        "typescriptType": "Events_WSEventManagerInterface",
+        "usedTypescriptType": "Events_WSEventManagerInterface",
+        "usedStructName": "events.WSEventManagerInterface",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "logger",
+        "jsonName": "logger",
+        "goType": "zerolog.Logger",
+        "typescriptType": "Logger",
+        "usedTypescriptType": "Logger",
+        "usedStructName": "zerolog.Logger",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "appName",
+        "jsonName": "appName",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": false,
+        "comments": []
+      }
+    ],
+    "comments": []
   },
   {
     "filepath": "../internal/pgs/pgs.go",

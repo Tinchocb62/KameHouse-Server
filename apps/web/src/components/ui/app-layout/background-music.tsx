@@ -11,28 +11,22 @@ import { cn } from "@/components/ui/core/styling"
 const PLAYLIST = [
     "/sounds/music/Dragon ball dvd.m4a",
     "/sounds/music/Dragon ball dvd 2.m4a",
-    "/sounds/music/the-meteor.flac"
+    "/sounds/music/the-meteor.m4a"
     //aca agrego mas musica
 ]
 
 export function BackgroundMusicPlayer() {
-    const { bgMusicEnabled, setBgMusicEnabled, bgMusicVolume, isVideoActive, uiSoundsEnabled, setUiSoundsEnabled, isGlobalMuted, setGlobalMuted, sidebarOpen } = useAppStore(
+    const { bgMusicEnabled, setBgMusicEnabled, bgMusicVolume, isVideoActive, isGlobalMuted, sidebarOpen } = useAppStore(
         useShallow((state) => ({
             bgMusicEnabled: state.bgMusicEnabled,
             setBgMusicEnabled: state.setBgMusicEnabled,
             bgMusicVolume: state.bgMusicVolume,
             isVideoActive: state.isVideoActive,
-            uiSoundsEnabled: state.uiSoundsEnabled,
-            setUiSoundsEnabled: state.setUiSoundsEnabled,
             isGlobalMuted: state.isGlobalMuted,
-            setGlobalMuted: state.setGlobalMuted,
             sidebarOpen: state.sidebarOpen,
         }))
     )
 
-    // Combined state: audio is "on" if either music or UI sounds are enabled
-    const isAudioEnabled = bgMusicEnabled || uiSoundsEnabled
-    
     const audioRef = React.useRef<HTMLAudioElement | null>(null)
     const [isPlaying, setIsPlaying] = React.useState(false)
     const [isAnyVideoPlaying, setIsAnyVideoPlaying] = React.useState(false)
@@ -168,31 +162,19 @@ export function BackgroundMusicPlayer() {
     }, [bgMusicEnabled, isVideoActive])
 
     const togglePlayback = () => {
-        if (!isAudioEnabled) {
-            // Neither music nor UI sounds enabled - turn both on
-            setBgMusicEnabled(true)
-            setUiSoundsEnabled(true)
-            setGlobalMuted(false)
-            if (audioRef.current && !isVideoActive) {
-                audioRef.current.play()
-                    .then(() => setIsPlaying(true))
-                    .catch(() => setIsPlaying(false))
+        // Direct mute/unmute of the background OST. This mirrors the music toggle
+        // in Settings (both drive `bgMusicEnabled`). Volume is left untouched.
+        // We don't call play() here: flipping `bgMusicEnabled` lets the main effect
+        // start/stop playback with the correct, up-to-date gating (avoids the
+        // play-then-immediately-pause flicker).
+        if (bgMusicEnabled) {
+            setBgMusicEnabled(false)
+            if (audioRef.current) {
+                audioRef.current.pause()
+                setIsPlaying(false)
             }
         } else {
-            // Audio is enabled - toggle mute
-            const nextMuted = !isGlobalMuted
-            setGlobalMuted(nextMuted)
-            
-            if (audioRef.current) {
-                if (!nextMuted && !isVideoActive) {
-                    audioRef.current.play()
-                        .then(() => setIsPlaying(true))
-                        .catch(() => setIsPlaying(false))
-                } else {
-                    audioRef.current.pause()
-                    setIsPlaying(false)
-                }
-            }
+            setBgMusicEnabled(true)
         }
     }
 
@@ -201,12 +183,12 @@ export function BackgroundMusicPlayer() {
             <button
                 id="bg-music-toggle-btn"
                 onClick={togglePlayback}
-                title={!isAudioEnabled ? "Activar audio (música + efectos)" : isGlobalMuted ? "Activar audio" : "Silenciar audio"}
+                title={bgMusicEnabled ? "Silenciar música" : "Activar música"}
                 className={cn(
                     "flex items-center h-14 rounded-2xl group px-4 relative transition-all duration-300 w-full",
                     "active:scale-95 font-bold",
                     sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
-                    isAudioEnabled && !isGlobalMuted
+                    bgMusicEnabled
                         ? "text-on-surface bg-white/[0.08]"
                         : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-white/[0.12] text-on-surface-variant hover:text-on-surface"
                 )}
@@ -214,32 +196,32 @@ export function BackgroundMusicPlayer() {
                 {/* Active Indicator Line */}
                 <div className={cn(
                     "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-500 hidden md:block",
-                    isAudioEnabled && !isGlobalMuted ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                    bgMusicEnabled ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                 )} />
 
                 <span className={cn(
                     "shrink-0 z-10 group-hover:scale-110 transition-transform duration-300 relative",
-                    isAudioEnabled && !isGlobalMuted && "text-on-surface"
+                    bgMusicEnabled && "text-on-surface"
                 )}>
                     {/* Audio playing waves overlay */}
-                    {isAudioEnabled && isPlaying && !isVideoActive && !isGlobalMuted && (
+                    {bgMusicEnabled && isPlaying && !isVideoActive && !isGlobalMuted && (
                         <div className="absolute inset-0 z-0 pointer-events-none -m-1">
                             {/* We can put subtle visual feedback here if needed, or just let the icon speak for itself */}
                         </div>
                     )}
-                    {!isGlobalMuted && isAudioEnabled ? (
+                    {bgMusicEnabled ? (
                         <Music className="w-5 h-5 relative z-10" />
                     ) : (
                         <VolumeX className="w-5 h-5 relative z-10" />
                     )}
                 </span>
-                
+
                 <span className={cn(
                     "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
                     (sidebarOpen) ? "block" : "hidden md:hidden",
-                    isAudioEnabled && !isGlobalMuted ? "text-on-surface" : "group-hover:text-on-surface"
+                    bgMusicEnabled ? "text-on-surface" : "group-hover:text-on-surface"
                 )}>
-                    Audio {!isGlobalMuted && isAudioEnabled ? "(ON)" : "(OFF)"}
+                    Música {bgMusicEnabled ? "(ON)" : "(OFF)"}
                 </span>
             </button>
         </div>

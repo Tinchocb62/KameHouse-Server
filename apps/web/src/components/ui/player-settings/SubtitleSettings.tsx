@@ -6,7 +6,7 @@ import type { SubtitleTrack } from "../track-types"
 interface SubtitleSettingsProps {
     subtitleTracks: SubtitleTrack[]
     activeSubtitleIndex: number | null
-    onSelectSubtitle: (track: SubtitleTrack | null) => void
+    onSelectSubtitle: (track: SubtitleTrack | null, opts?: { auto?: boolean }) => void
     subtitleSize?: number
     onSubtitleSizeChange?: (size: number) => void
     getFriendlyLanguage: (lang: string) => string

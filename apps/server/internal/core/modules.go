@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,6 +98,12 @@ func (a *App) initModulesOnce() {
 		Platform:         a.Metadata.Platform,
 		LogsDir:          a.Config.Logs.Dir,
 		OnRefreshCollection: func() {
+			go func() {
+				a.Logger.Info().Msg("app: Refreshing anime collection after auto-scan")
+				_, _ = a.GetAnimeCollection(true)
+				anime.InvalidateCuratedHomeCache()
+				_, _ = a.Metadata.Platform.RefreshAnimeCollection(context.Background())
+			}()
 		},
 		EventDispatcher: a.WSEventManager.Dispatcher(),
 		BackgroundQueue: a.BackgroundQueue,
@@ -176,7 +183,11 @@ func (a *App) InitOrRefreshModules() {
 		})
 	}
 
-	if len(settings.GetLibrary().GetAllPaths()) > 0 {
+	if a.AutoScanner != nil {
+		a.AutoScanner.SetEnabled(settings.Library.AutoScan && !settings.Library.DisableLocalScanning)
+	}
+
+	if len(settings.GetLibrary().GetAllPaths()) > 0 && settings.Library.AutoScan && !settings.Library.DisableLocalScanning {
 		go util.HandlePanicInModuleThen("core/modules/InitWatcher", func() {
 			a.initLibraryWatcher(settings.GetLibrary().GetAllPaths())
 		})

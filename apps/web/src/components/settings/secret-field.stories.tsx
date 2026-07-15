@@ -23,16 +23,16 @@ const meta: Meta<typeof SecretField> = {
 export default meta
 type Story = StoryObj<typeof SecretField>
 
+function ControlledSecretField({ id, ...args }: React.ComponentProps<typeof SecretField>) {
+    const [value, setValue] = React.useState(args.value)
+    return <SecretField {...args} value={value} onChange={setValue} id={id} />
+}
+
 export const Default: Story = {
-    render: (args) => {
-        const [value, setValue] = React.useState(args.value)
-        return <SecretField {...args} value={value} onChange={setValue} id="demo-secret" />
-    }
+    render: (args) => <ControlledSecretField {...args} id="demo-secret" />
 }
 
 export const WithValue: Story = {
-    render: (args) => {
-        const [value, setValue] = React.useState("super-secret-password-123")
-        return <SecretField {...args} value={value} onChange={setValue} id="demo-secret-filled" />
-    }
+    args: { value: "super-secret-password-123" },
+    render: (args) => <ControlledSecretField {...args} id="demo-secret-filled" />
 }

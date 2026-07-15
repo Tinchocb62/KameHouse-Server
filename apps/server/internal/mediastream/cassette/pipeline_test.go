@@ -52,7 +52,7 @@ func TestPipeline_Initialization(t *testing.T) {
 		Settings: settings,
 		Governor: gov,
 		Logger:   &logger,
-		BuildArgs: func(segmentTimes string) []string {
+		BuildArgs: func(segmentTimes string, hw *HwAccelProfile) []string {
 			return []string{"-c:v", "libx264"}
 		},
 		OutPathFmt: func(encoderID int) string {
@@ -111,7 +111,7 @@ func TestPipeline_GetSegment_Concurrent_ThreadSafety(t *testing.T) {
 		Settings: settings,
 		Governor: gov,
 		Logger:   &logger,
-		BuildArgs: func(segmentTimes string) []string {
+		BuildArgs: func(segmentTimes string, hw *HwAccelProfile) []string {
 			return []string{"-c:v", "libx264"}
 		},
 		OutPathFmt: func(encoderID int) string {
@@ -177,7 +177,7 @@ func TestPipeline_Heads_SlotReuse(t *testing.T) {
 		Settings: settings,
 		Governor: gov,
 		Logger:   &logger,
-		BuildArgs: func(segmentTimes string) []string {
+		BuildArgs: func(segmentTimes string, hw *HwAccelProfile) []string {
 			return []string{"-c:v", "libx264"}
 		},
 		OutPathFmt: func(encoderID int) string {

@@ -14,6 +14,8 @@ import { MoviesHero } from "./-components/movies-hero"
 import { MoviesFilterBar } from "./-components/movies-filter-bar"
 import { MoviesGrid } from "./-components/movies-grid"
 import { LibraryBanner } from "./-components/library-banner"
+import { Vaul, VaulContent } from "@/components/vaul"
+import { Icons } from "@/components/ui/icons"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 
@@ -44,6 +46,7 @@ function MoviesPage() {
     const [sortBy, setSortBy] = useState<SortOption>("year_asc")
     const [sortOpen, setSortOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
+    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
     
     const [hoveredMovie, setHoveredMovie] = useState<(Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null>(null)
     const [debouncedMovie, setDebouncedMovie] = useState<(Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null>(null)
@@ -180,21 +183,64 @@ function MoviesPage() {
                 <LibraryBanner />
             )}
 
-            <div className="w-full max-w-[1800px] mx-auto px-6 md:px-12 lg:px-16 mt-12">
+            <div className="w-full max-w-content mx-auto px-6 md:px-12 lg:px-16 mt-12">
                 <div className="flex flex-col lg:flex-row gap-8 min-h-[70vh]">
                     {/* Left Column: Filter Sidebar */}
-                    <div className="lg:w-80 flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)]">
-                        <MoviesFilterBar 
-                            allMovies={allMovies}
-                            activeEra={activeEra}
-                            setActiveEra={setActiveEra}
-                            searchQuery={searchQuery}
-                            setSearchQuery={setSearchQuery}
-                            sortBy={sortBy}
-                            setSortBy={setSortBy}
-                            sortOpen={sortOpen}
-                            setSortOpen={setSortOpen}
-                        />
+                    <div className="lg:w-80 flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)] flex flex-col gap-4">
+                        <button
+                            onClick={() => setMobileFiltersOpen(true)}
+                            className="lg:hidden w-full flex items-center justify-between px-4 py-3 bg-surface-container border border-outline-variant/30 rounded-xl font-bold text-on-surface uppercase tracking-widest text-sm active:scale-95 transition-all"
+                        >
+                            <span>Filtros y Búsqueda</span>
+                            <span className="text-lg leading-none">+</span>
+                        </button>
+                        
+                        {/* Desktop static layout */}
+                        <div className="hidden lg:block">
+                            <MoviesFilterBar 
+                                allMovies={allMovies}
+                                activeEra={activeEra}
+                                setActiveEra={setActiveEra}
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                sortBy={sortBy}
+                                setSortBy={setSortBy}
+                                sortOpen={sortOpen}
+                                setSortOpen={setSortOpen}
+                            />
+                        </div>
+
+                        {/* Mobile Vaul drawer */}
+                        <div className="lg:hidden">
+                            <Vaul open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                                <VaulContent className="bg-zinc-950/95 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/10 p-5 pb-8 flex flex-col focus:outline-none">
+                                    <div className="flex justify-between items-center mb-4 px-1">
+                                        <h3 className="font-bebas text-2xl tracking-widest text-on-surface uppercase">
+                                            Filtros y Búsqueda
+                                        </h3>
+                                        <button 
+                                            onClick={() => setMobileFiltersOpen(false)}
+                                            className="p-1.5 rounded-full text-on-surface-variant hover:text-on-surface active:scale-95"
+                                        >
+                                            <Icons.ui.close className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <div className="overflow-y-auto max-h-[60vh] pb-4">
+                                        <MoviesFilterBar 
+                                            allMovies={allMovies}
+                                            activeEra={activeEra}
+                                            setActiveEra={setActiveEra}
+                                            searchQuery={searchQuery}
+                                            setSearchQuery={setSearchQuery}
+                                            sortBy={sortBy}
+                                            setSortBy={setSortBy}
+                                            sortOpen={sortOpen}
+                                            setSortOpen={setSortOpen}
+                                        />
+                                    </div>
+                                </VaulContent>
+                            </Vaul>
+                        </div>
                     </div>
 
                     {/* Right Column: Movies Grid */}

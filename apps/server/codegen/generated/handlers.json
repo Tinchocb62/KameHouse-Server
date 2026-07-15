@@ -2476,6 +2476,30 @@
           "typescriptType": "string",
           "required": true,
           "descriptions": []
+        },
+        {
+          "name": "Force",
+          "jsonName": "force",
+          "goType": "bool",
+          "usedStructType": "",
+          "typescriptType": "boolean",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "ClientCapabilities",
+          "jsonName": "clientCapabilities",
+          "goType": "mediastream.ClientCapabilities",
+          "usedStructType": "mediastream.ClientCapabilities",
+          "typescriptType": "Mediastream_ClientCapabilities",
+          "required": false,
+          "descriptions": [
+            "Codecs the client can decode natively (probed via canPlayType/MediaSource).",
+            "Omitted/null falls back to static Chromium-based assumptions.",
+            "",
+            "Codecs the client can decode natively (probed via canPlayType/MediaSource).",
+            "Omitted/null falls back to static Chromium-based assumptions."
+          ]
         }
       ],
       "returns": "mediastream.MediaContainer",
@@ -2723,6 +2747,24 @@
           "descriptions": []
         },
         {
+          "name": "Source",
+          "jsonName": "source",
+          "goType": "string",
+          "usedStructType": "",
+          "typescriptType": "string",
+          "required": true,
+          "descriptions": []
+        },
+        {
+          "name": "Confidence",
+          "jsonName": "confidence",
+          "goType": "float64",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        },
+        {
           "name": "ApplyToSeason",
           "jsonName": "applyToSeason",
           "goType": "bool",
@@ -2738,39 +2780,29 @@
     }
   },
   {
-    "name": "HandleScanEpisodeSkipTimes",
-    "trimmedName": "ScanEpisodeSkipTimes",
+    "name": "HandleResolveMAL",
+    "trimmedName": "ResolveMAL",
     "comments": [
-      "HandleScanEpisodeSkipTimes triggers a background scan to detect skip times for a series.",
+      "HandleResolveMAL resolves a media's MAL ID dynamically.",
       "",
-      "\t@summary trigger skip times auto-scan.",
-      "\t@desc This starts a background task using acoustic fingerprinting to detect intro/outro boundaries.",
-      "\t@route /api/v1/mediastream/skip-times/scan [POST]",
+      "\t@summary resolve MAL ID.",
+      "\t@desc Looks up MAL ID on Jikan.",
+      "\t@route /api/v1/mediastream/skip-times/resolve-mal [GET]",
       ""
     ],
     "filepath": "internal/handlers/mediastream.go",
     "filename": "mediastream.go",
     "api": {
-      "summary": "trigger skip times auto-scan.",
+      "summary": "resolve MAL ID.",
       "descriptions": [
-        "This starts a background task using acoustic fingerprinting to detect intro/outro boundaries."
+        "Looks up MAL ID on Jikan."
       ],
-      "endpoint": "/api/v1/mediastream/skip-times/scan",
+      "endpoint": "/api/v1/mediastream/skip-times/resolve-mal",
       "methods": [
-        "POST"
+        "GET"
       ],
       "params": [],
-      "bodyFields": [
-        {
-          "name": "MediaID",
-          "jsonName": "mediaId",
-          "goType": "int",
-          "usedStructType": "",
-          "typescriptType": "number",
-          "required": true,
-          "descriptions": []
-        }
-      ],
+      "bodyFields": [],
       "returns": "bool",
       "returnGoType": "bool",
       "returnTypescriptType": "boolean"
@@ -2983,6 +3015,100 @@
           "descriptions": []
         }
       ],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleGetNotifications",
+    "trimmedName": "GetNotifications",
+    "comments": [
+      "HandleGetNotifications returns the most recent notifications with the unread count.",
+      "",
+      "\t@summary returns recent notifications.",
+      "\t@desc Returns the latest in-app notifications (newest first) and the unread count.",
+      "\t@route /api/v1/notifications [GET]",
+      "\t@returns handlers.NotificationList",
+      ""
+    ],
+    "filepath": "internal/handlers/notifications.go",
+    "filename": "notifications.go",
+    "api": {
+      "summary": "returns recent notifications.",
+      "descriptions": [
+        "Returns the latest in-app notifications (newest first) and the unread count."
+      ],
+      "endpoint": "/api/v1/notifications",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "handlers.NotificationList",
+      "returnGoType": "handlers.NotificationList",
+      "returnTypescriptType": "NotificationList"
+    }
+  },
+  {
+    "name": "HandleMarkNotificationsRead",
+    "trimmedName": "MarkNotificationsRead",
+    "comments": [
+      "HandleMarkNotificationsRead marks one notification (id \u003e 0) or all (id omitted/0) as read.",
+      "",
+      "\t@summary marks notifications as read.",
+      "\t@route /api/v1/notifications/read [POST]",
+      "\t@returns bool",
+      ""
+    ],
+    "filepath": "internal/handlers/notifications.go",
+    "filename": "notifications.go",
+    "api": {
+      "summary": "marks notifications as read.",
+      "descriptions": [],
+      "endpoint": "/api/v1/notifications/read",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [
+        {
+          "name": "ID",
+          "jsonName": "id",
+          "goType": "uint",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        }
+      ],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleClearNotifications",
+    "trimmedName": "ClearNotifications",
+    "comments": [
+      "HandleClearNotifications deletes all stored notifications.",
+      "",
+      "\t@summary clears all notifications.",
+      "\t@route /api/v1/notifications [DELETE]",
+      "\t@returns bool",
+      ""
+    ],
+    "filepath": "internal/handlers/notifications.go",
+    "filename": "notifications.go",
+    "api": {
+      "summary": "clears all notifications.",
+      "descriptions": [],
+      "endpoint": "/api/v1/notifications",
+      "methods": [
+        "DELETE"
+      ],
+      "params": [],
+      "bodyFields": [],
       "returns": "bool",
       "returnGoType": "bool",
       "returnTypescriptType": "boolean"
@@ -4299,6 +4425,59 @@
       "returns": "nil",
       "returnGoType": "nil",
       "returnTypescriptType": "null"
+    }
+  },
+  {
+    "name": "HandleBackupDatabase",
+    "trimmedName": "BackupDatabase",
+    "comments": [
+      "HandleBackupDatabase ...",
+      "",
+      "\t@summary triggers a real SQLite DB backup.",
+      "\t@route /api/v1/db/backup [POST]",
+      "\t@returns db.BackupResult",
+      ""
+    ],
+    "filepath": "internal/handlers/system.go",
+    "filename": "system.go",
+    "api": {
+      "summary": "triggers a real SQLite DB backup.",
+      "descriptions": [],
+      "endpoint": "/api/v1/db/backup",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "db.BackupResult",
+      "returnGoType": "db.BackupResult",
+      "returnTypescriptType": "DB_BackupResult"
+    }
+  },
+  {
+    "name": "HandleGetDiagnosticsReport",
+    "trimmedName": "GetDiagnosticsReport",
+    "comments": [
+      "HandleGetDiagnosticsReport ...",
+      "",
+      "\t@summary streams a zip archive with diagnostics data.",
+      "\t@route /api/v1/report [GET]",
+      ""
+    ],
+    "filepath": "internal/handlers/system.go",
+    "filename": "system.go",
+    "api": {
+      "summary": "streams a zip archive with diagnostics data.",
+      "descriptions": [],
+      "endpoint": "/api/v1/report",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
     }
   },
   {

@@ -7,7 +7,7 @@ import { QueryClient } from "@tanstack/react-query"
 import { createRootRouteWithContext, Outlet, redirect } from "@tanstack/react-router"
 import React from "react"
 import { AppLayout, AppLayoutContent } from "@/components/ui/app-layout/app-layout"
-import { AppBottomNav } from "@/components/ui/app-layout/app-topnav"
+import { AppBottomNav, AppTopNav } from "@/components/ui/app-layout/app-topnav"
 import { AppSidebar } from "@/components/ui/app-layout/app-sidebar"
 import { TvNavBar } from "@/components/ui/app-layout/tv-nav-bar"
 import { useTvDpad } from "@/hooks/use-tv-dpad"
@@ -24,7 +24,7 @@ const PerformanceMonitor = React.lazy(() =>
 )
 import { useRouterState } from "@tanstack/react-router"
 import { PageTransition } from "@/components/shared/page-transition"
-import { Menu } from "lucide-react"
+
 import { useAppStore } from "@/lib/store"
 import { DynamicBackdrop } from "@/components/shared/dynamic-backdrop"
 import { useGetStatus } from "@/api/hooks/settings.hooks"
@@ -53,8 +53,22 @@ function RootComponent() {
     // JS download, no Suspense fallback flash).
     React.useEffect(() => { prewarmVideoPlayer() }, [])
 
+    React.useEffect(() => {
+        if (!isLoading) {
+            const loader = document.getElementById('global-loader')
+            if (loader) {
+                loader.style.opacity = '0'
+                loader.style.pointerEvents = 'none'
+                setTimeout(() => loader.remove(), 500)
+            }
+        }
+    }, [isLoading])
+
     if (isLoading || !status) {
-        return <LoadingOverlayWithLogo isError={isError} refetch={refetch} />
+        if (isError) {
+            return <LoadingOverlayWithLogo isError={isError} refetch={refetch} />
+        }
+        return null // Let the global-loader from index.html show
     }
 
     if (!status.settings?.id) {
@@ -85,18 +99,7 @@ function RootComponent() {
                 } as React.CSSProperties : undefined}
                 className={tvMode ? "pb-24" : "md:pl-[var(--sidebar-width)]"}
             >
-                {/* Mobile Menu Trigger — hidden in TV mode */}
-                {!tvMode && (
-                    <button
-                        onClick={() => useAppStore.getState().setSidebarOpen(true)}
-                        tabIndex={sidebarOpen ? -1 : 0}
-                        aria-hidden={sidebarOpen ? "true" : undefined}
-                        className="md:hidden fixed top-6 left-6 z-[60] p-3 rounded-full backdrop-blur-[var(--blur-overlay-sm)] border border-white/10 text-white/70 hover:text-white transition-all active:scale-95"
-                        style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 40%, transparent)" }}
-                    >
-                        <Menu className="w-5 h-5" />
-                    </button>
-                )}
+                {!tvMode && <AppTopNav />}
 
                 <PageTransition key={routerState.location.pathname} transitionKey={routerState.location.pathname} className="flex-1 w-full">
                     <Outlet />

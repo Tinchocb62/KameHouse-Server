@@ -78,6 +78,7 @@ func New(opts *NewCassetteOptions) (*Cassette, error) {
 			hwAccel:          hwAccel,
 			FfmpegPath:       opts.FfmpegPath,
 			FfprobePath:      opts.FfprobePath,
+			Preset:           opts.Preset,
 		},
 	}
 	c.tracker = NewClientTracker(c)

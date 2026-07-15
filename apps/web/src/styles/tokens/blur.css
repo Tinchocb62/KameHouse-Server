@@ -95,7 +95,11 @@
 .glass-card {
   background: var(--glass-card-bg);
   backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate)) contrast(var(--glass-contrast-subtle));
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-top: 1px solid var(--glass-border-top, rgba(255, 255, 255, 0.12));
+  border-left: 1px solid var(--glass-border-side, rgba(255, 255, 255, 0.05));
+  border-right: 1px solid var(--glass-border-side, rgba(255, 255, 255, 0.05));
+  border-bottom: 1px solid var(--glass-border-bottom, rgba(255, 255, 255, 0.03));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
   border-radius: var(--radius-3xl);
 }
 
@@ -153,7 +157,11 @@
 }
 
 [data-flat="true"] .glass-card {
-  border-color: rgba(255, 255, 255, 0.06);
+  border-top-color: rgba(255, 255, 255, 0.06);
+  border-left-color: rgba(255, 255, 255, 0.06);
+  border-right-color: rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -185,4 +193,16 @@
 
 [data-flat="true"] .grain-overlay {
   display: none;
+}
+
+/* ─── Global Cinematic Grain ─────────────────────────────────────────────── */
+html[data-grain="true"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: var(--noise-texture);
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 9999;
 }

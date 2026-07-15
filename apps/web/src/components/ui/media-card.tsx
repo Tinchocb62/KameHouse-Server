@@ -6,6 +6,9 @@ import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { GlowingEffect } from "@/components/shared/glowing-effect"
 import { useAppStore } from "@/lib/store"
+import { useResponsive } from "@/hooks/use-responsive"
+import { Icons } from "@/components/ui/icons"
+import { Vaul, VaulContent } from "@/components/vaul"
 
 export interface MediaCardProps {
     artwork: string
@@ -44,12 +47,15 @@ export const MediaCard = React.memo(function MediaCard({
     onPopupOpenChange,
 }: MediaCardProps) {
     const isPoster = aspect === "poster"
+    const { isMobile } = useResponsive()
+    const [drawerOpen, setDrawerOpen] = React.useState(false)
     const [isHovered, setIsHovered] = React.useState(false)
     const [showPopup, setShowPopup] = React.useState(false)
     const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
     const tvMode = useAppStore(state => state.tvMode)
 
     const handleMouseEnter = React.useCallback(() => {
+        if (isMobile) return
         setIsHovered(true)
         if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
 
@@ -58,9 +64,10 @@ export const MediaCard = React.memo(function MediaCard({
             setShowPopup(true)
             onPopupOpenChange?.(true)
         }, 350)
-    }, [onPopupOpenChange])
+    }, [onPopupOpenChange, isMobile])
 
     const handleMouseLeave = React.useCallback(() => {
+        if (isMobile) return
         setIsHovered(false)
         if (hoverTimeoutRef.current) {
             clearTimeout(hoverTimeoutRef.current)
@@ -68,7 +75,7 @@ export const MediaCard = React.memo(function MediaCard({
         }
         setShowPopup(false)
         onPopupOpenChange?.(false)
-    }, [onPopupOpenChange])
+    }, [onPopupOpenChange, isMobile])
 
     React.useEffect(() => {
         return () => {
@@ -108,7 +115,7 @@ export const MediaCard = React.memo(function MediaCard({
                     "transition-all duration-300",
                     showPopup
                         ? cn(
-                            "z-[100] bg-surface-container backdrop-blur-overlay-xl border border-outline-variant/10 shadow-overlay",
+                            "z-[100] bg-surface-container backdrop-blur-overlay-md border border-outline-variant/10 shadow-overlay",
                             isPoster
                                 ? "-top-[12%] -left-[12.5%] w-[125%] h-[135%] rounded-container"
                                 : "-top-[15%] -left-[10%] w-[120%] h-[135%] rounded-container"
@@ -120,6 +127,8 @@ export const MediaCard = React.memo(function MediaCard({
                 )}
                 style={{
                     willChange: showPopup ? "transform, opacity" : "auto",
+                    contentVisibility: "auto",
+                    containIntrinsicSize: "auto 280px",
                 }}
             >
                 {/* Glowing effect inside expanded card */}
@@ -156,7 +165,7 @@ export const MediaCard = React.memo(function MediaCard({
                     {/* Episode/Saga Badge */}
                     {episodeNumber !== undefined && (
                         <div className="absolute top-0 left-0 z-20">
-                            <div className="bg-surface-container backdrop-blur-overlay-md text-on-surface-variant border-r border-b border-outline-variant/10 px-3 py-1.5 rounded-br-xl font-black text-[10px] tracking-[0.15em] uppercase flex items-center gap-1 shadow-elevation-2">
+                            <div className="bg-surface-container/90 text-on-surface-variant border-r border-b border-outline-variant/10 px-3 py-1.5 rounded-br-xl font-black text-[10px] tracking-[0.15em] uppercase flex items-center gap-1 shadow-elevation-2">
                                 <span>EP</span>
                                 <span className="text-brand-accent">{episodeNumber}</span>
                             </div>
@@ -166,7 +175,7 @@ export const MediaCard = React.memo(function MediaCard({
                     {/* Media Type Badge (e.g. PELÍCULA, EPISODIO, OVA) */}
                     {mediaTypeBadge && (
                         <div className="absolute top-0 right-0 z-20">
-                            <div className="bg-surface-container backdrop-blur-overlay-md text-on-surface-variant border-l border-b border-outline-variant/10 px-2.5 py-1 rounded-bl-xl font-black text-[8px] tracking-[0.2em] uppercase shadow-elevation-2">
+                            <div className="bg-surface-container/90 text-on-surface-variant border-l border-b border-outline-variant/10 px-2.5 py-1 rounded-bl-xl font-black text-[8px] tracking-[0.2em] uppercase shadow-elevation-2">
                                 {mediaTypeBadge}
                             </div>
                         </div>
@@ -175,10 +184,10 @@ export const MediaCard = React.memo(function MediaCard({
                     {/* Quick Play Action Indicator */}
                     {showPopup && (
                         <div className="absolute bottom-3 left-4 z-20 flex items-center gap-2">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-accent text-white shadow-elevation-3 hover:scale-110 hover:shadow-[0_0_20px_hsl(var(--brand-accent)/0.2)] active:scale-95 transition-all duration-300 cursor-pointer">
-                                <Play size={15} fill="currentColor" className="ml-0.5" />
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-accent text-primary-foreground shadow-elevation-3 hover:scale-110 hover:shadow-[0_0_20px_hsl(var(--brand-accent)/0.2)] active:scale-95 transition-all duration-300 cursor-pointer">
+                                <Play size={16} className="ml-0.5 fill-current" />
                             </div>
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container backdrop-blur-overlay-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/10 bg-surface-container/90 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
                                 <Plus size={15} />
                             </div>
                         </div>
@@ -224,7 +233,7 @@ export const MediaCard = React.memo(function MediaCard({
                             )}
                             {year && <span className="text-on-surface-variant font-medium">{year}</span>}
                             {badge && (
-                                <span className="border border-outline-variant/10 bg-surface-variant backdrop-blur-overlay-md px-1.5 py-0.5 rounded text-on-surface-variant text-[8px]">
+                                <span className="border border-outline-variant/10 bg-surface-variant px-1.5 py-0.5 rounded text-on-surface-variant text-[8px]">
                                     {badge}
                                 </span>
                             )}
@@ -263,7 +272,82 @@ export const MediaCard = React.memo(function MediaCard({
                         />
                     </div>
                 )}
+
+                {isMobile && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setDrawerOpen(true)
+                        }}
+                        className="absolute top-2 right-2 z-[30] p-2 rounded-full bg-zinc-950/60 backdrop-blur-[var(--blur-overlay-sm)] border border-white/10 text-white/70 active:scale-95 transition-all"
+                        aria-label="Más opciones"
+                    >
+                        <Icons.ui.moreHorizontal className="w-4 h-4" />
+                    </button>
+                )}
             </div>
+            
+            {isMobile && (
+                <Vaul open={drawerOpen} onOpenChange={setDrawerOpen}>
+                    <VaulContent className="bg-zinc-950/95 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/10 p-5 pb-8 flex flex-col focus:outline-none">
+                        <div className="flex gap-4 mb-4">
+                            <img
+                                src={getMediumResImage(artwork)}
+                                alt={title}
+                                className="w-20 aspect-[2/3] object-cover rounded-xl border border-white/10 shrink-0"
+                            />
+                            <div className="flex flex-col min-w-0">
+                                <h3 className="font-bebas text-2xl text-on-surface uppercase tracking-wide truncate">
+                                    {title}
+                                </h3>
+                                {subtitle && (
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mt-1 truncate">
+                                        {subtitle}
+                                    </p>
+                                )}
+                                <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                                    {rating && (
+                                        <span className="text-brand-success font-extrabold">
+                                            {(rating * 10).toFixed(0)}% COINCIDENCIA
+                                        </span>
+                                    )}
+                                    {year && <span className="text-on-surface-variant font-medium">{year}</span>}
+                                    {badge && (
+                                        <span className="border border-outline-variant/10 bg-surface-variant px-1.5 py-0.5 rounded text-on-surface-variant text-[8px]">
+                                            {badge}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {description && (
+                            <p className="text-[11px] leading-relaxed text-on-surface-variant line-clamp-4 mb-6">
+                                {cleanDesc}
+                            </p>
+                        )}
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => {
+                                    setDrawerOpen(false)
+                                    onClick?.()
+                                }}
+                                className="w-full py-3 bg-primary text-on-surface font-black uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                            >
+                                <Icons.media.play className="w-4 h-4 fill-current" />
+                                <span>Ver Detalles</span>
+                            </button>
+                            <button
+                                onClick={() => setDrawerOpen(false)}
+                                className="w-full py-3 border border-outline-variant/30 text-on-surface-variant font-bold uppercase tracking-wider text-xs rounded-xl active:scale-95 transition-all"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </VaulContent>
+                </Vaul>
+            )}
         </div>
     )
 })

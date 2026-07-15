@@ -16,6 +16,7 @@ import { PlayerQueueSidebar } from "./player-queue-sidebar"
 import { PlayerAmbientBackdrop } from "./player-ambient"
 import { __isTV__ } from "@/types/constants"
 import { useFocusNavigation } from "@/hooks/use-focus-navigation"
+import { Icons } from "@/components/ui/icons"
 
 function StatsOverlay({ show, data }: { show: boolean, data: PlayerStats }) {
     if (!show || !data) return null
@@ -132,6 +133,153 @@ export function PlayerUI(props: PlayerUIProps) {
                 video.playbackRate = state.playbackRate
             }
             // Briefly delay resetting wasHoldingRef so it absorbs the trailing click event
+            setTimeout(() => {
+                wasHoldingRef.current = false
+            }, 150)
+        }
+    }
+
+    // Gestures for swipe-seek, volume, and brightness
+    const [brightness, setBrightness] = React.useState(1.0)
+    const [swipeIndicator, setSwipeIndicator] = React.useState<{
+        type: "seek" | "volume" | "brightness"
+        value: string
+    } | null>(null)
+
+    const touchStartRef = useRef<{ x: number, y: number } | null>(null)
+    const isSwipingRef = useRef<boolean>(false)
+    const swipeDirectionRef = useRef<"horizontal" | "vertical" | null>(null)
+    const swipeSideRef = useRef<"left" | "right" | null>(null)
+    const initialVolumeRef = useRef<number>(1.0)
+    const initialBrightnessRef = useRef<number>(1.0)
+    const initialTimeRef = useRef<number>(0)
+
+    const formatTime = (secs: number) => {
+        if (!secs || isNaN(secs)) return "00:00"
+        const h = Math.floor(secs / 3600)
+        const m = Math.floor((secs % 3600) / 60)
+        const s = Math.floor(secs % 60)
+        const mm = m.toString().padStart(2, '0')
+        const ss = s.toString().padStart(2, '0')
+        return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
+    }
+
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        const touch = e.touches[0]
+        if (!touch) return
+        
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+        isSwipingRef.current = false
+        swipeDirectionRef.current = null
+        
+        const video = localVideoRef.current
+        if (video) {
+            initialTimeRef.current = video.currentTime
+            initialVolumeRef.current = video.volume
+        }
+        initialBrightnessRef.current = brightness
+        
+        // Determine touch side (left/right)
+        const rect = e.currentTarget.getBoundingClientRect()
+        const relativeX = touch.clientX - rect.left
+        swipeSideRef.current = relativeX < rect.width / 2 ? "left" : "right"
+        
+        // Also trigger controls visibility
+        actions.triggerControlsVisibility()
+        
+        // Trigger startHold for 2x speed if hold continues
+        startHold()
+    }
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (!touchStartRef.current) return
+        const touch = e.touches[0]
+        if (!touch) return
+
+        const deltaX = touch.clientX - touchStartRef.current.x
+        const deltaY = touch.clientY - touchStartRef.current.y
+        const absX = Math.abs(deltaX)
+        const absY = Math.abs(deltaY)
+
+        // Cancel speed hold if user moves their finger (swiping)
+        if (absX > 15 || absY > 15) {
+            if (holdTimeoutRef.current) {
+                clearTimeout(holdTimeoutRef.current)
+                holdTimeoutRef.current = null
+            }
+        }
+
+        if (!isSwipingRef.current) {
+            // Check if threshold is met
+            if (absX > 15 || absY > 15) {
+                isSwipingRef.current = true
+                swipeDirectionRef.current = absX > absY ? "horizontal" : "vertical"
+            }
+        }
+
+        if (isSwipingRef.current && swipeDirectionRef.current) {
+            e.preventDefault()
+            
+            if (swipeDirectionRef.current === "horizontal") {
+                // Seek gesture: 1px = 0.15s of video seek
+                const seekMultiplier = 0.15
+                const secondsDelta = deltaX * seekMultiplier
+                const newTime = Math.max(0, Math.min(state.duration, initialTimeRef.current + secondsDelta))
+                
+                const timeDiff = newTime - initialTimeRef.current
+                const prefix = timeDiff >= 0 ? ">>" : "<<"
+                const formattedDiff = `${prefix} ${Math.abs(Math.round(timeDiff))}s`
+                const formattedNewTime = formatTime(newTime)
+                
+                setSwipeIndicator({
+                    type: "seek",
+                    value: `[${formattedDiff}] ${formattedNewTime}`
+                })
+                
+                const video = localVideoRef.current
+                if (video) {
+                    video.currentTime = newTime
+                }
+            } else {
+                // Vertical swipe: volume on right side, brightness on left side
+                const verticalMultiplier = -0.005
+                const deltaValue = deltaY * verticalMultiplier
+                
+                if (swipeSideRef.current === "right") {
+                    // Volume control
+                    const newVolume = Math.max(0, Math.min(1, initialVolumeRef.current + deltaValue))
+                    const video = localVideoRef.current
+                    if (video) {
+                        video.volume = newVolume
+                        actions.handleVolume({ target: { value: String(newVolume) } } as any)
+                    }
+                    setSwipeIndicator({
+                        type: "volume",
+                        value: `VOL: ${(newVolume * 100).toFixed(0)}%`
+                    })
+                } else {
+                    // Brightness control
+                    const newBrightness = Math.max(0.2, Math.min(1.8, initialBrightnessRef.current + deltaValue))
+                    setBrightness(newBrightness)
+                    setSwipeIndicator({
+                        type: "brightness",
+                        value: `BRIG: ${(newBrightness * 100).toFixed(0)}%`
+                    })
+                }
+            }
+        }
+    }
+
+    const handleTouchEnd = () => {
+        touchStartRef.current = null
+        setSwipeIndicator(null)
+        endHold()
+        
+        if (isSwipingRef.current) {
+            isSwipingRef.current = false
+            swipeDirectionRef.current = null
+            // Swiped, do not trigger play/pause click
+            wasHoldingRef.current = true
             setTimeout(() => {
                 wasHoldingRef.current = false
             }, 150)
@@ -268,8 +416,10 @@ export function PlayerUI(props: PlayerUIProps) {
     // Cinematic Controls Animation Layer
     useGSAP(() => {
         if (controlsVisible) {
-            gsap.to(".player-top-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out" })
-            gsap.to(".player-bottom-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out" })
+            // Clear the transform once settled: a lingering CSS transform on the bar
+            // isolates the backdrop and disables the bars' frosted-glass backdrop-filter.
+            gsap.to(".player-top-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out", onComplete: () => gsap.set(".player-top-bar", { clearProps: "transform" }) })
+            gsap.to(".player-bottom-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out", onComplete: () => gsap.set(".player-bottom-bar", { clearProps: "transform" }) })
         } else {
             gsap.to(".player-top-bar", { y: -15, scale: 0.97, autoAlpha: 0, duration: 0.35, ease: "power2.inOut" })
             gsap.to(".player-bottom-bar", { y: 15, scale: 0.97, autoAlpha: 0, duration: 0.35, ease: "power2.inOut" })
@@ -299,8 +449,7 @@ export function PlayerUI(props: PlayerUIProps) {
                 videoRef={localVideoRef} 
                 enabled={state.ambientModeEnabled && !state.tvMode} // Usually ambient mode isn't great for TVs or we can just leave it enabled for both
             />
-
-            <video
+             <video
                 ref={domElements.videoElement}
                 onPlay={() => actions.setIsPlaying(true)}
                 onPause={() => actions.setIsPlaying(false)}
@@ -314,7 +463,8 @@ export function PlayerUI(props: PlayerUIProps) {
                 }}
                 className="absolute inset-0 m-auto w-full h-full z-10"
                 style={{
-                    objectFit: state.aspectRatio === "cover" ? "cover" : state.aspectRatio === "fill" ? "fill" : "contain"
+                    objectFit: state.aspectRatio === "cover" ? "cover" : state.aspectRatio === "fill" ? "fill" : "contain",
+                    filter: `brightness(${brightness})`
                 }}
                 crossOrigin="anonymous"
                 playsInline
@@ -328,15 +478,36 @@ export function PlayerUI(props: PlayerUIProps) {
                 }}
                 onMouseUp={endHold}
                 onMouseLeave={endHold}
-                onTouchStart={startHold}
-                onTouchEnd={endHold}
-                onTouchCancel={endHold}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
                 onClick={handleInteractionClick}
                 className={cn(
                     "absolute inset-0 z-[12] select-none",
                     !controlsVisible && state.isPlaying ? "cursor-none" : "cursor-pointer"
                 )}
             />
+
+            {/* Temporal Gesture Swipe Overlay Indicator */}
+            {swipeIndicator && (
+                <div className="absolute inset-0 z-[14] pointer-events-none flex items-center justify-center animate-in fade-in duration-100">
+                    <div className="glass-liquid flex items-center gap-3 px-6 py-3.5 rounded-full border border-white/10 shadow-elevation-5 bg-zinc-950/80">
+                        {swipeIndicator.type === "seek" && (
+                            <Icons.media.play className="w-5 h-5 text-brand-secondary fill-current shrink-0" />
+                        )}
+                        {swipeIndicator.type === "volume" && (
+                            <Icons.media.volume2 className="w-5 h-5 text-brand-secondary shrink-0" />
+                        )}
+                        {swipeIndicator.type === "brightness" && (
+                            <Icons.ui.star className="w-5 h-5 text-brand-secondary shrink-0" />
+                        )}
+                        <span className="font-bebas text-lg tracking-wider text-on-surface uppercase">
+                            {swipeIndicator.value}
+                        </span>
+                    </div>
+                </div>
+            )}
 
             {/* Skip animation indicator left */}
             <div
@@ -397,6 +568,7 @@ export function PlayerUI(props: PlayerUIProps) {
                 streamType={streamType || "local"}
                 isBuffering={state.isBuffering}
                 isSeeking={state.isSeeking}
+                isStreamSwitching={state.isStreamSwitching}
                 onClose={onClose}
             />
 
@@ -410,7 +582,7 @@ export function PlayerUI(props: PlayerUIProps) {
             <StatsOverlay show={state.showStats} data={state.statsData!} />
 
             <SkipIntroOverlay
-                show={state.skipMode !== null && controlsVisible}
+                show={state.skipMode !== null}
                 onSkip={actions.handleSkipIntro}
                 skipMode={state.skipMode ?? "intro"}
                 remainingSeconds={state.skipRemainingSeconds}
@@ -441,7 +613,7 @@ export function PlayerUI(props: PlayerUIProps) {
 
             <div
                 className={cn(
-                    "player-top-bar absolute top-0 inset-x-0 z-30 pointer-events-none opacity-0 -translate-y-4"
+                    "player-top-bar absolute top-0 inset-x-0 z-30 pointer-events-none opacity-0"
                 )}
             >
                 <PlayerTopBar
@@ -456,7 +628,7 @@ export function PlayerUI(props: PlayerUIProps) {
 
             <div
                 className={cn(
-                    "player-bottom-bar absolute bottom-0 inset-x-0 z-30 pointer-events-none opacity-0 translate-y-4"
+                    "player-bottom-bar absolute bottom-0 inset-x-0 z-30 pointer-events-none opacity-0"
                 )}
             >
                 <PlayerBottomBar
@@ -467,6 +639,7 @@ export function PlayerUI(props: PlayerUIProps) {
                     duration={state.duration}
                     insights={insights}
                     progressBarRef={domElements.progressBarElement}
+                    thumbRef={domElements.thumbElement}
                     progressInputRef={domElements.progressInputElement}
                     handleSeek={actions.handleSeek}
                     handleSeekStart={actions.handleSeekStart}

@@ -484,6 +484,24 @@ export function AppearanceTab({ control }: AppearanceTabProps) {
             </Section>
             </>)}
 
+            {/* General Visual Effects */}
+            <Section label="Efectos Visuales Generales" description="Efectos ambientales que aplican a todos los modos de interfaz.">
+                <Card className="divide-y divide-outline-variant/3">
+                    <Controller
+                        control={control}
+                        name="theme.themeEnableCinematicGrain"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Textura Cinematográfica (Grano Sutil)"
+                                description="Añade un grano muy sutil al fondo para evitar el 'banding' en gradientes y dar un toque orgánico."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
+                </Card>
+            </Section>
+
             {/* Layout & Behavior */}
             <Section label="Diseño y Comportamiento" description="Ajusta cómo se muestran los elementos de la interfaz y su comportamiento interactivo.">
                 <Card className="divide-y divide-outline-variant/3">

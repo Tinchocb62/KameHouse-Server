@@ -653,14 +653,12 @@
 //     })
 // }
 
-// export function useScanEpisodeSkipTimes() {
-//     return useServerMutation<boolean, ScanEpisodeSkipTimes_Variables>({
-//         endpoint: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.endpoint,
-//         method: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.methods[0],
-//         mutationKey: [API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.key],
-//         onSuccess: async () => {
-// 
-//         },
+// export function useResolveMAL() {
+//     return useServerQuery<boolean>({
+//         endpoint: API_ENDPOINTS.MEDIASTREAM.ResolveMAL.endpoint,
+//         method: API_ENDPOINTS.MEDIASTREAM.ResolveMAL.methods[0],
+//         queryKey: [API_ENDPOINTS.MEDIASTREAM.ResolveMAL.key],
+//         enabled: true,
 //     })
 // }
 
@@ -715,6 +713,41 @@
 //         endpoint: API_ENDPOINTS.METADATA.DeleteMediaMetadataParent.endpoint,
 //         method: API_ENDPOINTS.METADATA.DeleteMediaMetadataParent.methods[0],
 //         mutationKey: [API_ENDPOINTS.METADATA.DeleteMediaMetadataParent.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// notifications
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useGetNotifications() {
+//     return useServerQuery<NotificationList>({
+//         endpoint: API_ENDPOINTS.NOTIFICATIONS.GetNotifications.endpoint,
+//         method: API_ENDPOINTS.NOTIFICATIONS.GetNotifications.methods[0],
+//         queryKey: [API_ENDPOINTS.NOTIFICATIONS.GetNotifications.key],
+//         enabled: true,
+//     })
+// }
+
+// export function useMarkNotificationsRead() {
+//     return useServerMutation<boolean, MarkNotificationsRead_Variables>({
+//         endpoint: API_ENDPOINTS.NOTIFICATIONS.MarkNotificationsRead.endpoint,
+//         method: API_ENDPOINTS.NOTIFICATIONS.MarkNotificationsRead.methods[0],
+//         mutationKey: [API_ENDPOINTS.NOTIFICATIONS.MarkNotificationsRead.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+// export function useClearNotifications() {
+//     return useServerMutation<boolean>({
+//         endpoint: API_ENDPOINTS.NOTIFICATIONS.ClearNotifications.endpoint,
+//         method: API_ENDPOINTS.NOTIFICATIONS.ClearNotifications.methods[0],
+//         mutationKey: [API_ENDPOINTS.NOTIFICATIONS.ClearNotifications.key],
 //         onSuccess: async () => {
 // 
 //         },
@@ -942,6 +975,30 @@
 //         onSuccess: async () => {
 // 
 //         },
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// system
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useBackupDatabase() {
+//     return useServerMutation<DB_BackupResult>({
+//         endpoint: API_ENDPOINTS.SYSTEM.BackupDatabase.endpoint,
+//         method: API_ENDPOINTS.SYSTEM.BackupDatabase.methods[0],
+//         mutationKey: [API_ENDPOINTS.SYSTEM.BackupDatabase.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+// export function useGetDiagnosticsReport() {
+//     return useServerQuery<boolean>({
+//         endpoint: API_ENDPOINTS.SYSTEM.GetDiagnosticsReport.endpoint,
+//         method: API_ENDPOINTS.SYSTEM.GetDiagnosticsReport.methods[0],
+//         queryKey: [API_ENDPOINTS.SYSTEM.GetDiagnosticsReport.key],
+//         enabled: true,
 //     })
 // }
 

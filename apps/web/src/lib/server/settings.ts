@@ -49,7 +49,7 @@ export const settingsSchema = z.object({
     mediaPlayer: z.object({}),
     mediastream: z.object({
         transcodeEnabled: z.boolean().default(false),
-        transcodeHwAccel: z.string().default("cpu"),
+        transcodeHwAccel: z.string().default("auto"),
         transcodePreset: z.string().default("fast"),
         disableAutoSwitchToDirectPlay: z.boolean().default(false),
         directPlayOnly: z.boolean().default(false),

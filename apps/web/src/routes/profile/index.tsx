@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query"
 import { motion } from "framer-motion"
 import * as React from "react"
+import { toast } from "sonner"
 import { useGetLibraryCollection } from "@/api/hooks/anime_collection.hooks"
 import { useGetSettings } from "@/api/hooks/settings.hooks"
 import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
@@ -113,6 +114,32 @@ function ProfileClient() {
             }))
     }, [collection])
 
+    const navigate = useNavigate()
+
+    const handleRandomPlay = React.useCallback(() => {
+        const entries = collection?.lists?.flatMap(l => l.entries ?? []) || []
+        if (entries.length > 0) {
+            const randomEntry = entries[Math.floor(Math.random() * entries.length)]
+            if (randomEntry?.mediaId) {
+                if (randomEntry.media?.format === "MOVIE" || randomEntry.media?.format === "SPECIAL" || randomEntry.media?.format === "OVA") {
+                    navigate({ to: "/movies/$movieId", params: { movieId: String(randomEntry.mediaId) } })
+                } else {
+                    navigate({ to: "/series/$seriesId", params: { seriesId: String(randomEntry.mediaId) } })
+                }
+            }
+        } else {
+            toast.info("Añade contenido a tu biblioteca para poder reproducir aleatoriamente")
+        }
+    }, [collection, navigate])
+
+    const handleWishlist = React.useCallback(() => {
+        toast.success("Próximamente: Lista de deseos sincronizada.")
+    }, [])
+
+    const handleSettings = React.useCallback(() => {
+        navigate({ to: "/settings" })
+    }, [navigate])
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -121,9 +148,15 @@ function ProfileClient() {
             className="min-h-screen bg-surface text-on-surface overflow-x-hidden"
         >
             <div className="relative z-10">
-                <ProfileHeader stats={stats} settings={settings} />
+                <ProfileHeader 
+                    stats={stats} 
+                    settings={settings} 
+                    onRandomPlay={handleRandomPlay}
+                    onWishlist={handleWishlist}
+                    onSettings={handleSettings}
+                />
 
-                <main className="container-fluid py-8 md:py-12 lg:py-16">
+                <main className="container-fluid py-6 md:py-10 lg:py-12">
                     {continueWatching.length > 0 && (
                         <ProfileSection
                             title="Continuar Viendo"
@@ -161,7 +194,19 @@ function ProfileClient() {
     )
 }
 
-function ProfileHeader({ stats, settings }: { stats: any; settings: any }) {
+function ProfileHeader({ 
+    stats, 
+    settings,
+    onRandomPlay,
+    onWishlist,
+    onSettings
+}: { 
+    stats: any; 
+    settings: any;
+    onRandomPlay: () => void;
+    onWishlist: () => void;
+    onSettings: () => void;
+}) {
     const avatarUrl = settings?.theme?.themeAvatarUrl || "/kamehouse-logo.png"
     const username = settings?.theme?.themeCustomUsername || "Usuario"
     const joinedDate = settings?.createdAt ? new Date(settings.createdAt).toLocaleDateString("es-ES", { year: "numeric", month: "long" }) : "Recién llegado"
@@ -173,7 +218,7 @@ function ProfileHeader({ stats, settings }: { stats: any; settings: any }) {
                 <div className="absolute bottom-[-100px] right-[-100px] w-[300px] h-[300px] rounded-full bg-brand-secondary/10 blur-[100px]" />
             </div>
 
-            <div className="relative z-10 container-fluid py-12 md:py-16 lg:py-24">
+            <div className="relative z-10 container-fluid py-8 md:py-16 lg:py-20">
                 <div className="max-w-4xl mx-auto">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12 text-center md:text-left">
                         <div className="relative shrink-0">
@@ -190,18 +235,27 @@ function ProfileHeader({ stats, settings }: { stats: any; settings: any }) {
                             <p className="text-body-md text-on-surface-variant/70 mt-2">Miembro desde {joinedDate}</p>
 
                             <div className="flex flex-wrap items-center gap-4 mt-6">
-                                <button className="inline-flex items-center justify-center gap-2 px-5 h-10 bg-primary text-on-surface font-semibold text-sm rounded-button transition-all duration-fast active:scale-[0.97]">
-                                <Icons.media.play size={16} strokeWidth={2.5} />
-                                Reproducir Aleatorio
-                            </button>
-                                <button className="inline-flex items-center justify-center gap-2 px-5 h-10 border border-outline-variant text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:border-primary hover:bg-primary/10 active:scale-[0.97]">
-                                <Icons.ui.heart size={16} strokeWidth={2.5} />
-                                Lista de Deseos
-                            </button>
-                                <button className="inline-flex items-center justify-center gap-2 px-5 h-10 text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:bg-surface-container active:scale-[0.97]">
-                                <Icons.ui.settings size={16} strokeWidth={2.5} />
-                                Configuración
-                            </button>
+                                <button 
+                                    onClick={onRandomPlay}
+                                    className="inline-flex items-center justify-center gap-2 px-5 h-10 bg-primary text-on-surface font-semibold text-sm rounded-button transition-all duration-fast active:scale-[0.97]"
+                                >
+                                    <Icons.media.play size={16} strokeWidth={2.5} />
+                                    Reproducir Aleatorio
+                                </button>
+                                <button 
+                                    onClick={onWishlist}
+                                    className="inline-flex items-center justify-center gap-2 px-5 h-10 border border-outline-variant text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:border-primary hover:bg-primary/10 active:scale-[0.97]"
+                                >
+                                    <Icons.ui.heart size={16} strokeWidth={2.5} />
+                                    Lista de Deseos
+                                </button>
+                                <button 
+                                    onClick={onSettings}
+                                    className="inline-flex items-center justify-center gap-2 px-5 h-10 text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:bg-surface-container active:scale-[0.97]"
+                                >
+                                    <Icons.ui.settings size={16} strokeWidth={2.5} />
+                                    Configuración
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -220,7 +274,7 @@ interface ProfileSectionProps {
 
 function ProfileSection({ title, subtitle, action, children }: ProfileSectionProps) {
     return (
-        <section className="mb-16 md:mb-20 lg:mb-24" aria-labelledby={title.toLowerCase().replace(/\s+/g, '-')}>
+        <section className="mb-10 md:mb-16 lg:mb-20" aria-labelledby={title.toLowerCase().replace(/\s+/g, '-')}>
             <div className="flex items-end justify-between gap-4 mb-8">
                 <div>
                     <h2 id={title.toLowerCase().replace(/\s+/g, '-')} className="text-h3 font-display text-on-surface uppercase tracking-wide">
@@ -253,7 +307,7 @@ function ProfileStatsGrid({ stats }: { stats: any }) {
             <h2 id="stats-title" className="sr-only">Estadísticas</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {statItems.map((item, i) => (
-                    <div className="bg-surface-container shadow-elevation-3 rounded-container p-6 backdrop-blur-overlay-md border border-outline-variant text-center group relative overflow-hidden">
+                    <div key={item.label} className="bg-surface-container shadow-elevation-3 rounded-container p-6 backdrop-blur-overlay-md border border-outline-variant text-center group relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-on-surface/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <item.icon size={28} className="mx-auto mb-3 text-on-surface-variant group-hover:text-on-surface transition-colors" style={{ color: item.color }} />
                         <div className="text-h3 font-display text-on-surface font-extrabold tracking-tight" style={{ fontVariantNumeric: 'tabular-nums' }}>

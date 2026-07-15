@@ -23,26 +23,28 @@ const meta: Meta<typeof LocalDeviceSection> = {
 export default meta
 type Story = StoryObj<typeof LocalDeviceSection>
 
-export const Default: Story = {
-    render: (args) => {
-        const [checked1, setChecked1] = React.useState(true)
-        const [checked2, setChecked2] = React.useState(false)
+function LocalDeviceSectionWithToggles(args: React.ComponentProps<typeof LocalDeviceSection>) {
+    const [autoplay, setAutoplay] = React.useState(true)
+    const [theaterMode, setTheaterMode] = React.useState(false)
 
-        return (
-            <LocalDeviceSection {...args}>
-                <OsToggle
-                    label="Reproducción Automática"
-                    description="Reproducir el siguiente video automáticamente."
-                    checked={checked1}
-                    onChange={setChecked1}
-                />
-                <OsToggle
-                    label="Modo Teatro"
-                    description="Oscurecer la pantalla durante la reproducción."
-                    checked={checked2}
-                    onChange={setChecked2}
-                />
-            </LocalDeviceSection>
-        )
-    }
+    return (
+        <LocalDeviceSection {...args}>
+            <OsToggle
+                label="Reproducción Automática"
+                description="Reproducir el siguiente video automáticamente."
+                checked={autoplay}
+                onChange={setAutoplay}
+            />
+            <OsToggle
+                label="Modo Teatro"
+                description="Oscurecer la pantalla durante la reproducción."
+                checked={theaterMode}
+                onChange={setTheaterMode}
+            />
+        </LocalDeviceSection>
+    )
+}
+
+export const Default: Story = {
+    render: (args) => <LocalDeviceSectionWithToggles {...args} />
 }

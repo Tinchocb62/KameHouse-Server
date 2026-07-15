@@ -11,7 +11,7 @@
     <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
     <feature name="http://tizen.org/feature/input.keyboard"/>
     <access origin="*" subdomains="true"/>
-    <tizen:allow-navigation>*</tizen:allow-navigation>
+    <tizen:allow-navigation>http://* https://*</tizen:allow-navigation>
     <tizen:profile name="tv"/>
-    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" screen-shot="disable"/>
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" screen-shot="disable" pointing-device-support="disable"/>
 </widget>

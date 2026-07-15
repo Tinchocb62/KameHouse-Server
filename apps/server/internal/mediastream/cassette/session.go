@@ -156,7 +156,7 @@ func (s *Session) getVideoPipeline(q Quality) *Pipeline {
 		}
 	}
 
-	buildArgs := func(segmentTimes string) []string {
+	buildArgs := func(segmentTimes string, hw *HwAccelProfile) []string {
 		args := []string{"-map", "0:V:0"}
 
 		if canTransmux {
@@ -165,11 +165,9 @@ func (s *Session) getVideoPipeline(q Quality) *Pipeline {
 			return args
 		}
 
-		hwProfile := s.settings.GetHwAccel()
-
 		if q == Original {
 			// Needs transcode even for original quality (e.g. HEVC).
-			args = append(args, hwProfile.EncodeFlags...)
+			args = append(args, hw.EncodeFlags...)
 
 			avgBitrate, maxBitrate := EffectiveBitrate(Original, s.Info.Video.Bitrate)
 			if avgBitrate == 0 {
@@ -179,13 +177,11 @@ func (s *Session) getVideoPipeline(q Quality) *Pipeline {
 
 			width := util.ClosestEven(int32(s.Info.Video.Width))
 			args = append(args,
-				"-vf", BuildVideoFilter(&hwProfile, s.Info.Video, width, int32(s.Info.Video.Height)),
-				"-bufsize", fmt.Sprint(maxBitrate*5),
-				"-b:v", fmt.Sprint(avgBitrate),
-				"-maxrate", fmt.Sprint(maxBitrate),
+				"-vf", BuildVideoFilter(hw, s.Info.Video, width, int32(s.Info.Video.Height)),
 			)
+			args = append(args, qualityRateControl(encoderName(*hw), avgBitrate, maxBitrate)...)
 
-			if hwProfile.ForcedIDR {
+			if hw.ForcedIDR {
 				args = append(args, "-forced-idr", "1")
 			}
 			args = append(args,
@@ -196,19 +192,16 @@ func (s *Session) getVideoPipeline(q Quality) *Pipeline {
 		}
 
 		// Downscale transcode.
-		args = append(args, hwProfile.EncodeFlags...)
+		args = append(args, hw.EncodeFlags...)
 
 		width := util.ClosestEven(int32(
 			float64(q.Height()) / float64(s.Info.Video.Height) * float64(s.Info.Video.Width),
 		))
 		args = append(args,
-			"-vf", BuildVideoFilter(&hwProfile, s.Info.Video, width, int32(q.Height())),
-			// "-vf", fmt.Sprintf(s.settings.HwAccel.ScaleFilter, width, q.Height()),
-			"-bufsize", fmt.Sprint(q.MaxBitrate()*5),
-			"-b:v", fmt.Sprint(q.AverageBitrate()),
-			"-maxrate", fmt.Sprint(q.MaxBitrate()),
+			"-vf", BuildVideoFilter(hw, s.Info.Video, width, int32(q.Height())),
 		)
-		if hwProfile.ForcedIDR {
+		args = append(args, qualityRateControl(encoderName(*hw), q.AverageBitrate(), q.MaxBitrate())...)
+		if hw.ForcedIDR {
 			args = append(args, "-forced-idr", "1")
 		}
 		args = append(args,
@@ -284,9 +277,17 @@ func (s *Session) getAudioPipeline(idx int32) *Pipeline {
 			Msg("cassette: audio needs re-encode")
 	}
 
-	buildArgs := func(_ string) []string {
+	// srcAudio puede ser nil si el cliente pidió un índice fuera de rango; en ese
+	// caso caemos al idx solicitado (mismo comportamiento que antes) en vez de
+	// panickear dentro de buildArgs.
+	mapIdx := idx
+	if srcAudio != nil {
+		mapIdx = int32(srcAudio.Index)
+	}
+
+	buildArgs := func(segmentTimes string, hw *HwAccelProfile) []string {
 		args := []string{
-			"-map", fmt.Sprintf("0:a:%d", idx),
+			"-map", fmt.Sprintf("0:a:%d", mapIdx),
 			"-c:a", decision.Codec,
 		}
 		if !decision.Copy {

@@ -3,6 +3,7 @@ package cassette
 import (
 	"context"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,10 +13,12 @@ import (
 
 // Governor throttles concurrent ffmpeg processes
 type Governor struct {
-	sem     chan struct{}
-	active  atomic.Int32
-	maxSlot int
-	logger  *zerolog.Logger
+	sem      chan struct{}
+	nvencSem chan struct{}
+	active   atomic.Int32
+	maxSlot  int
+	nvencCap int
+	logger   *zerolog.Logger
 
 	mu    sync.Mutex
 	stats GovernorStats
@@ -25,24 +28,77 @@ type Governor struct {
 type GovernorStats struct {
 	ActiveProcesses int32         `json:"activeProcesses"`
 	MaxConcurrency  int           `json:"maxConcurrency"`
+	ActiveNVENC     int32         `json:"activeNvenc"`
+	NVENCCap        int           `json:"nvencCap"`
 	TotalLaunched   int64         `json:"totalLaunched"`
 	TotalCompleted  int64         `json:"totalCompleted"`
 	TotalWaitTime   time.Duration `json:"totalWaitTime"`
+}
+
+// nvencCapFromEnv returns the configured NVENC limit
+func nvencCapFromEnv() int {
+	val := getEnvOr("KAMEHOUSE_NVENC_SESSIONS", "2")
+	parsed, err := strconv.Atoi(val)
+	if err != nil || parsed < 1 {
+		return 2
+	}
+	return parsed
 }
 
 // NewGovernor creates a governor with max concurrency
 func NewGovernor(maxConcurrency int, hwAccelEnabled bool, logger *zerolog.Logger) *Governor {
 	if maxConcurrency <= 0 {
 		if hwAccelEnabled {
-			maxConcurrency = max(runtime.NumCPU()*2, 10) // give hardware accel a higher threshold
+			maxConcurrency = max(runtime.NumCPU(), 6) // lowered default to not overcommit CPU when spilling
 		} else {
 			maxConcurrency = max(runtime.NumCPU(), 1)
 		}
 	}
-	return &Governor{
-		sem:     make(chan struct{}, maxConcurrency),
-		maxSlot: maxConcurrency,
-		logger:  logger,
+	
+	nvencCap := nvencCapFromEnv()
+
+	gov := &Governor{
+		sem:      make(chan struct{}, maxConcurrency),
+		nvencSem: make(chan struct{}, nvencCap),
+		maxSlot:  maxConcurrency,
+		nvencCap: nvencCap,
+		logger:   logger,
+	}
+	gov.stats.MaxConcurrency = maxConcurrency
+	gov.stats.NVENCCap = nvencCap
+	return gov
+}
+
+// TryAcquireNVENC attempts to grab an NVENC slot.
+// Returns a release function and true if acquired.
+// reserve=0: takes any available slot.
+// reserve=1: leaves at least 1 slot free for interactive heads.
+// Note: reading ActiveNVENC outside the select channel operation creates a brief
+// benign race condition where a speculative head might grab a slot that was just
+// about to be needed. This is acceptable as a best-effort reservation.
+func (g *Governor) TryAcquireNVENC(reserve int) (func(), bool) {
+	g.mu.Lock()
+	active := g.stats.ActiveNVENC
+	g.mu.Unlock()
+
+	// If we need to reserve a slot for interactive usage, and we'd consume the last one:
+	if reserve > 0 && int(active)+reserve >= g.nvencCap {
+		return nil, false
+	}
+
+	select {
+	case g.nvencSem <- struct{}{}:
+		g.mu.Lock()
+		g.stats.ActiveNVENC++
+		g.mu.Unlock()
+		return func() {
+			g.mu.Lock()
+			g.stats.ActiveNVENC--
+			g.mu.Unlock()
+			<-g.nvencSem
+		}, true
+	default:
+		return nil, false
 	}
 }
 
@@ -64,6 +120,7 @@ func (g *Governor) Acquire(ctx context.Context) (release func(), err error) {
 	g.stats.TotalWaitTime += waited
 	g.stats.ActiveProcesses = n
 	g.stats.MaxConcurrency = g.maxSlot
+	g.stats.NVENCCap = g.nvencCap
 	g.mu.Unlock()
 
 	if waited > 50*time.Millisecond {

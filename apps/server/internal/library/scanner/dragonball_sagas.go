@@ -39,9 +39,12 @@ func GetDragonBallSagas(tmdbID int) []sagaResolution {
 		return []sagaResolution{
 			{id: "batalla-dioses", name: "Saga de la Batalla de los Dioses", startEp: 1, endEp: 14},
 			{id: "resurreccion-f", name: "Saga de la Resurrección de 'F'", startEp: 15, endEp: 27},
-			{id: "universo-6", name: "Saga del Torneo del Universo 6 (Champa)", startEp: 28, endEp: 46},
+			{id: "universo-6", name: "Saga del Torneo del Universo 6", startEp: 28, endEp: 41},
+			{id: "copy-vegeta", name: "Saga del Agua Sobrenatural (Vegeta Copia)", startEp: 42, endEp: 46},
 			{id: "trunks-futuro", name: "Saga de Trunks del Futuro (Goku Black)", startEp: 47, endEp: 76},
-			{id: "supervivencia-universal", name: "Saga del Supervivencia Universal (Torneo del Poder)", startEp: 77, endEp: 131},
+			{id: "exhibicion-zen", name: "Saga de Exhibición Zen", startEp: 77, endEp: 81},
+			{id: "reclutamiento-u7", name: "Saga de Reclutamiento", startEp: 82, endEp: 96},
+			{id: "torneo-poder", name: "Saga del Torneo del Poder", startEp: 97, endEp: 131},
 		}
 	case 236994: // Dragon Ball Daima
 		return []sagaResolution{
@@ -119,9 +122,18 @@ func getDragonBallSagaDetails(tmdbID int) []sagaResolution {
 			{id: "saiyajin", name: "Saga Saiyajin", startEp: 1, endEp: 35, subSagas: []subSagaResolution{{id: "raditz", name: "La Llegada de Raditz", startEp: 1, endEp: 6}, {id: "entrenamiento-z", name: "Entrenamiento Especial", startEp: 7, endEp: 20}, {id: "vegeta-nappa", name: "Batalla contra Nappa y Vegeta", startEp: 21, endEp: 35}}},
 			{id: "namek-freezer", name: "Saga Namek y Freezer", startEp: 36, endEp: 107, subSagas: []subSagaResolution{{id: "viaje-namek", name: "Viaje a Namek", startEp: 36, endEp: 67}, {id: "fuerzas-ginyu", name: "Las Fuerzas Especiales Ginyu", startEp: 68, endEp: 74}, {id: "goku-llega-namek", name: "Goku Llega a Namek", startEp: 75, endEp: 82}, {id: "cuatro-formas-freezer", name: "Las Cuatro Transformaciones de Freezer", startEp: 83, endEp: 97}, {id: "ssj-explosion-namek", name: "Nace el Super Saiyajin — Namek en Llamas", startEp: 98, endEp: 107}}},
 			{id: "garlic-jr", name: "Saga Garlic Jr. (Relleno)", startEp: 108, endEp: 117},
-			{id: "trunks-androides-cell", name: "Saga Androides y Cell", startEp: 118, endEp: 194, subSagas: []subSagaResolution{{id: "trunks-futuro", name: "Trunks del Futuro y la Advertencia", startEp: 118, endEp: 125}, {id: "androides-17-18", name: "Los Androides 17, 18 y 16", startEp: 126, endEp: 139}, {id: "cell-imperfecto", name: "Cell Imperfecto", startEp: 140, endEp: 152}, {id: "cell-semiperfecto", name: "Cell Semiperfecto", startEp: 153, endEp: 165}, {id: "juegos-cell", name: "Los Juegos de Cell", startEp: 166, endEp: 194}}},
-			{id: "gran-saiyaman-torneo25", name: "Saga Gran Saiyaman y 25° Torneo", startEp: 200, endEp: 219, subSagas: []subSagaResolution{{id: "gran-saiyaman-arc", name: "El Gran Saiyaman", startEp: 200, endEp: 209}, {id: "torneo-25", name: "El 25° Torneo de Artes Marciales", startEp: 210, endEp: 219}}},
-			{id: "majin-buu", name: "Saga Majin Buu", startEp: 220, endEp: 291, subSagas: []subSagaResolution{{id: "babidi-dabura-vegeta-majin", name: "Babidi, Dabura y el Majin Vegeta", startEp: 220, endEp: 237}, {id: "despertar-buu-sacrificio-vegeta", name: "El Despertar de Buu y el Sacrificio de Vegeta", startEp: 238, endEp: 253}, {id: "super-buu", name: "La Amenaza de Super Buu", startEp: 254, endEp: 275}, {id: "fusion-kid-buu", name: "Fusión y Batalla Final contra Kid Buu", startEp: 276, endEp: 287}, {id: "mundo-paz", name: "Un Mundo en Paz (Epílogo)", startEp: 288, endEp: 291}}},
+			{id: "androides", name: "Saga de los Androides", startEp: 118, endEp: 139, subSagas: []subSagaResolution{{id: "trunks-futuro", name: "Trunks del Futuro y la Advertencia", startEp: 118, endEp: 125}, {id: "androides-17-18", name: "Los Androides 17, 18 y 16", startEp: 126, endEp: 139}}},
+			{id: "cell", name: "Saga de Cell", startEp: 140, endEp: 194, subSagas: []subSagaResolution{{id: "cell-imperfecto", name: "Cell Imperfecto", startEp: 140, endEp: 152}, {id: "cell-semiperfecto", name: "Cell Semiperfecto", startEp: 153, endEp: 165}, {id: "juegos-cell", name: "Los Juegos de Cell", startEp: 166, endEp: 194}}},
+			{id: "torneo-otro-mundo", name: "Saga del Torneo del Otro Mundo (Relleno)", startEp: 195, endEp: 199},
+			{id: "majin-buu", name: "Saga de Majin Buu", startEp: 200, endEp: 291, subSagas: []subSagaResolution{
+				{id: "gran-saiyaman-arc", name: "El Gran Saiyaman", startEp: 200, endEp: 209},
+				{id: "torneo-25", name: "El 25° Torneo de Artes Marciales", startEp: 210, endEp: 219},
+				{id: "babidi-dabura-vegeta-majin", name: "Babidi, Dabura y el Majin Vegeta", startEp: 220, endEp: 237},
+				{id: "despertar-buu-sacrificio-vegeta", name: "El Despertar de Buu y el Sacrificio de Vegeta", startEp: 238, endEp: 253},
+				{id: "super-buu", name: "La Amenaza de Super Buu", startEp: 254, endEp: 275},
+				{id: "fusion-kid-buu", name: "Fusión y Batalla Final contra Kid Buu", startEp: 276, endEp: 287},
+				{id: "mundo-paz", name: "Un Mundo en Paz (Epílogo)", startEp: 288, endEp: 291},
+			}},
 		}
 	case 12697: // Dragon Ball GT
 		return []sagaResolution{
@@ -134,20 +146,16 @@ func getDragonBallSagaDetails(tmdbID int) []sagaResolution {
 		return []sagaResolution{
 			{id: "batalla-dioses", name: "Saga La Batalla de los Dioses", startEp: 1, endEp: 14, subSagas: []subSagaResolution{{id: "llegada-beerus", name: "La Profecía y la Llegada de Beerus", startEp: 1, endEp: 5}, {id: "ssg-batalla", name: "El Super Saiyajin Dios y la Batalla", startEp: 6, endEp: 14}}},
 			{id: "resurreccion-f", name: "Saga La Resurrección de 'F'", startEp: 15, endEp: 27, subSagas: []subSagaResolution{{id: "resurreccion-preparacion", name: "La Resurrección y el Entrenamiento", startEp: 15, endEp: 18}, {id: "freezer-dorado", name: "Freezer Dorado vs Goku y Vegeta", startEp: 19, endEp: 27}}},
-			{id: "universo-6", name: "Saga Torneo del Universo 6", startEp: 28, endEp: 46, subSagas: []subSagaResolution{{id: "torneo-u6", name: "El Torneo entre Universo 6 y 7", startEp: 28, endEp: 41}, {id: "copy-vegeta", name: "Vegeta Copia (Relleno)", startEp: 42, endEp: 46}}},
+			{id: "universo-6", name: "Saga del Torneo del Universo 6", startEp: 28, endEp: 41, subSagas: []subSagaResolution{{id: "torneo-u6", name: "El Torneo entre Universo 6 y 7", startEp: 28, endEp: 41}}},
+			{id: "copy-vegeta", name: "Saga de Vegeta Copia", startEp: 42, endEp: 46, subSagas: []subSagaResolution{{id: "copy-vegeta", name: "Vegeta Copia (Relleno)", startEp: 42, endEp: 46}}},
 			{id: "trunks-futuro", name: "Saga de Goku Black", startEp: 47, endEp: 76, subSagas: []subSagaResolution{{id: "goku-black-aparicion", name: "El Misterio de Goku Black", startEp: 47, endEp: 61}, {id: "zamasu-fusion", name: "Zamasu Fusionado y el Futuro Destruido", startEp: 62, endEp: 76}}},
-			{id: "supervivencia-universal", name: "Saga Supervivencia Universal", startEp: 77, endEp: 131, subSagas: []subSagaResolution{{id: "exhibicion", name: "Torneo de Exhibición de Todo", startEp: 77, endEp: 81}, {id: "reclutamiento", name: "Reclutamiento del Equipo Universo 7", startEp: 82, endEp: 96}, {id: "torneo-poder-caos-inicial", name: "El Torneo del Poder — 80 Guerreros en el Caos", startEp: 97, endEp: 104}, {id: "universos-caen-jiren-round1", name: "La Caída del Universo 6 y Goku vs Jiren (Ronda 1)", startEp: 105, endEp: 111}, {id: "ui-signal-guerreros-u7", name: "Ultra Instinto Señal y el Equipo Universo 7", startEp: 112, endEp: 122}, {id: "ultra-instinto-completo-victoria", name: "Ultra Instinto Completo y el Triunfo Final", startEp: 123, endEp: 131}}},
+			{id: "exhibicion-zen", name: "Saga de Exhibición Zen", startEp: 77, endEp: 81, subSagas: []subSagaResolution{{id: "exhibicion", name: "Torneo de Exhibición de Todo", startEp: 77, endEp: 81}}},
+			{id: "reclutamiento-u7", name: "Saga de Reclutamiento", startEp: 82, endEp: 96, subSagas: []subSagaResolution{{id: "reclutamiento", name: "Reclutamiento del Equipo Universo 7", startEp: 82, endEp: 96}}},
+			{id: "torneo-poder", name: "Saga del Torneo del Poder", startEp: 97, endEp: 131, subSagas: []subSagaResolution{{id: "torneo-poder-caos-inicial", name: "El Torneo del Poder — 80 Guerreros en el Caos", startEp: 97, endEp: 104}, {id: "universos-caen-jiren-round1", name: "La Caída del Universo 6 y Goku vs Jiren (Ronda 1)", startEp: 105, endEp: 111}, {id: "ui-signal-guerreros-u7", name: "Ultra Instinto Señal y el Equipo Universo 7", startEp: 112, endEp: 122}, {id: "ultra-instinto-completo-victoria", name: "Ultra Instinto Completo y el Triunfo Final", startEp: 123, endEp: 131}}},
 		}
 	case 236994: // Dragon Ball Daima
 		return []sagaResolution{
 			{id: "daima", name: "Arco de Daima — El Reino Demoníaco", startEp: 1, endEp: 20, subSagas: []subSagaResolution{{id: "conspiracion-conversion", name: "La Conspiración — Goku se convierte en Niño", startEp: 1, endEp: 3}, {id: "tercer-mundo", name: "El Tercer Mundo Demoníaco y Panzy", startEp: 4, endEp: 7}, {id: "tamagami-segundo-mundo", name: "El Segundo Mundo Demoníaco y los Tamagami", startEp: 8, endEp: 14}, {id: "primer-mundo-gomah-final", name: "El Primer Mundo y la Batalla Final contra el Rey Gomah", startEp: 15, endEp: 20}}},
-		}
-	case 80629: // Super Dragon Ball Heroes
-		return []sagaResolution{
-			{id: "universe-mission", name: "Misión del Universo — Planeta Prisión", startEp: 1, endEp: 20, subSagas: []subSagaResolution{{id: "planeta-prision", name: "Saga del Planeta Prisión", startEp: 1, endEp: 12}, {id: "conflicto-universal", name: "Saga del Conflicto Universal", startEp: 13, endEp: 20}}},
-			{id: "big-bang-mission", name: "Misión Big Bang — El Universo Oscuro", startEp: 21, endEp: 40, subSagas: []subSagaResolution{{id: "universo-oscuro", name: "Saga del Universo Oscuro y Fu", startEp: 21, endEp: 33}, {id: "rey-oscuro", name: "Saga del Rey Oscuro Mechikabura", startEp: 34, endEp: 40}}},
-			{id: "ultra-god-mission", name: "Misión Ultra Dios — Kaioshin del Tiempo", startEp: 41, endEp: 50, subSagas: []subSagaResolution{{id: "ultortorneo", name: "El Ultratorneo del Espacio-Tiempo", startEp: 41, endEp: 45}, {id: "verdad-aeos", name: "La Verdad de Aeos y el Clímax", startEp: 46, endEp: 50}}},
-			{id: "meteor-mission", name: "Misión Meteoro — El Invasor Demoníaco", startEp: 51, endEp: 56, subSagas: []subSagaResolution{{id: "invasor-demoniaco", name: "El Invasor Demoníaco", startEp: 51, endEp: 53}, {id: "batalla-final-meteor", name: "Batalla Final de los Avatares", startEp: 54, endEp: 56}}},
 		}
 	}
 	return nil

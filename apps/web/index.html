@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta content="#ffffff" name="theme-color" />
+    <meta content="#09090b" name="theme-color" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png?v=2" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png?v=2" />
     <link rel="shortcut icon" href="/icons/favicon-32x32.png?v=2" />
@@ -17,11 +17,42 @@
     <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <link href="/manifest.json" rel="manifest" />
+    <style>
+        body { margin: 0; background-color: #09090b; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+        @font-face {
+            font-family: 'Bebas Neue';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url(https://fonts.gstatic.com/s/bebasneue/v14/JTUSjIg69CK48gW7PXoo9Wlhyw.woff2) format('woff2');
+        }
+    </style>
 </head>
 
 <body>
+    <div id="global-loader" style="background-color: #09090b; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; overflow: hidden; z-index: 9999; transition: opacity 0.5s ease-in-out;">
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 12rem; height: 12rem;">
+            <!-- 7 Dragon Balls Orbiting -->
+            <div style="position: absolute; width: 100%; height: 100%; animation: spin 4s linear infinite; will-change: transform;">
+                <div style="position: absolute; width: 0.75rem; height: 0.75rem; background-color: #f97316; border-radius: 9999px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); top: 50%; left: 50%; transform: rotate(0deg) translate(70px) rotate(-0deg);"></div>
+                <div style="position: absolute; width: 0.75rem; height: 0.75rem; background-color: #f97316; border-radius: 9999px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); top: 50%; left: 50%; transform: rotate(51.43deg) translate(70px) rotate(-51.43deg);"></div>
+                <div style="position: absolute; width: 0.75rem; height: 0.75rem; background-color: #f97316; border-radius: 9999px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); top: 50%; left: 50%; transform: rotate(102.86deg) translate(70px) rotate(-102.86deg);"></div>
+                <div style="position: absolute; width: 0.75rem; height: 0.75rem; background-color: #f97316; border-radius: 9999px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); top: 50%; left: 50%; transform: rotate(154.29deg) translate(70px) rotate(-154.29deg);"></div>
+                <div style="position: absolute; width: 0.75rem; height: 0.75rem; background-color: #f97316; border-radius: 9999px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); top: 50%; left: 50%; transform: rotate(205.71deg) translate(70px) rotate(-205.71deg);"></div>
+                <div style="position: absolute; width: 0.75rem; height: 0.75rem; background-color: #f97316; border-radius: 9999px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); top: 50%; left: 50%; transform: rotate(257.14deg) translate(70px) rotate(-257.14deg);"></div>
+                <div style="position: absolute; width: 0.75rem; height: 0.75rem; background-color: #f97316; border-radius: 9999px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.8); top: 50%; left: 50%; transform: rotate(308.57deg) translate(70px) rotate(-308.57deg);"></div>
+            </div>
+            <!-- Center pulse -->
+            <div style="width: 1rem; height: 1rem; background-color: rgba(249, 115, 22, 0.2); border-radius: 9999px; animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        </div>
+        <div style="margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; z-index: 1;">
+            <h1 style="color: white; font-size: 2.25rem; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.3em; text-transform: uppercase; line-height: 1; margin: 0;">KAMEHOUSE</h1>
+        </div>
+    </div>
 <div id="root"></div>
-<!-- <script type="module" src="/src/main.tsx"></script> -->
+<script type="module" src="/src/main.tsx"></script>
 </body>
 
 </html>

@@ -86,8 +86,7 @@ var dragonBallArcs = map[int][]arcRange{
 		{118, 139, "Saga de los Androides"},
 		{140, 194, "Saga de Cell"},
 		{195, 199, "Torneo del Otro Mundo"},
-		{200, 209, "Saga del Gran Saiyaman"},
-		{210, 291, "Saga de Majin Buu"},
+		{200, 291, "Saga de Majin Buu"},
 	},
 	// ─── Dragon Ball GT (12697) ───────────────────────────────────────
 	12697: {

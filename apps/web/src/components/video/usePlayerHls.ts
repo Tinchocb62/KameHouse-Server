@@ -4,6 +4,28 @@ import Hls from "hls.js"
 import { AudioTrack, SubtitleTrack } from "@/components/ui/track-types"
 import { Continuity_WatchHistoryItemResponse } from "@/api/generated/types"
 
+/**
+ * Inicia la reproducción y clasifica el fallo de la promesa de `play()`.
+ *
+ * Un `AbortError` NO es un bloqueo de autoplay: ocurre cuando el efecto se
+ * re-ejecuta (p. ej. cambio de stream direct→hls) y el cleanup destruye el hls
+ * o llama `video.load()` mientras la promesa de `play()` anterior sigue pendiente.
+ * Es una carrera de teardown esperada y benigna, así que la ignoramos en silencio.
+ * Solo un bloqueo real de política del navegador (`NotAllowedError`) merece un warn.
+ */
+function attemptAutoplay(video: HTMLVideoElement, setIsPlaying: (playing: boolean) => void): void {
+    video.play()
+        .then(() => setIsPlaying(true))
+        .catch((err: unknown) => {
+            setIsPlaying(false)
+            if (err instanceof DOMException && err.name === "AbortError") {
+                // Interrumpido por pause()/load() durante el teardown del efecto — benigno.
+                return
+            }
+            console.warn("Autoplay blocked:", err)
+        })
+}
+
 interface UsePlayerHlsProps {
     videoRef: React.RefObject<HTMLVideoElement | null>
     hlsRef: React.MutableRefObject<Hls | null>
@@ -164,12 +186,7 @@ export function usePlayerHls({
                 video.currentTime = progressSeconds
                 initialSeekDone = true
             }
-            video.play()
-                .then(() => setIsPlaying(true))
-                .catch((err) => {
-                    console.warn("Autoplay blocked:", err)
-                    setIsPlaying(false)
-                })
+            attemptAutoplay(video, setIsPlaying)
         }
 
         const handleNativeError = () => {
@@ -290,12 +307,7 @@ export function usePlayerHls({
                 }
 
                 // Autoplay when HLS manifest is parsed and stream is ready
-                video.play()
-                    .then(() => setIsPlaying(true))
-                    .catch((err) => {
-                        console.warn("Autoplay blocked:", err)
-                        setIsPlaying(false)
-                    })
+                attemptAutoplay(video, setIsPlaying)
             })
 
             hls.on(Hls.Events.FRAG_LOADED, () => {

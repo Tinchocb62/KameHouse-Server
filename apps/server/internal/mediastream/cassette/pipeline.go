@@ -36,13 +36,14 @@ func (k PipelineKind) String() string {
 
 // head represents an ffmpeg process encoding segments
 type head struct {
-	segment  int32              // Current segment (updated as ffmpeg writes segments).
-	end      int32              // First segment NOT included in this head's work.
-	cmd      *exec.Cmd          // The ffmpeg process.
-	stdin    io.WriteCloser     // Used to gracefully quit ffmpeg via "q".
-	cancel   context.CancelFunc // Cancels the head's soft-close goroutine.
-	release  func()             // Governor slot release function.
-	released *sync.Once         // Ensures release is called at most once (early kill or natural exit).
+	segment     int32              // Current segment (updated as ffmpeg writes segments).
+	end         int32              // First segment NOT included in this head's work.
+	cmd         *exec.Cmd          // The ffmpeg process.
+	stdin       io.WriteCloser     // Used to gracefully quit ffmpeg via "q".
+	cancel      context.CancelFunc // Cancels the head's soft-close goroutine.
+	release     func()             // Governor slot release function.
+	released    *sync.Once         // Ensures release is called at most once (early kill or natural exit).
+	speculative bool               // Whether this head was launched via prefetch
 }
 
 var deletedHead = head{segment: -1, end: -1}
@@ -78,7 +79,7 @@ type Pipeline struct {
 
 	// buildArgs is the strategy function that produces the quality-specific
 	// part of the ffmpeg command line.
-	buildArgs func(segmentTimes string) []string
+	buildArgs func(segmentTimes string, hw *HwAccelProfile) []string
 
 	// outPathFmt returns the output path pattern for a given encoder ID.
 	outPathFmt func(encoderID int) string
@@ -92,7 +93,7 @@ type PipelineConfig struct {
 	Settings   *Settings
 	Governor   *Governor
 	Logger     *zerolog.Logger
-	BuildArgs  func(segmentTimes string) []string
+	BuildArgs  func(segmentTimes string, hw *HwAccelProfile) []string
 	OutPathFmt func(encoderID int) string
 }
 
@@ -243,7 +244,7 @@ func (p *Pipeline) GetSegment(ctx context.Context, seg int32) (string, error) {
 		}
 
 		if distance > threshold || !scheduled {
-			if err := p.runHead(seg); err != nil {
+			if err := p.runHead(seg, false); err != nil {
 				return "", err
 			}
 		}
@@ -400,14 +401,22 @@ func (p *Pipeline) prefetch(current int32) {
 		if d := p.minHeadDistance(i); d < 60+5*float64(i-current) {
 			continue
 		}
-		go func(s int32) { _ = p.runHead(s) }(i)
+		go func(s int32) { _ = p.runHead(s, true) }(i)
 		return // only one speculative head per request
 	}
 }
 
+// boolToReserve converts a bool to a reserve count for NVENC arbiter
+func boolToReserve(speculative bool) int {
+	if speculative {
+		return 1
+	}
+	return 0
+}
+
 // runHead launches an ffmpeg process from [start, end).
 // it acquires a slot from the governor.
-func (p *Pipeline) runHead(start int32) error {
+func (p *Pipeline) runHead(start int32, speculative bool) error {
 	length, isDone := p.session.Keyframes.Length()
 	end := min(start+100, length)
 	// keep a 2-segment padding when keyframes are still arriving so we
@@ -442,29 +451,69 @@ func (p *Pipeline) runHead(start int32) error {
 
 	headCtx, headCancel := context.WithCancel(p.ctx)
 	success := false
+	encoderID := -1
 	defer func() {
-		if !success {
-			headCancel()
+		if success {
+			return
+		}
+		headCancel()
+		// Free the reserved encoder slot on any failure path so it does not
+		// linger as a phantom scheduled head (which would make isScheduled /
+		// minHeadDistance treat this range as covered forever). The governor
+		// slot itself is released by the explicit combinedRelease() calls on
+		// those paths.
+		if encoderID >= 0 {
+			p.headsMu.Lock()
+			if encoderID < len(p.heads) && p.heads[encoderID].cmd == nil {
+				p.heads[encoderID] = deletedHead
+			}
+			p.headsMu.Unlock()
 		}
 	}()
+	
+	headProfile := p.settings.GetHwAccel()
+	var nvencRelease func()
+	if headProfile.Name == "nvidia" {
+		var ok bool
+		nvencRelease, ok = p.governor.TryAcquireNVENC(boolToReserve(speculative))
+		if !ok {
+			// fallback just this head to CPU
+			p.logger.Debug().Int32("start", start).Msg("cassette/pipeline: NVENC saturated, head falling back to CPU")
+			headProfile = FallbackToCPU(p.settings.Preset)
+		}
+	}
 
-	// Create a sync.Once so the governor slot is released exactly once,
-	// whether the head is killed early (killHeadLocked) or exits naturally (reapProcess).
+	combinedRelease := func() { 
+		if nvencRelease != nil {
+			nvencRelease()
+		}
+		release()
+	}
+	// Create a sync.Once so the governor slot is released exactly once
+	// by either killHeadLocked or reapProcess.
 	once := &sync.Once{}
-	safeRelease := func() { once.Do(release) }
 
+	// Claim the encoder slot with a non-free marker while holding the lock, so a
+	// concurrent runHead (e.g. a speculative prefetch racing a real request) cannot
+	// pick the same encoderID and spawn a second ffmpeg writing to the same output
+	// path. cmd/stdin/release are filled in after cmd.Start(); cancel is set now so
+	// a seek that kills this head during startup aborts headCtx and fails cmd.Start()
+	// fast. release/released are intentionally left nil until the process exists, so
+	// killHeadLocked does not release a governor slot the head hasn't taken ownership
+	// of yet (the pre-Start failure paths release it via combinedRelease()).
+	reserved := head{segment: start, end: end, cancel: headCancel}
 	p.headsMu.Lock()
-	encoderID := -1
 	for i, h := range p.heads {
 		if h.segment == -1 && h.end == -1 {
 			encoderID = i
-			p.heads[i] = head{segment: start, end: end, cancel: headCancel, release: release, released: once}
 			break
 		}
 	}
 	if encoderID == -1 {
 		encoderID = len(p.heads)
-		p.heads = append(p.heads, head{segment: start, end: end, cancel: headCancel, release: release, released: once})
+		p.heads = append(p.heads, reserved)
+	} else {
+		p.heads[encoderID] = reserved
 	}
 	p.headsMu.Unlock()
 
@@ -503,7 +552,7 @@ func (p *Pipeline) runHead(start int32) error {
 
 	outPath := p.outPathFmt(encoderID)
 	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		release()
+		combinedRelease()
 		return err
 	}
 
@@ -515,7 +564,7 @@ func (p *Pipeline) runHead(start int32) error {
 	}
 	isCopy := false
 	if p.buildArgs != nil {
-		for _, arg := range p.buildArgs("") {
+		for _, arg := range p.buildArgs("", &headProfile) {
 			if arg == "copy" {
 				isCopy = true
 				break
@@ -528,7 +577,7 @@ func (p *Pipeline) runHead(start int32) error {
 	// and make the audio ffmpeg needlessly open a GPU decode context, competing for scarce
 	// NVDEC/NVENC sessions with the concurrent video transcode.
 	if !isCopy && p.kind == VideoKind {
-		args = append(args, p.settings.GetHwAccel().DecodeFlags...)
+		args = append(args, headProfile.DecodeFlags...)
 	}
 
 	if startRef != 0 {
@@ -557,14 +606,35 @@ func (p *Pipeline) runHead(start int32) error {
 
 
 
+	// -force_key_frames (encode path, inside buildArgs) is evaluated against the
+	// output timeline, which -copyts keeps absolute, so it receives the absolute
+	// keyframe times.
 	segStr := toSegmentStr(segmentTimes)
-	args = append(args, p.buildArgs(segStr)...)
+	args = append(args, p.buildArgs(segStr, &headProfile)...)
+
+	// The segment muxer's -segment_times, in contrast, are interpreted RELATIVE to
+	// the -ss seek point when input seeking is combined with -copyts (observed on
+	// ffmpeg 8.x). Passing absolute times makes the muxer never reach a split
+	// boundary, so it emits the whole range as a single file and the requested
+	// segment is never produced ("segment N not ready after retries") — which
+	// freezes playback on every seek, audio-track switch, or resume-from-progress
+	// into a non-initial position. Shift the split points by the seek reference so
+	// they are relative; -copyts still keeps the segment *content* PTS absolute,
+	// which is what the HLS playlist and hls.js expect.
+	segmentTimesForMuxer := segmentTimes
+	if startRef != 0 {
+		segmentTimesForMuxer = make([]float64, len(segmentTimes))
+		for i, t := range segmentTimes {
+			segmentTimesForMuxer[i] = t - startRef
+		}
+	}
+	segMuxStr := toSegmentStr(segmentTimesForMuxer)
 
 	args = append(args,
 		"-f", "segment",
 		"-segment_time_delta", "0.05",
 		"-segment_format", "mpegts",
-		"-segment_times", segStr,
+		"-segment_times", segMuxStr,
 		"-segment_list_type", "flat",
 		"-segment_list", "pipe:1",
 		"-segment_start_number", fmt.Sprint(startSeg),
@@ -579,25 +649,28 @@ func (p *Pipeline) runHead(start int32) error {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		release()
+		combinedRelease()
 		return err
 	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		release()
+		combinedRelease()
 		return err
 	}
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 
 	if err := cmd.Start(); err != nil {
-		release()
+		combinedRelease()
 		return err
 	}
 
 	p.headsMu.Lock()
-	p.heads[encoderID].cmd = cmd
-	p.heads[encoderID].stdin = stdin
+	p.heads[encoderID] = head{
+		segment: start, end: end, cancel: headCancel,
+		release: combinedRelease, released: once,
+		cmd: cmd, stdin: stdin,
+	}
 	p.headsMu.Unlock()
 
 	p.activeHeadsWg.Add(1)
@@ -613,9 +686,9 @@ func (p *Pipeline) runHead(start int32) error {
 	}(headCtx)
 
 	// Goroutine: reap process and release governor slot.
-	// safeRelease uses sync.Once so the slot is freed exactly once,
+	// reapProcess uses once.Do(combinedRelease) so the slot is freed exactly once,
 	// even if killHeadLocked already released it early.
-	go p.reapProcess(headCtx, encoderID, cmd, &stderr, safeRelease, headCancel)
+	go p.reapProcess(headCtx, encoderID, cmd, &stderr, once, combinedRelease, headCancel, headProfile)
 
 	success = true
 	return nil
@@ -679,28 +752,56 @@ func (p *Pipeline) readSegments(
 // reapProcess waits for the ffmpeg process to exit, marks its head as deleted,
 // and releases the governor slot. If a hardware acceleration failure is
 // detected, it logs actionable guidance.
-func (p *Pipeline) reapProcess(ctx context.Context, encoderID int, cmd *exec.Cmd, stderr *strings.Builder, release func(), headCancel context.CancelFunc) {
+func (p *Pipeline) reapProcess(ctx context.Context, encoderID int, cmd *exec.Cmd, stderr *strings.Builder, once *sync.Once, combinedRelease func(), headCancel context.CancelFunc, headProfile HwAccelProfile) {
 	defer p.activeHeadsWg.Done() // Signal that this head has completely exited
-	defer release()              // Always release the governor slot
+	defer once.Do(combinedRelease) // Always release the governor slot exactly once
 	defer headCancel()           // Cancel the head context to free the soft-close goroutine
 
 	err := cmd.Wait()
 
-	hwProfile := p.settings.GetHwAccel()
+	// Classify the exit up front. Intentional terminations (head switches on seek,
+	// session teardown, context cancellation) are a normal part of streaming — ffmpeg
+	// reports them as exit code 255, a "killed" error, or via a cancelled context.
+	// They must NOT be mistaken for a hardware-acceleration failure.
+	var exitErr *exec.ExitError
+	intentionalKill := (errors.As(err, &exitErr) && exitErr.ExitCode() == 255) ||
+		ctx.Err() != nil || p.ctx.Err() != nil ||
+		(err != nil && strings.Contains(err.Error(), "killed"))
+
+	// We use the profile that this SPECIFIC head used, not the global one.
+	hwProfile := headProfile
 	isHwAccelEnabled := hwProfile.Name != "disabled"
 
-	// Check for hardware acceleration failures in stderr
-	if isHwAccelEnabled && (DetectHwAccelFailure(stderr.String()) || err != nil) {
-		p.logger.Warn().Int("eid", encoderID).
-			Str("hwaccel", FormatHwAccelSummary(hwProfile)).
-			Str("ffmpeg_error", stderr.String()).
-			Msg("cassette: hardware acceleration failed or process exited with error, falling back to CPU...")
-		p.settings.SetHwAccel(FallbackToCPU("superfast"))
-		notifier.Global().Notify(notifier.TypeMediastream, "Aceleración por hardware desactivada",
-			fmt.Sprintf("FFmpeg falló usando %s; la transcodificación continúa por CPU.", hwProfile.Name))
+	// Only fall back to CPU on a GENUINE hardware-acceleration failure. Two guards
+	// prevent spuriously disabling a perfectly working GPU:
+	//  1. intentionalKill — seek head-switches, session teardown and context
+	//     cancellation kill the ffmpeg process mid-stream; a dying CUDA/NVENC ffmpeg
+	//     can flush "cuda ... failed" style noise to stderr that must NOT be read as
+	//     a real failure. (Previously the intentionalKill classification was computed
+	//     but never applied here.)
+	//  2. re-probe — a single transient failure (temporary session exhaustion, a
+	//     one-off decode hiccup) must not permanently disable the encoder for the
+	//     whole session. Before committing to CPU we re-run the minimal encoder probe;
+	//     if the GPU still encodes, we keep the profile and let GetSegment retry on
+	//     GPU (the `case err != nil` branch below closes killCh to trigger that).
+	if isHwAccelEnabled && !intentionalKill && DetectHwAccelFailure(stderr.String()) {
+		encoder := encoderName(hwProfile)
+		if encoder != "" && testEncoder(p.settings.FfmpegPath, encoder) {
+			p.logger.Warn().Int("eid", encoderID).
+				Str("hwaccel", FormatHwAccelSummary(hwProfile)).
+				Str("ffmpeg_error", stderr.String()).
+				Msg("cassette: transient hardware-accel error, GPU still probes OK; retrying on GPU")
+		} else {
+			p.logger.Warn().Int("eid", encoderID).
+				Str("hwaccel", FormatHwAccelSummary(hwProfile)).
+				Str("ffmpeg_error", stderr.String()).
+				Msg("cassette: hardware acceleration failed, falling back to CPU...")
+			p.settings.SetHwAccel(FallbackToCPU("superfast"))
+			notifier.Global().Notify(notifier.TypeMediastream, "Aceleración por hardware desactivada",
+				fmt.Sprintf("FFmpeg falló usando %s; la transcodificación continúa por CPU.", hwProfile.Name))
+		}
 	}
 
-	var exitErr *exec.ExitError
 	switch {
 	case errors.As(err, &exitErr) && exitErr.ExitCode() == 255:
 		p.logger.Trace().Int("eid", encoderID).Msg("cassette: ffmpeg process terminated")

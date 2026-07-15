@@ -48,76 +48,96 @@ export function useApplyCustomTheme() {
     const ts = useThemeSettings()
     const tvMode = useAppStore(state => state.tvMode)
 
-    React.useEffect(() => {
+    const isFirstMount = React.useRef(true)
+
+    React.useLayoutEffect(() => {
         const root = document.documentElement.style
         const html = document.documentElement
 
-        const mode = ts.effectiveMode
-        html.dataset.mode = mode
+        const applyDOMChanges = () => {
+            const mode = ts.effectiveMode
+            html.dataset.mode = mode
 
-        // 1. Efectos por modo — Clásico: glass sutil (tokens de [data-mode="classic"]),
-        // sin liquid ni gradiente. Por Era: según toggles.
-        const flatOn = tvMode || (mode === "era" && ts.themeEnableBlurringEffects === false)
-        const liquidOn =
-            (mode === "era" && ts.themeEnableLiquidGlass) &&
-            supportsLiquidRefraction()
-        const sidebarGradientOn = mode === "era" && ts.themeEnableSidebarGradient === true
+            // 1. Efectos por modo — Clásico: glass sutil (tokens de [data-mode="classic"]),
+            // sin liquid ni gradiente. Por Era: según toggles.
+            const flatOn = tvMode || (mode === "era" && ts.themeEnableBlurringEffects === false)
+            const liquidOn =
+                (mode === "era" && ts.themeEnableLiquidGlass) &&
+                supportsLiquidRefraction()
+            const sidebarGradientOn = mode === "era" && ts.themeEnableSidebarGradient === true
 
-        if (flatOn) html.dataset.flat = "true"
-        else delete html.dataset.flat
+            if (flatOn) html.dataset.flat = "true"
+            else delete html.dataset.flat
 
-        if (liquidOn && !flatOn) html.dataset.liquid = "true"
-        else delete html.dataset.liquid
+            if (liquidOn && !flatOn) html.dataset.liquid = "true"
+            else delete html.dataset.liquid
 
-        if (sidebarGradientOn) html.dataset.sidebarGradient = "true"
-        else delete html.dataset.sidebarGradient
+            if (sidebarGradientOn) html.dataset.sidebarGradient = "true"
+            else delete html.dataset.sidebarGradient
 
-        // 2. Paleta — Clásico es paleta fija (los colores custom se
-        // ignoran); Por Era aplica la era elegida + overrides del preset Personalizado.
-        const eraOn = mode === "era" && ts.hasEraTheme
-        const bgOn = mode === "era" && ts.enableColorSettings && ts.hasCustomBackground
-        const accentOn = mode === "era" && ts.enableColorSettings && ts.hasCustomAccentColor
+            if (ts.themeEnableCinematicGrain) html.dataset.grain = "true"
+            else delete html.dataset.grain
 
-        if (mode === "classic") {
-            html.dataset.theme = "classic"
-        }
+            // 2. Paleta — Clásico es paleta fija (los colores custom se
+            // ignoran); Por Era aplica la era elegida + overrides del preset Personalizado.
+            const eraOn = mode === "era" && ts.hasEraTheme
+            const bgOn = mode === "era" && ts.enableColorSettings && ts.hasCustomBackground
+            const accentOn = mode === "era" && ts.enableColorSettings && ts.hasCustomAccentColor
 
-        if (eraOn) {
-            html.dataset.theme = ts.themeEra
-
-            // Universe usa la paleta curada de todas las series (rosa/rojo/
-            // verde/azul/violeta) definida en colors.css — no se extraen
-            // colores dominantes de imágenes. Se limpian posibles inline
-            // overrides previos para que gane la cascada CSS.
-            root.removeProperty("--glow-color-1")
-            root.removeProperty("--glow-color-2")
-            root.removeProperty("--glow-color-3")
-            root.removeProperty("--glow-color-4")
-            root.removeProperty("--glow-color-5")
-        } else {
-            if (mode === "era") delete html.dataset.theme
-            root.removeProperty("--glow-color-1")
-            root.removeProperty("--glow-color-2")
-            root.removeProperty("--glow-color-3")
-            root.removeProperty("--glow-color-4")
-            root.removeProperty("--glow-color-5")
-        }
-
-        if (bgOn) {
-            root.setProperty("--bg-primary", ts.backgroundColor)
-        } else {
-            root.removeProperty("--bg-primary")
-        }
-
-        if (accentOn) {
-            const hsl = hexToHslTriplet(ts.accentColor)
-            if (hsl) {
-                root.setProperty("--brand-accent", hsl)
-                root.setProperty("--brand-accent-hex", ts.accentColor)
+            if (mode === "classic") {
+                html.dataset.theme = "classic"
             }
+
+            if (eraOn) {
+                html.dataset.theme = ts.themeEra
+
+                // Universe usa la paleta curada de todas las series (rosa/rojo/
+                // verde/azul/violeta) definida en colors.css — no se extraen
+                // colores dominantes de imágenes. Se limpian posibles inline
+                // overrides previos para que gane la cascada CSS.
+                root.removeProperty("--glow-color-1")
+                root.removeProperty("--glow-color-2")
+                root.removeProperty("--glow-color-3")
+                root.removeProperty("--glow-color-4")
+                root.removeProperty("--glow-color-5")
+            } else {
+                if (mode === "era") delete html.dataset.theme
+                root.removeProperty("--glow-color-1")
+                root.removeProperty("--glow-color-2")
+                root.removeProperty("--glow-color-3")
+                root.removeProperty("--glow-color-4")
+                root.removeProperty("--glow-color-5")
+            }
+
+            if (bgOn) {
+                root.setProperty("--bg-primary", ts.backgroundColor)
+            } else {
+                root.removeProperty("--bg-primary")
+            }
+
+            if (accentOn) {
+                const hsl = hexToHslTriplet(ts.accentColor)
+                if (hsl) {
+                    root.setProperty("--brand-accent", hsl)
+                    root.setProperty("--brand-accent-hex", ts.accentColor)
+                }
+            } else {
+                root.removeProperty("--brand-accent")
+                root.removeProperty("--brand-accent-hex")
+            }
+        }
+
+        if (isFirstMount.current || !document.startViewTransition) {
+            applyDOMChanges()
+            isFirstMount.current = false
         } else {
-            root.removeProperty("--brand-accent")
-            root.removeProperty("--brand-accent-hex")
+            const transition = document.startViewTransition(() => {
+                applyDOMChanges()
+            })
+            // Interrumpida por otra transición = final normal; sin catch queda
+            // como unhandled rejection en consola (InvalidStateError).
+            transition.finished.catch(() => {})
+            transition.ready.catch(() => {})
         }
 
         return () => {
@@ -126,6 +146,7 @@ export function useApplyCustomTheme() {
             delete html.dataset.liquid
             delete html.dataset.sidebarGradient
             delete html.dataset.theme
+            delete html.dataset.grain
             root.removeProperty("--bg-primary")
             root.removeProperty("--brand-accent")
             root.removeProperty("--brand-accent-hex")
@@ -141,6 +162,7 @@ export function useApplyCustomTheme() {
         ts.themeEnableBlurringEffects,
         ts.themeEnableLiquidGlass,
         ts.themeEnableSidebarGradient,
+        ts.themeEnableCinematicGrain,
         ts.enableColorSettings,
         ts.hasEraTheme,
         ts.hasCustomBackground,

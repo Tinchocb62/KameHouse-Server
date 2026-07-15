@@ -32,23 +32,15 @@ const meta: Meta<typeof RangeSlider> = {
 export default meta
 type Story = StoryObj<typeof RangeSlider>
 
+function ControlledRangeSlider(args: React.ComponentProps<typeof RangeSlider>) {
+    const [value, setValue] = React.useState(args.value)
+    return <RangeSlider {...args} value={value} onChange={setValue} />
+}
+
 export const Default: Story = {
-    render: (args) => {
-        const [value, setValue] = React.useState(args.value)
-        return <RangeSlider {...args} value={value} onChange={setValue} />
-    }
+    render: (args) => <ControlledRangeSlider {...args} />
 }
 
 export const WithFormatting: Story = {
-    render: (args) => {
-        const [value, setValue] = React.useState(args.value)
-        return (
-            <RangeSlider
-                {...args}
-                value={value}
-                onChange={setValue}
-                formatValue={(v) => `${v}%`}
-            />
-        )
-    }
+    render: (args) => <ControlledRangeSlider {...args} formatValue={(v) => `${v}%`} />
 }

@@ -130,6 +130,12 @@ func (m *AnimeMetadata) GetCurrentEpisodeCount() int {
 	}
 	count := 0
 	for _, ep := range m.Episodes {
+		// ep.Episode puede venir vacío (p.ej. películas o metadata parcial de TMDB);
+		// acceder a [0] sin verificar longitud panickeaba y devolvía 500 en toda la
+		// entrada de anime, rompiendo la página de detalle.
+		if ep.Episode == "" {
+			continue
+		}
 		firstChar := ep.Episode[0]
 		if firstChar >= '0' && firstChar <= '9' {
 			// Check if aired

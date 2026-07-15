@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion"
+import { useRef, useEffect } from "react"
 import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
 import { ERA_TABS, EraTab } from "../-MovieCard"
@@ -30,6 +31,18 @@ export function MoviesFilterBar({
     setSortOpen,
 }: MoviesFilterBarProps) {
     const ts = useThemeSettings()
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!sortOpen) return
+        const handleClick = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setSortOpen(false)
+            }
+        }
+        document.addEventListener("mousedown", handleClick)
+        return () => document.removeEventListener("mousedown", handleClick)
+    }, [sortOpen, setSortOpen])
     return (
         <div className="w-full flex flex-col p-6 bg-[var(--glass-bg)] backdrop-blur-overlay-md border border-[var(--glass-border)] rounded-container overflow-visible gap-6">
             <h3 className="font-bebas text-2xl tracking-widest text-on-surface/90 uppercase flex items-center justify-between flex-shrink-0">
@@ -62,7 +75,7 @@ export function MoviesFilterBar({
             {/* Sort Section */}
             <div className="flex flex-col gap-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant">Ordenar por</span>
-                <div className="relative w-full">
+                <div ref={dropdownRef} className="relative w-full">
                     <button
                         onClick={() => setSortOpen((o) => !o)}
                         className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_5%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_8%,transparent)] border border-outline-variant/10 text-[11px] font-sans font-bold uppercase tracking-wider text-on-surface-variant hover:text-on-surface hover:border-outline-variant/20 transition-all duration-300"
@@ -85,7 +98,6 @@ export function MoviesFilterBar({
                                 transition={{ duration: 0.2, ease: "easeOut" }}
                                 className="absolute left-0 right-0 top-[calc(100%+6px)] backdrop-blur-overlay-xl border border-outline-variant/10 rounded-xl shadow-elevation-5 z-50 overflow-hidden p-1.5"
                                 style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 95%, transparent)" }}
-                                onMouseLeave={() => setSortOpen(false)}
                             >
                                 {SORT_OPTIONS.map((opt) => (
                                     <button

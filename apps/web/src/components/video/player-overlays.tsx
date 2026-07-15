@@ -8,6 +8,7 @@ export function LoadingErrorOverlay({
     streamType,
     isBuffering,
     isSeeking,
+    isStreamSwitching,
     onClose
 }: {
     status: "loading" | "ready" | "error"
@@ -15,6 +16,9 @@ export function LoadingErrorOverlay({
     streamType: string
     isBuffering: boolean
     isSeeking?: boolean
+    /** true cuando el loading es un cambio de stream mid-playback (ej. switch de pista de audio).
+     *  En ese caso se muestra fondo semitransparente en vez de negro sólido. */
+    isStreamSwitching?: boolean
     onClose: () => void
 }) {
     // Debounce buffering spinner on seek: wait 500ms before showing it
@@ -37,12 +41,32 @@ export function LoadingErrorOverlay({
     }, [isBuffering, isSeeking])
 
     if (status === "loading") {
+        // Cambio de stream mid-playback (ej. cambio de pista de audio direct→transcode):
+        // el video sigue renderizado detrás del overlay, así que usamos fondo semitransparente
+        // con blur para que la imagen congelada sea visible y la transición sea fluida.
+        if (isStreamSwitching) {
+            return (
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-30 text-white"
+                    style={{ backdropFilter: "blur(var(--blur-overlay-sm))", background: "color-mix(in srgb, black 55%, transparent)" }}>
+                    <div className="flex flex-col items-center gap-5 px-8 py-6 rounded-2xl border border-white/10"
+                        style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 60%, transparent)" }}>
+                        <Icons.ui.spinner className="w-10 h-10 text-white animate-spin" />
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-white/90">
+                                Cambiando pista de audio
+                            </span>
+                            <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-white/40">
+                                Iniciando transcodificación…
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+        // Carga inicial del player: fondo negro sólido.
         return (
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-30 text-white bg-black [&>*:not(:first-child)]:mt-6">
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-30 text-white bg-black">
                 <Icons.ui.spinner className="w-16 h-16 text-white animate-spin" />
-                <p className="font-black tracking-[0.4em] uppercase text-[11px] opacity-60">
-                    {streamType === "transcode" ? "Espere" : "Cargando"}
-                </p>
             </div>
         )
     }
@@ -235,19 +259,39 @@ export function AutoSkipToastOverlay({
     showType: "intro" | "outro" | "pause" | null
     onUndo: () => void
 }) {
-    if (!showType) return null
-    const label = showType === "pause" ? "PAUSADO" : showType === "intro" ? "INTRO SALTADA" : "OUTRO SALTADO"
+    const label = showType === "outro"
+        ? "Outro saltado"
+        : showType === "pause"
+            ? "Reproducción pausada"
+            : "Intro saltada"
+
     return (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 sm:bottom-24 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300 pointer-events-auto">
-            <div className="bg-black/80 backdrop-blur-md border border-white/10 rounded-full shadow-lg p-1 pr-4 flex items-center gap-4">
-                <div className="bg-brand-orange/20 text-brand-orange px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
-                    {label}
-                </div>
+        <div className={cn(
+            "absolute bottom-20 left-4 sm:bottom-24 sm:left-10 md:left-12 z-30 transition-all duration-300 pointer-events-auto",
+            showType ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+        )}>
+            <div className={cn(
+                "flex items-center px-5 py-3 text-white backdrop-blur-[var(--blur-overlay-lg)]",
+                "bg-black/60 border border-white/10 rounded-[22px] shadow-[var(--shadow-modal)]",
+                "text-[10px] font-black uppercase tracking-[0.3em]",
+                "[&>*:not(:first-child)]:ml-3"
+            )}>
+                <span className="text-white">{label}</span>
+
                 <button
-                    onClick={onUndo}
-                    className="text-white text-[10px] font-black uppercase tracking-widest hover:text-brand-orange transition-colors"
+                    tabIndex={showType ? 0 : -1}
+                    aria-label="Deshacer salto"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onUndo()
+                    }}
+                    className={cn(
+                        "text-brand-accent hover:brightness-125 transition-all duration-300 active:scale-95",
+                        "text-[10px] font-black uppercase tracking-[0.3em]",
+                        "focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded"
+                    )}
                 >
-                    VOLVER
+                    Deshacer
                 </button>
             </div>
         </div>
@@ -256,8 +300,8 @@ export function AutoSkipToastOverlay({
 
 export function NextEpisodeOverlay({
     show,
-    tvMode,
-    marathonMode = false,
+    tvMode: _tvMode,
+    marathonMode: _marathonMode = false,
     showCountdown,
     countdownSeconds,
     nextEpisodeTitle,
@@ -299,7 +343,7 @@ export function NextEpisodeOverlay({
                             loading="lazy"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        {(tvMode || marathonMode) && showCountdown && (
+                        {showCountdown && (
                             <div className="absolute top-3 right-3 bg-black/70 text-[9px] font-black uppercase tracking-widest text-white px-2 py-1 rounded">
                                 AUTO: {countdownSeconds}S
                             </div>
@@ -317,7 +361,7 @@ export function NextEpisodeOverlay({
                         <span className="text-zinc-500 text-[9px] font-black uppercase tracking-[0.3em]">
                             {nextEpisodeNumber ? `EPISODIO ${nextEpisodeNumber}` : "SIGUIENTE"}
                         </span>
-                        {!nextEpisodeImage && (tvMode || marathonMode) && showCountdown && (
+                        {!nextEpisodeImage && showCountdown && (
                             <span className="text-white text-[10px] font-black tabular-nums tracking-widest">
                                 AUTO: {countdownSeconds}S
                             </span>
@@ -332,7 +376,7 @@ export function NextEpisodeOverlay({
                     )}
 
                     {/* Auto transition progress bar */}
-                    {(tvMode || marathonMode) && showCountdown && (
+                    {showCountdown && (
                         <div className="w-full h-1 bg-surface-container overflow-hidden rounded-full">
                             <div
                                 className="h-full bg-brand-orange transition-all duration-1000 ease-linear"

@@ -24,6 +24,7 @@ export interface AniSkipResult {
     interval: AniSkipInterval
     skipType: AniSkipType
     episodeLength: number
+    votes?: number
 }
 
 export interface AniSkipResponse {
@@ -102,6 +103,42 @@ interface LocalSkipTimeResponse {
     confidence: number
 }
 
+export function normalizeInterval(
+    interval: AniSkipInterval,
+    sourceLen: number,
+    localLen: number,
+    anchor: "start" | "end"
+): AniSkipInterval {
+    // Cannot normalize without valid durations
+    if (!sourceLen || !localLen || sourceLen <= 0 || localLen <= 0) return interval
+    
+    // Ignore small discrepancies (< 2s) to prevent jitter
+    if (Math.abs(sourceLen - localLen) < 2) return interval
+
+    if (anchor === "end") {
+        // Anchor to the END of the episode:
+        // The distance from the event to the end of the video should remain constant.
+        const offsetStartFromEnd = sourceLen - interval.startTime
+        const offsetEndFromEnd = sourceLen - interval.endTime
+        
+        let newStart = localLen - offsetStartFromEnd
+        let newEnd = localLen - offsetEndFromEnd
+        
+        // Clamp to valid range
+        newStart = Math.max(0, newStart)
+        newEnd = Math.min(localLen, newEnd)
+        
+        // Sanity check: if clamping corrupted the interval, revert
+        if (newStart >= newEnd) return interval
+        
+        return { startTime: newStart, endTime: newEnd }
+    } else {
+        // Anchor to START (typically OP):
+        // OP offsets from the beginning are absolute (recap length is fixed).
+        return interval
+    }
+}
+
 export async function getAniSkipTimes({
     malId,
     mediaId,
@@ -116,6 +153,8 @@ export async function getAniSkipTimes({
     if ((!malId && !mediaId) || !episodeNumber) {
         return { hasSkipTimes: false }
     }
+
+    let localFallback: AniSkipTimes | null = null
 
     // 1. Try local KameHouse server database first
     try {
@@ -145,12 +184,20 @@ export async function getAniSkipTimes({
             }
 
             if (op || ed) {
-                return {
+                const times = {
                     op,
                     ed,
                     opSource: localData.source,
                     edSource: localData.source,
                     hasSkipTimes: true,
+                }
+                
+                // If it's a heuristic or unconfident guess, don't return early;
+                // save it as fallback and keep trying AniSkip.
+                if (localData.source === "heuristic" || (localData.confidence ?? 0) <= 0) {
+                    localFallback = times
+                } else {
+                    return times
                 }
             }
         }
@@ -184,14 +231,28 @@ export async function getAniSkipTimes({
     const data = await fetchAniSkipTimes(activeMalId, episodeNumber, episodeDuration)
 
     if (!data.found || !data.results?.length) {
-        return { hasSkipTimes: false }
+        return localFallback || { hasSkipTimes: false }
     }
 
-    const opResult = data.results.find(r => r.skipType === "op" || r.skipType === "mixed-op")
-    const edResult = data.results.find(r => r.skipType === "ed" || r.skipType === "mixed-ed")
+    const opResults = data.results.filter(r => r.skipType === "op" || r.skipType === "mixed-op")
+    const edResults = data.results.filter(r => r.skipType === "ed" || r.skipType === "mixed-ed")
 
-    const op = opResult?.interval
-    const ed = edResult?.interval
+    // D6: Ranking por votos
+    const bestOp = opResults.length > 0 ? opResults.reduce((prev, curr) => (curr.votes || 0) > (prev.votes || 0) ? curr : prev) : undefined
+    const bestEd = edResults.length > 0 ? edResults.reduce((prev, curr) => (curr.votes || 0) > (prev.votes || 0) ? curr : prev) : undefined
+
+    let op = bestOp?.interval
+    let ed = bestEd?.interval
+
+    // D1: Normalización de OP y ED (usando episodeDuration local vs episodeLength de AniSkip)
+    if (episodeDuration && episodeDuration > 0) {
+        if (op && bestOp?.episodeLength) {
+            op = normalizeInterval(op, bestOp.episodeLength, episodeDuration, "start")
+        }
+        if (ed && bestEd?.episodeLength) {
+            ed = normalizeInterval(ed, bestEd.episodeLength, episodeDuration, "end")
+        }
+    }
 
     // 3. Cache AniSkip times on our local server as a side-effect
     if (op || ed) {
@@ -201,6 +262,9 @@ export async function getAniSkipTimes({
             resolvedEdOffset = ed.startTime
             resolvedEdEnd = ed.endTime ?? (episodeDuration ?? 0)
         }
+
+        // Enviar la confianza basada en los votos (o 1 como base si AniSkip fue exitoso)
+        const confidence = Math.max(bestOp?.votes || 0, bestEd?.votes || 0, 1)
 
         buildSeaQuery<any, any>({
             endpoint: "/api/v1/mediastream/skip-times",
@@ -215,6 +279,7 @@ export async function getAniSkipTimes({
                 edEnd: resolvedEdEnd,
                 applyToSeason: false,
                 source: "aniskip",
+                confidence: confidence
             }
         }).catch(err => console.warn("Failed to cache AniSkip times in KameHouse:", err))
     }

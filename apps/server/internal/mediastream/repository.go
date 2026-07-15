@@ -32,7 +32,6 @@ type (
 		cacheDir           string // where attachments are stored
 		transcodeDir       string // where stream segments are stored
 		database           *db.Database
-		skipDetector       *SkipDetector
 		warmingActive      atomic.Bool // guards WarmMediaInfo against overlapping runs
 	}
 
@@ -92,15 +91,6 @@ func (r *Repository) InitializeModules(settings *models.MediastreamSettings, cac
 	r.cacheDir = cacheDir
 	r.transcodeDir = transcodeDir
 
-	r.skipDetector = NewSkipDetector(
-		r.database,
-		r.logger,
-		r.wsEventManager,
-		cacheDir,
-		settings.FfmpegPath,
-		settings.FfprobePath,
-	)
-
 	// Initialize the transcoder (respects the TranscodeEnabled setting on startup)
 	_ = r.initializeTranscoder(r.settings, false)
 
@@ -110,9 +100,7 @@ func (r *Repository) InitializeModules(settings *models.MediastreamSettings, cac
 	r.logger.Info().Msg("mediastream: Module initialized")
 }
 
-func (r *Repository) GetSkipDetector() *SkipDetector {
-	return r.skipDetector
-}
+
 
 // WarmMediaInfo pre-extracts and caches media info (ffprobe) for the given files
 // using a small worker pool, so the first play of any file skips the cold-start
@@ -390,7 +378,7 @@ func (r *Repository) initializeTranscoder(settings mo.Option[*models.Mediastream
 		FfprobePath:           settings.MustGet().FfprobePath,
 		HwAccelCustomSettings: settings.MustGet().TranscodeHwAccelCustomSettings,
 		TempOutDir:            r.transcodeDir,
-		MaxConcurrency:        0, // Use default (NumCPU)
+		MaxConcurrency:        settings.MustGet().TranscodeThreads,
 	}
 
 	tc, err := cassette.New(opts)

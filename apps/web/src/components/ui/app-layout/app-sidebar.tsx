@@ -5,7 +5,7 @@ import { Vaul, VaulContent } from "@/components/vaul"
 import { Link, useRouterState } from "@tanstack/react-router"
 import { AnimatePresence } from "framer-motion"
 import * as React from "react"
-import { Settings, Home, Film, Tv, Layers, Rocket, Menu } from "lucide-react"
+import { Settings, Home, Film, Tv, Layers, Rocket, Menu, User } from "lucide-react"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import { cn } from "../core/styling"
@@ -56,6 +56,15 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         to: "/movies",
         label: "Películas",
         icon: <Film className="w-5 h-5" />,
+        activeColorClass: "text-on-surface",
+        hoverColorClass: "group-hover:text-on-surface",
+        activeBgClass: "glass-liquid glass-active glass-refract"
+    },
+    {
+        id: "profile",
+        to: "/profile",
+        label: "Perfil",
+        icon: <User className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
         activeBgClass: "glass-liquid glass-active glass-refract"

@@ -136,7 +136,7 @@ export function HeroBanner({
             <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/80 via-zinc-950/30 to-transparent pointer-events-none" />
 
             {/* ── Content ─────────────────────────────────── */}
-            <div className="relative z-20 mx-auto h-full w-full max-w-[1800px] px-8 pb-48 md:px-16 flex flex-col justify-end">
+            <div className="relative z-20 mx-auto h-full w-full max-w-content px-8 pb-48 md:px-16 flex flex-col justify-end">
                 <div className="max-w-4xl space-y-8">
                     <AnimatePresence mode="wait">
                         <motion.div
@@ -275,7 +275,7 @@ export function HeroBannerSkeleton() {
     return (
         <div className="h-[90vh] md:h-[95dvh] min-h-[780px] max-h-[1100px] w-full bg-gradient-to-r from-zinc-950 via-zinc-900/30 to-zinc-950 animate-pulse relative flex items-end">
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
-            <div className="mx-auto h-full w-full max-w-[1800px] px-8 pb-48 md:px-16 flex flex-col justify-end gap-6 relative z-10">
+            <div className="mx-auto h-full w-full max-w-content px-8 pb-48 md:px-16 flex flex-col justify-end gap-6 relative z-10">
                 <Skeleton className="h-4 w-32 bg-white/5 rounded-full" />
                 <Skeleton className="h-28 w-2/3 bg-white/5 rounded-2xl" />
                 <Skeleton className="h-16 w-1/2 bg-white/5 rounded-xl" />

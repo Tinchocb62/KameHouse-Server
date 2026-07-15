@@ -156,26 +156,26 @@ export function DynamicBackdrop() {
         >
             {/* Cinematic Gradient Orbs */}
             {!tvMode && (
-                <div className="absolute inset-0 overflow-hidden" style={{ filter: "blur(var(--filter-blur-orb))" }}>
+                <div className="absolute inset-0 overflow-hidden">
                     {/* Era Universe gradient layer */}
                     <div className="era-universe-layer absolute inset-0 transition-opacity duration-1000 mix-blend-plus-lighter opacity-0" />
-                    <div className="absolute top-[10%] left-[8%] w-[45vw] h-[45vw] rounded-full animate-float-blur mix-blend-plus-lighter"
+                    <div className="absolute top-[10%] left-[8%] w-[52vw] h-[52vw] rounded-full animate-float-blur mix-blend-plus-lighter"
                         style={{
-                            background: "radial-gradient(circle at 30% 30%, var(--glow-color-1) 0%, transparent 70%)",
+                            background: "radial-gradient(circle at 30% 30%, var(--glow-color-1) 0%, transparent 80%)",
                             opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.75 : 0.4,
                             willChange: "transform",
                         }}
                     />
-                    <div className="absolute bottom-[8%] right-[6%] w-[38vw] h-[38vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
+                    <div className="absolute bottom-[8%] right-[6%] w-[44vw] h-[44vw] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
                         style={{
-                            background: "radial-gradient(circle at 70% 70%, var(--glow-color-2) 0%, transparent 70%)",
+                            background: "radial-gradient(circle at 70% 70%, var(--glow-color-2) 0%, transparent 80%)",
                             opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.60 : 0.34,
                             willChange: "transform",
                         }}
                     />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[48vw] h-[48vw] rounded-full animate-pulse-glow mix-blend-plus-lighter"
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[55vw] h-[55vw] rounded-full animate-pulse-glow mix-blend-plus-lighter"
                         style={{
-                            background: "radial-gradient(circle at 50% 50%, var(--glow-color-3) 0%, transparent 60%)",
+                            background: "radial-gradient(circle at 50% 50%, var(--glow-color-3) 0%, transparent 70%)",
                             opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.50 : 0.24,
                             willChange: "opacity, transform",
                         }}

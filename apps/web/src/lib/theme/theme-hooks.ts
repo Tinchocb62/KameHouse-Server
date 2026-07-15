@@ -114,6 +114,7 @@ export const THEME_DEFAULT_VALUES: ThemeSettings = {
     themeDisableSidebarTransparency: false,
     themeEnableSidebarGradient: false,
     themeEnableBlurringEffects: false,
+    themeEnableCinematicGrain: false,
     themeDisableCarouselAutoScroll: false,
     themeUseLegacyEpisodeCard: false,
     themeLibraryScreenBannerType: ThemeLibraryScreenBannerType.Dynamic,

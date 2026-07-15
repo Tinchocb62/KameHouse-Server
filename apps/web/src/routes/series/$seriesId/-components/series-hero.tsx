@@ -14,6 +14,10 @@ interface SeriesHeroProps {
   /** Fired on hover/focus intent so the backend can warm the media container ahead of the click. */
   onPlayHover?: () => void
   sagaCount?: number
+  /** Cuando hay progreso de continuidad el CTA cambia a "Reanudar". */
+  hasProgress?: boolean
+  resumeEpisodeNumber?: number
+  resumeEpisodeTitle?: string
 }
 
 export function SeriesHero({
@@ -22,6 +26,9 @@ export function SeriesHero({
   onPlay,
   onPlayHover,
   sagaCount,
+  hasProgress,
+  resumeEpisodeNumber,
+  resumeEpisodeTitle,
 }: SeriesHeroProps) {
   const media = entry?.media
   const title = media?.titleSpanish || media?.titleRomaji || media?.titleEnglish || "Título Desconocido"
@@ -145,6 +152,7 @@ export function SeriesHero({
         onClick={onPlay}
         onPointerEnter={onPlayHover}
         onFocus={onPlayHover}
+        title={hasProgress && resumeEpisodeTitle ? resumeEpisodeTitle : undefined}
         className="group/play relative flex items-center gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95"
         style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
       >
@@ -156,11 +164,13 @@ export function SeriesHero({
         </div>
 
         <div className="flex flex-col items-start z-10 select-none text-left">
-          <span className="font-sans text-button-md tracking-wider font-black uppercase text-zinc-950 transition-colors">
-            Reproducir
+          <span className="font-sans text-button-md tracking-wider font-black uppercase text-zinc-950 transition-colors whitespace-nowrap">
+            {hasProgress ? "Reanudar" : "Reproducir"}
           </span>
-          <span className="text-label-sm font-black text-zinc-950/70 tracking-widest uppercase transition-colors mt-0.5">
-            Comenzar episodio
+          <span className="text-label-sm font-black text-zinc-950/70 tracking-widest uppercase transition-colors mt-0.5 whitespace-nowrap">
+            {hasProgress
+              ? (resumeEpisodeNumber != null ? `Continuar · Ep ${resumeEpisodeNumber}` : "Continuar viendo")
+              : "Comenzar episodio"}
           </span>
         </div>
       </button>

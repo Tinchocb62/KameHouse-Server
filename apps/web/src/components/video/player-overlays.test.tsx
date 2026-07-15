@@ -6,9 +6,8 @@ import { LoadingErrorOverlay, SkipIntroOverlay, CenterPlayFlash } from "./player
 describe("Player Overlays", () => {
     describe("LoadingErrorOverlay", () => {
         it("renders loading state", () => {
-            render(<LoadingErrorOverlay status="loading" errorMsg="" streamType="transcode" isBuffering={false} onClose={() => {}} />)
-            // streamType="transcode" renders "Espere", other values render "Cargando"
-            expect(screen.getByText("Espere")).toBeInTheDocument()
+            const { container } = render(<LoadingErrorOverlay status="loading" errorMsg="" streamType="transcode" isBuffering={false} onClose={() => {}} />)
+            expect(container.querySelector("svg.lucide-loader-circle")).toBeInTheDocument()
         })
 
         it("renders error state with generic message", () => {

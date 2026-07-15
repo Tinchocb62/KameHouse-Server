@@ -574,13 +574,13 @@ export const API_ENDPOINTS = {
         },
         /**
          *  @description
-         *  Route trigger skip times auto-scan.
-         *  This starts a background task using acoustic fingerprinting to detect intro/outro boundaries.
+         *  Route resolve MAL ID.
+         *  Looks up MAL ID on Jikan.
          */
-        ScanEpisodeSkipTimes: {
-            key: "MEDIASTREAM-scan-episode-skip-times",
-            methods: ["POST"],
-            endpoint: "/api/v1/mediastream/skip-times/scan",
+        ResolveMAL: {
+            key: "MEDIASTREAM-resolve-mal",
+            methods: ["GET"],
+            endpoint: "/api/v1/mediastream/skip-times/resolve-mal",
         },
     },
     METADATA: {
@@ -633,6 +633,28 @@ export const API_ENDPOINTS = {
             key: "METADATA-delete-media-metadata-parent",
             methods: ["DELETE"],
             endpoint: "/api/v1/metadata/parent",
+        },
+    },
+    NOTIFICATIONS: {
+        /**
+         *  @description
+         *  Route returns recent notifications.
+         *  Returns the latest in-app notifications (newest first) and the unread count.
+         */
+        GetNotifications: {
+            key: "NOTIFICATIONS-get-notifications",
+            methods: ["GET"],
+            endpoint: "/api/v1/notifications",
+        },
+        MarkNotificationsRead: {
+            key: "NOTIFICATIONS-mark-notifications-read",
+            methods: ["POST"],
+            endpoint: "/api/v1/notifications/read",
+        },
+        ClearNotifications: {
+            key: "NOTIFICATIONS-clear-notifications",
+            methods: ["DELETE"],
+            endpoint: "/api/v1/notifications",
         },
     },
     PLAYBACK_SYNC: {
@@ -754,48 +776,6 @@ export const API_ENDPOINTS = {
             endpoint: "/api/v1/settings/media-player",
         },
     },
-    NOTIFICATIONS: {
-        /**
-         *  @description
-         *  Route returns recent notifications.
-         *  Returns the latest in-app notifications (newest first) and the unread count.
-         */
-        GetNotifications: {
-            key: "NOTIFICATIONS-get-notifications",
-            methods: ["GET"],
-            endpoint: "/api/v1/notifications",
-        },
-        /**
-         *  @description
-         *  Route marks notifications as read.
-         */
-        MarkNotificationsRead: {
-            key: "NOTIFICATIONS-mark-notifications-read",
-            methods: ["POST"],
-            endpoint: "/api/v1/notifications/read",
-        },
-        /**
-         *  @description
-         *  Route clears all notifications.
-         */
-        ClearNotifications: {
-            key: "NOTIFICATIONS-clear-notifications",
-            methods: ["DELETE"],
-            endpoint: "/api/v1/notifications",
-        },
-    },
-    SYSTEM: {
-        BackupDatabase: {
-            key: "SYSTEM-backup-database",
-            methods: ["POST"],
-            endpoint: "/api/v1/db/backup",
-        },
-        GetDiagnosticsReport: {
-            key: "SYSTEM-get-diagnostics-report",
-            methods: ["GET"],
-            endpoint: "/api/v1/report",
-        },
-    },
     STATUS: {
         /**
          *  @description
@@ -871,6 +851,18 @@ export const API_ENDPOINTS = {
             key: "STATUS-update-home-items",
             methods: ["POST"],
             endpoint: "/api/v1/status/home-items",
+        },
+    },
+    SYSTEM: {
+        BackupDatabase: {
+            key: "SYSTEM-backup-database",
+            methods: ["POST"],
+            endpoint: "/api/v1/db/backup",
+        },
+        GetDiagnosticsReport: {
+            key: "SYSTEM-get-diagnostics-report",
+            methods: ["GET"],
+            endpoint: "/api/v1/report",
         },
     },
     THEME: {

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -311,8 +309,12 @@ func (h *Handler) HandleGetEpisodeSkipTimes(c echo.Context) error {
 							EpisodeNumber: episodeNum,
 							OpStart:       closest.OpStart,
 							OpEnd:         closest.OpEnd,
-							EdOffset:      closest.EdOffset,
-							EdEnd:         closest.EdEnd,
+							// D3/D4: No copiamos ciegamente el ED porque el ED está anclado al 
+							// final del video. Si el episodio destino tiene distinta duración,
+							// el offset absoluto quedará desfasado. Dejamos que actúe la 
+							// heurística del reproductor o AniSkip para el ED.
+							EdOffset:      0,
+							EdEnd:         0,
 							Source:        "heuristic",
 						})
 					}
@@ -363,6 +365,21 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 		return h.RespondWithError(c, fmt.Errorf("invalid mediaId/malId or episodeNumber"))
 	}
 
+	// D7: Validación de rangos (integridad)
+	if b.OpStart < 0 || b.OpEnd < 0 || b.EdOffset < 0 || b.EdEnd < 0 {
+		return h.RespondWithError(c, fmt.Errorf("skip times cannot be negative"))
+	}
+	if b.OpEnd > 0 && b.OpStart >= b.OpEnd {
+		return h.RespondWithError(c, fmt.Errorf("op start must be before op end"))
+	}
+	if b.EdEnd > 0 && b.EdOffset >= b.EdEnd {
+		return h.RespondWithError(c, fmt.Errorf("ed start must be before ed end"))
+	}
+	// Tiempos absurdos (> 10 horas)
+	if b.OpEnd > 36000 || b.EdEnd > 36000 {
+		return h.RespondWithError(c, fmt.Errorf("skip times unreasonably large"))
+	}
+
 	// Save or update the single episode skip times
 	skipTime := models.EpisodeSkipTime{
 		MediaID:       mediaID,
@@ -385,7 +402,9 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 
 	// Propagate if requested
 	episodesUpdated := 0
-	if b.ApplyToSeason {
+	// D4/D7: Solo propagar si la confianza es alta o la fuente es 100% segura. 
+	// No propagar "heuristic" que ensucia los demás episodios.
+	if b.ApplyToSeason && b.Source != "heuristic" && b.Confidence > 0 {
 		var episodes []models.LibraryEpisode
 		if err := h.App.Database.Gorm().Where("library_media_id = ?", mediaID).Find(&episodes).Error; err == nil {
 			var skipTimes []models.EpisodeSkipTime
@@ -398,9 +417,10 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 					EpisodeNumber: ep.EpisodeNumber,
 					OpStart:       b.OpStart,
 					OpEnd:         b.OpEnd,
-					EdOffset:      b.EdOffset,
-					EdEnd:         b.EdEnd,
-					Source:        b.Source,
+					// D3: No copiar Ed absoluto, su posición real varía según duración.
+					EdOffset:      0,
+					EdEnd:         0,
+					Source:        "propagated",
 					Confidence:    b.Confidence,
 				})
 			}
@@ -426,46 +446,6 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 	})
 }
 
-// HandleScanEpisodeSkipTimes triggers a background scan to detect skip times for a series.
-//
-//	@summary trigger skip times auto-scan.
-//	@desc This starts a background task using acoustic fingerprinting to detect intro/outro boundaries.
-//	@route /api/v1/mediastream/skip-times/scan [POST]
-func (h *Handler) HandleScanEpisodeSkipTimes(c echo.Context) error {
-	type body struct {
-		MediaID int `json:"mediaId"`
-	}
-
-	var b body
-	if err := c.Bind(&b); err != nil {
-		return h.RespondWithError(c, err)
-	}
-
-	if b.MediaID == 0 {
-		return h.RespondWithError(c, fmt.Errorf("invalid mediaId"))
-	}
-
-	detector := h.App.MediastreamRepository.GetSkipDetector()
-	if detector == nil {
-		return h.RespondWithError(c, fmt.Errorf("skip detector is not initialized yet"))
-	}
-
-	if detector.IsScanning(b.MediaID) {
-		return h.RespondWithError(c, fmt.Errorf("a scan is already in progress for this series"))
-	}
-
-	// Trigger asynchronously to avoid HTTP timeouts
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
-		defer cancel()
-
-		if err := detector.ScanSeries(ctx, b.MediaID); err != nil {
-			h.App.Logger.Error().Err(err).Int("mediaId", b.MediaID).Msg("mediastream: auto skip-time scan failed")
-		}
-	}()
-
-	return h.RespondWithData(c, map[string]any{"ok": true, "message": "Scan started"})
-}
 
 // HandleResolveMAL resolves a media's MAL ID dynamically.
 //
@@ -488,6 +468,24 @@ func (h *Handler) HandleResolveMAL(c echo.Context) error {
 		}
 		return h.RespondWithError(c, err)
 	}
+	// Deterministic TMDB→MAL map for the Dragon Ball franchise.
+	// Authoritative and offline (no Jikan dependency): it wins even over a stored
+	// myanimelist_id, so a wrong non-zero id (not just 0) is corrected for these 5 series.
+	// TMDB IDs match dragonBallArcs in internal/library/anime/intelligence.go.
+	var dragonBallMalMap = map[int]int{
+		12609:  223,   // Dragon Ball
+		12971:  813,   // Dragon Ball Z
+		12697:  225,   // Dragon Ball GT
+		62715:  30694, // Dragon Ball Super
+		236994: 58567, // Dragon Ball Daima
+	}
+	if malID, ok := dragonBallMalMap[lm.TmdbID]; ok {
+		if lm.MyanimelistId != malID {
+			db.UpdateLibraryMediaMappings(h.App.Database, lm.ID, lm.AnidbId, malID)
+		}
+		return h.RespondWithData(c, map[string]interface{}{"malId": malID})
+	}
+
 	if lm.MyanimelistId > 0 {
 		return h.RespondWithData(c, map[string]interface{}{"malId": lm.MyanimelistId})
 	}

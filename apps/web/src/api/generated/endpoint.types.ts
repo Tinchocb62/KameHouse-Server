@@ -460,10 +460,13 @@ export type RequestMediastreamMediaContainer_Variables = {
     streamType: Mediastream_StreamType
     audioStreamIndex: number
     clientID: string
-    force?: boolean
+    force: boolean
     /**
-     * Codecs the client can decode natively (probed via canPlayType/MediaSource).
-     * Omitted/null falls back to static Chromium-based assumptions.
+     *  Codecs the client can decode natively (probed via canPlayType/MediaSource).
+     *  Omitted/null falls back to static Chromium-based assumptions.
+     *
+     *  Codecs the client can decode natively (probed via canPlayType/MediaSource).
+     *  Omitted/null falls back to static Chromium-based assumptions.
      */
     clientCapabilities?: Mediastream_ClientCapabilities
 }
@@ -497,18 +500,9 @@ export type SaveEpisodeSkipTimes_Variables = {
     opEnd: number
     edOffset: number
     edEnd: number
+    source: string
+    confidence: number
     applyToSeason: boolean
-}
-
-/**
- * - Filepath: internal/handlers/mediastream.go
- * - Filename: mediastream.go
- * - Endpoint: /api/v1/mediastream/skip-times/scan
- * @description
- * Route trigger skip times auto-scan.
- */
-export type ScanEpisodeSkipTimes_Variables = {
-    mediaId: number
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -572,6 +566,21 @@ export type SaveMediaMetadataParent_Variables = {
  */
 export type DeleteMediaMetadataParent_Variables = {
     mediaId: number
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// notifications
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * - Filepath: internal/handlers/notifications.go
+ * - Filename: notifications.go
+ * - Endpoint: /api/v1/notifications/read
+ * @description
+ * Route marks notifications as read.
+ */
+export type MarkNotificationsRead_Variables = {
+    id: number
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -727,6 +736,10 @@ export type SaveMediaPlayerSettings_Variables = {
 export type UpdateHomeItems_Variables = {
     items: Array<Models_HomeItem>
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// system
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // theme

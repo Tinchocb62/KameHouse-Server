@@ -125,6 +125,10 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 		IntelligenceSelector: intelligence.NewSelector(app.Database, app.Logger),
 	}
 
+	app.AddOnRefreshAnimeCollectionFunc("ClearLibraryCollectionCache", func() {
+		ClearLibraryCollectionCache()
+	})
+
 	h.StartPlaybackHeartbeatSubscriber()
 
 	// Health endpoint for KameHouseTV auto-discovery (no auth required, open CORS)

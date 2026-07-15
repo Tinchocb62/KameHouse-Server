@@ -13,7 +13,7 @@ function getBreakpoints(): ResponsiveBreakpoints {
         isMobile: w <= 767,
         isTablet: w >= 768 && w <= 1023,
         isDesktop: w >= 1024,
-        isWide: w >= 1440,
+        isWide: w >= 1280,
     };
 }
 
@@ -24,7 +24,7 @@ export function useResponsive(): ResponsiveBreakpoints {
         const mobileQuery = window.matchMedia("(max-width: 767px)");
         const tabletQuery = window.matchMedia("(min-width: 768px) and (max-width: 1023px)");
         const desktopQuery = window.matchMedia("(min-width: 1024px)");
-        const wideQuery = window.matchMedia("(min-width: 1440px)");
+        const wideQuery = window.matchMedia("(min-width: 1280px)");
 
         const update = () => {
             setBreakpoints(getBreakpoints());

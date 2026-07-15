@@ -5,23 +5,6 @@
     Packages the KameHouseTV app as a .wgt file using the Tizen CLI,
     signs it with the configured certificate profile, and optionally
     installs it on a Samsung TV via SDB.
-.PARAMETER Profile
-    Tizen signing profile name (default: kamecert).
-.PARAMETER TvIp
-    TV IP address for SDB install. If omitted, skips installation.
-.PARAMETER OutputDir
-    Output directory for the .wgt file (default: current directory).
-.PARAMETER NoSign
-    Skip signing step (useful for testing).
-.EXAMPLE
-    .\build.ps1
-    Builds and signs KameHouseTV.wgt in the current directory.
-.EXAMPLE
-    .\build.ps1 -TvIp 192.168.1.50
-    Builds, signs, and installs on the TV at 192.168.1.50.
-.EXAMPLE
-    .\build.ps1 -NoSign -OutputDir C:\temp
-    Builds without signing, outputs to C:\temp.
 #>
 
 param(
@@ -46,19 +29,25 @@ if (-not (Test-Path $TizenCLI)) {
 }
 
 Write-Host "=== KameHouseTV Build Script ===" -ForegroundColor Cyan
-Write-Host "Perfil de firma : $Profile"
-Write-Host "Proyecto        : $ProjectDir"
-Write-Host "Salida          : $OutputDir"
-Write-Host ""
+
+# --- Step 0: Run Rsbuild to bundle the React App ---
+Write-Host "[0/4] Compilando aplicación React con Rsbuild..." -ForegroundColor Yellow
+Set-Location -Path $ProjectDir
+pnpm run build
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Error al compilar la aplicación React."
+    exit 1
+}
+Write-Host "  OK" -ForegroundColor Green
 
 # --- Step 1: Clean previous build artifacts ---
-Write-Host "[1/3] Limpiando builds anteriores..." -ForegroundColor Yellow
+Write-Host "[1/4] Limpiando builds anteriores..." -ForegroundColor Yellow
 Remove-Item -Path "$ProjectDir\*.wgt" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$ProjectDir\.manifest.tmp" -Force -ErrorAction SilentlyContinue
 Write-Host "  OK" -ForegroundColor Green
 
 # --- Step 2: Package the widget ---
-Write-Host "[2/3] Empaquetando widget..." -ForegroundColor Yellow
+Write-Host "[2/4] Empaquetando widget..." -ForegroundColor Yellow
 
 $StagingDir = Join-Path $ProjectDir ".staging"
 if (Test-Path $StagingDir) {
@@ -66,10 +55,12 @@ if (Test-Path $StagingDir) {
 }
 New-Item -ItemType Directory -Path $StagingDir -Force | Out-Null
 
-# Copy only the necessary files for the TV application
-Copy-Item -Path (Join-Path $ProjectDir "index.html") -Destination $StagingDir
-Copy-Item -Path (Join-Path $ProjectDir "icon.png") -Destination $StagingDir
-Copy-Item -Path (Join-Path $ProjectDir "config.xml") -Destination $StagingDir
+# Copy the bundled output from dist
+Copy-Item -Path (Join-Path $ProjectDir "dist\*") -Destination $StagingDir -Recurse -Force
+
+# Copy TV specific configs
+Copy-Item -Path (Join-Path $ProjectDir "icon.png") -Destination $StagingDir -Force
+Copy-Item -Path (Join-Path $ProjectDir "config.xml") -Destination $StagingDir -Force
 
 $pkgArgs = @(
     "package"
@@ -88,10 +79,17 @@ if (-not $NoSign) {
 & $TizenCLI $pkgArgs 2>&1
 $buildExitCode = $LASTEXITCODE
 
-# Find the generated .wgt file in the parent directory (Tizen CLI generates .wgt in the parent of the input directory)
-$wgtFile = Get-ChildItem -Path "$ProjectDir\*.wgt" -ErrorAction SilentlyContinue | Select-Object -First 1
+# Find the generated .wgt file
+$wgtFile = Get-ChildItem -Path $ProjectDir -Filter "*.wgt" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
 
-# Clean staging directory
+if ($wgtFile) {
+    if ($wgtFile.DirectoryName -ne $ProjectDir) {
+        $destPath = Join-Path $ProjectDir $wgtFile.Name
+        Move-Item -Path $wgtFile.FullName -Destination $destPath -Force
+        $wgtFile = Get-Item $destPath
+    }
+}
+
 Remove-Item -Path $StagingDir -Recurse -Force -ErrorAction SilentlyContinue
 
 if ($buildExitCode -ne 0) {
@@ -101,7 +99,7 @@ if ($buildExitCode -ne 0) {
 
 Write-Host "  OK" -ForegroundColor Green
 
-# --- Normalize .wgt filename (remove spaces, use consistent name) ---
+# --- Normalize .wgt filename ---
 if (-not $wgtFile) {
     Write-Error "No se generó el archivo .wgt."
     exit 1
@@ -124,28 +122,22 @@ Write-Host "  Widget generado: $($wgtFile.FullName)" -ForegroundColor Green
 
 # --- Step 3: Install on TV (optional) ---
 if ($TvIp) {
-    Write-Host "[3/3] Instalando en TV ($TvIp)..." -ForegroundColor Yellow
-
-    # Connect SDB to TV
+    Write-Host "[4/4] Instalando en TV ($TvIp)..." -ForegroundColor Yellow
     & $SDB connect $TvIp 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "No se pudo conectar a la TV en $TvIp. Verificá que esté en modo desarrollador."
+        Write-Error "No se pudo conectar a la TV en $TvIp."
         exit 1
     }
-
-    # Install the widget
     & $SDB install $wgtFile.FullName 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Error al instalar el widget en la TV."
         & $SDB disconnect 2>&1 | Out-Null
         exit 1
     }
-
     & $SDB disconnect 2>&1 | Out-Null
     Write-Host "  App instalada correctamente en $TvIp" -ForegroundColor Green
 } else {
-    Write-Host "[3/3] Saltando instalación (usá -TvIp para instalar automáticamente)." -ForegroundColor Gray
+    Write-Host "[4/4] Saltando instalación (usá -TvIp para instalar automáticamente)." -ForegroundColor Gray
 }
 
-Write-Host ""
 Write-Host "=== Build completado ===" -ForegroundColor Cyan

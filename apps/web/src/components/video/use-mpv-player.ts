@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useWebSocket } from "@/hooks/use-websocket"
 import { getApiWebSocketUrl } from "@/api/client/server-url"
 import { useUpdateContinuityWatchHistoryItem } from "@/api/hooks/continuity.hooks"
@@ -42,7 +42,11 @@ export function useMpvPlayer(options: UseMpvPlayerOptions) {
     const lastContinuitySaveRef = useRef(0)
     const lastProgressRef = useRef<{ currentTime: number; duration: number }>({ currentTime: 0, duration: 0 })
     const onExitedRef = useRef(onExited)
-    onExitedRef.current = onExited
+
+    // Sincronizado después del commit, no en el cuerpo del render (ver usePlayerMediaSession).
+    useLayoutEffect(() => {
+        onExitedRef.current = onExited
+    }, [onExited])
 
     useEffect(() => {
         if (!isDesktop) return

@@ -36,9 +36,12 @@ export function MoviesGrid({
             for (const entry of entries) {
                 const width = entry.contentRect.width
                 setGridWidth(width)
-                // minmax(180px, 1fr) with gap 24px
-                const colCount = Math.floor((width + 24) / (180 + 24))
-                setColumns(Math.max(1, colCount))
+                if (width < 768) {
+                    setColumns(3)
+                } else {
+                    const colCount = Math.floor((width + 24) / (180 + 24))
+                    setColumns(Math.max(1, colCount))
+                }
             }
             if (gridRef.current) {
                 setScrollMargin(gridRef.current.offsetTop)
@@ -57,10 +60,9 @@ export function MoviesGrid({
     }, [filteredSorted, columns])
 
     const rowHeight = useMemo(() => {
-        const cardWidth = Math.max(180, (gridWidth - (columns - 1) * 24) / columns)
+        const gapSize = gridWidth < 768 ? 12 : 24
+        const cardWidth = Math.max(80, (gridWidth - (columns - 1) * gapSize) / columns)
         const posterHeight = cardWidth * 1.5
-        // Card title block is 36px (title) + 14px (info) + 14px (gap) = 64px
-        // Row pb-10 is 40px
         return Math.ceil(posterHeight + 64 + 40)
     }, [gridWidth, columns])
 
@@ -72,7 +74,7 @@ export function MoviesGrid({
     })
 
     return (
-        <div className="w-full relative pb-32">
+        <div className="w-full relative pb-32 max-w-content mx-auto">
             {isLoading && allMoviesLength === 0 ? (
                 <PosterGridSkeleton count={18} />
             ) : filteredSorted.length === 0 ? (
@@ -94,7 +96,7 @@ export function MoviesGrid({
                         return (
                             <div
                                 key={virtualRow.index}
-                                className="absolute left-0 top-0 w-full grid gap-x-6 pb-10"
+                                className="absolute left-0 top-0 w-full grid gap-x-3 md:gap-x-6 pb-10"
                                 style={{
                                     gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
                                     height: `${virtualRow.size}px`,
