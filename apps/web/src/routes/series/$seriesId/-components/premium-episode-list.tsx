@@ -55,9 +55,10 @@ export function PremiumEpisodeList({
   }
 
   React.useEffect(() => {
+    const timeouts = preloadTimeoutsRef.current
     return () => {
-      preloadTimeoutsRef.current.forEach(t => clearTimeout(t))
-      preloadTimeoutsRef.current.clear()
+      timeouts.forEach(t => clearTimeout(t))
+      timeouts.clear()
     }
   }, [])
 

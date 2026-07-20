@@ -1,8 +1,13 @@
 (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __esm = (fn, res) => function __init() {
-    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  var __esm = (fn, res, err) => function __init() {
+    if (err) throw err[0];
+    try {
+      return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+    } catch (e) {
+      throw err = [e], e;
+    }
   };
   var __export = (target, all) => {
     for (var name in all)
@@ -37,10 +42,10 @@
   };
 
   // ../../node_modules/.pnpm/abslink@1.2.2/node_modules/abslink/src/abslink.js
-  var proxyMarker = Symbol("Abslink.proxy");
-  var releaseProxy = Symbol("Abslink.releaseProxy");
-  var finalizer = Symbol("Abslink.finalizer");
-  var throwMarker = Symbol("Abslink.thrown");
+  var proxyMarker = /* @__PURE__ */ Symbol("Abslink.proxy");
+  var releaseProxy = /* @__PURE__ */ Symbol("Abslink.releaseProxy");
+  var finalizer = /* @__PURE__ */ Symbol("Abslink.finalizer");
+  var throwMarker = /* @__PURE__ */ Symbol("Abslink.thrown");
   var isObject = (val) => typeof val === "object" && val !== null || typeof val === "function";
   var proxyTransferHandler = {
     canHandle: (val) => isObject(val) && proxyMarker in val,
@@ -3290,7 +3295,7 @@ void main() {
   };
 
   // ../../node_modules/.pnpm/jassub@2.5.1/node_modules/jassub/dist/worker/worker.js
-  var constructor = Symbol.for("constructor");
+  var constructor = /* @__PURE__ */ Symbol.for("constructor");
   var ASSRenderer = class {
     _wasm;
     _subtitleColorSpace;

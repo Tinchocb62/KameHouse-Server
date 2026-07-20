@@ -19,7 +19,7 @@ export function CollectionSwimlane({ collectionId, collectionName, movies, onMov
 
   return (
     <div className="w-full mt-12 pb-8">
-      <h3 className="text-2xl font-bebas tracking-[0.15em] text-white uppercase border-b border-white/5 pb-3 mb-6">
+      <h3 className="text-2xl font-display tracking-[0.15em] text-white uppercase border-b border-white/5 pb-3 mb-6">
         Colección: {collectionName}
       </h3>
       

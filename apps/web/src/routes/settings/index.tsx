@@ -170,7 +170,7 @@ function SettingsPage() {
                         <span className="w-2 h-2 rounded-full bg-[#ff6e3a] shadow-[0_0_8px_#ff6e3a] animate-pulse" />
                         <span className="text-[10px] font-black tracking-[0.3em] text-zinc-500 uppercase font-mono">PANEL DE CONTROL</span>
                     </div>
-                    <h1 className="font-bebas text-5xl md:text-7xl tracking-wider text-white select-none">
+                    <h1 className="font-display text-5xl md:text-7xl tracking-wider text-white select-none">
                         CONFIGURACIÓN <span className="text-zinc-650">GENERAL</span>
                     </h1>
                     <div className="h-[2px] w-16 bg-gradient-to-r from-[#ff6e3a] to-transparent rounded-full shadow-[0_0_8px_rgba(255,110,58,0.5)]" />

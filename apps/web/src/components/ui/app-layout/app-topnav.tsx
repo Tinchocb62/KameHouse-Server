@@ -27,7 +27,7 @@ export const AppTopNav = ({ title }: TopNavProps) => {
                     </button>
 
                     {title && (
-                        <h1 className="text-2xl font-bebas tracking-[0.1em] text-white uppercase hidden md:block">
+                        <h1 className="text-2xl font-display tracking-[0.1em] text-white uppercase hidden md:block">
                             {title}
                         </h1>
                     )}

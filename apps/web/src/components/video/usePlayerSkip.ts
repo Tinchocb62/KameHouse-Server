@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react"
 import { useAniSkipTimes, getAniSkipTimes } from "@/api/hooks/aniskip.hooks"
 import { useGetSettings } from "@/api/hooks/settings.hooks"
 import { usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
@@ -229,6 +229,10 @@ export function usePlayerSkip({
     // ── Episode change reset ─────────────────────────────────────────────────────
     const currentEpisodeKey = `${episodeNumber}_${playableUrl}`
     useEffect(() => {
+        // Reset intencional al cambiar de episodio: estado y refs deben reiniciarse juntos
+        // tras el commit (los refs no pueden mutarse durante el render). Corre una sola vez
+        // por episodio, no en cascada.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setShowNextEpisode(false)
         setSkipMode(null)
         setShowCountdown(false)
@@ -351,7 +355,7 @@ export function usePlayerSkip({
         if (activeEd && target >= activeEd.startTime && target < activeEd.endTime) {
             hasAutoSkippedOutroRef.current = true
         }
-    }, [skipTimesOp, skipTimesEd, videoRef])
+    }, [skipTimesOp, skipTimesEd, videoRef, mediaFormat])
 
     // ── Public skip actions ───────────────────────────────────────────────────────
     const skipOpening = useCallback(() => {
@@ -359,6 +363,9 @@ export function usePlayerSkip({
         if (!video) return
         const target = Math.min(video.duration, video.currentTime + 85)
         checkManualSkipOverrides(target)
+        // Falso positivo del compiler: videoRef llega como argumento del hook y no puede
+        // probar que es un ref; mutar el elemento <video> en un event handler es válido.
+        // eslint-disable-next-line react-compiler/react-compiler
         video.currentTime = target
         lastManualSeekTimestampRef.current = Date.now()
         video.play().catch(() => {})
@@ -404,7 +411,7 @@ export function usePlayerSkip({
             video.play().catch(() => {})
             setSkipMode(null)
         }
-    }, [videoRef, setAutoSkipIntro, skipTimesOp, setSkipMode])
+    }, [videoRef, setAutoSkipIntro, skipTimesOp, setSkipMode, mediaFormat])
 
     const handleSetAutoSkipOutro = useCallback((val: boolean) => {
         setAutoSkipOutro(val)
@@ -422,7 +429,7 @@ export function usePlayerSkip({
             video.play().catch(() => {})
             setSkipMode(null)
         }
-    }, [videoRef, setAutoSkipOutro, skipTimesOp, skipTimesEd, setSkipMode])
+    }, [videoRef, setAutoSkipOutro, skipTimesOp, skipTimesEd, setSkipMode, mediaFormat])
 
     const handleSetTvMode = useCallback((val: boolean) => {
         setTvMode(val)
@@ -448,34 +455,39 @@ export function usePlayerSkip({
         lastManualSeekTimestampRef.current = Date.now()
         video.play().catch(() => {})
         setSkipMode(null)
-    }, [videoRef, skipMode, skipTimesOp, skipTimesEd, setSkipMode])
+    }, [videoRef, skipMode, skipTimesOp, skipTimesEd, setSkipMode, mediaFormat])
 
     // ─────────────────────────────────────────────────────────────────────────────
     // processTimeUpdates — called on every timeupdate event from the video element
     // Split into focused sub-sections for clarity.
     // ─────────────────────────────────────────────────────────────────────────────
-    configRef.current = {
-        skipTimesOp,
-        skipTimesEd,
-        autoSkipIntroPref,
-        autoSkipOutroPref,
-        chapters,
-        mediaFormat,
-        marathonMode,
-        hasNextEpisode,
-        onNextEpisode,
-        tvMode,
-        autoPlayNextEpisode,
-        nextStreamUrl,
-        streamType,
-        preloadStream,
-        queryClient,
-        clientId,
-        malId,
-        mediaId,
-        episodeNumber,
-        showCountdown,
-    }
+    // Actualizado en useLayoutEffect (no durante el render): corre síncrono en el commit,
+    // antes de que el navegador pueda despachar un `timeupdate`, así el config nunca
+    // queda desactualizado para processTimeUpdates y no se muta un ref en render.
+    useLayoutEffect(() => {
+        configRef.current = {
+            skipTimesOp,
+            skipTimesEd,
+            autoSkipIntroPref,
+            autoSkipOutroPref,
+            chapters,
+            mediaFormat,
+            marathonMode,
+            hasNextEpisode,
+            onNextEpisode,
+            tvMode,
+            autoPlayNextEpisode,
+            nextStreamUrl,
+            streamType,
+            preloadStream,
+            queryClient,
+            clientId,
+            malId,
+            mediaId,
+            episodeNumber,
+            showCountdown,
+        }
+    })
     const processTimeUpdates = useCallback((curr: number, total: number) => {
         const video = videoRef.current
         if (!video) return
@@ -666,7 +678,9 @@ export function usePlayerSkip({
                 cfg.onNextEpisode()
             }
         }
-    }, [])
+        // Todas las deps son estables (setters del patrón ref+state, triggerToast y videoRef);
+        // el resto de valores se lee de configRef para que este callback nunca cambie de identidad.
+    }, [videoRef, setActiveChapter, setSegmentProgress, setShowNextEpisode, setSkipMode, setSkipRemainingSeconds, triggerToast])
 
     // ── Countdown: clear nextEpisode guard when panel hides ─────────────────────
     useEffect(() => {

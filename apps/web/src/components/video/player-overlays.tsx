@@ -26,6 +26,11 @@ export function LoadingErrorOverlay({
             if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current)
             bufferingTimerRef.current = setTimeout(() => setShowBuffering(true), 500)
         } else if (isBuffering) {
+            // Debounce intencional del spinner: este effect sincroniza un timer (sistema
+            // externo) con isBuffering/isSeeking. El setState síncrono muestra el spinner
+            // sin retraso cuando el buffering no viene de un seek; corre solo en
+            // transiciones de buffering, no en cascada.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowBuffering(true)
         } else {
             if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current)
@@ -64,7 +69,7 @@ export function LoadingErrorOverlay({
         return (
             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-8 text-center text-white bg-zinc-950/85 backdrop-blur-xl [&>*:not(:first-child)]:mt-6">
                 <AlertTriangle className="w-16 h-16 text-brand-orange animate-pulse" />
-                <h3 className="font-bebas text-3xl tracking-[0.2em] uppercase">TRANSMISIÓN CAÍDA</h3>
+                <h3 className="font-display text-3xl tracking-[0.2em] uppercase">TRANSMISIÓN CAÍDA</h3>
                 <p className="text-zinc-400 max-w-md text-sm font-medium uppercase tracking-wide leading-relaxed">{errorMsg}</p>
                 <button
                     onClick={onClose}

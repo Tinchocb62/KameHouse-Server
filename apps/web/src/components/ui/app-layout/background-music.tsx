@@ -35,8 +35,13 @@ export function BackgroundMusicPlayer() {
         return Math.floor(Math.random() * PLAYLIST.length)
     })
 
+    // El effect principal lee el volumen desde este ref al crear/cambiar de pista, para no
+    // depender reactivamente de bgMusicVolume (reiniciaría la música en cada ajuste del slider).
+    const bgMusicVolumeRef = React.useRef(bgMusicVolume)
+
     // Sync volume when bgMusicVolume changes (using quadratic curve for natural logarithmic hearing)
     React.useEffect(() => {
+        bgMusicVolumeRef.current = bgMusicVolume
         if (audioRef.current) {
             audioRef.current.volume = Math.pow(bgMusicVolume, 2)
         }
@@ -46,7 +51,7 @@ export function BackgroundMusicPlayer() {
     React.useEffect(() => {
         if (!audioRef.current) {
             audioRef.current = new Audio(PLAYLIST[currentTrackIndex])
-            audioRef.current.volume = Math.pow(bgMusicVolume, 2)
+            audioRef.current.volume = Math.pow(bgMusicVolumeRef.current, 2)
         } else {
             // Update source if track changed
             const currentSrc = audioRef.current.src
@@ -54,7 +59,7 @@ export function BackgroundMusicPlayer() {
             if (!currentSrc.endsWith(encodeURI(expectedSrc))) {
                 audioRef.current.src = expectedSrc
                 audioRef.current.load()
-                audioRef.current.volume = Math.pow(bgMusicVolume, 2)
+                audioRef.current.volume = Math.pow(bgMusicVolumeRef.current, 2)
             }
         }
 

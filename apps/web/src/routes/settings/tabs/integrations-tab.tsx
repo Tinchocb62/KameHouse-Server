@@ -27,7 +27,7 @@ export function IntegrationsTab({ control }: IntegrationsTabProps) {
                      </div>
                      <span className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-600 font-mono">ECOSISTEMA · SERVICIOS EN LA NUBE</span>
                  </div>
-                 <h1 className="text-5xl font-bebas tracking-wider text-white leading-none">
+                 <h1 className="text-5xl font-display tracking-wider text-white leading-none">
                      EXTERNAL <span className="text-zinc-600">INTEGRATIONS</span>
                  </h1>
                  <div className="h-[2px] w-12 bg-gradient-to-r from-[#ff6e3a]/50 to-transparent rounded-full" />

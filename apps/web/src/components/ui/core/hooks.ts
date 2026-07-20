@@ -71,5 +71,6 @@ export function useUpdateEffect(effect: React.EffectCallback, deps?: React.Depen
         } else {
             return effectRef.current()
         }
-    }, deps)
+        // Wrapper genérico: las deps las provee el llamador, no pueden ser un array literal.
+    }, deps) // eslint-disable-line react-hooks/exhaustive-deps
 }

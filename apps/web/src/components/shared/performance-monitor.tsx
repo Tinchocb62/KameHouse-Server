@@ -299,7 +299,7 @@ export function PerformanceMonitor() {
                         <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 flex flex-col items-start">
                             <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500">FPS Actual</span>
                             <div className="flex items-baseline gap-1 mt-1">
-                                <span className={`text-3xl font-bebas tracking-wide ${getFpsColor(fps)}`}>
+                                <span className={`text-3xl font-display tracking-wide ${getFpsColor(fps)}`}>
                                     {fps}
                                 </span>
                                 <span className="text-[10px] font-bold text-zinc-600">FPS</span>
@@ -310,7 +310,7 @@ export function PerformanceMonitor() {
                         <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 flex flex-col items-start">
                             <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500">Estabilidad UI</span>
                             <div className="flex items-baseline gap-1 mt-1">
-                                <span className={`text-3xl font-bebas tracking-wide ${getSmoothnessColor(smoothnessIndex)}`}>
+                                <span className={`text-3xl font-display tracking-wide ${getSmoothnessColor(smoothnessIndex)}`}>
                                     {smoothnessIndex}%
                                 </span>
                                 <span className="text-[10px] font-bold text-zinc-600">INDEX</span>

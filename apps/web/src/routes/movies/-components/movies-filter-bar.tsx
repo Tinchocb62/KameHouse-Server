@@ -30,7 +30,7 @@ export function MoviesFilterBar({
 }: MoviesFilterBarProps) {
     return (
         <div className="w-full flex flex-col p-6 liquid-glass-frosted rounded-2xl overflow-visible gap-6">
-            <h3 className="font-bebas text-2xl tracking-[0.15em] text-white/90 uppercase flex items-center justify-between flex-shrink-0">
+            <h3 className="font-display text-2xl tracking-[0.15em] text-white/90 uppercase flex items-center justify-between flex-shrink-0">
                 <span>Filtrar</span>
                 <span className="text-[10px] font-mono font-bold tracking-normal text-zinc-400 lowercase px-2.5 py-0.5 bg-white/5 rounded-full">
                     {allMovies.length} películas

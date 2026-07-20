@@ -114,7 +114,7 @@ function LeftPanel({ posterUrl, title, synopsis, year, episodesCount, sagaTitle,
                 </span>
 
                 {/* Title */}
-                <h1 className="text-white text-4xl font-bebas leading-[0.9] tracking-widest uppercase">
+                <h1 className="text-white text-4xl font-display leading-[0.9] tracking-widest uppercase">
                     {title}
                 </h1>
 

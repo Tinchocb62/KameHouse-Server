@@ -13,7 +13,7 @@ export const RelationsTab = React.memo(function RelationsTab({ media }: { media?
     if (!media || !media.relations || media.relations.length === 0) {
         return (
             <div className="py-24 text-center">
-                <p className="text-zinc-600 font-bebas text-4xl tracking-widest">SIN RELACIONES</p>
+                <p className="text-zinc-600 font-display text-4xl tracking-widest">SIN RELACIONES</p>
                 <p className="text-zinc-700 text-xs font-black uppercase tracking-[0.3em] mt-2">NO HAY SECUELAS O PRECUELAS DETECTADAS</p>
             </div>
         )
@@ -61,7 +61,7 @@ export const CharactersTab = React.memo(function CharactersTab({ characters, onS
     if (!characters || characters.length === 0) {
         return (
             <div className="py-24 text-center">
-                <p className="text-zinc-600 font-bebas text-4xl tracking-widest">SIN PERSONAJES</p>
+                <p className="text-zinc-600 font-display text-4xl tracking-widest">SIN PERSONAJES</p>
                 <p className="text-zinc-700 text-xs font-black uppercase tracking-[0.3em] mt-2">NO HAY PERSONAJES DETECTADOS</p>
             </div>
         )

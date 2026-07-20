@@ -329,12 +329,17 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         resetTracking()
     }, [mediaId, episodeNumber, playableUrl, resetTracking])
 
-    useEffect(() => {
+    // Reset de pistas al cambiar de URL, durante el render (patrón "adjusting state when
+    // a prop changes"): evita un frame con las pistas del stream anterior y el re-render
+    // en cascada que causaba hacerlo en un effect.
+    const [prevPlayableUrl, setPrevPlayableUrl] = useState(playableUrl)
+    if (playableUrl !== prevPlayableUrl) {
+        setPrevPlayableUrl(playableUrl)
         setAudioTracks([])
         setSubtitleTracks([])
         setActiveAudioIndex(0)
         setActiveSubtitleIndex(null)
-    }, [playableUrl])
+    }
 
     const formatTime = useCallback((secs: number) => {
         if (!secs || isNaN(secs)) return "00:00"
@@ -437,6 +442,10 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             }
 
             if (preferred && activeAudioIndex !== preferred.index) {
+                // La selección de audio es audible: debe aplicarse síncrona al descubrir las
+                // pistas para minimizar el tiempo reproduciendo la pista equivocada.
+                // onSelectAudio además sincroniza HLS.js (sistema externo), no solo estado.
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 onSelectAudio(preferred)
             }
         }

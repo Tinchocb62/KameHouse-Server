@@ -71,7 +71,7 @@ export function ScanActionCard({
             </div>
             
             <div className="space-y-2 relative z-10">
-                <p className="font-bebas text-4xl text-white tracking-wider uppercase leading-none">{label}</p>
+                <p className="font-display text-4xl text-white tracking-wider uppercase leading-none">{label}</p>
                 <p className="text-zinc-500 group-hover:text-zinc-400 text-[11px] leading-relaxed transition-colors duration-500 font-medium">{desc}</p>
             </div>
             
@@ -313,7 +313,7 @@ export function ScanHistory({ summaries }: { summaries: Summary_ScanSummaryItem[
 
                             <div className="flex justify-between items-end border-t border-zinc-200/85 pt-2">
                                 <div className="flex flex-col min-w-0 pr-2">
-                                    <span className="text-sm font-black font-bebas tracking-wide text-zinc-800 uppercase leading-none truncate group-hover:text-[#ff6e3a] transition-colors">
+                                    <span className="text-sm font-black font-display tracking-wide text-zinc-800 uppercase leading-none truncate group-hover:text-[#ff6e3a] transition-colors">
                                         {groups[0]?.mediaTitle || "Delta Scan Execution"}
                                     </span>
                                     <span className="text-[10px] font-bold text-zinc-500 font-mono mt-0.5 truncate">

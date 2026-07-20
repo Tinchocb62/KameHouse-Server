@@ -52,7 +52,7 @@ export function HeroSection({
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 1, delay: 0.1 }}
-                    className="font-bebas text-6xl md:text-8xl lg:text-9xl leading-[0.8] tracking-[0.02em] text-white"
+                    className="font-display text-6xl md:text-8xl lg:text-9xl leading-[0.8] tracking-[0.02em] text-white"
                 >
                     {title}
                 </motion.h1>
@@ -62,7 +62,7 @@ export function HeroSection({
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.2 }}
-                        className="font-bebas text-3xl md:text-5xl tracking-[0.1em] text-white mt-4 uppercase"
+                        className="font-display text-3xl md:text-5xl tracking-[0.1em] text-white mt-4 uppercase"
                     >
                         {subtitle}
                     </motion.p>

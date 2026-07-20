@@ -18,7 +18,7 @@ export function SagaSelector({
 }: SagaSelectorProps) {
   return (
     <div className="w-full h-full flex flex-col p-5 border border-white/5 bg-zinc-950/40 backdrop-blur-md rounded-2xl overflow-hidden">
-      <h3 className="font-bebas text-2xl tracking-[0.15em] text-white/95 mb-5 px-1 uppercase flex items-center justify-between flex-shrink-0">
+      <h3 className="font-display text-2xl tracking-[0.15em] text-white/95 mb-5 px-1 uppercase flex items-center justify-between flex-shrink-0">
         <span>Sagas</span>
         <span className="text-[10px] font-mono font-bold tracking-normal text-zinc-500 lowercase">
           {sagas.length} sagas

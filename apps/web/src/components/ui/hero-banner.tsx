@@ -165,7 +165,7 @@ export function HeroBanner({
                             </div>
 
                             {/* Title */}
-                            <h1 className="font-bebas text-[5.5rem] md:text-[8rem] lg:text-[10rem] xl:text-[11.5rem] leading-[0.8] tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-100 to-zinc-400 drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] select-none">
+                            <h1 className="font-display text-[5.5rem] md:text-[8rem] lg:text-[10rem] xl:text-[11.5rem] leading-[0.8] tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-100 to-zinc-400 drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] select-none">
                                 {activeItem.title}
                             </h1>
 
@@ -180,7 +180,7 @@ export function HeroBanner({
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
                                     onClick={activeItem.onPlay}
-                                    className="flex items-center bg-brand-orange text-white px-10 py-4 rounded-xl font-bebas text-xl uppercase tracking-wider shadow-[0_15px_30px_-5px_rgba(255,110,58,0.3)] hover:shadow-[0_20px_40px_-5px_rgba(255,110,58,0.45)] border border-brand-orange/20 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
+                                    className="flex items-center bg-brand-orange text-white px-10 py-4 rounded-xl font-display text-xl uppercase tracking-wider shadow-[0_15px_30px_-5px_rgba(255,110,58,0.3)] hover:shadow-[0_20px_40px_-5px_rgba(255,110,58,0.45)] border border-brand-orange/20 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
                                 >
                                     <Play size={20} fill="currentColor" />
                                     <span>Reproducir</span>
@@ -190,7 +190,7 @@ export function HeroBanner({
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
                                     onClick={activeItem.onMoreInfo}
-                                    className="flex items-center bg-white/[0.03] backdrop-blur-md text-white px-10 py-4 rounded-xl border border-white/10 font-bebas text-xl uppercase tracking-wider hover:bg-white/[0.08] hover:border-white/25 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
+                                    className="flex items-center bg-white/[0.03] backdrop-blur-md text-white px-10 py-4 rounded-xl border border-white/10 font-display text-xl uppercase tracking-wider hover:bg-white/[0.08] hover:border-white/25 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
                                 >
                                     <Info size={20} />
                                     <span>Detalles</span>

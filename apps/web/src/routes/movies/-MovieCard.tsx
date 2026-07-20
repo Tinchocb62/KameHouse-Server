@@ -97,7 +97,7 @@ export const MovieCard = memo(function MovieCard({
                             className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center"
                             style={{ background: `linear-gradient(135deg, ${eraConfig.color}20, #09090b)` }}
                         >
-                            <span className="font-bebas text-lg tracking-widest text-white/80 line-clamp-3 leading-tight">
+                            <span className="font-display text-lg tracking-widest text-white/80 line-clamp-3 leading-tight">
                                 {title}
                             </span>
                         </div>

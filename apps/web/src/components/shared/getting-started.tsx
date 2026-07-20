@@ -163,7 +163,7 @@ function LibraryStep() {
             className="space-y-8"
         >
             <motion.div variants={itemVariants} className="text-center space-y-3">
-                <h2 className="text-3xl font-bebas tracking-wide text-white uppercase">Biblioteca local de Anime</h2>
+                <h2 className="text-3xl font-display tracking-wide text-white uppercase">Biblioteca local de Anime</h2>
                 <p className="text-zinc-400 text-sm max-w-lg mx-auto leading-relaxed">
                     Configura las carpetas de Series y Películas. KameHouse escaneará estas rutas para organizar tu colección local.
                 </p>
@@ -205,7 +205,7 @@ function FeaturesStep({ kamehouseFeatures, setKamehouseFeatures }: {
             className="space-y-8"
         >
             <motion.div variants={itemVariants} className="text-center space-y-3">
-                <h2 className="text-3xl font-bebas tracking-wide text-white uppercase">Características Visuales</h2>
+                <h2 className="text-3xl font-display tracking-wide text-white uppercase">Características Visuales</h2>
                 <p className="text-zinc-400 text-sm max-w-lg mx-auto leading-relaxed">
                     Elige qué características visuales quieres habilitar en tu experiencia inicial de KameHouse.
                 </p>

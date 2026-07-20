@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState } from "react"
 import { useRequestMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { usePlayerCore } from "./player-core"
 import { PlayerUI } from "./player-ui"
@@ -27,13 +27,14 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
     const [streamType, setStreamType] = useState<string>(props.streamType || "direct")
     const [clientId] = useState(() => Math.random().toString(36).substring(2, 11))
 
+    // Sincronización prop→estado durante el render (patrón "adjusting state when a prop
+    // changes"): hacerlo en un effect dejaba un render con el streamType viejo, que podía
+    // disparar una query de media container espuria con el tipo anterior.
     const [prevStreamTypeProp, setPrevStreamTypeProp] = useState(props.streamType)
-    useEffect(() => {
-        if (props.streamType !== prevStreamTypeProp) {
-            setPrevStreamTypeProp(props.streamType)
-            setStreamType(props.streamType || "direct")
-        }
-    }, [props.streamType, prevStreamTypeProp])
+    if (props.streamType !== prevStreamTypeProp) {
+        setPrevStreamTypeProp(props.streamType)
+        setStreamType(props.streamType || "direct")
+    }
 
     const isLocal = !props.isExternalStream && Boolean(props.streamUrl) && streamType !== "online"
 

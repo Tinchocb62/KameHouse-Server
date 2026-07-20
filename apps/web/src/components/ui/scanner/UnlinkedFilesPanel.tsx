@@ -265,11 +265,11 @@ export function UnlinkedFilesPanel() {
                 <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#ff6e3a]/5 rounded-full blur-[60px] pointer-events-none" />
                 
                 <div className="flex items-center gap-6">
-                    <div className="font-bebas text-7xl text-[#ff6e3a] leading-none select-none tracking-wider shrink-0 bg-[#ff6e3a]/5 border border-[#ff6e3a]/20 px-5 py-2.5 rounded-2xl shadow-[0_0_15px_rgba(255,110,58,0.1)] font-bold">
+                    <div className="font-display text-7xl text-[#ff6e3a] leading-none select-none tracking-wider shrink-0 bg-[#ff6e3a]/5 border border-[#ff6e3a]/20 px-5 py-2.5 rounded-2xl shadow-[0_0_15px_rgba(255,110,58,0.1)] font-bold">
                         {unresolved.length}
                     </div>
                     <div>
-                        <p className="text-2xl font-black text-white tracking-tight uppercase font-bebas flex items-center gap-2">
+                        <p className="text-2xl font-black text-white tracking-tight uppercase font-display flex items-center gap-2">
                             <span>VINCULACIÓN PENDIENTE</span>
                             <span className="w-2 h-2 rounded-full bg-[#ff6e3a] animate-pulse shadow-[0_0_6px_#ff6e3a]" />
                         </p>

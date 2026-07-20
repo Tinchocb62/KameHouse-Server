@@ -5,7 +5,7 @@ import React from "react"
 export function NotFound() {
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center bg-black border border-zinc-800">
-            <h2 className="text-4xl font-bebas tracking-widest text-white mb-4 uppercase">
+            <h2 className="text-4xl font-display tracking-widest text-white mb-4 uppercase">
                 PÁGINA NO ENCONTRADA
             </h2>
             <p className="text-zinc-400 mb-8 leading-relaxed text-sm max-w-md font-bold uppercase tracking-wide">

@@ -74,7 +74,7 @@ export function SystemTab({ control }: SystemTabProps) {
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-[0.35em] text-zinc-650 font-mono">SISTEMA · PLATFORMA CORE</span>
                 </div>
-                <h1 className="text-5xl font-bebas tracking-wider text-white leading-none">
+                <h1 className="text-5xl font-display tracking-wider text-white leading-none">
                     CONFIGURACIÓN DEL <span className="text-zinc-650">SISTEMA</span>
                 </h1>
                 <div className="h-[2px] w-12 bg-gradient-to-r from-[#ff6e3a]/50 to-transparent rounded-full" />

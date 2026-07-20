@@ -82,15 +82,15 @@ function SeriesFullscreenIndex() {
         return mapped.sort((a, b) => a.yearNum - b.yearNum);
     }, [collection]);
 
+    // Selección inicial al llegar la lista, durante el render (patrón "adjusting state
+    // when a prop changes"): evita el re-render en cascada de hacerlo en un effect.
     const [prevSeriesList, setPrevSeriesList] = useState(seriesList);
-    useEffect(() => {
-        if (seriesList !== prevSeriesList) {
-            setPrevSeriesList(seriesList);
-            if (seriesList.length > 0) {
-                setSelectedId(prev => prev ?? seriesList[0].id);
-            }
+    if (seriesList !== prevSeriesList) {
+        setPrevSeriesList(seriesList);
+        if (seriesList.length > 0) {
+            setSelectedId(prev => prev ?? seriesList[0].id);
         }
-    }, [seriesList, prevSeriesList]);
+    }
 
     const selectedIndex = useMemo(() => {
         return seriesList.findIndex(item => item.id === selectedId);

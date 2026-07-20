@@ -162,7 +162,7 @@ export function ProgressRing({ progress, size, stroke }: { progress: number; siz
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="font-bebas text-5xl text-white leading-none">{Math.round(progress)}</span>
+                <span className="font-display text-5xl text-white leading-none">{Math.round(progress)}</span>
                 <span className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">%</span>
             </div>
         </div>

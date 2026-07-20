@@ -76,7 +76,7 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                 </div>
             ) : (
                 <div className="mt-8 flex flex-col items-center gap-2 z-[1]">
-                    <h1 className="text-white text-4xl font-bebas tracking-[0.3em] uppercase leading-none">
+                    <h1 className="text-white text-4xl font-display tracking-[0.3em] uppercase leading-none">
                         {title ?? "KAMEHOUSE"}
                     </h1>
                 </div>

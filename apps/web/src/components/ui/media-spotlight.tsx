@@ -250,7 +250,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                 </div>
 
                                 {/* Title */}
-                                <h3 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none text-white uppercase select-none drop-shadow-md font-bebas">
+                                <h3 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none text-white uppercase select-none drop-shadow-md font-display">
                                     {activeItem.title}
                                 </h3>
 
@@ -266,7 +266,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                     <button
                                         onClick={() => onNavigate(activeItem)}
                                         className={cn(
-                                            "relative overflow-hidden flex items-center justify-center bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#fbbf24] hover:to-[#f97316] text-white font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 shadow-xl shadow-orange-950/20 group/play-btn font-bebas [&>*:not(:first-child)]:ml-2"
+                                            "relative overflow-hidden flex items-center justify-center bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#fbbf24] hover:to-[#f97316] text-white font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 shadow-xl shadow-orange-950/20 group/play-btn font-display [&>*:not(:first-child)]:ml-2"
                                         )}
                                     >
                                         <div className="absolute inset-0 w-[40px] h-full bg-white/20 transform skew-x-12 -translate-x-[60px] group-hover/play-btn:translate-x-[250px] transition-transform [transition-duration:1.2s] ease-out pointer-events-none" />
@@ -276,7 +276,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
 
                                     <button
                                         onClick={() => onNavigate(activeItem)}
-                                        className="flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-zinc-200 hover:text-white hover:scale-[1.03] active:scale-95 font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl transition-all duration-300 shadow-xl backdrop-blur-md font-bebas [&>*:not(:first-child)]:ml-2"
+                                        className="flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-zinc-200 hover:text-white hover:scale-[1.03] active:scale-95 font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl transition-all duration-300 shadow-xl backdrop-blur-md font-display [&>*:not(:first-child)]:ml-2"
                                     >
                                         <Info size={14} />
                                         <span>Detalles</span>
@@ -366,7 +366,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                         className="relative z-10 text-left space-y-4 mt-14 px-6 md:pl-[120px] md:pr-10 lg:pl-[140px] lg:pr-14 xl:pl-[160px] xl:pr-16 w-full"
                     >
-                        <h4 className="font-bebas text-lg md:text-xl tracking-wider text-zinc-300 uppercase flex items-center gap-2">
+                        <h4 className="font-display text-lg md:text-xl tracking-wider text-zinc-300 uppercase flex items-center gap-2">
                             <span>Películas disponibles de</span>
                             <span className={colors.textBrand}>{activeEraName}</span>
                             <span className="text-xs text-zinc-500 font-sans font-bold tracking-normal lowercase">({activeEraMovies.length} películas)</span>

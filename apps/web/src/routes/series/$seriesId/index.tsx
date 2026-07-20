@@ -114,14 +114,14 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const [activeSagaId, setActiveSagaId] = useState<string>("")
     const [activeSubSagaId, setActiveSubSagaId] = useState<string>("")
 
-    React.useEffect(() => {
-        if (entry?.media && entry.media.id !== prevEntryId) {
-            setPrevEntryId(entry.media.id)
-            setActiveTab("episodes")
-            setActiveSagaId("")
-            setActiveSubSagaId("")
-        }
-    }, [entry?.media, prevEntryId])
+    // Reset al cambiar de serie, durante el render (patrón "adjusting state when a prop
+    // changes"): evita el re-render en cascada de hacerlo en un effect.
+    if (entry?.media && entry.media.id !== prevEntryId) {
+        setPrevEntryId(entry.media.id)
+        setActiveTab("episodes")
+        setActiveSagaId("")
+        setActiveSubSagaId("")
+    }
 
     const baseSagas = useMemo(() => entry?.media ? resolveSeriesSagas(entry.media) : [], [entry])
 
@@ -187,18 +187,17 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
         return currentSaga?.subSagas?.find(ss => ss.id === activeSubSagaId) || null
     }, [sagas, activeSagaId, activeSubSagaId])
 
-    // Sync activeSagaId when sagas change
+    // Sync activeSagaId when sagas change, durante el render (evita el re-render en
+    // cascada de hacerlo en un effect).
     const [prevSagas, setPrevSagas] = useState<SagaDTO[]>([])
-    React.useEffect(() => {
-        if (sagas !== prevSagas) {
-            setPrevSagas(sagas)
-            if (sagas.length > 0 && !sagas.find(s => s.id === activeSagaId)) {
-                setActiveSagaId(sagas[0].id)
-            }
-        } else if (sagas.length > 0 && !activeSagaId) {
+    if (sagas !== prevSagas) {
+        setPrevSagas(sagas)
+        if (sagas.length > 0 && !sagas.find(s => s.id === activeSagaId)) {
             setActiveSagaId(sagas[0].id)
         }
-    }, [sagas, activeSagaId, prevSagas])
+    } else if (sagas.length > 0 && !activeSagaId) {
+        setActiveSagaId(sagas[0].id)
+    }
     const computedEpisodes = useMemo(() => {
         if (!entry) return []
         if (entry.episodes && entry.episodes.length > 0) {

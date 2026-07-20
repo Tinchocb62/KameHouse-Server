@@ -53,7 +53,7 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
         <section className={cn("relative py-8", className)}>
             {title && (
                 <div className="mb-8 flex items-center ml-4 px-6 md:px-12 lg:px-20 [&>*:not(:first-child)]:ml-4">
-                    <h2 className="text-3xl font-bebas font-normal uppercase tracking-[0.15em] text-white/90">
+                    <h2 className="text-3xl font-display font-normal uppercase tracking-[0.15em] text-white/90">
                         {title}
                     </h2>
                 </div>

@@ -52,7 +52,7 @@ export function AppErrorBoundary({ error, resetErrorBoundary }: AppErrorBoundary
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center bg-black border border-zinc-800">
-            <h2 className="text-2xl font-bebas tracking-widest text-white mb-4 uppercase">
+            <h2 className="text-2xl font-display tracking-widest text-white mb-4 uppercase">
                 {isChunkLoadError ? "Actualización disponible" : "Error en el cliente"}
             </h2>
             <p className="text-zinc-400 mb-6 leading-relaxed text-sm max-w-md">

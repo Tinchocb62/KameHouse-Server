@@ -186,7 +186,7 @@ export const MediaCard = React.memo(function MediaCard({
                     {!showPopup && (
                         <div className="absolute inset-0 z-10 flex flex-col justify-end p-4 md:p-5 transition-transform duration-500 ease-out group-hover:translate-y-[-2px]">
                             <div className="space-y-1.5">
-                                <h3 className="font-bebas text-lg md:text-xl leading-none tracking-wide text-white line-clamp-1">
+                                <h3 className="font-display text-lg md:text-xl leading-none tracking-wide text-white line-clamp-1">
                                     {title}
                                 </h3>
                                 {subtitle && (
@@ -209,7 +209,7 @@ export const MediaCard = React.memo(function MediaCard({
                     )}
                 >
                     <div className="space-y-2">
-                        <h3 className="font-bebas text-xl md:text-2xl leading-none text-white uppercase tracking-wide line-clamp-1">
+                        <h3 className="font-display text-xl md:text-2xl leading-none text-white uppercase tracking-wide line-clamp-1">
                             {title}
                         </h3>
 

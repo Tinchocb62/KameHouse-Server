@@ -17,7 +17,7 @@ export function ErrorBanner({ message }: { message: string }) {
                     <button
                         type="button"
                         onClick={() => window.location.reload()}
-                        className="flex items-center gap-3 px-8 py-3 rounded-full bg-primary text-white font-bebas tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95"
+                        className="flex items-center gap-3 px-8 py-3 rounded-full bg-primary text-white font-display tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95"
                         aria-label="Reintentar conexión"
                     >
                         <RefreshCcw className="w-4 h-4" />

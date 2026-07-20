@@ -85,10 +85,6 @@ export function DeferredImage(props: DeferredImageProps) {
         setHasError(false);
         setIsIntersecting(priority);
         setShowLqip(true);
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
     }
 
     const lqipSrc = lowResSrc || getTinyResImage(src);
@@ -109,11 +105,16 @@ export function DeferredImage(props: DeferredImageProps) {
     }, [onError]);
     const thresholdStr = Array.isArray(threshold) ? threshold.join(',') : String(threshold);
 
+    // Cancela el timer que oculta el LQIP cuando cambia src/priority (el reset de arriba
+    // no puede tocar refs durante el render) y también al desmontar.
     useEffect(() => {
         return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
+            }
         };
-    }, []);
+    }, [src, priority]);
 
     useEffect(() => {
         if (!src) {

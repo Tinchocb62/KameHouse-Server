@@ -180,7 +180,7 @@ function CollectionDetailPage() {
                             <span className="text-[11px] font-black uppercase tracking-[0.4em] text-zinc-500">Cronología Unificada</span>
                         </div>
 
-                        <h1 className="hero-content-anim font-bebas text-6xl md:text-8xl xl:text-[8.5rem] leading-[0.85] tracking-tight text-white uppercase select-all">
+                        <h1 className="hero-content-anim font-display text-6xl md:text-8xl xl:text-[8.5rem] leading-[0.85] tracking-tight text-white uppercase select-all">
                             {collection.name}
                         </h1>
 
@@ -203,7 +203,7 @@ function CollectionDetailPage() {
             <section className="relative z-10 px-8 md:pl-[120px] md:pr-16 lg:pl-[120px] lg:pr-24 max-w-[1400px] mx-auto w-full">
                 <div className="space-y-1 border-b border-white/10 pb-8 mb-20 flex items-center justify-between">
                     <div>
-                        <h2 className="text-4xl font-bebas tracking-widest text-white uppercase">LINEA TEMPORAL</h2>
+                        <h2 className="text-4xl font-display tracking-widest text-white uppercase">LINEA TEMPORAL</h2>
                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                             Orden recomendado de visualización (Saga principal)
                         </p>

@@ -106,7 +106,7 @@ export function ScanButton({ variant, onClick, loading }: { variant: "delta" | "
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] opacity-40 mb-1 group-hover/scanbtn:opacity-70 transition-opacity">
                     {isDelta ? "Rápido" : "Profundo"}
                 </p>
-                <p className="text-xl font-bebas tracking-wider uppercase">{isDelta ? "Escaneo Delta" : "Escaneo Completo"}</p>
+                <p className="text-xl font-display tracking-wider uppercase">{isDelta ? "Escaneo Delta" : "Escaneo Completo"}</p>
             </div>
             <div className={cn(
                 "w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300",
@@ -166,7 +166,7 @@ export function IntegrationCard({ name, status, connected, disabled }: { name: s
             </div>
 
             <div className="flex-1 min-w-0">
-                <p className="font-bebas text-xl tracking-wider uppercase text-white/90 group-hover/intcard:text-white transition-colors leading-none">{name}</p>
+                <p className="font-display text-xl tracking-wider uppercase text-white/90 group-hover/intcard:text-white transition-colors leading-none">{name}</p>
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-550 mt-0.5">{status}</p>
             </div>
 
@@ -206,7 +206,7 @@ export function StatusCard({ label, value, icon: Icon }: { label: string; value:
             </div>
             <div className="relative z-10">
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-550 mb-0.5">{label}</p>
-                <p className="text-xl font-bebas tracking-wider uppercase text-white/90 group-hover/statuscard:text-white transition-colors leading-tight">{value}</p>
+                <p className="text-xl font-display tracking-wider uppercase text-white/90 group-hover/statuscard:text-white transition-colors leading-tight">{value}</p>
             </div>
         </div>
     )

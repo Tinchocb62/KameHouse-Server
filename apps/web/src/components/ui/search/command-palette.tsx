@@ -55,7 +55,7 @@ export function CommandPalette() {
                         <div className="w-2 h-2 rounded-full bg-brand-orange shadow-[0_0_8px_rgba(255,110,58,0.5)] animate-pulse" />
                         <CommandInput
                             placeholder="DESCUBRE TU PRÓXIMA SERIE..."
-                            className="h-14 font-bebas text-3xl tracking-[0.1em] placeholder:text-zinc-800 bg-transparent border-none focus:ring-0 text-white"
+                            className="h-14 font-display text-3xl tracking-[0.1em] placeholder:text-zinc-800 bg-transparent border-none focus:ring-0 text-white"
                             value={query}
                             onValueChange={setQuery}
                         />
@@ -68,12 +68,12 @@ export function CommandPalette() {
                                 <Loader2 className="h-12 w-12 animate-spin text-brand-orange opacity-50" />
                                 <div className="absolute inset-0 h-12 w-12 blur-2xl bg-brand-orange/20" />
                             </div>
-                            <span className="font-bebas text-lg tracking-[0.4em] text-zinc-700 uppercase">Sincronizando Bóveda</span>
+                            <span className="font-display text-lg tracking-[0.4em] text-zinc-700 uppercase">Sincronizando Bóveda</span>
                         </div>
                     ) : (
                         <>
                             <CommandEmpty className="py-20 text-center animate-in fade-in zoom-in-95 duration-500">
-                                <p className="font-bebas text-2xl tracking-[0.15em] text-zinc-700 uppercase">Sin coincidencias detectadas</p>
+                                <p className="font-display text-2xl tracking-[0.15em] text-zinc-700 uppercase">Sin coincidencias detectadas</p>
                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-800 mt-4 px-10 leading-relaxed">Verifica los términos técnicos o expande los criterios de búsqueda</p>
                             </CommandEmpty>
                             <CommandGroup 
