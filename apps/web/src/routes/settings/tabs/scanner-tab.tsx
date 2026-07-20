@@ -13,7 +13,7 @@ export function ScannerTab({ control }: ScannerTabProps) {
     const { mutate: scanLibrary, isPending } = useScanLocalFiles()
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-slow outline-none">
             <Section label="Motor de Emparejamiento">
                 <Card className="divide-y divide-outline-variant/4">
                     <Controller

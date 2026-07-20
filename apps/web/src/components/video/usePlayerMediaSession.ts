@@ -71,7 +71,7 @@ export function usePlayerMediaSession({
         for (const action of actions) {
             try {
                 navigator.mediaSession.setActionHandler(action, handleAction)
-            } catch (e) {
+            } catch {
                 // Ignore unsupported actions
             }
         }
@@ -81,7 +81,7 @@ export function usePlayerMediaSession({
             for (const action of actions) {
                 try {
                     navigator.mediaSession.setActionHandler(action, null)
-                } catch (e) {}
+                } catch { /* noop */ }
             }
             if ("mediaSession" in navigator) {
                 navigator.mediaSession.playbackState = "none"
@@ -132,7 +132,7 @@ export function usePlayerMediaSession({
                         playbackRate: video.playbackRate || 1,
                         position: video.currentTime || 0,
                     })
-                } catch (e) {}
+                } catch { /* noop */ }
             }
         }
 

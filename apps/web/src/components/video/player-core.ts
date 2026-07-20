@@ -21,7 +21,6 @@ import type { PlayerCoreProps, PlayerCore, PlayerStats } from "./player-core.typ
 
 import { usePlayerSkip } from "./usePlayerSkip"
 import { __DEV_SERVER_PORT } from "@/lib/server/config"
-import { buildSeaQuery } from "@/api/client/requests"
 
 
 export type { PlayerStats, PlayerCoreProps, PlayerCore }
@@ -220,7 +219,6 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         setLoopEnabled: setLoopEnabledPref,
         autoDisableSubtitlesWhenDubbed,
         marathonMode,
-        setMarathonMode,
         tvMode,
         setTvMode,
         ambientModeEnabled,
@@ -626,13 +624,19 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const audioTracksKey = audioTracks.map(t => `${t.index}:${t.language ?? ""}`).join("|")
     useEffect(() => {
         if (audioTracks.length === 0) return
-        if (audioAutoSelectedForRef.current === audioTracksKey) return
-        audioAutoSelectedForRef.current = audioTracksKey
 
         // Prioridad máxima: pista elegida explícitamente por el usuario antes
         // de un cambio de stream (direct → transcode). Los índices difieren
         // entre listas (ffprobe vs renditions HLS), así que se matchea por
         // título y, si no, por idioma.
+        //
+        // IMPORTANTE: esto se evalúa ANTES de la guarda `audioAutoSelectedForRef`.
+        // La clave por contenido (audioTracksKey = index:lang|...) COLISIONA entre
+        // direct y transcode porque ambas listas derivan del mismo ffprobe (mismos
+        // index/lang). Si chequeáramos la guarda primero, tras forzar el transcode
+        // la clave ya estaría "vista" desde el direct play y saldríamos por early
+        // return sin aplicar el pending → el stream arranca con el audio por defecto
+        // y la elección manual se pierde. Consumirlo acá lo hace inmune a la colisión.
         const pending = pendingAudioSelectionRef.current
         if (pending) {
             pendingAudioSelectionRef.current = null
@@ -647,12 +651,19 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
                 ?? audioTracks.find(t => pending.title && t.title === pending.title)
                 ?? audioTracks.find(t => t.language === pending.language)
             if (match) {
+                audioAutoSelectedForRef.current = audioTracksKey
                 // La selección pendiente vino de una elección manual (antes del cambio de stream):
                 // no pasar { auto: true } para que se aplique correctamente en transcode.
                 if (activeAudioIndex !== match.index) onSelectAudio(match)
                 return
             }
+            // Sin match para el pending: caer a las heurísticas de abajo SIN pasar por la
+            // guarda (el stream recién cambió, queremos re-elegir preferida en la lista nueva).
+        } else if (audioAutoSelectedForRef.current === audioTracksKey) {
+            // Guarda: sin pending, solo auto-seleccionar una vez por lista de pistas (por stream).
+            return
         }
+        audioAutoSelectedForRef.current = audioTracksKey
 
         let preferred: AudioTrack | undefined
 
@@ -916,9 +927,9 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
                 container.requestFullscreen()
                     .then(() => setIsFullscreen(true))
                     .catch((err) => console.error("Error entering fullscreen:", err))
-            } else if (video && (video as any).webkitEnterFullscreen) {
+            } else if (video && (video as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen) {
                 try {
-                    ;(video as any).webkitEnterFullscreen()
+                    ;(video as HTMLVideoElement & { webkitEnterFullscreen: () => void }).webkitEnterFullscreen()
                     setIsFullscreen(true)
                 } catch (err) {
                     console.error("webkitEnterFullscreen error:", err)

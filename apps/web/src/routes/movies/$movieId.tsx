@@ -5,13 +5,18 @@ import { useGSAP } from "@gsap/react"
 import gsap from "gsap"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
-import { getHighResImage, getMediumResImage, getLowResImage } from "@/lib/helpers/images"
+import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
 import { fetchAnimeEntry, useGetAnimeEntry, useUpdateAnimeEntryProgress } from "@/api/hooks/anime_entries.hooks"
 import { useGetContinuityWatchHistoryItem } from "@/api/hooks/continuity.hooks"
+import { useCastPlay } from "@/api/hooks/cast.hooks"
 import { usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { Anime_LocalFile, FileTechnicalInfo, Mediastream_StreamType } from "@/api/generated/types"
 import { EmptyState } from "@/components/shared/empty-state"
+import { PlayCta } from "@/components/ui/play-cta"
+import { GlassIconButton } from "@/components/ui/glass-icon-button"
+import { PlayerFallback } from "@/components/video/player-fallback"
+import { WatchProgressBar } from "@/components/ui/watch-progress-bar"
 import { Skeleton } from "@/components/ui/skeleton/skeleton"
 
 const VideoPlayer = React.lazy(() => import("@/components/video/player").then(m => ({ default: m.VideoPlayer })))
@@ -20,11 +25,10 @@ import { MediaHero } from "@/components/ui/media-hero"
 import { useSound } from "@/hooks/use-sound"
 import { cn } from "@/components/ui/core/styling"
 import { Icons } from "@/components/ui/icons"
-import { DeferredImage } from "@/components/shared/deferred-image"
 import { ERA_TABS, cleanMovieTitle } from "./-MovieCard"
 import { getEntryEra } from "./-components/movies-utils"
 import { useServerQuery } from "@/api/client/requests"
-import { CharacterDetailModal } from "@/components/shared/character-detail-modal"
+import { CharacterDetailModal, type DragonBallLoreData } from "@/components/shared/character-detail-modal"
 
 import { isDragonBallTmdbId, getSeriesEraTheme } from "@/lib/config/dragonball.config"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
@@ -71,10 +75,10 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     const containerRef = useRef<HTMLDivElement>(null)
     const backdropRef = useRef<HTMLDivElement>(null)
     const addToQueue = useAppStore(state => state.addToQueue)
+    const { mutate: castPlay } = useCastPlay()
     const ts = useThemeSettings()
-    const isSmallBanner = ts.themeMediaPageBannerSize === "small"
 
-    const { data: lore } = useServerQuery<any>({
+    const { data: lore } = useServerQuery<DragonBallLoreData>({
         endpoint: "/api/v1/lore/dragonball",
         method: "GET",
         queryKey: ["dragonball-lore"],
@@ -251,6 +255,26 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         preloadStream({ path: defaultTargetPath, streamType: "direct", audioStreamIndex: 0, preferredAudioLang: "" })
     }
 
+    const handleCastToTV = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (!entry.localFiles || entry.localFiles.length === 0) {
+            toast.error("No hay archivos locales disponibles.")
+            return
+        }
+        const localFile = entry.localFiles[0]
+        const epNum = Number(localFile.parsedInfo?.episode || localFile.metadata?.episode || 1)
+        castPlay({
+            mediaId: Number(movieId),
+            episodeNumber: epNum,
+            title: title,
+            episodeLabel: "Película",
+        }, {
+            onSuccess: () => {
+                toast.success("Película enviada a la TV")
+            },
+        })
+    }
+
     const handleAddToQueue = (e: React.MouseEvent) => {
         e.stopPropagation()
         if (entry.localFiles && entry.localFiles.length > 0) {
@@ -275,11 +299,12 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
 
     const topBadge = (
         <span
-            className="inline-flex items-center text-label-sm uppercase px-3 py-1 rounded-full border backdrop-blur-[var(--blur-overlay-sm)]"
+            className="inline-flex items-center font-mono text-label-sm tracking-display font-bold uppercase px-3 py-1 rounded-full border backdrop-blur-[var(--blur-overlay-sm)]"
             style={{
                 color: eraConfig.color,
                 borderColor: `color-mix(in srgb, ${eraConfig.color} 27%, transparent)`,
                 backgroundColor: `color-mix(in srgb, ${eraConfig.color} 8%, transparent)`,
+                boxShadow: `0 0 15px color-mix(in srgb, ${eraConfig.color} 15%, transparent)`
             }}
         >
             {eraConfig.label}
@@ -287,29 +312,29 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     )
 
     const metadataRow = (
-        <div className="flex flex-wrap items-center text-on-surface-variant text-xs font-semibold tracking-wide gap-3">
-            <span className="flex items-center justify-center bg-surface-container-low border border-outline-variant/50 rounded-md px-2 py-0.5 text-on-surface-variant font-bold tracking-widest text-[9px]">
+        <div className="flex flex-wrap items-center text-zinc-400 font-mono text-label-sm tracking-widest gap-3 uppercase">
+            <span className="flex items-center justify-center bg-white/[0.04] border border-white/10 rounded-full px-2.5 py-0.5 text-zinc-300 font-bold">
                 {media.isNsfw ? "18+" : "PG-13"}
             </span>
             
             {technicalData?.is4K && (
-                <span className="flex items-center gap-1 font-black text-on-surface text-[11px] tracking-wide px-2 py-0.5 rounded-md" style={{ background: "linear-gradient(to right, var(--era-shimmer-1), var(--era-shimmer-2))" }}>
+                <span className="flex items-center gap-1 font-black text-on-surface tracking-wider px-2 py-0.5 rounded-full" style={{ background: "linear-gradient(to right, var(--era-shimmer-1), var(--era-shimmer-2))" }}>
                     <Icons.ui.star size={10} fill="currentColor" />
-                    4K ENHANCED
+                    4K
                 </span>
             )}
             
-            <span className="flex items-center justify-center bg-surface-container-low border border-outline-variant/50 rounded-md px-2 py-0.5 text-on-surface-variant font-bold text-[9px]">CC</span>
+            <span className="flex items-center justify-center bg-white/[0.04] border border-white/10 rounded-full px-2.5 py-0.5 text-zinc-300 font-bold">CC</span>
             
-            <div className="flex items-center gap-1.5 text-on-surface-variant text-[11px] tracking-wide">
-                {year && <span>{year}</span>}
-                {year && formattedDuration && <span className="text-on-surface-variant/60">•</span>}
-                {formattedDuration && <span>{formattedDuration}</span>}
-                {media.score && (
+            <div className="flex items-center gap-2 text-zinc-400">
+                {year && <span className="font-bold">[{year}]</span>}
+                {year && formattedDuration && <span className="text-zinc-600">•</span>}
+                {formattedDuration && <span className="font-bold">{formattedDuration}</span>}
+                {(media.score ?? 0) > 0 && (
                     <>
-                        <span className="text-on-surface-variant/60">•</span>
-                        <span className="flex items-center gap-1 text-brand-secondary">
-                            <Icons.ui.star size={11} fill="currentColor" className="stroke-none" />
+                        <span className="text-zinc-600">•</span>
+                        <span className="flex items-center gap-1 font-bold" style={{ color: eraConfig.color }}>
+                            <Icons.ui.star size={10} fill="currentColor" className="stroke-none mb-0.5" />
                             {(media.score / 10).toFixed(1)} Ki
                         </span>
                     </>
@@ -321,63 +346,51 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     const actionButtons = (
         <div className="w-full flex flex-col gap-3 md:flex-row md:items-center md:gap-4 pointer-events-auto">
             {/* Play Button - Full width on mobile, auto on desktop */}
-            <button
+            <PlayCta
                 onClick={handlePlayDefault}
-                onPointerEnter={preloadTarget}
-                onFocus={preloadTarget}
-                className="group/play relative flex items-center justify-center md:justify-start gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95 w-full md:w-auto shrink-0"
-                style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
-            >
-                <div className="absolute inset-0 transition-opacity duration-300 opacity-0 group-hover/play:opacity-100 z-0" style={{ background: `linear-gradient(to right, var(--era-btn-hover-from), var(--era-btn-hover-to))` }} />
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-slow ease-smooth-out z-0" />
-
-                <div className="p-3 bg-black/15 backdrop-blur-[var(--blur-overlay-sm)] rounded-xl text-zinc-950 group-hover/play:bg-zinc-950 group-hover/play:text-zinc-50 transition-all duration-300 z-10 shrink-0">
-                    <Icons.media.play className="w-4 h-4 fill-current" />
-                </div>
-
-                <div className="flex flex-col items-start z-10 select-none text-left shrink-0">
-                    <span className="font-sans text-button-md tracking-wider font-black uppercase text-zinc-950 transition-colors whitespace-nowrap">
-                        {continuityData?.item?.currentTime ? "Reanudar" : "Reproducir"}
-                    </span>
-                    <span className="text-label-sm font-black text-zinc-950/70 tracking-widest uppercase transition-colors mt-0.5 whitespace-nowrap">
-                        {continuityData?.item?.currentTime ? "Continuar viendo" : "Ver película"}
-                    </span>
-                </div>
-            </button>
+                onHoverIntent={preloadTarget}
+                label={continuityData?.item?.currentTime ? "Reanudar" : "Reproducir"}
+                sublabel={continuityData?.item?.currentTime ? "Continuar viendo" : "Ver película"}
+                className="w-full md:w-auto"
+            />
 
             {/* Row of secondary actions - full width and distributed on mobile */}
             <div className="flex items-center gap-3 w-full md:w-auto">
                 {entry.localFiles && entry.localFiles.length > 0 && (
-                    <button
+                    <GlassIconButton
                         onClick={handleAddToQueue}
-                        className="group/queue flex-1 md:flex-initial flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 text-on-surface/70 hover:text-on-surface hover:scale-[1.03] active:scale-95 min-h-[44px]"
+                        icon={<Icons.ui.listPlus className="w-5 h-5" />}
                         title="Añadir a la cola"
-                    >
-                        <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
-                    </button>
+                        className="flex-1 md:flex-initial"
+                    />
                 )}
 
-                <button
-                    onClick={handleToggleWatched}
-                    className={cn(
-                        "flex-1 md:flex-initial flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95 min-h-[44px]",
-                        isWatched ? "text-brand-success" : "text-on-surface/70 hover:text-on-surface"
-                    )}
-                    title={isWatched ? "Marcar como no vista" : "Marcar como vista"}
-                >
-                    {isWatched ? <Icons.ui.check className="w-5 h-5 stroke-[3px]" /> : <Icons.ui.plus className="w-5 h-5 stroke-[2.5px]" />}
-                </button>
+                {entry.localFiles && entry.localFiles.length > 0 && (
+                    <GlassIconButton
+                        onClick={handleCastToTV}
+                        icon={<Icons.media.cast className="w-5 h-5" />}
+                        title="Enviar a TV"
+                        className="flex-1 md:flex-initial"
+                    />
+                )}
 
-                <button
+                <GlassIconButton
+                    onClick={handleToggleWatched}
+                    isActive={isWatched}
+                    activeTone="success"
+                    icon={isWatched ? <Icons.ui.check className="w-5 h-5 stroke-[3px]" /> : <Icons.ui.plus className="w-5 h-5 stroke-[2.5px]" />}
+                    title={isWatched ? "Marcar como no vista" : "Marcar como vista"}
+                    className="flex-1 md:flex-initial"
+                />
+
+                <GlassIconButton
                     onClick={handleToggleFavorite}
-                    className={cn(
-                        "flex-1 md:flex-initial flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 hover:scale-[1.03] active:scale-95 min-h-[44px]",
-                        isFavorite ? "text-brand-destructive" : "text-on-surface/70 hover:text-on-surface"
-                    )}
+                    isActive={isFavorite}
+                    activeTone="destructive"
+                    icon={<Icons.ui.heart className={cn("w-5 h-5", isFavorite && "fill-current")} />}
                     title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-                >
-                    <Icons.ui.heart className={cn("w-5 h-5", isFavorite && "fill-current")} />
-                </button>
+                    className="flex-1 md:flex-initial"
+                />
             </div>
         </div>
     )
@@ -402,23 +415,14 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
 
             {/* Progress bar */}
             {continuityData?.item?.currentTime && continuityData.item.duration && (
-                <div className="w-full max-w-content mx-auto px-8 md:px-16 lg:px-20 xl:px-24 mt-12 pb-24 relative z-20">
-                    <div className="movie-animate w-full h-[5px] rounded-full overflow-hidden relative z-10" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 20%, transparent)" }}>
-                        <div
-                            className="h-full bg-brand-secondary"
-                            style={{ width: `${progressPercent}%` }}
-                        />
-                    </div>
+                <div className="w-full max-w-content mx-auto px-4 sm:px-8 md:px-16 lg:px-20 xl:px-24 mt-12 pb-24 relative z-20">
+                    <WatchProgressBar percent={progressPercent} className="movie-animate" size="hero" animateOnMount />
                 </div>
             )}
 
             {/* Video Player */}
             {playTarget && (
-                <React.Suspense fallback={
-                    <div className="fixed inset-0 bg-black flex flex-col justify-center items-center z-50">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-secondary"></div>
-                    </div>
-                }>
+                <React.Suspense fallback={<PlayerFallback />}>
                     <VideoPlayer
                         streamUrl={playTarget.path}
                         streamType={playTarget.streamType as "local" | "online" | "direct"}

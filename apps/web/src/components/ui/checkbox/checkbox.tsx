@@ -4,7 +4,6 @@ import * as React from "react"
 import { BasicField, BasicFieldOptions, extractBasicFieldProps } from "../basic-field"
 import { __CheckboxGroupContext } from "../checkbox"
 import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
-import { mergeRefs } from "../core/utils"
 import { hiddenInputStyles } from "../input"
 
 /* -------------------------------------------------------------------------------------------------
@@ -20,7 +19,7 @@ export const CheckboxAnatomy = defineStyleAnatomy({
         "outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] disabled:cursor-not-allowed data-[disabled=true]:opacity-50",
         "data-[state=unchecked]:bg-surface-container", // Unchecked
         "data-[state=unchecked]:hover:bg-surface-container-high", // Unchecked hover
-        "data-[state=checked]:bg-brand-primary data-[state=checked]:border-brand-primary", // Checked
+        "data-[state=checked]:bg-brand-accent data-[state=checked]:border-brand-accent", // Checked
         "data-[state=indeterminate]:bg-[hsl(var(--muted))] data-[state=indeterminate]:text-white data-[state=indeterminate]:border-transparent", // Checked
         "data-[error=true]:border-brand-destructive data-[error=true]:data-[state=checked]:border-brand-destructive", // Error
     ], {

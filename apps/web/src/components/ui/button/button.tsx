@@ -1,6 +1,6 @@
 import { cva, VariantProps } from "class-variance-authority"
 import * as React from "react"
-import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
+import { cn, defineStyleAnatomy } from "../core/styling"
 
 /* -------------------------------------------------------------------------------------------------
  * Anatomy
@@ -10,36 +10,36 @@ export const ButtonAnatomy = defineStyleAnatomy({
     root: cva([
         "UI-Button_root",
         "shadow-sm whitespace-nowrap font-medium transition-colors",
-        "inline-flex items-center transition-all ease-standard duration-200 active:scale-[0.98] text-center text-sm justify-center",
-        "focus-visible:outline-none focus-visible:ring-2 ring-primary ring-offset-background ring-offset-2",
+        "inline-flex items-center transition-all ease-standard duration-base active:scale-[0.98] text-center text-sm justify-center",
+        "focus-visible:outline-none focus-visible:ring-2 ring-brand-accent ring-offset-background ring-offset-2",
         "disabled:opacity-50 disabled:pointer-events-none",
     ], {
         variants: {
             intent: {
                 /* ─── MD3 Filled (Primary) ──────────────────────────────────────── */
-                "primary": "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary shadow-elevation-1",
+                "primary": "bg-brand-accent text-primary-foreground hover:bg-brand-accent/90 active:bg-brand-accent shadow-elevation-1",
 
                 /* ─── MD3 Tonal (Secondary) ─────────────────────────────────────── */
                 "secondary": "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/90 active:bg-secondary-container shadow-elevation-1",
 
                 /* ─── MD3 Outlined ──────────────────────────────────────────────── */
-                "outlined": "border border-outline bg-transparent text-primary hover:bg-primary/10 active:bg-primary/10 shadow-none",
+                "outlined": "border border-outline bg-transparent text-brand-accent hover:bg-brand-accent/10 active:bg-brand-accent/10 shadow-none",
 
                 /* ─── MD3 Text (Tertiary) ───────────────────────────────────────── */
-                "text": "bg-transparent text-primary hover:bg-primary/10 active:bg-primary/10 shadow-none",
+                "text": "bg-transparent text-brand-accent hover:bg-brand-accent/10 active:bg-brand-accent/10 shadow-none",
 
                 /* ─── Legacy / Special ──────────────────────────────────────────── */
                 "destructive": "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive shadow-elevation-1",
                 "ghost": "bg-transparent text-muted-foreground hover:bg-accent active:bg-accent/50 shadow-none",
-                "link": "bg-transparent text-primary underline-offset-4 hover:underline shadow-none",
+                "link": "bg-transparent text-brand-accent underline-offset-4 hover:underline shadow-none",
 
                 /* ─── Glass variants (DEPRECATED - para migración gradual) ───────── */
                 "primary-glass": "text-white border border-white/10 bg-white/5 backdrop-blur-[var(--blur-overlay-sm)] hover:bg-white/10 shadow-elevation-1",
                 "gray-glass": "text-zinc-400 border border-zinc-800 bg-black/40 backdrop-blur-[var(--blur-overlay-md)] hover:bg-white/10 shadow-elevation-1",
 
                 /* Brand variants */
-                "brand-primary": "bg-brand-primary text-white hover:bg-brand-primary/90 active:bg-brand-primary shadow-[0_0_20px_var(--glow-primary)]",
-                "brand-secondary": "bg-brand-secondary text-white hover:bg-brand-secondary/90 active:bg-brand-secondary shadow-[0_0_20px_var(--glow-secondary)]",
+                "brand-primary": "bg-brand-accent text-on-primary hover:bg-brand-accent/90 active:bg-brand-accent shadow-[0_0_20px_var(--glow-primary)]",
+                "brand-secondary": "bg-brand-secondary text-on-secondary hover:bg-brand-secondary/90 active:bg-brand-secondary shadow-[0_0_20px_var(--glow-secondary)]",
                 "brand-destructive": "bg-brand-destructive text-white hover:bg-brand-destructive/90 active:bg-brand-destructive shadow-[0_0_20px_var(--glow-destructive)]",
                 "brand-success": "bg-brand-success text-white hover:bg-brand-success/90 active:bg-brand-success shadow-[0_0_20px_var(--glow-success)]",
                 "brand-magic": "bg-brand-magic text-white hover:bg-brand-magic/90 active:bg-brand-magic shadow-[0_0_20px_var(--glow-magic)]",
@@ -55,13 +55,13 @@ export const ButtonAnatomy = defineStyleAnatomy({
                 "primary-basic": "shadow-none text-white border-transparent bg-transparent hover:bg-white/10 active:bg-white/20",
                 "primary-outline": "text-white border border-white bg-transparent hover:bg-white/10 active:bg-white/20",
                 "primary-glow": "bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.3)]",
-                "alert": "bg-red-600 text-white hover:bg-red-700",
-                "alert-outline": "text-red-500 border border-red-600 bg-transparent hover:bg-red-600/10",
-                "alert-subtle": "bg-red-900/30 text-red-400 border border-red-800 hover:bg-red-900/50",
+                "alert": "bg-status-error text-white hover:brightness-110",
+                "alert-outline": "text-status-error border border-status-error bg-transparent hover:bg-status-error/10",
+                "alert-subtle": "bg-status-error/10 text-status-error border border-status-error/30 hover:bg-status-error/20",
             },
             size: {
-                xs: "text-[10px] h-8 px-2 uppercase font-black tracking-widest rounded-pill",
-                sm: "text-[11px] h-10 px-3 uppercase font-black tracking-widest rounded-pill",
+                xs: "text-label-sm h-8 px-2 uppercase font-black tracking-widest rounded-pill",
+                sm: "text-label-sm h-10 px-3 uppercase font-black tracking-widest rounded-pill",
                 md: "text-xs h-12 px-4 uppercase font-black tracking-widest rounded-pill",
                 lg: "text-sm h-14 px-6 uppercase font-black tracking-widest rounded-pill",
                 xl: "text-base h-16 px-8 uppercase font-black tracking-widest rounded-pill",
@@ -94,8 +94,6 @@ export type ButtonProps = React.ComponentPropsWithoutRef<"button"> &
         hideTextOnSmallScreen?: boolean
         iconClass?: string
     }
-
-type ButtonVariantProps = VariantProps<typeof ButtonAnatomy.root>
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
 

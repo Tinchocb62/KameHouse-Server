@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -105,7 +107,7 @@ func (h *Handler) HandleRequestMediastreamMediaContainer(c echo.Context) error {
 	case mediastream.StreamTypeDirect:
 		mediaContainer, err = h.App.MediastreamRepository.RequestDirectPlay(b.Path, b.ClientID, b.ClientCapabilities)
 	case mediastream.StreamTypeTranscode:
-		mediaContainer, err = h.App.MediastreamRepository.RequestTranscodeStream(b.Path, b.ClientID, b.Force)
+		mediaContainer, err = h.App.MediastreamRepository.RequestTranscodeStream(b.Path, b.ClientID, b.Force, b.ClientCapabilities)
 	case mediastream.StreamTypeOptimized:
 		mediaContainer, err = h.App.MediastreamRepository.RequestOptimizedStream(b.Path, b.ClientID)
 	default:
@@ -277,6 +279,28 @@ func (h *Handler) HandleGetEpisodeSkipTimes(c echo.Context) error {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Trigger oportunista: si no hay marcas para este episodio, lanzamos
+			// un scan de detección en segundo plano (una sola vez por serie por run
+			// del servidor). El request actual sigue respondiendo con la heurística
+			// fill-forward de abajo; cuando el scan termina emite invalidate-queries
+			// y el cliente refetchea.
+			//
+			// Gates (en orden, para no "gastar" el intento único si decidimos no
+			// escanear): (1) el detector existe, (2) el setting está habilitado,
+			// (3) no hay ya un scan en curso, (4) no hay un transcode activo — el
+			// fingerprinting compite por CPU/IO con el transcode en tiempo real, así
+			// que si el usuario está transcodeando, diferimos (se reintenta en el
+			// próximo episodio sin marcas). Solo entonces marcamos attempted.
+			if d := h.App.SkipDetector; d != nil && h.autoDetectSkipTimesEnabled() && !d.IsScanning(mediaId) && !h.transcodeActive() && d.MarkAttemptedOnce(mediaId) {
+				go func(id int) {
+					ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+					defer cancel()
+					if err := d.ScanSeries(ctx, id); err != nil {
+						h.App.Logger.Debug().Err(err).Int("mediaId", id).Msg("mediastream: scan oportunista de skip times falló")
+					}
+				}(mediaId)
+			}
+
 			// Phase 5: Fill-forward heuristic
 			var siblings []models.EpisodeSkipTime
 			if err := h.App.Database.Gorm().Where("media_id = ?", mediaId).Find(&siblings).Error; err == nil && len(siblings) >= 2 {
@@ -309,13 +333,13 @@ func (h *Handler) HandleGetEpisodeSkipTimes(c echo.Context) error {
 							EpisodeNumber: episodeNum,
 							OpStart:       closest.OpStart,
 							OpEnd:         closest.OpEnd,
-							// D3/D4: No copiamos ciegamente el ED porque el ED está anclado al 
+							// D3/D4: No copiamos ciegamente el ED porque el ED está anclado al
 							// final del video. Si el episodio destino tiene distinta duración,
-							// el offset absoluto quedará desfasado. Dejamos que actúe la 
+							// el offset absoluto quedará desfasado. Dejamos que actúe la
 							// heurística del reproductor o AniSkip para el ED.
-							EdOffset:      0,
-							EdEnd:         0,
-							Source:        "heuristic",
+							EdOffset: 0,
+							EdEnd:    0,
+							Source:   "heuristic",
 						})
 					}
 				}
@@ -402,7 +426,7 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 
 	// Propagate if requested
 	episodesUpdated := 0
-	// D4/D7: Solo propagar si la confianza es alta o la fuente es 100% segura. 
+	// D4/D7: Solo propagar si la confianza es alta o la fuente es 100% segura.
 	// No propagar "heuristic" que ensucia los demás episodios.
 	if b.ApplyToSeason && b.Source != "heuristic" && b.Confidence > 0 {
 		var episodes []models.LibraryEpisode
@@ -418,10 +442,10 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 					OpStart:       b.OpStart,
 					OpEnd:         b.OpEnd,
 					// D3: No copiar Ed absoluto, su posición real varía según duración.
-					EdOffset:      0,
-					EdEnd:         0,
-					Source:        "propagated",
-					Confidence:    b.Confidence,
+					EdOffset:   0,
+					EdEnd:      0,
+					Source:     "propagated",
+					Confidence: b.Confidence,
 				})
 			}
 			if len(skipTimes) > 0 {
@@ -440,12 +464,70 @@ func (h *Handler) HandleSaveEpisodeSkipTimes(c echo.Context) error {
 	}
 
 	return h.RespondWithData(c, map[string]interface{}{
-		"saved":            true,
-		"episodesUpdated":  episodesUpdated,
-		"appliedToSeason":  b.ApplyToSeason,
+		"saved":           true,
+		"episodesUpdated": episodesUpdated,
+		"appliedToSeason": b.ApplyToSeason,
 	})
 }
 
+// autoDetectSkipTimesEnabled indica si el scan oportunista de skip times está
+// habilitado en la configuración de la biblioteca (default true).
+func (h *Handler) autoDetectSkipTimesEnabled() bool {
+	if h.App.Settings == nil {
+		return false
+	}
+	return h.App.Settings.GetLibrary().AutoDetectSkipTimes
+}
+
+// transcodeActive indica si hay una reproducción en curso servida por el
+// transcoder (que compite fuerte por CPU/IO). El direct play es barato y no se
+// considera. Ante cualquier duda (repo no inicializado) devolvemos false para no
+// bloquear la detección.
+func (h *Handler) transcodeActive() bool {
+	repo := h.App.MediastreamRepository
+	if repo == nil || !repo.TranscoderIsInitialized() {
+		return false
+	}
+	return len(repo.ActiveVideoFileHashes()) > 0
+}
+
+// HandleScanEpisodeSkipTimes triggers a background scan to detect skip times for a series.
+//
+//	@summary trigger skip times auto-scan.
+//	@desc Starts a background detection job (AnimeThemes → cross-episode fingerprint → ASS subtitles) to find intro/outro boundaries for all episodes of a series.
+//	@route /api/v1/mediastream/skip-times/scan [POST]
+func (h *Handler) HandleScanEpisodeSkipTimes(c echo.Context) error {
+	type body struct {
+		MediaID int `json:"mediaId"`
+	}
+
+	var b body
+	if err := c.Bind(&b); err != nil {
+		return h.RespondWithError(c, err)
+	}
+	if b.MediaID == 0 {
+		return h.RespondWithError(c, fmt.Errorf("invalid mediaId"))
+	}
+
+	detector := h.App.SkipDetector
+	if detector == nil {
+		return h.RespondWithError(c, fmt.Errorf("skip detector is not initialized yet"))
+	}
+	if detector.IsScanning(b.MediaID) {
+		return h.RespondWithError(c, fmt.Errorf("a scan is already in progress for this series"))
+	}
+
+	// Async para no bloquear el request HTTP: un scan puede tardar minutos.
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+		if err := detector.ScanSeries(ctx, b.MediaID); err != nil {
+			h.App.Logger.Error().Err(err).Int("mediaId", b.MediaID).Msg("mediastream: auto skip-time scan failed")
+		}
+	}()
+
+	return h.RespondWithData(c, map[string]any{"ok": true, "message": "Scan started"})
+}
 
 // HandleResolveMAL resolves a media's MAL ID dynamically.
 //
@@ -459,15 +541,20 @@ func (h *Handler) HandleResolveMAL(c echo.Context) error {
 		return h.RespondWithError(c, fmt.Errorf("invalid mediaId"))
 	}
 
-	var lm models.LibraryMedia
-	if err := h.App.Database.Gorm().First(&lm, mediaId).Error; err != nil {
-		// Media isn't in the local library (e.g. pure TMDB/online entry) — this is an
-		// expected "no mapping" case, not a server error. Respond gracefully with nil.
+	// mediaId es el id EXTERNO (derivado de TMDB), no la PK de library_media:
+	// buscarlo por PK devolvía siempre ErrRecordNotFound y este endpoint
+	// respondía malId=nil para TODA la librería, dejando sin MAL id al fallback
+	// de AniSkip. Ver db.GetLibraryMediaByExternalMediaID.
+	lmPtr, err := db.GetLibraryMediaByExternalMediaID(h.App.Database, mediaId)
+	if err != nil {
+		// Media que no está en la librería local (p. ej. entrada online pura):
+		// es un "sin mapeo" esperable, no un error del servidor.
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return h.RespondWithData(c, map[string]interface{}{"malId": nil})
 		}
 		return h.RespondWithError(c, err)
 	}
+	lm := *lmPtr
 	// Deterministic TMDB→MAL map for the Dragon Ball franchise.
 	// Authoritative and offline (no Jikan dependency): it wins even over a stored
 	// myanimelist_id, so a wrong non-zero id (not just 0) is corrected for these 5 series.
@@ -477,7 +564,7 @@ func (h *Handler) HandleResolveMAL(c echo.Context) error {
 		12971:  813,   // Dragon Ball Z
 		12697:  225,   // Dragon Ball GT
 		62715:  30694, // Dragon Ball Super
-		236994: 58567, // Dragon Ball Daima
+		236994: 56894, // Dragon Ball Daima
 	}
 	if malID, ok := dragonBallMalMap[lm.TmdbID]; ok {
 		if lm.MyanimelistId != malID {
@@ -520,4 +607,3 @@ func (h *Handler) HandleResolveMAL(c echo.Context) error {
 
 	return h.RespondWithData(c, map[string]interface{}{"malId": nil})
 }
-

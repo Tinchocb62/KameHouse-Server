@@ -5,10 +5,10 @@
 
 :root {
   /* ─── Font Stacks ───────────────────────────────────────────────────── */
-  --font-sans:      "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display:   "Space Grotesk", "Bebas Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-sans:      "Outfit Variable", "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display:   "Outfit Variable", "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-mono:      "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --font-numeric:   "Inter Variable", "Tabular Numbers", var(--font-mono);
+  --font-numeric:   "Outfit Variable", "Tabular Numbers", var(--font-mono);
 
   /* ─── Escala Tipográfica (clamp para responsive fluido) ─────────────── */
   --text-xs:     clamp(0.70rem, 0.65rem + 0.25vw, 0.75rem);    /* ~11-12px */
@@ -51,22 +51,28 @@
   --tracking-wide:     0.025em;
   --tracking-wider:    0.05em;
   --tracking-widest:   0.1em;
+  --tracking-display:  0.15em;   /* labels de contenido (media-card, poster, spotlight) */
   --tracking-ultra:    0.2em;
+  /* ─── Cinematic display — mayúsculas muy espaciadas (player, heroes, overlays) ─── */
+  --tracking-cinema:     0.25em;  /* chrome del player, badges cinematic */
+  --tracking-cinema-md:  0.3em;   /* overlays/heroes del player */
+  --tracking-cinema-lg:  0.4em;   /* decoraciones hero/collections */
+  --tracking-cinema-xl:  0.5em;   /* decoración vertical hero */
 
   /* ─── Estilos de Display (Hero, logos grandes) ──────────────────────── */
-  --display-xl:   var(--text-9xl) / var(--leading-none) var(--font-display) var(--weight-black) var(--tracking-tighter);
-  --display-lg:   var(--text-8xl) / var(--leading-none) var(--font-display) var(--weight-black) var(--tracking-tighter);
-  --display-md:   var(--text-7xl) / var(--leading-tight) var(--font-display) var(--weight-black) var(--tracking-tight);
-  --display-sm:   var(--text-6xl) / var(--leading-tight) var(--font-display) var(--weight-extrabold) var(--tracking-tight);
-  --display-xs:   var(--text-5xl) / var(--leading-tight) var(--font-display) var(--weight-extrabold) var(--tracking-tight);
+  --display-xl:   var(--text-9xl) / var(--leading-none) var(--font-display) var(--weight-normal) var(--tracking-tighter);
+  --display-lg:   var(--text-8xl) / var(--leading-none) var(--font-display) var(--weight-normal) var(--tracking-tighter);
+  --display-md:   var(--text-7xl) / var(--leading-tight) var(--font-display) var(--weight-normal) var(--tracking-tight);
+  --display-sm:   var(--text-6xl) / var(--leading-tight) var(--font-display) var(--weight-normal) var(--tracking-tight);
+  --display-xs:   var(--text-5xl) / var(--leading-tight) var(--font-display) var(--weight-normal) var(--tracking-tight);
 
   /* ─── Estilos de Heading (tracking-tight para look premium) ─────────── */
-  --h1:  var(--text-5xl) / var(--leading-tight) var(--font-display) var(--weight-extrabold) var(--tracking-tight);
-  --h2:  var(--text-4xl) / var(--leading-tight) var(--font-display) var(--weight-extrabold) var(--tracking-tight);
-  --h3:  var(--text-3xl) / var(--leading-snug) var(--font-display) var(--weight-bold) var(--tracking-tight);
-  --h4:  var(--text-2xl) / var(--leading-snug) var(--font-sans) var(--weight-bold) var(--tracking-normal);
-  --h5:  var(--text-xl)  / var(--leading-normal) var(--font-sans) var(--weight-semibold) var(--tracking-normal);
-  --h6:  var(--text-lg)  / var(--leading-normal) var(--font-sans) var(--weight-semibold) var(--tracking-wide);
+  --h1:  var(--text-5xl) / var(--leading-tight) var(--font-display) var(--weight-medium) var(--tracking-tight);
+  --h2:  var(--text-4xl) / var(--leading-tight) var(--font-display) var(--weight-medium) var(--tracking-tight);
+  --h3:  var(--text-3xl) / var(--leading-snug) var(--font-display) var(--weight-medium) var(--tracking-tight);
+  --h4:  var(--text-2xl) / var(--leading-snug) var(--font-sans) var(--weight-normal) var(--tracking-normal);
+  --h5:  var(--text-xl)  / var(--leading-normal) var(--font-sans) var(--weight-normal) var(--tracking-normal);
+  --h6:  var(--text-lg)  / var(--leading-normal) var(--font-sans) var(--weight-normal) var(--tracking-wide);
 
   /* ─── Body Styles ───────────────────────────────────────────────────── */
   --body-lg:   var(--text-lg)   / var(--leading-relaxed) var(--font-sans) var(--weight-normal) var(--tracking-normal);

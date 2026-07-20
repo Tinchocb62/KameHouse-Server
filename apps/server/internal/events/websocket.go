@@ -199,6 +199,17 @@ func (m *WSEventManager) AddConn(id string, conn *websocket.Conn) {
 	})
 }
 
+// GetConnIDs returns a snapshot of the IDs of all currently connected clients.
+func (m *WSEventManager) GetConnIDs() []string {
+	m.connsMu.RLock()
+	defer m.connsMu.RUnlock()
+	ids := make([]string, 0, len(m.Conns))
+	for _, conn := range m.Conns {
+		ids = append(ids, conn.ID)
+	}
+	return ids
+}
+
 // RemoveConn removes a websocket connection by ID and cleans up its subscribers.
 func (m *WSEventManager) RemoveConn(id string) {
 	m.connsMu.Lock()

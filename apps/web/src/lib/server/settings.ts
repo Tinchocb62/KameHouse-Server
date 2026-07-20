@@ -16,7 +16,6 @@ export const settingsSchema = z.object({
         tmdbApiKey: z.string().optional().default(""),
         tmdbLanguage: z.string().optional().default("es-MX"),
         hideAudienceScore: z.boolean().optional().default(false),
-        disableAnimeCardTrailers: z.boolean().optional().default(false),
         enableRichPresence: z.boolean().optional().default(false),
         enableAnimeRichPresence: z.boolean().optional().default(false),
         openWebURLOnStart: z.boolean().optional().default(false),
@@ -26,12 +25,12 @@ export const settingsSchema = z.object({
         richPresenceShowPlatformProfileButton: z.boolean().optional().default(false),
         richPresenceUseMediaTitleStatus: z.boolean().optional().default(true),
         autoPlayNextEpisode: z.boolean().optional().default(true),
+        autoDetectSkipTimes: z.boolean().optional().default(true),
         enableWatchContinuity: z.boolean().optional().default(false),
         seriesPaths: z.array(z.string()).optional().default([]),
         moviePaths: z.array(z.string()).optional().default([]),
         scannerMatchingThreshold: z.number().optional().default(0.5),
         scannerMatchingAlgorithm: z.string().optional().default(""),
-        disableCacheLayer: z.boolean().optional().default(false),
         useFallbackMetadataProvider: z.boolean().optional().default(false),
         vcTranslate: z.boolean().optional().default(false),
         vcTranslateApiKey: z.string().optional().default(""),
@@ -83,7 +82,6 @@ export const settingsSchema = z.object({
         themeMediaPageBannerSize: z.string().default("default"),
         themeMediaPageBannerInfoBoxSize: z.string().default("default"),
         themeShowEpisodeCardAnimeInfo: z.boolean().default(true),
-        themeContinueWatchingDefaultSorting: z.string().default("LAST_WATCHED_DESC"),
         themeAnimeLibraryCollectionDefaultSorting: z.string().default("TITLE_ASC"),
 
         themeShowAnimeUnwatchedCount: z.boolean().default(true),
@@ -97,7 +95,6 @@ export const settingsSchema = z.object({
     }),
     notifications: z.object({
         disableNotifications: z.boolean().default(false),
-        disableAutoDownloaderNotifications: z.boolean().default(false),
         disableAutoScannerNotifications: z.boolean().default(false),
     }),
 })
@@ -111,10 +108,10 @@ export const gettingStartedSchema = _gettingStartedSchema.extend({
 export const getDefaultSettings = (data: z.infer<typeof gettingStartedSchema>): GettingStarted_Variables => ({
     library: {
         autoScan: false,
-        disableAnimeCardTrailers: false,
         openWebURLOnStart: false,
         refreshLibraryOnStart: false,
         autoPlayNextEpisode: true,
+        autoDetectSkipTimes: true,
         enableWatchContinuity: data.library.enableWatchContinuity,
         seriesPaths: data.library.seriesPaths || [],
         moviePaths: data.library.moviePaths || [],

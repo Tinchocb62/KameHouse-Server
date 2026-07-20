@@ -183,7 +183,7 @@ func (r *Repository) ServeEchoOptimizedStream(c echo.Context, clientID string) e
 		return errors.New("invalid path")
 	}
 
-	targetDir := filepath.Join(r.cacheDir, "optimized", mediaContainer.Hash)
+	targetDir := filepath.Join(r.PreTranscodeDir(), mediaContainer.Hash)
 	absPath := filepath.Join(targetDir, path)
 
 	// Ensure the path does not escape the target directory (path traversal check)

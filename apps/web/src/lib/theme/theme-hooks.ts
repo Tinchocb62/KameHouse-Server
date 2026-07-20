@@ -93,7 +93,8 @@ export type ThemeMode = "classic" | "era"
  */
 export function resolveThemeMode(t: Pick<ThemeSettings, "themeMode" | "themeEra" | "themeEnableBlurringEffects">): ThemeMode {
     if (t.themeMode === "classic" || t.themeMode === "era") return t.themeMode
-    if (t.themeMode === "advanced" as any) return "era"
+    // "advanced" es un valor legacy que ya no forma parte del union ThemeMode
+    if ((t.themeMode as string) === "advanced") return "era"
     if (t.themeEra?.startsWith("era-")) return "era"
     if (t.themeEnableBlurringEffects) return "era"
     return "classic"
@@ -108,7 +109,9 @@ export const THEME_DEFAULT_VALUES: ThemeSettings = {
     themeMode: "",
     themeEnableLiquidGlass: false,
     homeItems: [],
-    themeAnimeEntryScreenLayout: "stacked",
+    // "side-by-side" is what the detail page has always rendered (saga selector
+    // beside the episode list); "stacked" is the opt-in that pushes it above.
+    themeAnimeEntryScreenLayout: "side-by-side",
     themeSmallerEpisodeCarouselSize: false,
     themeExpandSidebarOnHover: false,
     themeDisableSidebarTransparency: false,
@@ -134,7 +137,6 @@ export const THEME_DEFAULT_VALUES: ThemeSettings = {
     themeShowAnimeUnwatchedCount: true,
     themeHideEpisodeCardDescription: false,
     themeHideDownloadedEpisodeCardFilename: false,
-    themeContinueWatchingDefaultSorting: "LAST_WATCHED_DESC",
     themeAnimeLibraryCollectionDefaultSorting: "TITLE_ASC",
     themeCustomCSS: "",
     themeMobileCustomCSS: "",
@@ -148,6 +150,17 @@ export type ThemeSettingsHook = {
     hasCustomAccentColor: boolean
     effectiveMode: ThemeMode
 } & ThemeSettings
+
+/**
+ * Maps the info-box size to one of the two values the UI actually offers. The
+ * backend column defaults to "default", a legacy value dropped from the enum, so
+ * it (and anything unset) resolves to Fluid.
+ */
+export function normalizeInfoBoxSize(value: string | undefined | null): string {
+    return value === ThemeMediaPageInfoBoxSize.Boxed
+        ? ThemeMediaPageInfoBoxSize.Boxed
+        : ThemeMediaPageInfoBoxSize.Fluid
+}
 
 /**
  * Get the current theme settings
@@ -168,8 +181,11 @@ export function useThemeSettings(): ThemeSettingsHook {
             themeLibraryScreenCustomBannerPosition: theme.themeLibraryScreenCustomBannerPosition || THEME_DEFAULT_VALUES.themeLibraryScreenCustomBannerPosition,
             themeMediaPageBannerType: theme.themeMediaPageBannerType || THEME_DEFAULT_VALUES.themeMediaPageBannerType,
             themeMediaPageBannerSize: theme.themeMediaPageBannerSize || THEME_DEFAULT_VALUES.themeMediaPageBannerSize,
-            themeMediaPageBannerInfoBoxSize: theme.themeMediaPageBannerInfoBoxSize || THEME_DEFAULT_VALUES.themeMediaPageBannerInfoBoxSize,
-            themeContinueWatchingDefaultSorting: theme.themeContinueWatchingDefaultSorting || THEME_DEFAULT_VALUES.themeContinueWatchingDefaultSorting,
+            // El backend arrastra un "default" legacy que no es ninguna de las dos
+            // opciones reales (fluid/boxed) — normalizarlo evita que el form guarde
+            // un valor que el selector no ofrece.
+            themeMediaPageBannerInfoBoxSize: normalizeInfoBoxSize(theme.themeMediaPageBannerInfoBoxSize),
+            themeAnimeEntryScreenLayout: theme.themeAnimeEntryScreenLayout || THEME_DEFAULT_VALUES.themeAnimeEntryScreenLayout,
             themeAnimeLibraryCollectionDefaultSorting: theme.themeAnimeLibraryCollectionDefaultSorting || THEME_DEFAULT_VALUES.themeAnimeLibraryCollectionDefaultSorting,
         }
         : { ...THEME_DEFAULT_VALUES }
@@ -177,7 +193,6 @@ export function useThemeSettings(): ThemeSettingsHook {
     // Derived from raw (un-coalesced) persisted values — used to drive the
     // three independent color toggles in Settings → Apariencia, since the
     // backend model has no separate enableCustomBg/enableCustomAccent fields.
-    const rawThemeEra = theme?.themeEra ?? ""
     const rawBackgroundColor = theme?.backgroundColor ?? ""
     const rawAccentColor = theme?.accentColor ?? ""
 
@@ -188,17 +203,9 @@ export function useThemeSettings(): ThemeSettingsHook {
         effectiveEra = "era-universe"
     }
 
-    // Legacy era users never saw a liquid-glass toggle — liquid was implied by
-    // the blur flag. Preserve that behavior until they save an explicit value.
-    const isLegacy = !merged.themeMode
-    const themeEnableLiquidGlass = isLegacy && effectiveMode === "era"
-        ? merged.themeEnableBlurringEffects
-        : merged.themeEnableLiquidGlass
-
     return {
         ...merged,
         themeEra: effectiveEra,
-        themeEnableLiquidGlass,
         // Clásico (glass sutil) siempre tiene vidrio
         // activo — la intensidad la modulan los tokens de [data-mode]. Solo en
         // Por Era el toggle del usuario manda.

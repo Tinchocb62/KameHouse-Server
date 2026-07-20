@@ -64,28 +64,31 @@ type UserAnime struct {
 }
 
 type LibrarySettings struct {
-	SeriesPaths                     LibraryPaths `gorm:"column:series_paths;type:text" json:"seriesPaths"`
-	MoviePaths                      LibraryPaths `gorm:"column:movie_paths;type:text" json:"moviePaths"`
-	DisableAnimeCardTrailers        bool         `gorm:"column:disable_anime_card_trailers" json:"disableAnimeCardTrailers"`
-	OpenWebURLOnStart               bool         `gorm:"column:open_web_url_on_start" json:"openWebURLOnStart"`
-	RefreshLibraryOnStart           bool         `gorm:"column:refresh_library_on_start" json:"refreshLibraryOnStart"`
-	AutoPlayNextEpisode             bool         `gorm:"column:auto_play_next_episode" json:"autoPlayNextEpisode"`
-	EnableWatchContinuity           bool         `gorm:"column:enable_watch_continuity" json:"enableWatchContinuity"`
-	ScannerMatchingThreshold        float64      `gorm:"column:scanner_matching_threshold" json:"scannerMatchingThreshold"`
-	ScannerMatchingAlgorithm        string       `gorm:"column:scanner_matching_algorithm" json:"scannerMatchingAlgorithm"`
-	UseFallbackMetadataProvider     bool         `gorm:"column:use_fallback_metadata_provider" json:"useFallbackMetadataProvider"`
-	PrimaryMetadataProvider         string       `gorm:"column:primary_metadata_provider" json:"primaryMetadataProvider"`
-	TmdbApiKey                      string       `gorm:"column:tmdb_api_key" json:"tmdbApiKey"`
-	TmdbLanguage                    string       `gorm:"column:tmdb_language" json:"tmdbLanguage"`
-	ScannerStrictStructure          bool         `gorm:"column:scanner_strict_structure" json:"scannerStrictStructure"`
-	ScannerConfig                   string       `gorm:"column:scanner_config" json:"scannerConfig"`
-	ScannerProvider                 string       `gorm:"column:scanner_provider" json:"scannerProvider"`
-	DisableLocalScanning            bool         `gorm:"column:disable_local_scanning" json:"disableLocalScanning"`
-	ScannerUseLegacyMatching        bool         `gorm:"column:scanner_use_legacy_matching" json:"scannerUseLegacyMatching"`
-	FanartApiKey                    string       `gorm:"column:fanart_api_key" json:"fanartApiKey"`
-	OmdbApiKey                      string       `gorm:"column:omdb_api_key" json:"omdbApiKey"`
-	LastScanAt                      time.Time    `gorm:"column:last_scan_at" json:"lastScanAt"`
-	AutoScan                        bool         `gorm:"column:auto_scan" json:"autoScan"`
+	SeriesPaths           LibraryPaths `gorm:"column:series_paths;type:text" json:"seriesPaths"`
+	MoviePaths            LibraryPaths `gorm:"column:movie_paths;type:text" json:"moviePaths"`
+	OpenWebURLOnStart     bool         `gorm:"column:open_web_url_on_start" json:"openWebURLOnStart"`
+	RefreshLibraryOnStart    bool         `gorm:"column:refresh_library_on_start" json:"refreshLibraryOnStart"`
+	AutoPlayNextEpisode      bool         `gorm:"column:auto_play_next_episode" json:"autoPlayNextEpisode"`
+	// AutoDetectSkipTimes habilita el scan oportunista de OP/ED en segundo plano
+	// cuando se abre un episodio sin marcas. El botón manual de detección funciona
+	// siempre, independientemente de este flag.
+	AutoDetectSkipTimes         bool      `gorm:"column:auto_detect_skip_times" json:"autoDetectSkipTimes"`
+	EnableWatchContinuity       bool      `gorm:"column:enable_watch_continuity" json:"enableWatchContinuity"`
+	ScannerMatchingThreshold    float64   `gorm:"column:scanner_matching_threshold" json:"scannerMatchingThreshold"`
+	ScannerMatchingAlgorithm    string    `gorm:"column:scanner_matching_algorithm" json:"scannerMatchingAlgorithm"`
+	UseFallbackMetadataProvider bool      `gorm:"column:use_fallback_metadata_provider" json:"useFallbackMetadataProvider"`
+	PrimaryMetadataProvider     string    `gorm:"column:primary_metadata_provider" json:"primaryMetadataProvider"`
+	TmdbApiKey                  string    `gorm:"column:tmdb_api_key" json:"tmdbApiKey"`
+	TmdbLanguage                string    `gorm:"column:tmdb_language" json:"tmdbLanguage"`
+	ScannerStrictStructure      bool      `gorm:"column:scanner_strict_structure" json:"scannerStrictStructure"`
+	ScannerConfig               string    `gorm:"column:scanner_config" json:"scannerConfig"`
+	ScannerProvider             string    `gorm:"column:scanner_provider" json:"scannerProvider"`
+	DisableLocalScanning        bool      `gorm:"column:disable_local_scanning" json:"disableLocalScanning"`
+	ScannerUseLegacyMatching    bool      `gorm:"column:scanner_use_legacy_matching" json:"scannerUseLegacyMatching"`
+	FanartApiKey                string    `gorm:"column:fanart_api_key" json:"fanartApiKey"`
+	OmdbApiKey                  string    `gorm:"column:omdb_api_key" json:"omdbApiKey"`
+	LastScanAt                  time.Time `gorm:"column:last_scan_at" json:"lastScanAt"`
+	AutoScan                    bool      `gorm:"column:auto_scan" json:"autoScan"`
 }
 
 func (s *LibrarySettings) GetAllPaths() []string {
@@ -201,9 +204,8 @@ type ListSyncSettings struct {
 }
 
 type NotificationSettings struct {
-	DisableNotifications               bool `gorm:"column:disable_notifications" json:"disableNotifications"`
-	DisableAutoScannerNotifications    bool `gorm:"column:disable_auto_scanner_notifications" json:"disableAutoScannerNotifications"`
-	DisableAutoDownloaderNotifications bool `gorm:"column:disable_auto_downloader_notifications" json:"disableAutoDownloaderNotifications"`
+	DisableNotifications            bool `gorm:"column:disable_notifications" json:"disableNotifications"`
+	DisableAutoScannerNotifications bool `gorm:"column:disable_auto_scanner_notifications" json:"disableAutoScannerNotifications"`
 }
 
 // Notification is a persisted in-app notification (scan completed, transcode
@@ -219,7 +221,6 @@ type Notification struct {
 
 type PlatformSettings struct {
 	HideAudienceScore bool `gorm:"column:hide_audience_score" json:"hideAudienceScore"`
-	DisableCacheLayer bool `gorm:"column:disable_cache_layer" json:"disableCacheLayer"`
 }
 
 type ScanSummary struct {
@@ -270,7 +271,6 @@ type Theme struct {
 	HideDownloadedEpisodeCardFilename bool   `gorm:"column:hide_downloaded_episode_card_filename" json:"themeHideDownloadedEpisodeCardFilename"`
 
 	// ── Ordenación y Listas ──────────────────────────────────────────────
-	ContinueWatchingDefaultSorting       string `gorm:"column:continue_watching_default_sorting;default:LAST_WATCHED_DESC" json:"themeContinueWatchingDefaultSorting"`
 	AnimeLibraryCollectionDefaultSorting string `gorm:"column:anime_library_collection_default_sorting;default:TITLE_ASC" json:"themeAnimeLibraryCollectionDefaultSorting"`
 
 	// ── Avanzado ──────────────────────────────────────────────────────────
@@ -296,6 +296,9 @@ type MediastreamSettings struct {
 	PreTranscodeEnabled            bool   `gorm:"column:pre_transcode_enabled" json:"preTranscodeEnabled"`
 	TranscodeThreads               int    `gorm:"column:transcode_threads" json:"transcodeThreads"`
 	DirectPlayOnly                 bool   `gorm:"column:direct_play_only" json:"directPlayOnly"`
+	// DisableAutoSwitchToDirectPlay apaga la optimización que evita transcodificar
+	// un archivo que el cliente ya puede decodificar nativamente.
+	DisableAutoSwitchToDirectPlay bool `gorm:"column:disable_auto_switch_to_direct_play" json:"disableAutoSwitchToDirectPlay"`
 }
 
 type GhostAssociatedMedia struct {
@@ -378,11 +381,11 @@ type EpisodeSkipTime struct {
 	OpStart       float64 `gorm:"column:op_start" json:"opStart"`
 	OpEnd         float64 `gorm:"column:op_end" json:"opEnd"`
 	// EdOffset es el tiempo absoluto (en segundos) de inicio del outro.
-	EdOffset      float64 `gorm:"column:ed_offset" json:"edOffset"`
+	EdOffset float64 `gorm:"column:ed_offset" json:"edOffset"`
 	// EdEnd es el tiempo absoluto (en segundos) de fin del outro. 0 significa hasta el final.
-	EdEnd         float64 `gorm:"column:ed_end" json:"edEnd"`
-	Source        string  `gorm:"column:source;default:legacy" json:"source"`
-	Confidence    float64 `gorm:"column:confidence;default:0" json:"confidence"`
+	EdEnd      float64 `gorm:"column:ed_end" json:"edEnd"`
+	Source     string  `gorm:"column:source;default:legacy" json:"source"`
+	Confidence float64 `gorm:"column:confidence;default:0" json:"confidence"`
 }
 
 // MediaIDMapping centraliza el mapeo de IDs entre plataformas (TMDB, MAL, Jellyfin).

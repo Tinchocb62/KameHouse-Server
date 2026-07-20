@@ -32,6 +32,7 @@ import (
 	"kamehouse/internal/platforms/offline_platform"
 	"kamehouse/internal/platforms/platform"
 	"kamehouse/internal/platforms/simulated_platform"
+	"kamehouse/internal/skipdetect"
 	"kamehouse/internal/user"
 	"kamehouse/internal/util"
 	"kamehouse/internal/util/cache"
@@ -49,17 +50,18 @@ type (
 	}
 
 	CoreServices struct {
-		Config           *Config
-		Database         *db.Database
-		Logger           *zerolog.Logger
-		WSEventManager   *events.WSEventManager
-		FileCacher       *filecache.Cacher
-		ThumbnailCache   *cache.ThumbnailCache
+		Config         *Config
+		Database       *db.Database
+		Logger         *zerolog.Logger
+		WSEventManager *events.WSEventManager
+		FileCacher     *filecache.Cacher
+		ThumbnailCache *cache.ThumbnailCache
 	}
 
 	StreamingServices struct {
 		MediastreamRepository *mediastream.Repository
 		VideoCore             *videocore.VideoCore
+		SkipDetector          *skipdetect.Detector
 	}
 
 	LibraryServices struct {
@@ -87,9 +89,9 @@ type (
 		Cleanups    []func()
 		OnFlushLogs func()
 
-		FeatureFlags   FeatureFlags
-		FeatureManager *FeatureManager
-		Settings       *models.Settings
+		FeatureFlags      FeatureFlags
+		FeatureManager    *FeatureManager
+		Settings          *models.Settings
 		SecondarySettings struct {
 			Mediastream *models.MediastreamSettings
 		}
@@ -100,12 +102,12 @@ type (
 		IsDesktopSidecar bool
 		Flags            KameHouseFlags
 
-		user               *user.User
-		previousVersion    string
-		moduleMu           sync.Mutex
-		ServerReady        bool
-		isOffline          *atomic.Bool
-		ServerPasswordHash string
+		user                 *user.User
+		previousVersion      string
+		moduleMu             sync.Mutex
+		ServerReady          bool
+		isOffline            *atomic.Bool
+		ServerPasswordHash   string
 		ServerPasswordSHA256 string
 		FallbackHMACSecret   string
 
@@ -125,7 +127,9 @@ type AppOption func(*KameHouse)
 
 func WithConfig(cfg *Config) AppOption            { return func(a *KameHouse) { a.Config = cfg } }
 func WithLogger(logger *zerolog.Logger) AppOption { return func(a *KameHouse) { a.Logger = logger } }
-func WithDatabase(database *db.Database) AppOption { return func(a *KameHouse) { a.Database = database } }
+func WithDatabase(database *db.Database) AppOption {
+	return func(a *KameHouse) { a.Database = database }
+}
 func WithWSEventManager(ws *events.WSEventManager) AppOption {
 	return func(a *KameHouse) { a.WSEventManager = ws }
 }
@@ -221,14 +225,14 @@ func NewKameHouse(configOpts *ConfigOptions) *App {
 		SecondarySettings: struct {
 			Mediastream *models.MediastreamSettings
 		}{Mediastream: nil},
-		moduleMu:           sync.Mutex{},
-		isOffline:          isOffline,
-		ServerPasswordHash: serverPasswordHash,
-		ServerPasswordSHA256: serverPasswordSHA256,
-		FallbackHMACSecret:   fallbackSecret,
+		moduleMu:                          sync.Mutex{},
+		isOffline:                         isOffline,
+		ServerPasswordHash:                serverPasswordHash,
+		ServerPasswordSHA256:              serverPasswordSHA256,
+		FallbackHMACSecret:                fallbackSecret,
 		onRefreshAnimeCollectionCallbacks: make(map[string]func()),
-		shutdownCtx:        shutdownCtx,
-		shutdownCancel:     shutdownCancel,
+		shutdownCtx:                       shutdownCtx,
+		shutdownCancel:                    shutdownCancel,
 	}
 
 	app.initModulesOnce()

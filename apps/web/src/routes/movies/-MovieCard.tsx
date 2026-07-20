@@ -4,9 +4,9 @@ import { cn } from "@/components/ui/core/styling"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { useResponsive } from "@/hooks/use-responsive"
 import { Vaul, VaulContent } from "@/components/vaul"
-import { useSound } from "@/hooks/use-sound"
 import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
 import { fetchAnimeEntry } from "@/api/hooks/anime_entries.hooks"
+import { useGetSettings } from "@/api/hooks/settings.hooks"
 import { useAppStore } from "@/lib/store"
 import type { Anime_LibraryCollectionEntry, Continuity_WatchHistoryItem } from "@/api/generated/types"
 
@@ -31,7 +31,7 @@ export const MovieCard = memo(function MovieCard({
     era,
     watchHistoryItem,
     onClick,
-    onHoverCard,
+    onHoverCard: _onHoverCard,
 }: {
     entry: Anime_LibraryCollectionEntry
     era: EraTab
@@ -39,10 +39,10 @@ export const MovieCard = memo(function MovieCard({
     onClick: (id: number) => void
     onHoverCard: (entry: (Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null) => void
 }) {
-    const { playSound } = useSound()
     const { isMobile } = useResponsive()
+    const { data: serverSettings } = useGetSettings()
+    const hideAudienceScore = !!serverSettings?.Platform?.hideAudienceScore
     const [drawerOpen, setDrawerOpen] = useState(false)
-    const [isHovered, setIsHovered] = useState(false)
     const movie = entry.media
     if (!movie || !entry.mediaId) return null
  
@@ -66,45 +66,31 @@ export const MovieCard = memo(function MovieCard({
     return (
         <>
             <div
-            className="group relative cursor-pointer flex flex-col transition-all duration-300"
+            className="group relative cursor-pointer flex flex-col transition-all duration-base"
             onClick={handleCardClick}
-            onMouseEnter={() => {
-                if (isMobile) return
-                setIsHovered(true)
-                onHoverCard({ ...entry, era, startedAtTimestamp: entry.listData?.startedAt ? new Date(entry.listData.startedAt).getTime() : 0 })
-                playSound("hover", 0.15)
-            }}
-            onMouseLeave={() => {
-                if (isMobile) return
-                setIsHovered(false)
-                onHoverCard(null)
-            }}
         >
             {/* Poster Wrap (Flat style) */}
             <div 
                 className={cn(
-                    "relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-container border transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] transform-gpu will-change-transform",
-                    "group-hover:scale-[1.03] group-hover:-translate-y-1",
-                    !hasLocalFiles && !isMobile && "grayscale opacity-45 group-hover:grayscale-0 group-hover:opacity-100",
+                    "relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-container border transition-all duration-slow [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] transform-gpu will-change-transform",
+                    !hasLocalFiles && !isMobile && "grayscale opacity-45",
                 )}
                 style={{
-                    borderColor: isHovered ? eraConfig.color : "var(--glass-border-side)",
-                    boxShadow: isHovered
-                        ? `var(--shadow-glass), 0 0 25px ${eraConfig.glow}`
-                        : "var(--shadow-glass)",
+                    borderColor: "var(--glass-border-side)",
+                    boxShadow: "var(--shadow-glass)",
                 }}
             >
                 <DeferredImage
                     src={posterUrl}
                     alt={title}
-                    className="w-full h-full object-cover transform-gpu transition-transform duration-700 ease-out group-hover:scale-105"
+                    className="w-full h-full object-cover transform-gpu"
                     showSkeleton={false}
                     fallback={
                         <div
                             className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center"
                             style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${eraConfig.color} 13%, transparent), #09090b)` }}
                         >
-                            <span className="font-bebas text-lg tracking-widest text-white/80 line-clamp-3 leading-tight">
+                            <span className="font-display text-lg tracking-widest text-white/80 line-clamp-3 leading-tight">
                                 {title}
                             </span>
                         </div>
@@ -114,81 +100,8 @@ export const MovieCard = memo(function MovieCard({
                 {/* Wear and analog glare textures */}
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--glass-border-top),transparent)] z-20 pointer-events-none" />
 
-                {/* Glass sheen sweep */}
-                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[inherit]">
-                    <div 
-                        className={cn(
-                            "w-[150%] h-[150%] bg-gradient-to-tr from-transparent via-white/10 to-transparent -rotate-12 absolute -top-[25%] -left-[100%] transition-transform duration-1000 ease-out",
-                            isHovered && "translate-x-[150%] translate-y-[10%]"
-                        )}
-                    />
-                </div>
  
-                {/* Action buttons (neon play / add queue) - only on desktop */}
-                {!isMobile && (
-                    <div 
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 z-30"
-                        style={{
-                            transition: "opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)",
-                        }}
-                    >
-                        <div
-                            onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
-                            className="w-11 h-11 rounded-full flex items-center justify-center shadow-elevation-5 active:scale-[0.93] transform-gpu border bg-surface-container text-on-surface border-outline-variant cursor-pointer hover:scale-110 transition-transform"
-                            style={{ 
-                                boxShadow: `0 0 20px ${eraConfig.glow}`,
-                            }}
-                        >
-                            <Icons.media.play className="size-[18px] fill-current ml-0.5 text-on-surface" />
-                        </div>
-     
-                        {hasLocalFiles && (
-                            <div
-                                onClick={async (e) => {
-                                    e.stopPropagation();
-                                    try {
-                                        const fullEntry = await fetchAnimeEntry(String(entry.mediaId));
-                                        const localFile = fullEntry?.localFiles?.[0];
-                                        if (localFile && localFile.path) {
-                                            const epNum = localFile.parsedInfo?.episode || localFile.metadata?.episode || 1;
-                                            useAppStore.getState().addToQueue({
-                                                id: entry.mediaId!,
-                                                title: title,
-                                                playableUrl: localFile.path,
-                                                thumbnail: getHighResImage(movie.posterImage || ""),
-                                                mediaId: entry.mediaId!,
-                                                episodeNumber: Number(epNum),
-                                                malId: movie.idMal ?? null,
-                                                mediaFormat: movie.format ?? "MOVIE"
-                                            });
-                                            const { toast } = await import("sonner");
-                                            toast.success("Añadido a la cola de reproducción");
-                                        } else {
-                                            const { toast } = await import("sonner");
-                                            toast.error("No hay archivos locales.");
-                                        }
-                                    } catch (err) {
-                                        console.error(err);
-                                    }
-                                }}
-                                className="px-2.5 py-1 rounded-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_60%,transparent)] hover:bg-white hover:text-black border border-outline-variant/10 flex items-center gap-1.5 shadow-elevation-5 text-badge transition-all duration-300 cursor-pointer"
-                            >
-                                <Icons.ui.listPlus className="w-2.5 h-2.5" />
-                                <span>Cola</span>
-                            </div>
-                        )}
-                    </div>
-                )}
- 
-                {/* Sticker de Categoría de Videoclub */}
-                <div className="absolute top-2.5 left-2.5 z-20 flex flex-col gap-1 items-start">
-                    <span 
-                        className="text-badge font-mono px-2 py-0.5 rounded shadow-elevation-2 border bg-surface-container backdrop-blur-overlay-sm" 
-                        style={{ borderColor: `color-mix(in srgb, ${eraConfig.color} 25%, transparent)`, color: eraConfig.color }}
-                    >
-                        {eraConfig.shortLabel}
-                    </span>
-                </div>
+
  
                 {/* Status badges */}
                 <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1 z-20">
@@ -205,12 +118,12 @@ export const MovieCard = memo(function MovieCard({
                         </button>
                     )}
                     {isCompleted && (
-                        <div className="px-1.5 py-0.5 rounded bg-green-500 text-badge text-on-surface shadow-sm">
+                        <div className="px-1.5 py-0.5 rounded bg-brand-success text-badge text-on-surface shadow-sm">
                             visto
                         </div>
                     )}
                     {!isCompleted && hasProgress && (
-                        <div className="px-1.5 py-0.5 rounded bg-brand-secondary text-badge text-on-surface shadow-sm">
+                        <div className="px-1.5 py-0.5 rounded bg-brand-secondary text-badge text-on-secondary shadow-sm">
                             {Math.round(progressPercent)}%
                         </div>
                     )}
@@ -225,7 +138,7 @@ export const MovieCard = memo(function MovieCard({
                 {hasProgress && (
                     <div className="absolute bottom-0 inset-x-0 h-1" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 40%, transparent)" }}>
                         <div
-                            className="h-full transition-all duration-500"
+                            className="h-full transition-all duration-slow"
                             style={{ width: `${progressPercent}%`, backgroundColor: eraConfig.color }}
                         />
                     </div>
@@ -234,14 +147,14 @@ export const MovieCard = memo(function MovieCard({
  
             {/* Title / Info block */}
             <div className="mt-3.5 space-y-1.5 px-1">
-                <div className="h-9 min-h-[36px] flex flex-col justify-start">
-                    <h3 className="font-sans text-label-sm text-on-surface-variant line-clamp-2 uppercase group-hover:text-on-surface transition-colors duration-300">
+                <div className="h-10 min-h-[40px] flex flex-col justify-start">
+                    <h3 className="font-sans text-label-sm text-on-surface-variant line-clamp-2 uppercase group-hover:text-on-surface transition-colors duration-base leading-snug">
                         {title}
                     </h3>
                 </div>
                 <div className="flex items-center justify-between text-caption font-mono text-on-surface-variant uppercase">
                     <span>AÑO {movie.year || "----"}</span>
-                    {movie.runtime && <span className="text-on-surface-variant/80">{movie.runtime} MIN</span>}
+                    {(movie.runtime ?? 0) > 0 && <span className="text-on-surface-variant/80">{movie.runtime} MIN</span>}
                 </div>
             </div>
         </div>
@@ -256,20 +169,20 @@ export const MovieCard = memo(function MovieCard({
                             className="w-20 aspect-[2/3] object-cover rounded-xl border border-white/10 shrink-0"
                         />
                         <div className="flex flex-col min-w-0">
-                            <h3 className="font-bebas text-2xl text-on-surface uppercase tracking-wide truncate">
+                            <h3 className="font-display text-2xl text-on-surface uppercase tracking-wide truncate">
                                 {title}
                             </h3>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mt-1">
+                            <p className="text-label-sm font-black uppercase tracking-widest text-on-surface-variant mt-1">
                                 {eraConfig.label}
                             </p>
-                            <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-                                {movie.score && (
+                            <div className="flex flex-wrap items-center gap-2 mt-2 text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
+                                {(movie.score ?? 0) > 0 && !hideAudienceScore && (
                                     <span className="text-brand-success font-extrabold">
                                         {(movie.score / 10).toFixed(0)}% COINCIDENCIA
                                     </span>
                                 )}
-                                {movie.year && <span className="text-on-surface-variant font-medium">{movie.year}</span>}
-                                <span className="border border-outline-variant/10 bg-surface-variant px-1.5 py-0.5 rounded text-on-surface-variant text-[8px]">
+                                {(movie.year ?? 0) > 0 && <span className="text-on-surface-variant font-medium">{movie.year}</span>}
+                                <span className="border border-outline-variant/10 bg-surface-variant px-1.5 py-0.5 rounded text-on-surface-variant text-xs">
                                     PELÍCULA
                                 </span>
                             </div>
@@ -277,7 +190,7 @@ export const MovieCard = memo(function MovieCard({
                     </div>
 
                     {movie.description && (
-                        <p className="text-[11px] leading-relaxed text-on-surface-variant line-clamp-4 mb-6">
+                        <p className="text-label-sm leading-relaxed text-on-surface-variant line-clamp-4 mb-6">
                             {movie.description.replace(/<[^>]*>?/gm, '')}
                         </p>
                     )}
@@ -288,7 +201,7 @@ export const MovieCard = memo(function MovieCard({
                                 setDrawerOpen(false)
                                 handleCardClick()
                             }}
-                            className="w-full py-3 bg-primary text-on-surface font-black uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+                            className="w-full py-3 bg-brand-accent text-on-primary font-black uppercase tracking-wider text-xs rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
                         >
                             <Icons.media.play className="w-4 h-4 fill-current" />
                             <span>Ver Detalles</span>

@@ -1,6 +1,5 @@
 import { Status } from "@/api/generated/types"
 import { useGettingStarted } from "@/api/hooks/settings.hooks"
-import { GlowingEffect } from "@/components/shared/glowing-effect"
 import { LoadingOverlayWithLogo } from "@/components/shared/loading-overlay-with-logo"
 import { Button } from "@/components/ui/button"
 import { Card, CardProps } from "@/components/ui/card"
@@ -10,8 +9,7 @@ import { useAppStore } from "@/lib/store"
 import { getDefaultSettings, gettingStartedSchema } from "@/lib/server/settings"
 import { AnimatePresence, motion } from "framer-motion"
 import React from "react"
-import { useFormContext, useWatch } from "react-hook-form"
-import { ChevronLeft, ChevronRight, Folder, Rocket, Sparkles } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -59,54 +57,54 @@ const STEPS = [
         id: "library",
         title: "Local Anime Library",
         description: "Choose your anime library folders",
-        icon: Folder,
+        icon: Icons.status.folder,
         gradient: "from-blue-500 to-emerald-500",
     },
     {
         id: "features",
         title: "KameHouse Features",
         description: "Configure visual settings",
-        icon: Sparkles,
+        icon: Icons.status.sparkles,
         gradient: "from-teal-500 to-emerald-500",
     },
 ]
 
-function StepIndicator({ currentStep, totalSteps, onStepClick }: { currentStep: number; totalSteps: number; onStepClick: (step: number) => void }) {
+function StepIndicator({ currentStep, onStepClick }: { currentStep: number; totalSteps: number; onStepClick: (step: number) => void }) {
     return (
         <div className="mb-12">
             <div className="text-center mb-8">
-                <p className="text-zinc-500 text-xs font-medium uppercase tracking-[0.25em]">
+                <p className="text-zinc-500 text-xs font-medium uppercase tracking-cinema">
                     Estos ajustes se pueden cambiar más tarde
                 </p>
             </div>
 
-            <div className="flex items-start justify-center gap-12 max-w-4xl mx-auto px-4 rounded-xl relative">
+            <div className="flex items-start justify-center gap-3 sm:gap-12 max-w-4xl mx-auto px-2 sm:px-4 rounded-xl relative">
                 {STEPS.map((step, i) => (
                     <div
                         key={step.id}
                         onClick={() => onStepClick(i)}
-                        className="flex flex-col items-center relative group transition-all duration-200 focus:outline-none rounded-lg p-2 w-36 cursor-pointer"
+                        className="flex flex-col items-center relative group transition-all duration-base focus:outline-none rounded-lg p-1.5 sm:p-2 w-28 sm:w-36 cursor-pointer"
                     >
                         <motion.div
                             className={cn(
-                                "w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-all duration-200 border",
+                                "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 sm:mb-3 transition-all duration-base border",
                                 i <= currentStep
-                                    ? "bg-brand-orange/20 border-brand-orange/40 text-brand-orange shadow-[0_0_15px_rgba(251,146,60,0.2)]"
+                                    ? "bg-brand-accent/20 border-brand-accent/40 text-brand-accent shadow-[0_0_15px_hsl(var(--brand-accent)/0.2)]"
                                     : "bg-zinc-900/50 border-white/5 text-zinc-500",
                             )}
                             initial={{ scale: 0.9 }}
                             animate={{ scale: i === currentStep ? 1.05 : 1 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <step.icon className="w-6 h-6" />
+                            <step.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                         </motion.div>
 
                         <div className="text-center">
                             <h3
                                 className={cn(
-                                    "text-xs font-semibold uppercase tracking-wider transition-colors duration-200",
+                                    "text-xs font-semibold uppercase tracking-wider transition-colors duration-base",
                                     i <= currentStep ? "text-white" : "text-zinc-500",
-                                    "group-hover:text-brand-orange",
+                                    "group-hover:text-brand-accent",
                                 )}
                             >
                                 {step.title}
@@ -124,11 +122,11 @@ function StepCard({ children, className }: CardProps) {
         <motion.div
             variants={itemVariants}
             className={cn(
-                "relative rounded-2xl bg-zinc-900/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/5 shadow-2xl overflow-hidden",
+                "relative rounded-container bg-zinc-900/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/5 shadow-2xl overflow-hidden",
                 className,
             )}
         >
-            <Card className="bg-transparent border-none shadow-none p-8">
+            <Card className="bg-transparent border-none shadow-none p-4 sm:p-8">
                 {children}
             </Card>
         </motion.div>
@@ -145,7 +143,7 @@ function LibraryStep() {
             className="space-y-8"
         >
             <motion.div variants={itemVariants} className="text-center space-y-3">
-                <h2 className="text-3xl font-bebas tracking-wide text-white uppercase">Biblioteca local de Anime</h2>
+                <h2 className="text-3xl font-display tracking-wide text-white uppercase">Biblioteca local de Anime</h2>
                 <p className="text-zinc-400 text-sm max-w-lg mx-auto leading-relaxed">
                     Configura las carpetas de Series y Películas. KameHouse escaneará estas rutas para organizar tu colección local.
                 </p>
@@ -187,7 +185,7 @@ function FeaturesStep({ kamehouseFeatures, setKamehouseFeatures }: {
             className="space-y-8"
         >
             <motion.div variants={itemVariants} className="text-center space-y-3">
-                <h2 className="text-3xl font-bebas tracking-wide text-white uppercase">Características Visuales</h2>
+                <h2 className="text-3xl font-display tracking-wide text-white uppercase">Características Visuales</h2>
                 <p className="text-zinc-400 text-sm max-w-lg mx-auto leading-relaxed">
                     Elige qué características visuales quieres habilitar en tu experiencia inicial de KameHouse.
                 </p>
@@ -199,12 +197,12 @@ function FeaturesStep({ kamehouseFeatures, setKamehouseFeatures }: {
                 <div
                     onClick={() => setKamehouseFeatures(prev => ({ ...prev, dynamicBackdrop: !prev.dynamicBackdrop }))}
                     className={cn(
-                        "cursor-pointer p-6 rounded-2xl bg-zinc-900/40 hover:bg-zinc-800/40 border transition-all duration-200 text-left flex items-start space-x-5",
-                        kamehouseFeatures.dynamicBackdrop ? "bg-zinc-900/80 border-brand-orange/40" : "border-white/5"
+                        "cursor-pointer p-6 rounded-xl bg-zinc-900/40 hover:bg-zinc-800/40 border transition-all duration-base text-left flex items-start space-x-5",
+                        kamehouseFeatures.dynamicBackdrop ? "bg-zinc-900/80 border-brand-accent/40" : "border-white/5"
                     )}
                 >
                     <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-6 h-6 text-white" />
+                        <Icons.status.sparkles className="w-6 h-6 text-white" />
                     </div>
                     <div>
                         <h4 className="font-semibold text-sm text-white">Fondo Dinámico Animado</h4>
@@ -218,7 +216,7 @@ function FeaturesStep({ kamehouseFeatures, setKamehouseFeatures }: {
     )
 }
 
-export function GettingStarted({ status }: { status: Status }) {
+export function GettingStarted({ status: _status }: { status: Status }) {
     const { mutate, isPending } = useGettingStarted()
     const setDynamicBackdropEnabled = useAppStore(state => state.setDynamicBackdropEnabled)
 
@@ -337,12 +335,11 @@ export function GettingStarted({ status }: { status: Status }) {
                         debridApiKey: "",
                         notifications: {
                             disableNotifications: false,
-                            disableAutoDownloaderNotifications: false,
                             disableAutoScannerNotifications: false,
                         }
                     }}
                 >
-                    {(f) => (
+                    {() => (
                         <div className="space-y-8">
                             <StepIndicator currentStep={currentStep} totalSteps={STEPS.length} onStepClick={goToStep} />
 
@@ -380,7 +377,7 @@ export function GettingStarted({ status }: { status: Status }) {
                                     }}
                                     disabled={currentStep === 0}
                                     className="flex items-center space-x-2 rounded-xl"
-                                    leftIcon={<ChevronLeft className="text-xl" />}
+                                    leftIcon={<Icons.navigation.chevronLeft className="text-xl" />}
                                 >
                                     Anterior
                                 </Button>
@@ -388,9 +385,9 @@ export function GettingStarted({ status }: { status: Status }) {
                                 {currentStep === STEPS.length - 1 ? (
                                     <Button
                                         type="submit"
-                                        className="flex items-center bg-gradient-to-r from-brand-orange to-red-600 hover:ring-2 ring-brand-orange text-white rounded-xl font-bold uppercase tracking-wider px-6"
+                                        className="flex items-center bg-gradient-to-r from-brand-accent to-red-600 hover:ring-2 ring-brand-accent text-white rounded-xl font-bold uppercase tracking-wider px-6"
                                         loading={isPending}
-                                        rightIcon={<Rocket className="size-5" />}
+                                        rightIcon={<Icons.navigation.rocket className="size-5" />}
                                     >
                                         <span>Iniciar KameHouse</span>
                                     </Button>
@@ -403,7 +400,7 @@ export function GettingStarted({ status }: { status: Status }) {
                                             nextStep()
                                         }}
                                         className="flex items-center space-x-2 rounded-xl"
-                                        rightIcon={<ChevronRight className="text-xl" />}
+                                        rightIcon={<Icons.navigation.chevronRight className="text-xl" />}
                                     >
                                         Siguiente
                                     </Button>

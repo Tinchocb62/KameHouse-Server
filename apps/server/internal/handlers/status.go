@@ -53,6 +53,7 @@ type Status struct {
 	ShowChangelogTour     string                        `json:"showChangelogTour"`
 	ServerIPs             []string                      `json:"serverIPs"`
 	ServerPort            int                           `json:"serverPort"`
+	Pid                   int                           `json:"pid"` // OS process id of the server; used by the desktop sidecar to reap orphans
 }
 
 var clientInfoCache = result.NewMap[string, util.ClientInfo]()
@@ -117,6 +118,7 @@ func (h *Handler) NewStatus(c echo.Context) *Status {
 		ShowChangelogTour:     h.App.ShowTour,
 		ServerIPs:             util.GetLocalIPv4Addresses(),
 		ServerPort:            h.App.Config.Server.Port,
+		Pid:                   os.Getpid(),
 	}
 
 	isAuthenticated := true

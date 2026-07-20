@@ -57,6 +57,10 @@
   --shadow-brand-success:   0 8px 24px -4px var(--glow-success);
   --shadow-brand-magic:     0 8px 24px -4px var(--glow-magic);
 
+  /* Focus glow — anillo difuso centrado para inputs/toggles enfocados
+     (reemplaza el arbitrario 0 0 24px hsl(var(--brand-accent)/0.3) repetido) */
+  --shadow-brand-focus:     0 0 24px hsl(var(--brand-accent) / 0.3);
+
   /* ─── Alias semánticos para componentes ─────────────────────────────────── */
   --shadow-sm:  var(--elevation-1);
   --shadow-md:  var(--elevation-2);
@@ -89,6 +93,7 @@
 .shadow-brand-destructive { box-shadow: var(--shadow-brand-destructive); }
 .shadow-brand-success   { box-shadow: var(--shadow-brand-success); }
 .shadow-brand-magic     { box-shadow: var(--shadow-brand-magic); }
+.shadow-brand-focus     { box-shadow: var(--shadow-brand-focus); }
 
 /* Glass inner highlights (DEPRECATED - mantener por compatibilidad) */
 .glass-inner        { box-shadow: inset 0 1px 0 var(--glass-border-top); }

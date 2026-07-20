@@ -1,13 +1,7 @@
-import type {
-    Anime_Episode,
-    Anime_LibraryCollectionEntry,
-    Continuity_WatchHistory,
-    Models_LibraryMedia,
-} from "@/api/generated/types"
-import type { HeroBannerItem } from "@/components/ui/hero-banner"
+import type { Anime_LibraryCollectionEntry } from "@/api/generated/types"
 import type { SwimlaneItem } from "@/components/ui/swimlane"
 import type { IntelligentEntry } from "@/api/types/intelligence.types"
-import { getTitle, getProgress, getBackdrop } from "./home.helpers"
+import { getTitle, getBackdrop } from "./home.helpers"
 
 /**
  * Helper to strip HTML tags from a string.
@@ -17,31 +11,6 @@ function stripHtml(text: string | undefined): string | undefined
 function stripHtml(text: string | undefined): string | undefined {
     if (!text) return text
     return text.replace(/<[^>]*>/g, '')
-}
-
-/**
- * Maps an episode and its media to SwimlaneItem (Continue Watching).
- */
-export function mapEpisodeToMediaCard(
-    episode: Anime_Episode,
-    media: Models_LibraryMedia,
-    watchHistory: Continuity_WatchHistory | undefined,
-    onNavigate: (mediaId: number) => void,
-): SwimlaneItem {
-    return {
-        id: `cw-${media.tmdbId || media.id}`,
-        image: episode.episodeMetadata?.image || getBackdrop(media) || "",
-        title: getTitle(media),
-        subtitle: episode.displayTitle || `Episodio ${episode.episodeNumber}`,
-        badge: media.format,
-        description: stripHtml(episode.episodeMetadata?.summary || media.description),
-        progress: getProgress(media.id, watchHistory),
-        aspect: "wide",
-        year: media.year || undefined,
-        rating: media.score ? (media.score > 10 ? media.score / 10 : media.score) : undefined,
-        onClick: () => onNavigate(media.tmdbId || media.id),
-        backdropUrl: getBackdrop(media) || undefined,
-    }
 }
 
 /**
@@ -70,46 +39,3 @@ export function mapLibraryEntryToMediaCard(
     }
 }
 
-const TRAILER_MAPPINGS: Record<string, string> = {
-    "dragon ball": "XVn-J0rJ1eY",
-    "dragon ball z": "sU149S_d33M",
-    "dragon ball gt": "HkApq7k5K3M",
-    "dragon ball super": "tLs51Lku0z8",
-    "dragon ball daima": "2Sg0B5tY9Bw",
-}
-
-/**
- * Maps an entry to HeroBannerItem.
- */
-export function mapToHeroItem(
-    media: Models_LibraryMedia,
-    onNavigate: (mediaId: number) => void,
-    synopsis?: string,
-): HeroBannerItem {
-    const title = getTitle(media).toLowerCase()
-    let youtubeTrailerId: string | undefined = undefined
-
-    for (const [key, value] of Object.entries(TRAILER_MAPPINGS)) {
-        if (title.includes(key)) {
-            youtubeTrailerId = value
-            break
-        }
-    }
-
-    const targetId = media.tmdbId || media.id
-
-    return {
-        id: `hero-${targetId}`,
-        title: getTitle(media),
-        synopsis: stripHtml(synopsis || media.description || ""),
-        backdropUrl: getBackdrop(media) || "",
-        posterUrl: media.posterImage,
-        year: media.year || undefined,
-        format: media.format,
-        rating: media.score ? (media.score > 10 ? media.score / 10 : media.score) : undefined,
-        mediaId: targetId,
-        youtubeTrailerId,
-        onPlay: () => onNavigate(targetId),
-        onMoreInfo: () => onNavigate(targetId),
-    }
-}

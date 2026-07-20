@@ -49,10 +49,10 @@ export function Navbar({ className }: NavbarProps) {
               alt="KameHouse"
               className="h-8 w-8 object-contain"
             />
-            <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-slow rounded-full" />
+            <div className="absolute inset-0 bg-brand-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-slow rounded-full" />
           </div>
           {!isMobile && (
-            <span className="font-display text-xl text-primary tracking-wider whitespace-nowrap">
+            <span className="font-display text-xl text-brand-accent tracking-wider whitespace-nowrap">
               KAMEHOUSE
             </span>
           )}
@@ -71,7 +71,7 @@ export function Navbar({ className }: NavbarProps) {
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-lg text-label-md font-medium transition-all duration-fast",
                 location.pathname === item.to
-                  ? "text-primary bg-primary/10"
+                  ? "text-brand-accent bg-brand-accent/10"
                   : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
               )}
               onClick={() => setSidebarOpen(false)}
@@ -85,23 +85,23 @@ export function Navbar({ className }: NavbarProps) {
 
       <div className="flex items-center gap-2">
         <button
-          className="hidden sm:inline-flex flex items-center gap-2 px-3 py-2 rounded-full bg-surface-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all duration-200"
+          className="hidden sm:inline-flex flex items-center gap-2 px-3 py-2 rounded-full bg-surface-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all duration-base"
         >
           <Icons.navigation.search className="w-4 h-4" />
           <span>Buscar</span>
         </button>
 
         <button
-          className="hidden md:inline-flex p-2 rounded-full bg-surface-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all duration-200 relative"
+          className="hidden md:inline-flex p-2 rounded-full bg-surface-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all duration-base relative"
           aria-label="Notificaciones"
         >
           <Icons.ui.bell className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full text-[9px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full text-caption font-black flex items-center justify-center">
             3
           </span>
         </button>
 
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-brand-secondary flex items-center justify-center font-bold text-primary-foreground text-sm ring-2 ring-surface">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-accent to-brand-secondary flex items-center justify-center font-bold text-primary-foreground text-sm ring-2 ring-surface">
           M
         </div>
 

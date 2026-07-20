@@ -78,6 +78,50 @@ func TestIsDirectPlayableByClient(t *testing.T) {
 	}
 }
 
+func TestResolveStreamType(t *testing.T) {
+	chromium := &ClientCapabilities{Matroska: true, Vp9: true, Av1: true}
+
+	// Playable by chromium; needs a transcode for a client without Matroska/HEVC.
+	playable := mkInfo("mkv", &videofile.Video{Codec: "h264", PixFmt: "yuv420p"}, "aac")
+	unplayable := mkInfo("mkv", &videofile.Video{Codec: "hevc", PixFmt: "yuv420p"}, "aac")
+
+	cases := []struct {
+		name      string
+		requested StreamType
+		info      *videofile.MediaInfo
+		caps      *ClientCapabilities
+		policy    playbackPolicy
+		want      StreamType
+	}{
+		// Direct → Transcode fallback when the client can't decode the file.
+		{"direct playable stays direct", StreamTypeDirect, playable, chromium, playbackPolicy{}, StreamTypeDirect},
+		{"direct unplayable falls back", StreamTypeDirect, unplayable, chromium, playbackPolicy{}, StreamTypeTranscode},
+		// DirectPlayOnly accepts a hard failure over a transcode.
+		{"directPlayOnly suppresses fallback", StreamTypeDirect, unplayable, chromium, playbackPolicy{directPlayOnly: true}, StreamTypeDirect},
+
+		// Transcode → Direct upgrade when the client decodes natively.
+		{"transcode playable upgrades", StreamTypeTranscode, playable, chromium, playbackPolicy{}, StreamTypeDirect},
+		{"transcode unplayable stays", StreamTypeTranscode, unplayable, chromium, playbackPolicy{}, StreamTypeTranscode},
+		// The setting under test: keep transcoding even though direct play would work.
+		{"disableAutoSwitch suppresses upgrade", StreamTypeTranscode, playable, chromium, playbackPolicy{disableAutoSwitchToDirect: true}, StreamTypeTranscode},
+		// nil caps must never trigger the upgrade — this is what keeps an audio-track
+		// switch (which deliberately withholds caps) on HLS.
+		{"nil caps never upgrades", StreamTypeTranscode, playable, nil, playbackPolicy{}, StreamTypeTranscode},
+
+		// Optimized is resolved elsewhere and must pass through untouched.
+		{"optimized untouched", StreamTypeOptimized, playable, chromium, playbackPolicy{}, StreamTypeOptimized},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, _ := resolveStreamType(tc.requested, tc.info, tc.caps, tc.policy)
+			if got != tc.want {
+				t.Errorf("resolveStreamType(%v) = %v, want %v", tc.requested, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestClientCapabilitiesFingerprint(t *testing.T) {
 	var nilCaps *ClientCapabilities
 	if nilCaps.fingerprint() != "legacy" {

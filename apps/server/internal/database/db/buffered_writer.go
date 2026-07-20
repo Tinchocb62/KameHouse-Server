@@ -14,12 +14,12 @@ type DbWriteOperation func(tx *gorm.DB) error
 // BufferedWriter queues DB write operations and flushes them in bulk.
 // This single-threaded writer prevents "database is locked" errors in SQLite WAL mode.
 type BufferedWriter struct {
-	db       *gorm.DB
-	logger   *zerolog.Logger
-	mu       sync.Mutex
-	queue    []DbWriteOperation
-	maxBatch int
-	interval time.Duration
+	db             *gorm.DB
+	logger         *zerolog.Logger
+	mu             sync.Mutex
+	queue          []DbWriteOperation
+	maxBatch       int
+	interval       time.Duration
 	stopChan       chan struct{}
 	doneChan       chan struct{}
 	OnError        func(error)

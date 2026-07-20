@@ -5,21 +5,21 @@ import (
 )
 
 type NormalizedMedia struct {
-	ID               int
-	TmdbID           *int
-	TvdbId           *int
-	ExplicitProvider string
-	ExplicitID       string
-	Title            *NormalizedMediaTitle
-	Synonyms         []*string
-	Format           *MediaFormat
-	Status           *MediaStatus
-	Season           *MediaSeason
-	Year             *int
-	StartDate        *NormalizedMediaDate
-	Episodes         *int
-	BannerImage      *string
-	CoverImage       *NormalizedMediaCoverImage
+	ID                int
+	TmdbID            *int
+	TvdbId            *int
+	ExplicitProvider  string
+	ExplicitID        string
+	Title             *NormalizedMediaTitle
+	Synonyms          []*string
+	Format            *MediaFormat
+	Status            *MediaStatus
+	Season            *MediaSeason
+	Year              *int
+	StartDate         *NormalizedMediaDate
+	Episodes          *int
+	BannerImage       *string
+	CoverImage        *NormalizedMediaCoverImage
 	NextAiringEpisode *NormalizedMediaNextAiringEpisode
 	MetadataStatus    *string // "COMPLETE", "MISSING", "LOCAL"
 	Description       *string
@@ -28,8 +28,8 @@ type NormalizedMedia struct {
 	fetched bool
 
 	// FanArt.tv enrichment (filled in Stage 4 if FanArt API key is configured)
-	LogoImage    *string // HD transparent logo (hdtvlogo / hdmovielogo)
-	ThumbImage   *string // Thumb/tile image (tvthumb / moviethumb)
+	LogoImage     *string // HD transparent logo (hdtvlogo / hdmovielogo)
+	ThumbImage    *string // Thumb/tile image (tvthumb / moviethumb)
 	ClearArtImage *string // HD clearart (hdclearart / hdmovieclearart)
 
 	// OMDb enrichment (filled in Stage 4 if OMDb API key is configured)

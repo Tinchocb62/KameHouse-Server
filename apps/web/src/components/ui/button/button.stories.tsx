@@ -1,6 +1,7 @@
+import { Icons } from "@/components/ui/icons"
 import type { Meta, StoryObj } from "@storybook/react"
 import { Button } from "./button"
-import { Search, Mail, Loader2, Play } from "lucide-react"
+
 
 const meta: Meta<typeof Button> = {
     title: "UI/Button",
@@ -88,7 +89,7 @@ export const GrayGlass: Story = {
 export const WithIcons: Story = {
     args: {
         children: "Send Email",
-        leftIcon: <Mail size={16} />,
+        leftIcon: <Icons.ui.mail size={16} />,
         intent: "primary",
     },
 }
@@ -96,7 +97,7 @@ export const WithIcons: Story = {
 export const OnlyIcon: Story = {
     args: {
         children: null,
-        leftIcon: <Search size={16} />,
+        leftIcon: <Icons.navigation.search size={16} />,
         intent: "secondary",
         size: "icon",
     },

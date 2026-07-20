@@ -1,11 +1,12 @@
 import { useServerMutation, useServerQuery } from "@/api/client/requests"
 import {
+    EnqueuePreTranscode_Variables,
     PreloadMediastreamMediaContainer_Variables,
     RequestMediastreamMediaContainer_Variables,
     SaveMediastreamSettings_Variables,
 } from "@/api/generated/endpoint.types"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
-import { Mediastream_MediaContainer, Models_MediastreamSettings } from "@/api/generated/types"
+import { Mediastream_MediaContainer, Models_MediastreamSettings, PreTranscodeJob } from "@/api/generated/types"
 import { logger } from "@/lib/helpers/debug"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -62,6 +63,49 @@ export function usePreloadMediastreamMediaContainer() {
         mutationKey: [API_ENDPOINTS.MEDIASTREAM.PreloadMediastreamMediaContainer.key],
         onSuccess: async () => {
             logger("MEDIASTREAM").success("Preloaded mediastream media container")
+        },
+    })
+}
+
+/**
+ * Pre-transcode queue (Settings → Streaming). Polls while any job is unfinished so
+ * progress advances without a websocket channel; idles once everything settles.
+ */
+export function useGetPreTranscodeJobs(enabled?: boolean) {
+    return useServerQuery<PreTranscodeJob[]>({
+        endpoint: API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.endpoint,
+        method: API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.methods[0],
+        queryKey: [API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.key],
+        enabled: enabled ?? true,
+        muteError: true,
+        refetchInterval: (query) => {
+            const jobs = query.state.data
+            if (!jobs?.length) return false
+            return jobs.some(j => j.status === "queued" || j.status === "running") ? 2000 : false
+        },
+    })
+}
+
+export function useEnqueuePreTranscode() {
+    const qc = useQueryClient()
+    return useServerMutation<PreTranscodeJob, EnqueuePreTranscode_Variables>({
+        endpoint: API_ENDPOINTS.PRETRANSCODE.EnqueuePreTranscode.endpoint,
+        method: API_ENDPOINTS.PRETRANSCODE.EnqueuePreTranscode.methods[0],
+        mutationKey: [API_ENDPOINTS.PRETRANSCODE.EnqueuePreTranscode.key],
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: [API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.key] })
+        },
+    })
+}
+
+export function useCancelPreTranscode() {
+    const qc = useQueryClient()
+    return useServerMutation<boolean, { hash: string }>({
+        endpoint: API_ENDPOINTS.PRETRANSCODE.CancelPreTranscode.endpoint,
+        method: API_ENDPOINTS.PRETRANSCODE.CancelPreTranscode.methods[0],
+        mutationKey: [API_ENDPOINTS.PRETRANSCODE.CancelPreTranscode.key],
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: [API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.key] })
         },
     })
 }

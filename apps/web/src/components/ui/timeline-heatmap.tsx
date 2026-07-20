@@ -16,7 +16,7 @@ export const TimelineHeatmap = React.memo(({ duration, insights, className }: Ti
     if (!insights || insights.length === 0 || duration <= 0) return null
 
     return (
-        <div className={cn("absolute bottom-full left-0 w-full flex items-end pointer-events-none opacity-20 group-hover:opacity-40 transition-all duration-500 mb-0.5 z-0", className)} style={{ height: "10px" }}>
+        <div className={cn("absolute bottom-full left-0 w-full flex items-end pointer-events-none opacity-20 group-hover:opacity-40 transition-all duration-slow mb-0.5 z-0", className)} style={{ height: "10px" }}>
             {insights.map((node, i) => {
                 const height = Math.max(15, Math.floor(node.intensity * 100))
                 const isPeak = node.intensity > 0.7
@@ -24,8 +24,8 @@ export const TimelineHeatmap = React.memo(({ duration, insights, className }: Ti
                     <div
                         key={i}
                         className={cn(
-                            "flex-1 mx-[0.25px] rounded-t-[0.5px] transition-all duration-300",
-                            isPeak ? "bg-brand-orange/60 z-10 relative" : "bg-white/10"
+                            "flex-1 mx-[0.25px] rounded-t-[0.5px] transition-all duration-base",
+                            isPeak ? "bg-brand-accent/60 z-10 relative" : "bg-white/10"
                         )}
                         style={{ height: `${height}%` }}
                     />

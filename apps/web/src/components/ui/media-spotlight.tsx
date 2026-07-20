@@ -2,14 +2,13 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Play, Info, Sparkles, Star, ChevronDown, ChevronRight } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
-import { getLargeResImage, getMediumResImage, getLowResImage } from "@/lib/helpers/images"
+import { getLargeResImage, getMediumResImage } from "@/lib/helpers/images"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 import { useSound } from "@/hooks/use-sound"
 import type { SwimlaneItem } from "./swimlane"
-import { HorizontalDraggableScroll } from "@/components/ui/horizontal-draggable-scroll/horizontal-draggable-scroll"
 
 interface MediaSpotlightProps {
     items: SwimlaneItem[]
@@ -176,7 +175,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
         <section 
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={cn("relative pt-20 md:pt-28 pb-16 w-full select-none overflow-hidden", hasMovies ? "lg:min-h-0" : "lg:min-h-[720px]", className)}
+            className={cn("relative pt-20 md:pt-28 pb-16 w-full select-none overflow-hidden flex flex-col justify-start", hasMovies ? "lg:min-h-0" : "lg:min-h-[720px]", className)}
         >
             {/* Ambient glow backgrounds */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
@@ -185,13 +184,13 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
 
                 {/* Dynamic colored ambient glows */}
                 <div
-                    className="absolute -top-[10%] -left-[5%] w-[50%] h-[70%] rounded-full opacity-[0.35] transition-all duration-1000"
+                    className="absolute -top-[10%] -left-[5%] w-[50%] h-[70%] rounded-full opacity-[0.35] transition-all duration-slow"
                     style={{
                         background: `radial-gradient(ellipse, ${colors.ambientGlow1} 0%, transparent 70%)`
                     }}
                 />
                 <div
-                    className="absolute top-[10%] right-[-5%] w-[45%] h-[60%] rounded-full opacity-[0.35] transition-all duration-1000"
+                    className="absolute top-[10%] right-[-5%] w-[45%] h-[60%] rounded-full opacity-[0.35] transition-all duration-slow"
                     style={{
                         background: `radial-gradient(ellipse, ${colors.ambientGlow2} 0%, transparent 70%)`
                     }}
@@ -209,7 +208,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
 
                     {/* Imagen Hero */}
                     <div
-                        className="md:col-span-7 relative w-full aspect-[4/3] md:aspect-[16/10] rounded-[32px] overflow-hidden border border-white/10 bg-surface-container group/hero transition-all duration-700"
+                        className="md:col-span-7 relative w-full aspect-[4/3] md:aspect-[16/10] rounded-hero overflow-hidden border border-white/10 bg-surface-container group/hero transition-all duration-slow"
                         style={{
                             boxShadow: `var(--shadow-glass), 0 0 40px -10px ${colors.glow}`
                         }}
@@ -275,31 +274,31 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                 {/* Badges */}
                                 <div className="flex flex-wrap items-center [&>*:not(:first-child)]:ml-1.5">
                                     <span className={cn(
-                                        "bg-brand-accent text-primary-foreground text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-[6px] tracking-wider flex items-center gap-1 shadow-sm border border-brand-accent/20 select-none"
+                                        "bg-brand-accent text-primary-foreground text-label-sm font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider flex items-center gap-1 shadow-sm border border-brand-accent/20 select-none"
                                     )}>
-                                        <Sparkles size={8} className="fill-current animate-pulse" />
+                                        <Icons.status.sparkles size={8} className="fill-current animate-pulse" />
                                         Destacado
                                     </span>
                                     {activeItem.badge && (
-                                        <span className="bg-surface-variant text-white text-[9px] font-bold tracking-wider px-2.5 py-1 rounded-[6px] border border-white/5 uppercase select-none">
+                                        <span className="bg-surface-variant text-white text-label-sm font-bold tracking-wider px-2.5 py-1 rounded-md border border-white/5 uppercase select-none">
                                             {activeItem.badge}
                                         </span>
                                     )}
                                     {activeItem.year && (
-                                        <span className="bg-surface-variant text-white text-[9px] font-bold tracking-wider px-2.5 py-1 rounded-[6px] border border-white/5 uppercase select-none">
+                                        <span className="bg-surface-variant text-white text-label-sm font-bold tracking-wider px-2.5 py-1 rounded-md border border-white/5 uppercase select-none">
                                             {activeItem.year}
                                         </span>
                                     )}
                                     {activeItem.rating && (
-                                        <span className="bg-emerald-500/20 text-emerald-400 text-[9px] font-extrabold tracking-wider px-2.5 py-1 rounded-[6px] border border-emerald-500/20 uppercase flex items-center ml-1 shadow-sm select-none">
-                                            <Star size={8} fill="currentColor" />
+                                        <span className="bg-brand-success/20 text-brand-success text-label-sm font-extrabold tracking-wider px-2.5 py-1 rounded-md border border-brand-success/20 uppercase flex items-center ml-1 shadow-sm select-none">
+                                            <Icons.ui.star size={8} fill="currentColor" />
                                             {activeItem.rating.toFixed(1)} Ki
                                         </span>
                                     )}
                                 </div>
 
                                 {/* Title */}
-                                <h3 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none text-white uppercase select-none drop-shadow-md font-bebas">
+                                <h3 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none text-white uppercase select-none drop-shadow-md font-display">
                                     {displayTitle}
                                 </h3>
 
@@ -311,23 +310,23 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                 )}
 
                                 {/* Botones */}
-                                <div className="flex flex-row items-center mt-2 [&>*:not(:first-child)]:ml-3">
+                                <div className="flex flex-wrap items-center gap-3 mt-2">
                                     <button
                                         onClick={() => onNavigate(activeItem)}
                                         className={cn(
-                                            "relative overflow-hidden flex items-center justify-center bg-gradient-to-r from-[var(--era-btn-from)] to-[var(--era-btn-to)] hover:from-[var(--era-btn-hover-from)] hover:to-[var(--era-btn-hover-to)] text-primary-foreground font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl hover:scale-[1.03] active:scale-95 transition-all duration-300 shadow-xl shadow-primary/20 group/play-btn font-bebas [&>*:not(:first-child)]:ml-2"
+                                            "relative overflow-hidden flex-1 sm:flex-initial flex items-center justify-center bg-gradient-to-r from-[var(--era-btn-from)] to-[var(--era-btn-to)] hover:from-[var(--era-btn-hover-from)] hover:to-[var(--era-btn-hover-to)] text-primary-foreground font-black text-xs md:text-sm uppercase tracking-wider py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl hover:scale-[1.03] active:scale-95 transition-all duration-base shadow-xl shadow-brand-accent/20 group/play-btn font-display gap-2"
                                         )}
                                     >
                                         <div className="absolute inset-0 w-[40px] h-full bg-on-surface/20 transform skew-x-12 -translate-x-[60px] group-hover/play-btn:translate-x-[250px] transition-transform [transition-duration:1.2s] ease-out pointer-events-none" />
-                                        <Play size={14} fill="currentColor" />
+                                        <Icons.media.play size={14} fill="currentColor" />
                                         <span>Reproducir</span>
                                     </button>
 
                                     <button
                                         onClick={() => onNavigate(activeItem)}
-                                        className="flex items-center justify-center border border-white/10 bg-white/5 hover:bg-surface-variant hover:border-white/20 text-zinc-200 hover:text-white hover:scale-[1.03] active:scale-95 font-black text-xs md:text-sm uppercase tracking-wider py-3 px-6 rounded-2xl transition-all duration-300 shadow-xl backdrop-blur-[var(--blur-overlay-sm)] font-bebas [&>*:not(:first-child)]:ml-2"
+                                        className="flex-1 sm:flex-initial flex items-center justify-center border border-white/10 bg-white/5 hover:bg-surface-variant hover:border-white/20 text-zinc-200 hover:text-white hover:scale-[1.03] active:scale-95 font-black text-xs md:text-sm uppercase tracking-wider py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all duration-base shadow-xl backdrop-blur-[var(--blur-overlay-sm)] font-display gap-2"
                                     >
-                                        <Info size={14} />
+                                        <Icons.ui.info size={14} />
                                         <span>Detalles</span>
                                     </button>
                                 </div>
@@ -338,15 +337,14 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
 
                 {/* ─── LADO DERECHO (3/12): Selector de Eras en tarjeta Glassmorphic ─── */}
                 <div className="flex flex-col lg:col-span-3 h-full z-10 justify-center">
-                    <div className="h-full bg-[var(--glass-panel-bg)] backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 lg:border-r-0 rounded-3xl lg:rounded-r-none lg:rounded-l-[32px] p-5 lg:-mr-14 xl:-mr-16 shadow-2xl flex flex-col justify-center [&>*:not(:first-child)]:mt-4">
-                        <h4 className="font-bold text-[10px] tracking-widest text-zinc-300 uppercase pl-1">
-                            Seleccionar Saga / Era
+                    <div className="h-full bg-[var(--glass-panel-bg)] backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 rounded-hero p-3.5 sm:p-5 xl:p-6 shadow-elevated flex flex-col justify-center relative overflow-hidden">
+                        <h4 className="font-mono font-bold text-label-sm tracking-widest text-zinc-400 uppercase pl-1 sm:pl-2 shrink-0 mb-3 lg:mb-4">
+                            Seleccionar Era
                         </h4>
 
-                        <div className="flex flex-col relative [&>*:not(:first-child)]:mt-2">
+                        <div className="flex flex-row lg:flex-col relative min-h-0 overflow-x-auto lg:overflow-y-auto no-scrollbar py-1 gap-2 lg:gap-2">
                             <AnimatePresence initial={false}>
                                 {ERAS.map((era) => {
-                                    const eraData = categorizedData[era.id]
                                     const isEraActive = era.id === activeEraId
                                     const displayTitle = era.title
                                     const displayYear = era.year
@@ -358,7 +356,7 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                             onClick={() => handleEraSelect(era.id)}
                                             onMouseEnter={playHoverSound}
                                             className={cn(
-                                                "group relative flex items-center justify-between px-4 py-3 rounded-2xl border text-left transition-all duration-500 w-full overflow-hidden",
+                                                "group relative flex items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-left transition-all duration-slow shrink-0 lg:w-full overflow-hidden",
                                                 isEraActive
                                                     ? "text-white scale-[1.02] bg-white/[0.06]"
                                                     : "bg-transparent border-transparent text-zinc-300 hover:text-white hover:bg-white/[0.04] hover:scale-[1.01]"
@@ -373,26 +371,27 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                                             {isEraActive && (
                                                 <motion.div
                                                     layoutId="activeEraBackground"
-                                                    className="absolute inset-0 -z-10"
+                                                    className="absolute inset-0 -z-10 rounded-xl"
                                                     style={{
-                                                        background: `linear-gradient(to right, ${eraColors.glow.replace('0.25', '0.15')} 0%, transparent 100%)`
+                                                        background: `linear-gradient(to right, ${eraColors.glow.replace('0.25', '0.15')} 0%, transparent 100%)`,
+                                                        borderLeft: `3px solid ${eraColors.ambientGlow1}`
                                                     }}
                                                     transition={{ type: "spring", stiffness: 350, damping: 28 }}
                                                 />
                                             )}
 
-                                            <div className="flex flex-col text-left justify-center relative z-10">
+                                            <div className="flex flex-col text-left justify-center relative z-10 pl-1 mr-2 lg:mr-0">
                                                 <span className={cn(
-                                                    "font-sans font-bold text-xs tracking-wide uppercase transition-colors duration-300 leading-none mb-1",
+                                                    "font-sans font-extrabold text-xs tracking-wider uppercase transition-colors duration-base leading-none mb-1 lg:mb-1.5 whitespace-nowrap",
                                                     isEraActive ? eraColors.textBrand : "text-zinc-300 group-hover:text-white"
                                                 )}>
                                                     {displayTitle}
                                                 </span>
-                                                <span className="text-[9px] font-black tracking-widest text-zinc-500 select-none">({displayYear})</span>
+                                                <span className="text-label-sm font-mono font-bold tracking-display text-zinc-500 select-none">[{displayYear}]</span>
                                             </div>
 
-                                            <ChevronRight size={14} className={cn(
-                                                "transition-all duration-300 relative z-10 shrink-0",
+                                            <Icons.navigation.chevronRight size={14} className={cn(
+                                                "transition-all duration-base relative z-10 shrink-0 hidden lg:block",
                                                 isEraActive ? eraColors.textBrand : "text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-1"
                                             )} />
                                         </button>
@@ -415,13 +414,13 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
                         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                         className="relative z-10 text-left space-y-4 mt-14 page-px max-w-content mx-auto w-full"
                     >
-                        <h4 className="font-bebas text-lg md:text-xl tracking-wider text-zinc-300 uppercase flex items-center gap-2">
+                        <h4 className="font-display text-lg md:text-xl tracking-wider text-zinc-300 uppercase flex items-center gap-2">
                             <span>Películas disponibles de</span>
                             <span className={colors.textBrand}>{activeEraName}</span>
                             <span className="text-xs text-zinc-500 font-sans font-bold tracking-normal lowercase">({activeEraMovies.length} películas)</span>
                         </h4>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 pt-2 pb-4 w-full animate-in fade-in slide-in-from-bottom-3 duration-500">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 pt-2 pb-4 w-full animate-in fade-in slide-in-from-bottom-3 duration-slow">
                             {/* hasSelection is computed once, not inside each card render */}
                             {(() => {
                                 const hasSelection = selectedItemId !== null && activeEraMovies.some(m => m.id === selectedItemId)
@@ -468,52 +467,37 @@ const SpotlightMovieCard = React.memo(function SpotlightMovieCard({
             onClick={() => onSelect(movie.id)}
             onMouseEnter={onHover}
             className={cn(
-                "group relative w-full aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer border select-none transition-all duration-500 shrink-0",
+                "group relative w-full aspect-[2/3] rounded-xl overflow-hidden cursor-pointer border select-none shrink-0",
+                // Hover: zoom sutil + glow del color de la era
+                "hover:z-10 hover:scale-[1.03] hover:border-[color:var(--card-glow-strong)] hover:shadow-[0_0_25px_-3px_var(--card-glow)]",
                 isSelected
-                    ? "scale-[1.04] z-10 opacity-100"
+                    ? "scale-[1.04] z-10 opacity-100 border-[color:var(--card-glow-strong)] shadow-[0_0_25px_-3px_var(--card-glow)]"
                     : hasSelection
-                        ? "border-white/5 opacity-40 grayscale-[30%] hover:opacity-85 hover:grayscale-0 hover:scale-[1.01]"
-                        : "border-white/5 opacity-100 hover:border-white/20 hover:scale-[1.01]"
+                        ? "border-white/5 opacity-40 grayscale-[30%] hover:opacity-100 hover:grayscale-0"
+                        : "border-white/5 opacity-100"
             )}
             style={{
-                borderColor: isSelected ? colors.glowStrong : 'rgba(255, 255, 255, 0.05)',
-                boxShadow: isSelected ? `0 0 25px -3px ${colors.glow}` : 'none',
-                transition: "all 600ms cubic-bezier(0.16, 1, 0.3, 1)"
-            }}
+                "--card-glow": colors.glow,
+                "--card-glow-strong": colors.glowStrong,
+                transition: "all 600ms cubic-bezier(0.16, 1, 0.3, 1)",
+            } as React.CSSProperties}
         >
             <DeferredImage
                 src={getMediumResImage(movie.image)}
                 alt={movie.title}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-slow group-hover:scale-105"
             />
-
-            {/* Glass sheen sweep */}
-            <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[inherit]">
-                <div
-                    className="w-[150%] h-[150%] bg-gradient-to-tr from-transparent via-white/10 to-transparent -rotate-12 absolute -top-[25%] -left-[100%] transition-transform [transition-duration:800ms] ease-out group-hover:translate-x-[150%] group-hover:translate-y-[10%]"
-                />
-            </div>
 
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10" />
 
-            {/* Play icon overlay on hover */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                <div className={cn(
-                    "p-2.5 rounded-full text-white transform scale-90 group-hover:scale-100 transition-transform duration-300 shadow-lg bg-gradient-to-r",
-                    colors.primary
-                )}>
-                    <Play size={14} fill="currentColor" />
-                </div>
-            </div>
-
             {/* Title + year at bottom */}
             <div className="absolute bottom-0 left-0 right-0 z-30 p-3">
-                <p className="text-white font-bold text-[10px] uppercase tracking-wide leading-tight line-clamp-2 drop-shadow-md">
+                <p className="text-white font-bold text-label-sm uppercase tracking-wide leading-tight line-clamp-2 drop-shadow-md">
                     {movie.title}
                 </p>
                 {movie.year && (
-                    <span className="text-[9px] font-black tracking-widest text-zinc-400 uppercase">{movie.year}</span>
+                    <span className="text-label-sm font-black tracking-widest text-zinc-400 uppercase">{movie.year}</span>
                 )}
             </div>
 

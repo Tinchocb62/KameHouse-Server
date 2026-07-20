@@ -11,52 +11,43 @@ export const ERAS = [
 
 export type EraId = typeof ERAS[number]["id"]
 
-// Theme colors and glows for each era
-export const ERA_COLOR_MAP: Record<EraId, { primary: string; glow: string; glowStrong: string; textBrand: string; borderActive: string; ambientGlow1: string; ambientGlow2: string }> = {
+// Theme colors and glows for each era. Los colores viven en tokens
+// --spotlight-*-vivid (colors.css); acá solo se referencian.
+export const ERA_COLOR_MAP: Record<EraId, { glow: string; glowStrong: string; textBrand: string; ambientGlow1: string; ambientGlow2: string }> = {
     db: {
-        primary: "from-[#ff6e3a] to-[#ff8c3a]",
         glow: "var(--spotlight-glow-db)",
         glowStrong: "var(--spotlight-border-db)",
-        textBrand: "text-[#ff6e3a]",
-        borderActive: "border-[#ff6e3a]/40",
-        ambientGlow1: "#ff6e3a",
-        ambientGlow2: "#ff8c3a"
+        textBrand: "text-[var(--spotlight-db-vivid)]",
+        ambientGlow1: "var(--spotlight-db-vivid)",
+        ambientGlow2: "var(--spotlight-db-vivid-2)"
     },
     dbz: {
-        primary: "from-[#f59e0b] to-[#d97706]",
         glow: "var(--spotlight-glow-dbz)",
         glowStrong: "var(--spotlight-border-dbz)",
-        textBrand: "text-[#f59e0b]",
-        borderActive: "border-[#f59e0b]/40",
-        ambientGlow1: "#f59e0b",
-        ambientGlow2: "#d97706"
+        textBrand: "text-[var(--spotlight-dbz-vivid)]",
+        ambientGlow1: "var(--spotlight-dbz-vivid)",
+        ambientGlow2: "var(--spotlight-dbz-vivid-2)"
     },
     dbgt: {
-        primary: "from-[#e11d48] to-[#be123c]",
         glow: "var(--spotlight-glow-dbgt)",
         glowStrong: "var(--spotlight-border-dbgt)",
-        textBrand: "text-[#e11d48]",
-        borderActive: "border-[#e11d48]/40",
-        ambientGlow1: "#e11d48",
-        ambientGlow2: "#be123c"
+        textBrand: "text-[var(--spotlight-dbgt-vivid)]",
+        ambientGlow1: "var(--spotlight-dbgt-vivid)",
+        ambientGlow2: "var(--spotlight-dbgt-vivid-2)"
     },
     dbs: {
-        primary: "from-[#0ea5e9] to-[#2563eb]",
         glow: "var(--spotlight-glow-dbs)",
         glowStrong: "var(--spotlight-border-dbs)",
-        textBrand: "text-[#0ea5e9]",
-        borderActive: "border-[#0ea5e9]/40",
-        ambientGlow1: "#0ea5e9",
-        ambientGlow2: "#2563eb"
+        textBrand: "text-[var(--spotlight-dbs-vivid)]",
+        ambientGlow1: "var(--spotlight-dbs-vivid)",
+        ambientGlow2: "var(--spotlight-dbs-vivid-2)"
     },
     dbdaima: {
-        primary: "from-[#22d3ee] to-[#059669]",
         glow: "var(--spotlight-glow-daima)",
         glowStrong: "var(--spotlight-border-daima)",
-        textBrand: "text-[#22d3ee]",
-        borderActive: "border-[#22d3ee]/40",
-        ambientGlow1: "#22d3ee",
-        ambientGlow2: "#059669"
+        textBrand: "text-[var(--spotlight-daima-vivid)]",
+        ambientGlow1: "var(--spotlight-daima-vivid)",
+        ambientGlow2: "var(--spotlight-daima-vivid-2)"
     }
 }
 

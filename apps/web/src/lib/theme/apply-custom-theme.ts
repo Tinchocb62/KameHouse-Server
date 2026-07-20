@@ -3,8 +3,8 @@ import { useThemeSettings } from "./theme-hooks"
 import { useAppStore } from "@/lib/store"
 
 function supportsLiquidRefraction(): boolean {
-    const brands = (navigator as any).userAgentData?.brands
-    if (brands?.some((b: any) => /Chromium/i.test(b.brand))) return true
+    const brands = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } }).userAgentData?.brands
+    if (brands?.some(b => /Chromium/i.test(b.brand))) return true
     const ua = navigator.userAgent
     return /Chrome\/\d{2,}/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)
 }

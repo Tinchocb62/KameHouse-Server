@@ -2,9 +2,11 @@ import React from "react"
 import { Section, Card, OsToggle, OsSelect, OsInput, StatusCard } from "../components"
 import { RadioCardGroup } from "@/components/settings/radio-card-group"
 import { RangeSlider } from "@/components/settings/range-slider"
-import { type Control, Controller, useWatch } from "react-hook-form"
+import { type Control, Controller, useFormContext, useWatch } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
-import { LucideCpu, LucideZap, LucidePlay } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
+import { useCancelPreTranscode, useGetPreTranscodeJobs } from "@/api/hooks/mediastream.hooks"
+import { cn } from "@/components/ui/core/styling"
 
 interface StreamingTabProps {
     control: Control<SettingsFormValues>
@@ -42,12 +44,12 @@ export function StreamingTab({ control }: StreamingTabProps) {
     const mediastream = useWatch({ control, name: "mediastream" })
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-slow outline-none">
             {/* Transcodificación por Hardware */}
             <Section label="Transcodificación por Hardware (GPU)">
                 <Card className="space-y-6 p-6">
                     <div className="space-y-1">
-                        <h3 className="text-sm font-bold text-brand-accent uppercase tracking-wide">Aceleración por Hardware</h3>
+                        <h3 className="text-sm font-bold text-brand-accent uppercase tracking-widest">Aceleración por Hardware</h3>
                         <p className="text-xs text-on-surface-variant leading-relaxed">
                             Asigna el procesamiento de codecs pesados (HEVC 10-bit, AV1, VP9) directo al chip de video de tu GPU.
                         </p>
@@ -131,68 +133,44 @@ export function StreamingTab({ control }: StreamingTabProps) {
                         render={({ field }) => (
                             <OsToggle
                                 label="Habilitar Pre-Transcodificación"
-                                description="Transcodifica media en segundo plano para reproducción instantánea. Requiere espacio en disco."
+                                description="Cuando un episodio necesita transcodificarse, lo convierte entero en segundo plano al precargarlo. La próxima reproducción arranca al instante y no consume CPU/GPU. Requiere espacio en disco."
                                 checked={!!field.value}
                                 onChange={field.onChange}
                             />
                         )}
                     />
-                    <Controller
-                        control={control}
-                        name="mediastream.preTranscodeLibraryDir"
-                        render={({ field }) => (
-                            <OsInput
-                                label="Directorio de Pre-Transcodificación"
-                                description="Carpeta donde se guardan los archivos pre-transcodificados."
-                                placeholder="Ej. /mnt/cache/pretranscode o D:\Cache\Pretranscode"
-                                value={field.value || ""}
-                                onChange={field.onChange}
-                                isMono
-                            />
-                        )}
-                    />
+                    {!!mediastream?.preTranscodeEnabled && (
+                        <Controller
+                            control={control}
+                            name="mediastream.preTranscodeLibraryDir"
+                            render={({ field }) => (
+                                <OsInput
+                                    label="Directorio de Pre-Transcodificación"
+                                    description="Carpeta donde se guardan los archivos pre-transcodificados. Vacío = junto al resto de la caché."
+                                    placeholder="Ej. /mnt/cache/pretranscode o D:\Cache\Pretranscode"
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    isMono
+                                />
+                            )}
+                        />
+                    )}
                 </Card>
+                {!!mediastream?.preTranscodeEnabled && <PreTranscodeQueue />}
             </Section>
 
-            {/* Configuración General de Streaming */}
-            <Section label="Configuración General">
-                <Card className="divide-y divide-outline-variant/4">
-                    <Controller
-                        control={control}
-                        name="mediastream.transcodeEnabled"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Habilitar Transcodificación"
-                                description="Permite al servidor transcodificar video/audio cuando el cliente no soporta el codec nativo."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
-                    <Controller
-                        control={control}
-                        name="mediastream.directPlayOnly"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Solo Reproducción Directa (Direct Play)"
-                                description="Fuerza reproducción nativa sin transcodificar. Fallará si el dispositivo no soporta el codec."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
-                    <Controller
-                        control={control}
-                        name="mediastream.disableAutoSwitchToDirectPlay"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Desactivar Cambio Automático a Direct Play"
-                                description="Evita que el servidor intente cambiar a reproducción directa si la transcodificación falla."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
+            {/* Política de reproducción */}
+            <Section label="Política de Reproducción">
+                <Card className="space-y-6 p-6">
+                    <div className="space-y-1">
+                        <h3 className="text-sm font-bold text-brand-accent uppercase tracking-widest">Cómo decide el servidor</h3>
+                        <p className="text-xs text-on-surface-variant leading-relaxed">
+                            Direct Play envía el archivo tal cual (sin costo de CPU). Transcodificar lo reencoda al vuelo
+                            para dispositivos que no soportan el codec.
+                        </p>
+                    </div>
+
+                    <PlaybackPolicyPicker control={control} />
                 </Card>
             </Section>
 
@@ -234,31 +212,191 @@ export function StreamingTab({ control }: StreamingTabProps) {
             <Section label="Estado del Motor">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <StatusCard
-                        icon={LucideZap}
+                        icon={Icons.status.zap}
                         label="Transcodificación"
                         value={mediastream?.transcodeEnabled ? "ACTIVO" : "INACTIVO"}
                         tone={mediastream?.transcodeEnabled ? "ok" : "off"}
                         hint={`HW: ${hwAccelLabel(mediastream?.transcodeHwAccel || "auto")} · ${mediastream?.transcodeThreads || 0 || "auto"} threads · ${mediastream?.transcodePreset || "fast"}`}
                     />
+                    <PreTranscodeStatusCard enabled={!!mediastream?.preTranscodeEnabled} />
                     <StatusCard
-                        icon={LucideCpu}
-                        label="Pre-Transcodificación"
-                        value={mediastream?.preTranscodeEnabled ? "ACTIVO" : "INACTIVO"}
-                        tone={mediastream?.preTranscodeEnabled ? "ok" : "off"}
-                        hint={mediastream?.preTranscodeLibraryDir || "Directorio no configurado"}
-                    />
-                    <StatusCard
-                        icon={LucidePlay}
-                        label="Direct Play"
-                        value={mediastream?.directPlayOnly ? "FORZADO" : "AUTOMÁTICO"}
+                        icon={Icons.media.play}
+                        label="Política"
+                        value={policyLabel(mediastream)}
                         tone="ok"
-                        hint={mediastream?.disableAutoSwitchToDirectPlay ? "Sin fallback automático" : "Con fallback automático"}
+                        hint={POLICY_OPTIONS.find(o => o.value === policyOf(mediastream))?.desc ?? ""}
                     />
                 </div>
-                <p className="text-[10px] text-on-surface-variant mt-3 px-1">
-                    Según configuración actual del formulario (sin verificar en runtime).
+                <p className="text-label-sm text-on-surface-variant mt-3 px-1">
+                    Transcodificación y Política reflejan el formulario (sin verificar en runtime);
+                    Pre-Transcodificación muestra la cola real del servidor.
                 </p>
             </Section>
         </div>
+    )
+}
+
+// ─── Política de reproducción ─────────────────────────────────────────────────
+// Los tres flags del backend (transcodeEnabled / directPlayOnly /
+// disableAutoSwitchToDirectPlay) describen una sola decisión y admiten
+// combinaciones contradictorias. La UI expone los modos válidos y deriva los
+// flags, en vez de pedirle al usuario que los combine a mano.
+
+type PlaybackPolicy = "auto" | "direct-only" | "transcode-strict"
+
+const POLICY_OPTIONS: { value: PlaybackPolicy; label: string; desc: string; badge: string }[] = [
+    {
+        value: "auto",
+        label: "Automático (Recomendado)",
+        desc: "Direct Play cuando el dispositivo soporta el archivo; transcodifica solo si hace falta.",
+        badge: "AUTO",
+    },
+    {
+        value: "direct-only",
+        label: "Solo Direct Play",
+        desc: "Nunca transcodifica. Falla si el dispositivo no soporta el codec.",
+        badge: "DIR",
+    },
+    {
+        value: "transcode-strict",
+        label: "Transcodificación estricta",
+        desc: "Siempre transcodifica, incluso si el dispositivo podría reproducir el archivo nativamente.",
+        badge: "TC",
+    },
+]
+
+type MediastreamValues = SettingsFormValues["mediastream"] | undefined
+
+function policyOf(m: MediastreamValues): PlaybackPolicy {
+    if (m?.directPlayOnly) return "direct-only"
+    if (m?.transcodeEnabled && m?.disableAutoSwitchToDirectPlay) return "transcode-strict"
+    return "auto"
+}
+
+function policyLabel(m: MediastreamValues): string {
+    switch (policyOf(m)) {
+        case "direct-only": return "SOLO DIRECT"
+        case "transcode-strict": return "TRANSCODE"
+        default: return "AUTOMÁTICO"
+    }
+}
+
+function PlaybackPolicyPicker({ control }: { control: Control<SettingsFormValues> }) {
+    const { setValue } = useFormContext<SettingsFormValues>()
+    const mediastream = useWatch({ control, name: "mediastream" })
+    const current = policyOf(mediastream)
+
+    const setPolicy = (policy: PlaybackPolicy) => {
+        const flags = {
+            "auto": { transcodeEnabled: true, directPlayOnly: false, disableAutoSwitchToDirectPlay: false },
+            "direct-only": { transcodeEnabled: false, directPlayOnly: true, disableAutoSwitchToDirectPlay: false },
+            "transcode-strict": { transcodeEnabled: true, directPlayOnly: false, disableAutoSwitchToDirectPlay: true },
+        }[policy]
+
+        for (const [key, value] of Object.entries(flags)) {
+            setValue(`mediastream.${key}` as never, value as never, { shouldDirty: true })
+        }
+    }
+
+    return (
+        <RadioCardGroup
+            name="playbackPolicy"
+            options={POLICY_OPTIONS}
+            value={current}
+            onChange={(v) => setPolicy(v as PlaybackPolicy)}
+        />
+    )
+}
+
+// ─── Cola de pre-transcodificación ────────────────────────────────────────────
+
+const JOB_TONE: Record<string, string> = {
+    running: "text-brand-accent",
+    completed: "text-brand-success",
+    failed: "text-brand-destructive",
+    queued: "text-on-surface-variant",
+}
+
+const JOB_LABEL: Record<string, string> = {
+    running: "Procesando",
+    completed: "Listo",
+    failed: "Falló",
+    queued: "En cola",
+}
+
+function PreTranscodeStatusCard({ enabled }: { enabled: boolean }) {
+    const { data: jobs } = useGetPreTranscodeJobs(enabled)
+    const active = jobs?.filter(j => j.status === "queued" || j.status === "running").length ?? 0
+    const done = jobs?.filter(j => j.status === "completed").length ?? 0
+
+    return (
+        <StatusCard
+            icon={Icons.status.cpu}
+            label="Pre-Transcodificación"
+            value={enabled ? (active > 0 ? `${active} EN COLA` : "EN ESPERA") : "INACTIVO"}
+            tone={enabled ? "ok" : "off"}
+            hint={enabled ? `${done} archivo(s) listos` : "Desactivada"}
+        />
+    )
+}
+
+function PreTranscodeQueue() {
+    const { data: jobs } = useGetPreTranscodeJobs(true)
+    const { mutate: cancel, isPending } = useCancelPreTranscode()
+
+    if (!jobs?.length) {
+        return (
+            <Card className="p-6 mt-4">
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                    No hay trabajos todavía. Los episodios se encolan solos cuando el reproductor los precarga
+                    y necesitan transcodificarse.
+                </p>
+            </Card>
+        )
+    }
+
+    return (
+        <Card className="mt-4 divide-y divide-outline-variant/4">
+            {jobs.map(job => (
+                <div key={job.hash} className="flex items-center justify-between gap-4 px-6 py-4">
+                    <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-xs font-mono text-on-surface truncate" title={job.filePath}>
+                            {job.filePath.split(/[\\/]/).pop()}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <span className={cn("text-label-sm font-bold uppercase tracking-widest", JOB_TONE[job.status])}>
+                                {JOB_LABEL[job.status] ?? job.status}
+                            </span>
+                            {job.status === "running" && (
+                                <span className="text-label-sm font-mono text-on-surface-variant">
+                                    {job.progress.toFixed(0)}%
+                                </span>
+                            )}
+                            {job.error && job.error !== "cancelled" && (
+                                <span className="text-label-sm text-brand-destructive truncate" title={job.error}>
+                                    {job.error}
+                                </span>
+                            )}
+                        </div>
+                        {job.status === "running" && (
+                            <div className="h-1 w-full rounded-full bg-surface-container-high overflow-hidden">
+                                <div
+                                    className="h-full bg-brand-accent transition-all duration-base"
+                                    style={{ width: `${Math.min(100, Math.max(0, job.progress))}%` }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => cancel({ hash: job.hash })}
+                        disabled={isPending}
+                        className="shrink-0 text-label-sm font-bold uppercase tracking-widest text-on-surface-variant hover:text-brand-destructive transition-colors px-3 py-1.5 rounded-lg border border-outline-variant hover:border-brand-destructive/30 active:scale-95 disabled:opacity-50"
+                    >
+                        {job.status === "completed" ? "Borrar" : "Cancelar"}
+                    </button>
+                </div>
+            ))}
+        </Card>
     )
 }

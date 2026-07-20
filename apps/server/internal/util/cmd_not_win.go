@@ -30,6 +30,14 @@ func NewCmdCtx(ctx context.Context, arg string, args ...string) *exec.Cmd {
 	return cmd
 }
 
+// NewCmdCtxLowPriority es como NewCmdCtx. En POSIX no ajustamos la prioridad al
+// crear el proceso (requeriría setpriority tras el fork); se deja igual que
+// NewCmdCtx. La contención con el transcode es más crítica en Windows, donde sí
+// se aplica BELOW_NORMAL_PRIORITY_CLASS.
+func NewCmdCtxLowPriority(ctx context.Context, arg string, args ...string) *exec.Cmd {
+	return NewCmdCtx(ctx, arg, args...)
+}
+
 // KillCmd kills the entire process group on POSIX systems
 func KillCmd(cmd *exec.Cmd) error {
 	if cmd == nil || cmd.Process == nil {

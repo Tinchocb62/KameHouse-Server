@@ -105,7 +105,7 @@ function resolveActiveEd(skipTimesEd: SkipWindow | undefined, total: number, med
 }
 
 function shouldAutoSkip(source: string): boolean {
-    return ["manual", "fingerprint", "aniskip", "chapters", "propagated", "heuristic"].includes(source)
+    return ["manual", "fingerprint", "aniskip", "chapters", "propagated", "heuristic", "animethemes", "fpcross", "subtitle"].includes(source)
 }
 
 /** Outro auto-skip is also permissive for the heuristic window.
@@ -142,7 +142,7 @@ export function usePlayerSkip({
     videoRef,
     playableUrl,
     duration,
-    isPlaying,
+    isPlaying: _isPlaying,
     malId,
     episodeNumber,
     chapters,
@@ -532,15 +532,9 @@ export function usePlayerSkip({
         // 2. Check outro
         const activeEd = resolveActiveEd(skipTimesEd, total, mediaFormat)
         if (activeEd && curr >= activeEd.startTime && curr < activeEd.endTime) {
-            if (hasNextEpisode && onNextEpisode && mediaFormat?.toUpperCase() !== "MOVIE") {
-                hasTriggeredNextEpisodeRef.current = true
-                video.pause()
-                onNextEpisode()
-            } else {
-                video.currentTime = activeEd.endTime
-                lastManualSeekTimestampRef.current = Date.now()
-                video.play().catch(() => {})
-            }
+            video.currentTime = activeEd.endTime
+            lastManualSeekTimestampRef.current = Date.now()
+            video.play().catch(() => {})
             setSkipMode(null)
             return
         }
@@ -586,7 +580,6 @@ export function usePlayerSkip({
     // o repetidos en modo concurrente / StrictMode). useLayoutEffect garantiza
     // que la mutación ocurre sincrónicamente después del commit, antes de que
     // el navegador pinte, y nunca en medio de un render interrumpido.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         configRef.current = {
             skipTimesOp,
@@ -714,15 +707,9 @@ export function usePlayerSkip({
                 hasAutoSkippedOutroRef.current = true
                 preSkipPositionRef.current = curr
                 
-                if (cfg.hasNextEpisode && cfg.onNextEpisode && cfg.mediaFormat?.toUpperCase() !== "MOVIE") {
-                    hasTriggeredNextEpisodeRef.current = true
-                    video.pause()
-                    cfg.onNextEpisode()
-                } else {
-                    video.currentTime = endTime
-                    lastManualSeekTimestampRef.current = Date.now()
-                    video.play().catch(() => {})
-                }
+                video.currentTime = endTime
+                lastManualSeekTimestampRef.current = Date.now()
+                video.play().catch(() => {})
                 
                 setSkipMode(null)
                 triggerToast("outro")
@@ -765,12 +752,12 @@ export function usePlayerSkip({
 
         // ── 8. "Up next" panel + countdown visibility ─────────────────────────
         const isPureMarathon = cfg.marathonMode && !cfg.tvMode
-        const edTriggered = cfg.skipTimesEd ? curr >= cfg.skipTimesEd.startTime : false
+        const inEdWindow = activeEd ? curr >= activeEd.startTime && curr < activeEd.endTime : false
         const nextThreshold = cfg.tvMode ? 3 : 15
         const shouldShowNext =
             cfg.mediaFormat?.toUpperCase() !== "MOVIE" && !isPureMarathon && cfg.hasNextEpisode && (
                 (total > 0 && total - curr <= nextThreshold) ||
-                (!cfg.tvMode && cfg.autoSkipOutroPref && edTriggered)
+                (!cfg.tvMode && inEdWindow)
             )
 
         if (shouldShowNext) {

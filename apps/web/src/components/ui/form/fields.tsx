@@ -1,9 +1,10 @@
+import { Icons } from "@/components/ui/icons"
 import { DirectorySelector, DirectorySelectorProps } from "@/components/shared/directory-selector"
 import { IconButton } from "@/components/ui/button"
 import { cn } from "@/components/ui/core/styling"
 import React, { forwardRef, useMemo } from "react"
 import { Controller, FormState, get, useController, useFormContext } from "react-hook-form"
-import { Plus, Trash2 } from "lucide-react"
+
 import { Checkbox, CheckboxGroup, CheckboxGroupProps, CheckboxProps } from "../checkbox"
 import { Combobox, ComboboxProps } from "../combobox"
 import { NativeSelect, NativeSelectProps } from "../native-select"
@@ -51,9 +52,9 @@ export function withControlledInput<T extends FieldBaseProps>(InputComponent: Re
                     render={({ field: { ref: _ref, ...field } }) => (
                         <InputComponent
                             value={field.value}
-                            onChange={callAllHandlers(inputProps.onChange, field.onChange) as any}
-                            onBlur={callAllHandlers(inputProps.onBlur, field.onBlur) as any}
-                            {...(inputProps as any)}
+                            onChange={callAllHandlers(inputProps.onChange, field.onChange)}
+                            onBlur={callAllHandlers(inputProps.onBlur, field.onBlur)}
+                            {...(inputProps as T)}
                             error={getFormError(field.name, formState)?.message}
                             ref={mergeRefs(ref, _ref)}
                         />
@@ -288,7 +289,7 @@ const MultiDirectorySelectorFieldInner = forwardRef<HTMLInputElement, FieldCompo
                     <IconButton
                         size="sm"
                         intent="alert-outline"
-                        icon={<Trash2 />}
+                        icon={<Icons.ui.trash />}
                         onClick={() => _onChange?.(paths.filter((_, index) => index !== i))}
                     />
                 </div>
@@ -296,7 +297,7 @@ const MultiDirectorySelectorFieldInner = forwardRef<HTMLInputElement, FieldCompo
             <IconButton
                 size="sm"
                 intent="gray-subtle"
-                icon={<Plus />}
+                icon={<Icons.ui.plus />}
                 onClick={() => _onChange?.([...paths, ""])}
             />
         </div>
@@ -387,7 +388,7 @@ function callAllHandlers<T extends (...args: unknown[]) => unknown>(
     return function func(...args: Parameters<T>) {
         fns.some((fn) => {
             fn?.(...args)
-            return (args[0] as any)?.defaultPrevented
+            return (args[0] as { defaultPrevented?: boolean } | undefined)?.defaultPrevented
         })
     }
 }

@@ -6,9 +6,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router"
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { routeTree } from "./routeTree.gen"
-import "@fontsource-variable/inter/wght.css"
-import "@fontsource-variable/plus-jakarta-sans/wght.css"
-import "@fontsource/bebas-neue/latin-400.css"
+import "@fontsource-variable/outfit/wght.css"
 import "@fontsource/space-mono/400.css"
 import "@fontsource/space-mono/700.css"
 
@@ -95,7 +93,7 @@ async function init() {
             const { invoke } = await import("@tauri-apps/api/core")
             const port = await invoke<number>("get_local_server_port")
             if (port) {
-                ;(window as any).__KAMEHOUSE_PORT__ = port
+                window.__KAMEHOUSE_PORT__ = port
             }
         } catch (e) {
             console.error("[Desktop] Failed to get dynamic server port", e)

@@ -30,12 +30,14 @@ function getOrAddAudio(path: string): HTMLAudioElement {
 }
 
 export function useSound() {
-    const uiSoundsEnabled = useAppStore((state) => state.uiSoundsEnabled);
-    const uiSoundsVolume = useAppStore((state) => state.uiSoundsVolume);
-    const isGlobalMuted = useAppStore((state) => state.isGlobalMuted);
-
+    // Leemos el estado al momento de reproducir (getState) en vez de capturar
+    // `uiSoundsEnabled` en el closure. Así el gate siempre refleja el toggle
+    // actual aunque el consumidor memoice `playSound` con un valor viejo: de lo
+    // contrario los efectos "no se apagan" al desactivar el audio, porque el
+    // closure sigue viendo el valor con el que se creó.
     const playSound = useCallback((type: SfxType, volume = 0.15) => {
-        if (!uiSoundsEnabled || isGlobalMuted) return;
+        const { uiSoundsEnabled, uiSoundsVolume } = useAppStore.getState();
+        if (!uiSoundsEnabled) return;
         try {
             const path = SFX_PATHS[type];
             if (!path) return;
@@ -48,7 +50,7 @@ export function useSound() {
             }
 
             audio.volume = volume * uiSoundsVolume;
-            
+
             // Play safely handling the promise returned by modern browsers
             audio.play().catch(() => {
                 // Ignore autoplay/user interaction errors silently
@@ -56,7 +58,7 @@ export function useSound() {
         } catch (e) {
             console.warn("Could not play UI sound effect:", e);
         }
-    }, [uiSoundsEnabled, isGlobalMuted, uiSoundsVolume]);
+    }, []);
 
     return { playSound };
 }

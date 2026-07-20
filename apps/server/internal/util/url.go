@@ -14,7 +14,7 @@ func IsValidProxyURL(rawURL string) bool {
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return false
 	}
-	
+
 	host := u.Hostname()
 	ips, err := net.LookupIP(host)
 	if err != nil {
@@ -25,7 +25,7 @@ func IsValidProxyURL(rawURL string) bool {
 		}
 		ips = []net.IP{ip}
 	}
-	
+
 	for _, ip := range ips {
 		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
 			return false

@@ -219,7 +219,9 @@ func (db *Database) runDataMigrations() {
 	migrateDefaultSettings(db.gormdb, db.Logger)
 	migrateSkipTimesSemantics(db.gormdb, db.Logger)
 	seedDragonBallMalIds(db.gormdb, db.Logger)
-	purgeStaleSkipTimes(db.gormdb, db.Logger)
+	purgeStaleSkipTimes(db, db.Logger)
+	purgeEdlessAnimeThemesSkipTimes(db, db.Logger)
+	defaultAutoDetectSkipTimes(db, db.Logger)
 	db.Logger.Info().Msg("db: migraciones de datos completadas")
 }
 
@@ -362,6 +364,28 @@ func migrateDefaultSettings(gormDB *gorm.DB, logger *zerolog.Logger) {
 	}
 }
 
+// defaultAutoDetectSkipTimes habilita, UNA SOLA VEZ, el scan oportunista de
+// skip times en la configuración existente. Se gatea con metadata_cache para no
+// re-encender el flag en cada arranque si el usuario lo apagó a propósito.
+func defaultAutoDetectSkipTimes(d *Database, logger *zerolog.Logger) {
+	const migrationKey = "default_auto_detect_skip_times_v1"
+	var done bool
+	if ok, err := GetMetadataCache(d, "migrations", migrationKey, &done); err == nil && ok && done {
+		return
+	}
+	result := d.gormdb.Exec("UPDATE settings SET library_auto_detect_skip_times = 1 WHERE library_auto_detect_skip_times = 0")
+	if result.Error != nil {
+		logger.Error().Err(result.Error).Msg("db: fallo al habilitar auto_detect_skip_times")
+		return
+	}
+	if result.RowsAffected > 0 {
+		logger.Info().Int64("rows", result.RowsAffected).Msg("db: auto_detect_skip_times habilitado en configuración existente (one-shot)")
+	}
+	if err := UpsertMetadataCache(d, "migrations", migrationKey, true, 0); err != nil {
+		logger.Error().Err(err).Msg("db: no se pudo marcar default_auto_detect_skip_times como completado")
+	}
+}
+
 // migrateSkipTimesSemantics normaliza los valores relativos de edOffset a absolutos
 // y clasifica el source basado en heurísticas.
 func migrateSkipTimesSemantics(gormDB *gorm.DB, logger *zerolog.Logger) {
@@ -425,7 +449,7 @@ func seedDragonBallMalIds(gormDB *gorm.DB, logger *zerolog.Logger) {
 		12971:  813,   // Dragon Ball Z
 		12697:  225,   // Dragon Ball GT
 		62715:  30694, // Dragon Ball Super
-		236994: 58567, // Dragon Ball Daima
+		236994: 56894, // Dragon Ball Daima
 	}
 	total := int64(0)
 	for tmdbID, malID := range dragonBallMap {
@@ -449,14 +473,65 @@ func seedDragonBallMalIds(gormDB *gorm.DB, logger *zerolog.Logger) {
 	}
 }
 
-// purgeStaleSkipTimes borra las marcas de skip corruptas generadas por el
-// fingerprint acústico o guardadas manualmente. Es idempotente.
-func purgeStaleSkipTimes(gormDB *gorm.DB, logger *zerolog.Logger) {
-	result := gormDB.Exec("DELETE FROM episode_skip_times WHERE source IN ('fingerprint','manual')")
+// purgeStaleSkipTimes borra, UNA SOLA VEZ, las marcas de skip corruptas
+// generadas por el detector de fingerprint acústico legacy (source
+// 'fingerprint') y las manuales heredadas de esa época. Antes corría en cada
+// arranque, lo que borraba también las filas 'manual' nuevas y hubiera borrado
+// cualquier resultado del detector reescrito si reusara esas etiquetas. Se
+// gatea con un flag en metadata_cache para que las marcas nuevas sobrevivan a
+// los reinicios. Las nuevas fuentes ('animethemes', 'fpcross', 'subtitle') no
+// están en la lista, así que nunca son purgadas.
+func purgeStaleSkipTimes(d *Database, logger *zerolog.Logger) {
+	const migrationKey = "purge_stale_skip_times_v1"
+	var done bool
+	if ok, err := GetMetadataCache(d, "migrations", migrationKey, &done); err == nil && ok && done {
+		return
+	}
+
+	result := d.gormdb.Exec("DELETE FROM episode_skip_times WHERE source IN ('fingerprint','manual')")
 	if result.Error != nil {
 		logger.Error().Err(result.Error).Msg("db: fallo al purgar skip times obsoletos")
-	} else if result.RowsAffected > 0 {
-		logger.Info().Int64("rows", result.RowsAffected).Msg("db: skip times fingerprint/manual purgados")
+		return
+	}
+	if result.RowsAffected > 0 {
+		logger.Info().Int64("rows", result.RowsAffected).Msg("db: skip times fingerprint/manual legacy purgados (one-shot)")
+	}
+
+	if err := UpsertMetadataCache(d, "migrations", migrationKey, true, 0); err != nil {
+		logger.Error().Err(err).Msg("db: no se pudo marcar purge_stale_skip_times como completado")
+	}
+}
+
+// purgeEdlessAnimeThemesSkipTimes borra, UNA SOLA VEZ, las filas 'animethemes'
+// que quedaron sin outro (ed_offset = 0). Las escribió una versión con un bug en
+// skipdetect.FingerprintRange: no le pasaba -length a fpcalc, que trunca a 120 s
+// por defecto, así que de la ventana de outro (480 s) solo se huellaban los
+// primeros 120 s y el ED —que vive al final del episodio— nunca se encontraba.
+//
+// Hace falta borrarlas porque 'animethemes' es una fuente protegida: un re-scan
+// las saltearía y el fix no llegaría nunca a quien ya escaneó. Al borrarlas, el
+// próximo scan re-detecta OP y ED de esos episodios. Los episodios que
+// legítimamente no tienen ED (p. ej. fuera del rango del theme) se re-escriben
+// con ed_offset = 0 y, al ser one-shot, ya no se vuelven a purgar.
+func purgeEdlessAnimeThemesSkipTimes(d *Database, logger *zerolog.Logger) {
+	const migrationKey = "purge_edless_animethemes_skip_times_v1"
+	var done bool
+	if ok, err := GetMetadataCache(d, "migrations", migrationKey, &done); err == nil && ok && done {
+		return
+	}
+
+	result := d.gormdb.Exec("DELETE FROM episode_skip_times WHERE source = 'animethemes' AND ed_offset = 0")
+	if result.Error != nil {
+		logger.Error().Err(result.Error).Msg("db: fallo al purgar skip times de animethemes sin ED")
+		return
+	}
+	if result.RowsAffected > 0 {
+		logger.Info().Int64("rows", result.RowsAffected).
+			Msg("db: skip times de animethemes sin ED purgados (one-shot); se re-detectan en el próximo scan")
+	}
+
+	if err := UpsertMetadataCache(d, "migrations", migrationKey, true, 0); err != nil {
+		logger.Error().Err(err).Msg("db: no se pudo marcar purge_edless_animethemes_skip_times como completado")
 	}
 }
 

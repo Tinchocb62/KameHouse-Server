@@ -9,6 +9,8 @@ import { cn } from "@/components/ui/core/styling"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
+export const MEDIA_HERO_TITLE_CLASS = "font-sans font-extrabold leading-[1.05] tracking-tight text-on-surface drop-shadow-[0_4px_25px_rgba(0,0,0,0.85)] uppercase";
+
 export interface MediaHeroProps {
     /** El contenedor principal (`div`) para aplicar parallax al hacer scroll */
     scrollContainerRef?: React.RefObject<HTMLElement | HTMLDivElement | null>
@@ -43,6 +45,25 @@ export interface MediaHeroProps {
     onTitleClick?: () => void
 }
 
+/**
+ * Backdrop treatment derived from Settings → Apariencia → Página de Detalle →
+ * Tipo de Banner. The "-when-unavailable" variants only kick in for media with
+ * no real banner art, where the fallback image tends to look poor behind text.
+ */
+export type BackdropTreatment = "show" | "blur" | "dim" | "hide"
+
+export function resolveBackdropTreatment(bannerType: string, hasBannerImage: boolean): BackdropTreatment {
+    switch (bannerType) {
+        case "blur": return "blur"
+        case "dim": return "dim"
+        case "hide": return "hide"
+        case "blur-when-unavailable": return hasBannerImage ? "show" : "blur"
+        case "dim-when-unavailable": return hasBannerImage ? "show" : "dim"
+        case "hide-when-unavailable": return hasBannerImage ? "show" : "hide"
+        default: return "show"
+    }
+}
+
 export function MediaHero({
     scrollContainerRef,
     backdropUrl,
@@ -64,6 +85,8 @@ export function MediaHero({
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
     const ts = useThemeSettings()
     const isSmallBanner = ts.themeMediaPageBannerSize === "small"
+    const backdropTreatment = resolveBackdropTreatment(ts.themeMediaPageBannerType, hasBannerImage)
+    const isBoxedInfo = ts.themeMediaPageBannerInfoBoxSize === "boxed"
 
     // Sync current backdrop with global DynamicBackdrop blur background
     useEffect(() => {
@@ -141,7 +164,7 @@ export function MediaHero({
 
             {/* High Res Parallax Backdrop */}
             <div className="absolute inset-0 z-0">
-                {backdropUrl && (
+                {backdropUrl && backdropTreatment !== "hide" && (
                     hasBannerImage ? (
                         <div
                             ref={backdropRef}
@@ -155,7 +178,11 @@ export function MediaHero({
                                 src={backdropUrl}
                                 alt="Backdrop"
                                 priority={true}
-                                className="w-full h-full object-cover object-[center_20%] opacity-85 animate-ken-burns"
+                                className={cn(
+                                    "w-full h-full object-cover object-[center_20%] animate-ken-burns",
+                                    backdropTreatment === "dim" ? "opacity-40" : "opacity-85",
+                                    backdropTreatment === "blur" && "blur-[var(--filter-blur-hero)] scale-110"
+                                )}
                             />
                         </div>
                     ) : (
@@ -171,7 +198,11 @@ export function MediaHero({
                                 src={backdropUrl}
                                 alt="Backdrop"
                                 priority={true}
-                                className="h-full w-auto opacity-[0.65] animate-ken-burns"
+                                className={cn(
+                                    "h-full w-auto animate-ken-burns",
+                                    backdropTreatment === "dim" ? "opacity-30" : "opacity-[0.65]",
+                                    backdropTreatment === "blur" && "blur-[var(--filter-blur-hero)] scale-110"
+                                )}
                                 imgClassName="!w-auto !h-full !object-contain !object-right-top"
                             />
                         </div>
@@ -202,7 +233,10 @@ export function MediaHero({
 
                 <div className={cn(
                     "flex-1 flex flex-col gap-6 text-left w-full",
-                    !showPosterColumn && "max-w-3xl space-y-5 md:space-y-6"
+                    !showPosterColumn && "max-w-3xl space-y-5 md:space-y-6",
+                    // "boxed" lifts the copy off the backdrop onto a glass panel, so it
+                    // stays readable over busy art; "fluid" (default) sits directly on it.
+                    isBoxedInfo && "pointer-events-auto bg-zinc-950/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 rounded-container p-6 md:p-8"
                 )}>
                     {topBadge && (
                         <div className="media-hero-animate pointer-events-auto">
@@ -221,10 +255,10 @@ export function MediaHero({
                             <h1 
                                 onClick={onTitleClick}
                                 className={cn(
-                                    "font-sans font-extrabold leading-[1.05] tracking-tight text-on-surface drop-shadow-[0_4px_25px_rgba(0,0,0,0.85)] uppercase",
+                                    MEDIA_HERO_TITLE_CLASS,
                                     onTitleClick && "cursor-pointer hover:text-brand-secondary transition-colors duration-slow"
                                 )} 
-                                style={{ fontSize: "max(2.5rem, min(5.5vw, 4.5rem))" }}
+                                style={{ fontSize: "max(1.75rem, min(5.5vw, 4.5rem))" }}
                             >
                                 {title}
                             </h1>

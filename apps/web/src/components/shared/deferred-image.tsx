@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/components/ui/core/styling';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ImageOff } from 'lucide-react';
+import { Icons } from "@/components/ui/icons"
 import { getTinyResImage } from '@/lib/helpers/images';
 
 interface DeferredImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "onDrag"> {
@@ -17,8 +17,6 @@ interface DeferredImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageEleme
     fallback?: React.ReactNode;
     imgClassName?: string;
 }
-
-const NO_COVER = "/no-cover.png"
 
 const observers = new Map<string, IntersectionObserver>();
 const observerCallbacks = new WeakMap<Element, () => void>();
@@ -175,7 +173,7 @@ export function DeferredImage(props: DeferredImageProps) {
                     decoding="async"
                     onLoad={() => setIsLowResLoaded(true)}
                     className={cn(
-                        "absolute inset-0 h-full w-full object-cover scale-[1.08] filter blur-[12px] transition-opacity duration-500 ease-out",
+                        "absolute inset-0 h-full w-full object-cover scale-[1.08] filter blur-[12px] transition-opacity duration-slow ease-out",
                         isLowResLoaded ? "opacity-100" : "opacity-0",
                         imgClassName
                     )}
@@ -192,7 +190,7 @@ export function DeferredImage(props: DeferredImageProps) {
                     onLoad={handleLoad}
                     onError={handleError}
                     className={cn(
-                        "relative h-full w-full object-cover transition-opacity duration-500 ease-out",
+                        "relative h-full w-full object-cover transition-opacity duration-slow ease-out",
                         !isLoaded && "will-change-[opacity]",  // Only hint GPU during the fade-in
                         isLoaded ? "opacity-100" : "opacity-0",
                         imgClassName
@@ -208,15 +206,8 @@ export function DeferredImage(props: DeferredImageProps) {
                         fallback
                     ) : (
                         <>
-                            <ImageOff className="mb-2 h-8 w-8 opacity-20" />
-                            <img
-                                src={NO_COVER}
-                                alt=""
-                                aria-hidden="true"
-                                decoding="async"
-                                className="absolute inset-0 h-full w-full object-cover opacity-10"
-                            />
-                            <span className="px-4 text-center text-[10px] font-medium uppercase tracking-wider opacity-40">
+                            <Icons.status.imageOff className="mb-2 h-8 w-8 opacity-20" />
+                            <span className="px-4 text-center text-label-sm font-medium uppercase tracking-wider opacity-40">
                                 Imagen no disponible
                             </span>
                         </>

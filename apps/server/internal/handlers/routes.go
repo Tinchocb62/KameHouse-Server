@@ -170,6 +170,10 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	v1.POST("/directory-selector", h.HandleDirectorySelector)
 	v1.POST("/open-in-explorer", h.HandleOpenInExplorer)
 	v1.GET("/lore/dragonball", h.HandleGetDragonballLore)
+	v1.GET("/music/scan", h.HandleScanBackgroundMusic)
+	v1.GET("/music/stream", h.HandleStreamBackgroundMusic)
+	v1.GET("/cast/devices", h.HandleGetCastDevices)
+	v1.POST("/cast/play", h.HandleCastPlay)
 
 	h.RegisterLibraryRoutes(v1)
 	h.RegisterStreamingRoutes(v1)

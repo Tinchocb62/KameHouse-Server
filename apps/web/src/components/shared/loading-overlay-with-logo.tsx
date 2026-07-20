@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { LoadingOverlay } from "@/components/ui/loading-spinner"
 import { __isDesktop__ } from "@/types/constants"
 import React, { useEffect, useState } from "react"
-import { Settings, RefreshCw } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 
 const CONNECTION_TIMEOUT_MS = 20000 // 20 seconds
 
@@ -37,7 +37,7 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                     {Array.from({ length: 7 }).map((_, i) => (
                         <div
                             key={i}
-                            className="absolute w-3 h-3 bg-brand-orange rounded-full shadow-[0_0_10px_hsl(var(--brand-orange)/0.8)]"
+                            className="absolute w-3 h-3 bg-brand-accent rounded-full shadow-[0_0_10px_hsl(var(--brand-accent)/0.8)]"
                             style={{
                                 top: "50%",
                                 left: "50%",
@@ -48,11 +48,11 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                 </div>
 
                 {/* Simple text or pulse inside the orbit */}
-                <div className="w-4 h-4 bg-brand-orange/20 rounded-full animate-ping" />
+                <div className="w-4 h-4 bg-brand-accent/20 rounded-full animate-ping" />
             </div>
 
             {timedOut ? (
-                <div className="flex flex-col items-center gap-4 mt-8 z-[1] animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex flex-col items-center gap-4 mt-8 z-[1] animate-in fade-in slide-in-from-bottom-2 duration-slow">
                     <p className="text-zinc-500 text-xs font-medium uppercase tracking-widest text-center max-w-xs">
                         Error de conexión<br />
                         <span className="opacity-50 mt-1 block font-light">El servidor no responde</span>
@@ -62,8 +62,8 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                             onClick={() => window.location.reload()}
                             intent="gray"
                             size="sm"
-                            className="rounded-xl border-zinc-800 uppercase tracking-widest text-[10px]"
-                            leftIcon={<RefreshCw />}
+                            className="rounded-xl border-zinc-800 uppercase tracking-widest text-label-sm"
+                            leftIcon={<Icons.ui.refresh />}
                         >
                             Reintentar
                         </Button>
@@ -71,8 +71,8 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                             onClick={() => { window.location.href = "/settings" }}
                             intent="white"
                             size="sm"
-                            className="rounded-xl uppercase tracking-widest text-[10px]"
-                            leftIcon={<Settings />}
+                            className="rounded-xl uppercase tracking-widest text-label-sm"
+                            leftIcon={<Icons.navigation.settings />}
                         >
                             Configuración
                         </Button>
@@ -80,7 +80,7 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                 </div>
             ) : (
                 <div className="mt-8 flex flex-col items-center gap-2 z-[1]">
-                    <h1 className="text-white text-4xl font-bebas tracking-[0.3em] uppercase leading-none">
+                    <h1 className="text-white text-4xl font-display tracking-cinema-md uppercase leading-none">
                         {title ?? "KAMEHOUSE"}
                     </h1>
                 </div>
@@ -92,7 +92,7 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
                     className="mt-8 z-[1] rounded-none border-zinc-800"
                     intent="gray"
                     size="sm"
-                    leftIcon={<RefreshCw />}
+                    leftIcon={<Icons.ui.refresh />}
                 >
                     Recargar página
                 </Button>

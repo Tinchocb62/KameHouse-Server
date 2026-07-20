@@ -25,11 +25,15 @@ function relativeTime(dateStr?: string): string {
 }
 
 /**
- * Sidebar notification bell + dropdown panel. Shows the unread badge, and on
- * open marks everything as read. New notifications arrive via the WebSocket
- * provider, which invalidates the query this component reads.
+ * Notification bell + dropdown panel. Shows the unread badge, and on open marks
+ * everything as read. New notifications arrive via the WebSocket provider, which
+ * invalidates the query this component reads.
+ *
+ * The default shape is the sidebar's: a full-width row that grows a text label.
+ * `compact` renders it as a bare icon button for the mobile top bar, where a
+ * full-width row would eat half the screen and collide with the logo.
  */
-export function NotificationBell({ sidebarOpen }: { sidebarOpen: boolean }) {
+export function NotificationBell({ sidebarOpen, compact = false }: { sidebarOpen: boolean; compact?: boolean }) {
     const { isMobile } = useResponsive()
     const [open, setOpen] = React.useState(false)
 
@@ -50,34 +54,41 @@ export function NotificationBell({ sidebarOpen }: { sidebarOpen: boolean }) {
 
     return (
         <>
-            <div className="gsap-sidebar-item w-full flex justify-center">
+            <div className={cn("flex justify-center", !compact && "gsap-sidebar-item w-full")}>
                 <button
                     onClick={handleToggle}
                     title="Notificaciones"
+                    aria-label="Notificaciones"
                     className={cn(
-                        "flex items-center h-14 rounded-2xl group px-4 relative border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 w-full",
-                        "active:scale-95 font-bold",
-                        sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
-                        open
-                            ? "text-on-surface bg-white/[0.08]"
-                            : "text-on-surface-variant hover:text-on-surface bg-white/[0.03] hover:bg-white/[0.07]"
+                        "flex items-center group relative transition-all duration-base active:scale-95 font-bold",
+                        compact
+                            ? "h-11 w-11 justify-center rounded-full text-on-surface-variant hover:text-on-surface"
+                            : [
+                                "h-14 rounded-xl px-4 border border-white/[0.06] hover:border-white/[0.12] w-full",
+                                sidebarOpen ? "justify-start gap-4 px-5" : "justify-center md:w-14 md:px-0",
+                                open
+                                    ? "text-on-surface bg-white/[0.08]"
+                                    : "text-on-surface-variant hover:text-on-surface bg-white/[0.03] hover:bg-white/[0.07]",
+                            ]
                     )}
                 >
-                    <span className={cn("shrink-0 z-10 relative group-hover:scale-110 transition-transform duration-300", open && "text-on-surface")}>
+                    <span className={cn("shrink-0 z-10 relative group-hover:scale-110 transition-transform duration-base", open && "text-on-surface")}>
                         <Icons.ui.bell className="w-5 h-5" />
                         {unreadCount > 0 && (
-                            <span className="absolute -top-2.5 -right-2.5 bg-on-surface text-surface text-[8px] font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center border border-surface px-[3px]">
+                            <span className="absolute -top-2.5 -right-2.5 bg-on-surface text-surface text-label-sm font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center border border-surface px-[3px]">
                                 {unreadCount > 99 ? "99+" : unreadCount}
                             </span>
                         )}
                     </span>
-                    <span className={cn(
-                        "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
-                        (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
-                        open ? "text-on-surface" : "group-hover:text-on-surface"
-                    )}>
-                        Notificaciones
-                    </span>
+                    {!compact && (
+                        <span className={cn(
+                            "uppercase tracking-ultra text-label-sm font-black z-10 text-left transition-colors whitespace-nowrap",
+                            (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
+                            open ? "text-on-surface" : "group-hover:text-on-surface"
+                        )}>
+                            Notificaciones
+                        </span>
+                    )}
                 </button>
             </div>
 
@@ -88,7 +99,7 @@ export function NotificationBell({ sidebarOpen }: { sidebarOpen: boolean }) {
                     <div
                         className={cn(
                             "fixed z-[70] flex flex-col overflow-hidden",
-                            "bg-zinc-950/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 rounded-3xl",
+                            "bg-zinc-950/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 rounded-container",
                             isMobile
                                 ? "left-4 right-4 bottom-24 max-h-[60vh]"
                                 : "left-24 bottom-6 w-[380px] max-h-[70vh]"
@@ -101,7 +112,7 @@ export function NotificationBell({ sidebarOpen }: { sidebarOpen: boolean }) {
                             {notifications.length > 0 && (
                                 <button
                                     onClick={() => clearAll(undefined)}
-                                    className="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface text-label-sm uppercase tracking-widest font-black transition-colors duration-base focus-visible:ring-2 focus-visible:ring-primary rounded-button px-2 py-1"
+                                    className="flex items-center gap-1.5 text-on-surface-variant hover:text-on-surface text-label-sm uppercase tracking-widest font-black transition-colors duration-base focus-visible:ring-2 focus-visible:ring-brand-accent rounded-button px-2 py-1"
                                 >
                                     <Icons.ui.delete className="w-3.5 h-3.5" />
                                     Limpiar
@@ -126,7 +137,7 @@ export function NotificationBell({ sidebarOpen }: { sidebarOpen: boolean }) {
                                                 !n.read && "bg-white/[0.04]"
                                             )}
                                         >
-                                            <TypeIcon className="w-4 h-4 mt-0.5 shrink-0 text-brand-primary" />
+                                            <TypeIcon className="w-4 h-4 mt-0.5 shrink-0 text-brand-accent" />
                                             <div className="flex flex-col gap-0.5 min-w-0">
                                                 <span className="text-on-surface text-label-md font-bold truncate">{n.title}</span>
                                                 <span className="text-on-surface-variant text-body-md break-words">{n.message}</span>

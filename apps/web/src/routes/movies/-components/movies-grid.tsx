@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { motion } from "framer-motion"
-import { useWindowVirtualizer } from "@tanstack/react-virtual"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import type { Anime_LibraryCollectionEntry, Continuity_WatchHistory } from "@/api/generated/types"
 import { EmptyState } from "@/components/shared/empty-state"
 import { MovieCard, EraTab } from "../-MovieCard"
@@ -15,6 +15,19 @@ interface MoviesGridProps {
     handleHoverCard: (entry: (Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null) => void
 }
 
+const CARD_WIDTH = 180
+const CARD_GAP = 24
+
+/**
+ * Columns for a given container width. Two posters is the floor: on a ~384px
+ * phone three columns leave ~104px posters, and anything narrower is unreadable.
+ */
+function columnsForWidth(width: number): number {
+    if (width < 480) return 2
+    if (width < 768) return 3
+    return Math.max(1, Math.floor((width + CARD_GAP) / (CARD_WIDTH + CARD_GAP)))
+}
+
 export function MoviesGrid({
     filteredSorted,
     isLoading,
@@ -23,33 +36,60 @@ export function MoviesGrid({
     handleMovieClick,
     handleHoverCard,
 }: MoviesGridProps) {
-    // Responsive grid columns measuring
-    const gridRef = useRef<HTMLDivElement>(null)
-    const [columns, setColumns] = useState(5)
-    const [gridWidth, setGridWidth] = useState(1200)
-    const [scrollMargin, setScrollMargin] = useState(500)
+    const gridRef = useRef<HTMLDivElement | null>(null)
+    const observerRef = useRef<ResizeObserver | null>(null)
 
-    useEffect(() => {
-        if (!gridRef.current) return
-        setScrollMargin(gridRef.current.offsetTop)
+    // Seeded from the viewport rather than a fixed desktop guess: the old
+    // useState(5) rendered five hairline columns on a phone until a ResizeObserver
+    // callback corrected it, so the first paint was wrong on every mobile load —
+    // and stayed wrong wherever that callback didn't land.
+    const initialWidth = typeof window === "undefined" ? 1200 : window.innerWidth
+    const [columns, setColumns] = useState(() => columnsForWidth(initialWidth))
+    const [gridWidth, setGridWidth] = useState(initialWidth)
+    const [scrollMargin, setScrollMargin] = useState(500)
+    // La página scrollea dentro del div raíz de /movies (overflow-x-hidden fuerza
+    // overflow-y:auto), no en window: el virtualizador debe escuchar a ese elemento.
+    const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
+
+    // Callback ref, not a mount effect: the grid mounts only once data arrives
+    // (the skeleton renders first), so an effect with [] deps would find a null
+    // ref, bail, and never re-run.
+    const attachGrid = useCallback((node: HTMLDivElement | null) => {
+        observerRef.current?.disconnect()
+        gridRef.current = node
+        if (!node) {
+            observerRef.current = null
+            return
+        }
+
+        let scroller: HTMLElement | null = node.parentElement
+        while (scroller) {
+            const { overflowY } = getComputedStyle(scroller)
+            if (overflowY === "auto" || overflowY === "scroll") break
+            scroller = scroller.parentElement
+        }
+        setScrollEl(scroller)
+
+        const measure = (width: number) => {
+            setGridWidth(width)
+            setColumns(columnsForWidth(width))
+            setScrollMargin(
+                scroller
+                    ? node.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
+                    : node.offsetTop,
+            )
+        }
+
+        measure(node.getBoundingClientRect().width)
+
         const observer = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                const width = entry.contentRect.width
-                setGridWidth(width)
-                if (width < 768) {
-                    setColumns(3)
-                } else {
-                    const colCount = Math.floor((width + 24) / (180 + 24))
-                    setColumns(Math.max(1, colCount))
-                }
-            }
-            if (gridRef.current) {
-                setScrollMargin(gridRef.current.offsetTop)
-            }
+            for (const entry of entries) measure(entry.contentRect.width)
         })
-        observer.observe(gridRef.current)
-        return () => observer.disconnect()
+        observer.observe(node)
+        observerRef.current = observer
     }, [])
+
+    useEffect(() => () => observerRef.current?.disconnect(), [])
 
     const rows = useMemo(() => {
         const r = []
@@ -66,8 +106,9 @@ export function MoviesGrid({
         return Math.ceil(posterHeight + 64 + 40)
     }, [gridWidth, columns])
 
-    const virtualizer = useWindowVirtualizer({
+    const virtualizer = useVirtualizer({
         count: rows.length,
+        getScrollElement: () => scrollEl,
         estimateSize: () => rowHeight,
         overscan: 2,
         scrollMargin: scrollMargin,
@@ -86,7 +127,7 @@ export function MoviesGrid({
                 </motion.div>
             ) : (
                 <div
-                    ref={gridRef}
+                    ref={attachGrid}
                     className="relative w-full"
                     style={{ height: `${virtualizer.getTotalSize()}px` }}
                 >

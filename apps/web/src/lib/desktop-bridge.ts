@@ -1,11 +1,11 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { check } from '@tauri-apps/plugin-updater';
 
 const appWindow = getCurrentWindow();
-let pendingUpdate: any = null;
+let pendingUpdate: Awaited<ReturnType<typeof check>> | null = null;
 
 export interface ElectronAPI {
   window: {
@@ -227,7 +227,7 @@ function createElectronBridge(): ElectronAPI {
       // In Tauri, we use listen/emit from the frontend directly
       // This is for compatibility with electron.emit() calls
     },
-    send: (channel: string, ...args: unknown[]) => {
+    send: (channel: string, ..._args: unknown[]) => {
       if (isTauri()) {
         switch (channel) {
           case 'restart-server':

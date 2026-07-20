@@ -23,44 +23,6 @@ export const getVhsColor = (id: number) => {
     return colors[id % colors.length];
 };
 
-const getDragonBallStars = (seriesId: string) => {
-    switch (seriesId) {
-        case 'dragon_ball': return 1;
-        case 'dragon_ball_z': return 2;
-        case 'dragon_ball_gt': return 3;
-        case 'dragon_ball_super': return 4;
-        case 'dragon_ball_daima': return 5;
-        default: return 7;
-    }
-};
-
-const DragonBallIcon = memo(function DragonBallIcon({ stars, color }: { stars: number; color: string }) {
-    const starPositions: Record<number, [number, number][]> = {
-        1: [[5, 5]],
-        2: [[3.5, 5], [6.5, 5]],
-        3: [[5, 3.5], [3.5, 6.5], [6.5, 6.5]],
-        4: [[3.5, 3.5], [6.5, 3.5], [3.5, 6.5], [6.5, 6.5]],
-        5: [[5, 5], [3.5, 3.5], [6.5, 3.5], [3.5, 6.5], [6.5, 6.5]],
-        6: [[3.5, 3.5], [6.5, 3.5], [3.5, 5], [6.5, 5], [3.5, 6.5], [6.5, 6.5]],
-        7: [[5, 5], [3.5, 3.5], [6.5, 3.5], [3.5, 5], [6.5, 5], [3.5, 6.5], [6.5, 6.5]],
-    };
-
-    const pts = starPositions[stars] || [[5, 5]];
-
-    return (
-        <svg viewBox="0 0 10 10" className="w-3 h-3 shrink-0 opacity-80" style={{ filter: 'drop-shadow(0 0.5px 1px rgba(0,0,0,0.15))' }}>
-            <circle cx="5" cy="5" r="4.2" fill="rgba(255,255,255,0.08)" stroke={color} strokeWidth="0.8" />
-            {pts.map(([cx, cy], idx) => (
-                <polygon
-                    key={idx}
-                    points={`${cx},${cy - 0.7} ${cx + 0.2},${cy - 0.2} ${cx + 0.7},${cy - 0.2} ${cx + 0.3},${cy + 0.1} ${cx + 0.5},${cy + 0.6} ${cx},${cy + 0.3} ${cx - 0.5},${cy + 0.6} ${cx - 0.3},${cy + 0.1} ${cx - 0.7},${cy - 0.2} ${cx - 0.2},${cy - 0.2}`}
-                    fill={color}
-                />
-            ))}
-        </svg>
-    );
-});
-
 /**
  * Carrete de VHS (reel) — extraído porque estaba duplicado 1:1 dos veces
  * dentro del spine expandido.
@@ -91,7 +53,6 @@ export const SeriesCard = memo(function SeriesCard({
         getHighResImage(item.poster || item.img),
         [item.poster, item.img]);
 
-    const eraGradientFrom = spineCfg?.colors?.[0] || getVhsColor(item.id);
     const characterSrc = spineCfg?.rawImg;
 
     const dominantColors = useDominantColors(characterSrc, 3);
@@ -146,7 +107,7 @@ export const SeriesCard = memo(function SeriesCard({
         >
             {/* ─── VHS TAPE BODY ─── */}
             <div
-                className="flex-1 min-h-0 relative overflow-hidden bg-[#0a0d16] rounded-t-lg transition-all duration-700"
+                className="flex-1 min-h-0 relative overflow-hidden bg-[#0a0d16] rounded-t-lg transition-all duration-slower"
                 style={{
                     background: !isSelected ? bgGradient : '#0a0d16'
                 }}
@@ -208,7 +169,7 @@ export const SeriesCard = memo(function SeriesCard({
 
                         {/* Title */}
                         <h3 className={cn(
-                            "text-lg md:text-xl font-black text-white mb-2 leading-tight tracking-tight line-clamp-2 transition-all duration-slower ease-out",
+                            "text-lg md:text-xl font-black text-on-surface mb-2 leading-tight tracking-tight line-clamp-2 transition-all duration-slower ease-out",
                             isSelected ? "opacity-100 translate-y-0 delay-200" : "opacity-0 translate-y-3 delay-0"
                         )}>
                             {item.title}
@@ -234,7 +195,7 @@ export const SeriesCard = memo(function SeriesCard({
                             </div>
                             <div className="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-brand-secondary to-[#ff9d5c] rounded-full transition-all duration-1000 ease-out origin-left"
+                                    className="h-full bg-gradient-to-r from-brand-secondary to-[var(--brand-secondary-light)] rounded-full transition-all duration-slower ease-out origin-left"
                                     style={{ width: isSelected ? `${item.progress}%` : '0%' }}
                                 />
                             </div>
@@ -248,9 +209,9 @@ export const SeriesCard = memo(function SeriesCard({
                             <button
                                 type="button"
                                 onClick={handlePlayClick}
-                                className="w-full bg-brand-secondary hover:brightness-110 active:scale-[0.98] text-zinc-950 rounded-lg text-button-sm py-2 transition-all duration-300 flex justify-center items-center gap-2 shadow-[0_6px_16px_hsl(var(--brand-accent)/0.3)] hover:shadow-[0_10px_24px_hsl(var(--brand-accent)/0.45)] relative overflow-hidden group/btn"
+                                className="w-full bg-brand-secondary hover:brightness-110 active:scale-[0.98] text-on-secondary rounded-lg text-button-sm py-2 transition-all duration-base flex justify-center items-center gap-2 shadow-[0_6px_16px_hsl(var(--brand-accent)/0.3)] hover:shadow-[0_10px_24px_hsl(var(--brand-accent)/0.45)] relative overflow-hidden group/btn"
                             >
-                                <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+                                <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-slower ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
                                 <Icons.media.play className="w-3.5 h-3.5 fill-current" />
                                 Reproducir
                             </button>

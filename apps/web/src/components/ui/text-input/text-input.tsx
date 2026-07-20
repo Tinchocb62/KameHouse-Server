@@ -1,8 +1,9 @@
+import { Icons } from "@/components/ui/icons"
 import { cn } from "../core/styling"
 import * as React from "react"
 import { BasicField, BasicFieldOptions, extractBasicFieldProps } from "../basic-field"
 import { extractInputPartProps, InputAddon, InputAnatomy, InputContainer, InputIcon, InputStyling } from "../input"
-import { EyeOff, Eye } from "lucide-react"
+
 
 /* -------------------------------------------------------------------------------------------------
  * TextInput
@@ -60,7 +61,7 @@ export const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((pro
     }, [])
 
     const finalRightAddon = isPasswordInput
-        ? (showPassword ? <EyeOff className="cursor-pointer" onClick={togglePasswordVisibility} /> : <Eye
+        ? (showPassword ? <Icons.ui.eyeOff className="cursor-pointer" onClick={togglePasswordVisibility} /> : <Icons.ui.eye
             className="cursor-pointer"
             onClick={togglePasswordVisibility}
         />)

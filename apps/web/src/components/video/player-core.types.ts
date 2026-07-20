@@ -1,4 +1,5 @@
 import type { AudioTrack, SubtitleTrack } from "@/components/ui/track-types"
+import type { PlayerPreviewManager } from "./player-preview"
 
 export interface PlayerStats {
     currentTime: string
@@ -109,7 +110,7 @@ export interface PlayerCore {
         statsData: PlayerStats | null
         hlsLevels: { index: number; label: string; height: number }[]
         activeHlsLevel: number
-        previewManager: any
+        previewManager: PlayerPreviewManager | null
         showResume: boolean
         resumeTime: number
         autoDisableSubtitlesWhenDubbed: boolean

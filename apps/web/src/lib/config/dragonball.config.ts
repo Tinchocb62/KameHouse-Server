@@ -7,7 +7,7 @@ export * from "./dragonball_movies_lore"
 
 // ─── Resolución de Sagas ─────────────────────────────────────────────────────
 
-interface MediaForSagaResolution {
+export interface MediaForSagaResolution {
     tmdbId?: number | null
     titleRomaji?: string | null
     titleEnglish?: string | null

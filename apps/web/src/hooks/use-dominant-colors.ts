@@ -128,7 +128,7 @@ function extractColors(imageSrc: string, numColors = 3): Promise<string[]> {
                 for (const px of pixels) {
                     if (colorDistance(px, c) < 2500) count++;
                 }
-                const [h, s, l] = rgbToHsl(c[0], c[1], c[2]);
+                const [h, s] = rgbToHsl(c[0], c[1], c[2]);
                 return { color: c, count, saturation: s, hue: h };
             });
 

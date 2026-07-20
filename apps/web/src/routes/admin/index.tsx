@@ -51,12 +51,12 @@ function AdminHeader() {
                         <h1 className="text-h2 font-display text-on-surface tracking-tight">Panel de Administración</h1>
                         <p className="text-body-md text-on-surface-variant/70 mt-2">Gestiona y monitorea tu instancia de KameHouse</p>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                        <button className="inline-flex items-center justify-center gap-2 px-5 h-10 border border-outline-variant text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:border-primary hover:bg-primary/10 active:scale-[0.97]">
+                    <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto flex-wrap">
+                        <button className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-10 border border-outline-variant text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:border-brand-accent hover:bg-brand-accent/10 active:scale-[0.97]">
                             <Icons.ui.download size={16} strokeWidth={2.5} />
                             Backup
                         </button>
-                        <button className="inline-flex items-center justify-center gap-2 px-5 h-10 bg-primary text-on-surface font-semibold text-sm rounded-button transition-all duration-fast active:scale-[0.97]">
+                        <button className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-10 bg-brand-accent text-on-primary font-semibold text-sm rounded-button transition-all duration-fast active:scale-[0.97]">
                             <Icons.ui.refresh size={16} strokeWidth={2.5} />
                             Reiniciar Servicios
                         </button>
@@ -119,7 +119,7 @@ function AdminSection({ title, subtitle, children }: { title: string; subtitle?:
 }
 
 function AdminActionsGrid() {
-    const { mutate: scanLibrary, isPending } = useScanLocalFiles()
+    const { mutate: scanLibrary } = useScanLocalFiles()
 
     const actions = [
         { label: "Escanear Biblioteca", desc: "Detectar nuevos archivos", icon: Icons.navigation.search, variant: "primary" as const, action: () => scanLibrary({ mode: "fast", skipLockedFiles: false, skipIgnoredFiles: false }) },
@@ -137,11 +137,11 @@ function AdminActionsGrid() {
                     <div className="flex items-start gap-4">
                         <div className={cn(
                             "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform",
-                            action.variant === "primary" && "bg-brand-primary/20 text-brand-primary",
+                            action.variant === "primary" && "bg-brand-accent/20 text-brand-accent",
                             action.variant === "secondary" && "bg-brand-secondary/20 text-brand-secondary",
                             action.variant === "destructive" && "bg-brand-destructive/20 text-brand-destructive",
                             action.variant === "outline" && "bg-surface-container border border-outline-variant text-on-surface-variant",
-                            (action as any).variant === "magic" && "bg-brand-magic/20 text-brand-magic",
+                            (action.variant as string) === "magic" && "bg-brand-magic/20 text-brand-magic",
                         )}>
                             <action.icon size={24} strokeWidth={2.5} />
                         </div>
@@ -149,7 +149,7 @@ function AdminActionsGrid() {
                             <h3 className="text-h6 font-display text-on-surface tracking-wide">{action.label}</h3>
                             <p className="text-body-sm text-on-surface-variant/70 mt-1">{action.desc}</p>
                         </div>
-                        <Icons.arrow.right size={20} className="text-on-surface-variant/70 group-hover:text-primary transition-colors shrink-0 mt-1" />
+                        <Icons.arrow.right size={20} className="text-on-surface-variant/70 group-hover:text-brand-accent transition-colors shrink-0 mt-1" />
                     </div>
                 </div>
             ))}
@@ -233,7 +233,7 @@ function AdminSystemGrid() {
                             <h3 className="text-h6 font-display text-on-surface tracking-wide">{item.label}</h3>
                             <p className="text-body-sm text-on-surface-variant/70 mt-1">{item.desc}</p>
                         </div>
-                        <Icons.arrow.right size={20} className="text-on-surface-variant/70 group-hover:text-primary transition-colors shrink-0 mt-1" />
+                        <Icons.arrow.right size={20} className="text-on-surface-variant/70 group-hover:text-brand-accent transition-colors shrink-0 mt-1" />
                     </div>
                 </div>
             ))}

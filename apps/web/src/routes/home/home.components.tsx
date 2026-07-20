@@ -1,5 +1,5 @@
 import * as React from "react"
-import { AlertTriangle, FolderOpen, RefreshCcw, Database, Settings } from "lucide-react"
+import { AlertTriangle, RefreshCcw, Database, Settings } from "lucide-react"
 import { EmptyState as SharedEmptyState } from "@/components/shared/empty-state"
 import { useNavigate } from "@tanstack/react-router"
 export { ErrorBoundary } from "@/components/shared/app-error-boundary"
@@ -18,7 +18,7 @@ export function ErrorBanner({ message }: { message: string }) {
                     <button
                         type="button"
                         onClick={() => window.location.reload()}
-                        className="flex items-center gap-3 px-8 py-3 rounded-full bg-primary text-on-primary font-bebas tracking-widest active:scale-95"
+                        className="flex items-center gap-3 px-8 py-3 rounded-full bg-brand-accent text-on-primary font-display tracking-widest active:scale-95"
                         aria-label="Reintentar conexión"
                     >
                         <RefreshCcw className="w-4 h-4" />
@@ -50,7 +50,7 @@ export function EmptyState() {
                     <button
                         type="button"
                         onClick={() => navigate({ to: "/settings" })}
-                        className="flex items-center gap-3 px-8 py-3.5 rounded-full bg-primary text-on-primary font-bebas tracking-widest text-sm active:scale-95"
+                        className="flex items-center gap-3 px-8 py-3.5 rounded-full bg-brand-accent text-on-primary font-display tracking-widest text-sm active:scale-95"
                         aria-label="Ir a Configuración"
                     >
                         <Settings className="w-4 h-4" />

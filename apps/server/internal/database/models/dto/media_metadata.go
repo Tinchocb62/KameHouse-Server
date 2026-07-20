@@ -43,7 +43,7 @@ type SagaDTO struct {
 	StartEp       int            `json:"startEp"`
 	EndEp         int            `json:"endEp"`
 	Description   string         `json:"description"`
-	IsFiller      bool           `json:"isFiller"`     // True if the entire saga is filler (e.g., Garlic Jr.)
+	IsFiller      bool           `json:"isFiller"` // True if the entire saga is filler (e.g., Garlic Jr.)
 	CanonStatus   string         `json:"canonStatus"`
 	Antagonists   []string       `json:"antagonists"`
 	KeyEvents     []string       `json:"keyEvents"`

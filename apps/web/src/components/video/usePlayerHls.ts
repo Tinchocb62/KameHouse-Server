@@ -63,7 +63,7 @@ export function usePlayerHls({
     videoRef,
     hlsRef,
     playableUrl,
-    absoluteLanUrl,
+    absoluteLanUrl: _absoluteLanUrl,
     backendTracks,
     initialProgressSeconds,
     streamSwitchResumeRef,
@@ -228,8 +228,6 @@ export function usePlayerHls({
             /WebOS/i.test(navigator.userAgent) ||
             /Web0S/i.test(navigator.userAgent)
         )
-        const canPlayNatively = video.canPlayType("application/vnd.apple.mpegurl") !== ""
-
         if (isHlsUrl && Hls.isSupported()) {
             // ... (keep HLS setup as is)
             const hls = new Hls({

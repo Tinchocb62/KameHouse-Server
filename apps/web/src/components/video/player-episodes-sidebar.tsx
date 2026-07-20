@@ -52,8 +52,8 @@ export function PlayerEpisodesSidebar({
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-white/5 shrink-0">
-                            <h3 className="text-sm font-black tracking-[0.25em] text-white uppercase flex items-center ml-2 [&>*:not(:first-child)]:ml-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-pulse" />
+                            <h3 className="text-sm font-black tracking-cinema text-white uppercase flex items-center ml-2 [&>*:not(:first-child)]:ml-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
                                 EPISODIOS
                             </h3>
                             <button
@@ -72,19 +72,19 @@ export function PlayerEpisodesSidebar({
                                 <button
                                     onClick={() => onMarathonModeChange(!marathonMode)}
                                     className={cn(
-                                        "flex items-center justify-between w-full p-3 rounded-xl border transition-all duration-300",
+                                        "flex items-center justify-between w-full p-3 rounded-xl border transition-all duration-base",
                                         marathonMode
-                                            ? "bg-brand-orange/10 border-brand-orange/30 text-white"
+                                            ? "bg-brand-accent/10 border-brand-accent/30 text-white"
                                             : "bg-white/[0.02] border-white/5 text-zinc-400 hover:text-white"
                                     )}
                                 >
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Modo Maratón</span>
+                                    <span className="text-label-sm font-black uppercase tracking-widest">Modo Maratón</span>
                                     <div className={cn(
-                                        "w-8 h-4 rounded-full relative transition-all duration-300",
-                                        marathonMode ? "bg-brand-orange" : "bg-surface-variant"
+                                        "w-8 h-4 rounded-full relative transition-all duration-base",
+                                        marathonMode ? "bg-brand-accent" : "bg-surface-variant"
                                     )}>
                                         <div className={cn(
-                                            "absolute top-[2px] w-2.5 h-2.5 rounded-full transition-all duration-300",
+                                            "absolute top-[2px] w-2.5 h-2.5 rounded-full transition-all duration-base",
                                             marathonMode ? "left-[17px] bg-white" : "left-[3px] bg-zinc-400"
                                         )} />
                                     </div>
@@ -108,9 +108,9 @@ export function PlayerEpisodesSidebar({
                                             onClose()
                                         }}
                                         className={cn(
-                                            "w-full text-left flex p-3 rounded-xl border transition-all duration-300 group [&>*:not(:first-child)]:ml-4",
+                                            "w-full text-left flex p-3 rounded-xl border transition-all duration-base group [&>*:not(:first-child)]:ml-4",
                                             isCurrent
-                                                ? "bg-brand-orange/10 border-brand-orange/30 text-white shadow-[0_0_15px_rgba(255,110,58,0.1)]"
+                                                ? "bg-brand-accent/10 border-brand-accent/30 text-white shadow-[0_0_15px_hsl(var(--brand-accent)/0.1)]"
                                                 : "bg-white/[0.02] border-white/5 text-zinc-400 hover:text-white hover:bg-white/[0.04] hover:border-white/10"
                                         )}
                                     >
@@ -120,24 +120,24 @@ export function PlayerEpisodesSidebar({
                                                 <DeferredImage
                                                     src={ep.thumbnail}
                                                     alt={ep.title || `Episodio ${epNum}`}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
                                                     showSkeleton={false}
                                                 />
                                             ) : (
-                                                <span className="text-[10px] font-black text-zinc-700">SIN IMAGEN</span>
+                                                <span className="text-label-sm font-black text-zinc-700">SIN IMAGEN</span>
                                             )}
 
                                             {/* Dark overlay */}
-                                            <div className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_20%,transparent)] group-hover:bg-black/0 transition-colors duration-300" />
+                                            <div className="absolute inset-0 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_20%,transparent)] group-hover:bg-black/0 transition-colors duration-base" />
 
                                             {/* Play overlay for current or hover */}
                                             <div className={cn(
-                                                "absolute inset-0 flex items-center justify-center transition-all duration-300",
-                                                isCurrent ? "opacity-100 bg-brand-orange/10" : "opacity-0 group-hover:opacity-100 bg-black/40"
+                                                "absolute inset-0 flex items-center justify-center transition-all duration-base",
+                                                isCurrent ? "opacity-100 bg-brand-accent/10" : "opacity-0 group-hover:opacity-100 bg-black/40"
                                             )}>
                                                 <svg className={cn(
-                                                    "w-5 h-5 drop-shadow-md transition-transform duration-300",
-                                                    isCurrent ? "text-brand-orange scale-110" : "text-white scale-90 group-hover:scale-100"
+                                                    "w-5 h-5 drop-shadow-md transition-transform duration-base",
+                                                    isCurrent ? "text-brand-accent scale-110" : "text-white scale-90 group-hover:scale-100"
                                                 )} fill="currentColor" viewBox="0 0 24 24">
                                                     <path d="M8 5v14l11-7z" />
                                                 </svg>
@@ -148,14 +148,14 @@ export function PlayerEpisodesSidebar({
                                         <div className="flex-1 min-w-0 flex flex-col justify-center">
                                             <div className="flex items-center mb-1 [&>*:not(:first-child)]:ml-2">
                                                 <span className={cn(
-                                                    "text-[9px] font-black tracking-widest",
-                                                    isCurrent ? "text-brand-orange" : "text-zinc-500"
+                                                    "text-label-sm font-black tracking-widest",
+                                                    isCurrent ? "text-brand-accent" : "text-zinc-500"
                                                 )}>
                                                     EPISODIO {epNum}
                                                 </span>
 
                                                 {ep.watched && (
-                                                    <span className="flex items-center justify-center w-3 h-3 rounded-full bg-green-500/20 text-green-500 border border-green-500/30">
+                                                    <span className="flex items-center justify-center w-3 h-3 rounded-full bg-status-success/20 text-status-success border border-status-success/30">
                                                         <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                         </svg>
@@ -163,7 +163,7 @@ export function PlayerEpisodesSidebar({
                                                 )}
                                             </div>
                                             <h4 className={cn(
-                                                "text-[11px] font-black uppercase tracking-wider truncate leading-tight transition-colors",
+                                                "text-label-md font-black uppercase tracking-wider truncate leading-tight transition-colors",
                                                 isCurrent ? "text-white" : "text-zinc-300 group-hover:text-white"
                                             )}>
                                                 {ep.title || `Episodio ${epNum}`}

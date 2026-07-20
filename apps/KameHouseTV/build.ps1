@@ -8,7 +8,7 @@
 #>
 
 param(
-    [string]$Profile = "kamecert",
+    [string]$Profile = "KameHouseSamsung",
     [string]$TvIp = "",
     [string]$OutputDir = "",
     [switch]$NoSign

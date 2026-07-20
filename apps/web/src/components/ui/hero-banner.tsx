@@ -1,6 +1,6 @@
 import { cn } from "@/components/ui/core/styling"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Info, Play, ChevronLeft, ChevronRight } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ParticleBackground } from "@/components/shared/particle-bg"
@@ -101,7 +101,7 @@ export function HeroBanner({
                         src={activeItem.backdropUrl}
                         alt=""
                         className={cn(
-                            "h-full w-full object-cover object-[center_15%] brightness-[0.45] saturate-[0.9] transition-opacity duration-1000 animate-hero-ken-burns",
+                            "h-full w-full object-cover object-[center_15%] brightness-[0.45] saturate-[0.9] transition-opacity duration-slow animate-hero-ken-burns",
                             playVideo && activeItem.youtubeTrailerId ? "opacity-0" : "opacity-100"
                         )}
                     />
@@ -110,7 +110,7 @@ export function HeroBanner({
                     {activeItem.youtubeTrailerId && playVideo && (
                         <iframe
                             src={`https://www.youtube.com/embed/${activeItem.youtubeTrailerId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${activeItem.youtubeTrailerId}&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1`}
-                            className="absolute pointer-events-none brightness-[0.4] saturate-[0.8] transition-opacity duration-1000"
+                            className="absolute pointer-events-none brightness-[0.4] saturate-[0.8] transition-opacity duration-slow"
                             style={{
                                 width: "100vw",
                                 height: "56.25vw", /* 16:9 ratio */
@@ -148,8 +148,8 @@ export function HeroBanner({
                             className="space-y-6"
                         >
                             {/* Metadata */}
-                            <div className="flex items-center text-[10px] font-black uppercase tracking-[0.3em] text-white/50 [&>*:not(:first-child)]:ml-4">
-                                {activeItem.year && <span>{activeItem.year}</span>}
+                            <div className="flex items-center text-label-sm font-black uppercase tracking-cinema-md text-white/50 [&>*:not(:first-child)]:ml-4">
+                                {!!activeItem.year && <span>{activeItem.year}</span>}
                                 {activeItem.format && (
                                     <>
                                         <div className="h-1 w-1 rounded-full bg-on-surface/20" />
@@ -159,13 +159,13 @@ export function HeroBanner({
                                 {activeItem.rating && (
                                     <>
                                         <div className="h-1 w-1 rounded-full bg-on-surface/20" />
-                                        <span className="text-emerald-400">{(activeItem.rating * 10).toFixed(0)}% Match</span>
+                                        <span className="text-status-success">{(activeItem.rating * 10).toFixed(0)}% Match</span>
                                     </>
                                 )}
                             </div>
 
                             {/* Title */}
-                            <h1 className="font-bebas text-[5.5rem] md:text-[8rem] lg:text-[10rem] xl:text-[11.5rem] leading-[0.8] tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-100 to-zinc-400 drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] select-none">
+                            <h1 className="font-display text-[5.5rem] md:text-[8rem] lg:text-[10rem] xl:text-[11.5rem] leading-[0.8] tracking-tighter uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-100 to-zinc-400 drop-shadow-[0_8px_24px_rgba(0,0,0,0.65)] select-none">
                                 {activeItem.title}
                             </h1>
 
@@ -180,9 +180,9 @@ export function HeroBanner({
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
                                     onClick={activeItem.onPlay}
-                                    className="flex items-center bg-brand-orange text-white px-10 py-4 rounded-xl font-bebas text-xl uppercase tracking-wider shadow-[0_15px_30px_-5px_hsl(var(--brand-orange)/0.3)] hover:shadow-[0_20px_40px_-5px_hsl(var(--brand-orange)/0.45)] border border-brand-orange/20 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
+                                    className="flex items-center bg-brand-accent text-on-primary px-10 py-4 rounded-xl font-display text-xl uppercase tracking-wider shadow-[0_15px_30px_-5px_hsl(var(--brand-accent)/0.3)] hover:shadow-[0_20px_40px_-5px_hsl(var(--brand-accent)/0.45)] border border-brand-accent/20 transition-all duration-base [&>*:not(:first-child)]:ml-4"
                                 >
-                                    <Play size={20} fill="currentColor" />
+                                    <Icons.media.play size={20} fill="currentColor" />
                                     <span>Reproducir</span>
                                 </motion.button>
 
@@ -190,9 +190,9 @@ export function HeroBanner({
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
                                     onClick={activeItem.onMoreInfo}
-                                    className="flex items-center bg-surface-container backdrop-blur-[var(--blur-overlay-sm)] text-white px-10 py-4 rounded-xl border border-white/10 font-bebas text-xl uppercase tracking-wider hover:bg-white/[0.08] hover:border-white/25 transition-all duration-300 [&>*:not(:first-child)]:ml-4"
+                                    className="flex items-center bg-surface-container backdrop-blur-[var(--blur-overlay-sm)] text-white px-10 py-4 rounded-xl border border-white/10 font-display text-xl uppercase tracking-wider hover:bg-white/[0.08] hover:border-white/25 transition-all duration-base [&>*:not(:first-child)]:ml-4"
                                 >
-                                    <Info size={20} />
+                                    <Icons.ui.info size={20} />
                                     <span>Detalles</span>
                                 </motion.button>
                             </div>
@@ -205,7 +205,7 @@ export function HeroBanner({
             {items.length > 1 && (
                 <>
                     {/* Left Chevron */}
-                    <div className="absolute inset-y-0 left-0 z-30 flex items-center pl-6 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 z-30 flex items-center pl-6 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-base pointer-events-none">
                         <motion.button
                             whileHover={{ scale: 1.1, backgroundColor: "color-mix(in srgb, var(--bg-tertiary) 60%, transparent)" }}
                             whileTap={{ scale: 0.95 }}
@@ -213,15 +213,15 @@ export function HeroBanner({
                                 e.stopPropagation()
                                 handlePrev()
                             }}
-                            className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-zinc-900/40 backdrop-blur-[var(--blur-overlay-sm)] border border-white/5 text-white/70 hover:text-white transition-all duration-300 shadow-2xl"
+                            className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-zinc-900/40 backdrop-blur-[var(--blur-overlay-sm)] border border-white/5 text-white/70 hover:text-white transition-all duration-base shadow-2xl"
                             aria-label="Previous Slide"
                         >
-                            <ChevronLeft size={28} />
+                            <Icons.navigation.chevronLeft size={28} />
                         </motion.button>
                     </div>
 
                     {/* Right Chevron */}
-                    <div className="absolute inset-y-0 right-0 z-30 flex items-center pr-6 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    <div className="absolute inset-y-0 right-0 z-30 flex items-center pr-6 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-base pointer-events-none">
                         <motion.button
                             whileHover={{ scale: 1.1, backgroundColor: "color-mix(in srgb, var(--bg-tertiary) 60%, transparent)" }}
                             whileTap={{ scale: 0.95 }}
@@ -229,23 +229,23 @@ export function HeroBanner({
                                 e.stopPropagation()
                                 handleNext()
                             }}
-                            className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-zinc-900/40 backdrop-blur-[var(--blur-overlay-sm)] border border-white/5 text-white/70 hover:text-white transition-all duration-300 shadow-2xl"
+                            className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-zinc-900/40 backdrop-blur-[var(--blur-overlay-sm)] border border-white/5 text-white/70 hover:text-white transition-all duration-base shadow-2xl"
                             aria-label="Next Slide"
                         >
-                            <ChevronRight size={28} />
+                            <Icons.navigation.chevronRight size={28} />
                         </motion.button>
                     </div>
                 </>
             )}
 
             {/* ── Scroll Indicator ──────────────────────────── */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center opacity-40 hover:opacity-90 transition-opacity duration-300 pointer-events-none hidden md:flex [&>*:not(:first-child)]:mt-1.5">
-                <span className="text-[9px] tracking-[0.3em] text-white/50 uppercase font-black">Explorar Catálogo</span>
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center opacity-40 hover:opacity-90 transition-opacity duration-base pointer-events-none hidden md:flex [&>*:not(:first-child)]:mt-1.5">
+                <span className="text-label-sm tracking-cinema-md text-white/50 uppercase font-black">Explorar Catálogo</span>
                 <div className="w-5 h-7 rounded-full border border-white/20 flex justify-center p-1">
                     <motion.div 
                         animate={{ y: [0, 6, 0] }}
                         transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-                        className="w-1 h-1.5 rounded-full bg-brand-orange shadow-[0_0_6px_hsl(var(--brand-orange))]"
+                        className="w-1 h-1.5 rounded-full bg-brand-accent shadow-[0_0_6px_hsl(var(--brand-accent))]"
                     />
                 </div>
             </div>
@@ -258,9 +258,9 @@ export function HeroBanner({
                             key={idx}
                             onClick={() => setActiveIndex(idx)}
                             className={cn(
-                                "h-1.5 rounded-full transition-all duration-500 ease-out",
+                                "h-1.5 rounded-full transition-all duration-slow ease-out",
                                 activeIndex === idx 
-                                    ? "w-10 bg-brand-orange shadow-[0_0_12px_hsl(var(--brand-orange)/0.4)]" 
+                                    ? "w-10 bg-brand-accent shadow-[0_0_12px_hsl(var(--brand-accent)/0.4)]" 
                                     : "w-2.5 bg-white/25 hover:bg-white/50"
                             )}
                         />
@@ -277,7 +277,7 @@ export function HeroBannerSkeleton() {
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
             <div className="mx-auto h-full w-full max-w-content px-8 pb-48 md:px-16 flex flex-col justify-end gap-6 relative z-10">
                 <Skeleton className="h-4 w-32 bg-white/5 rounded-full" />
-                <Skeleton className="h-28 w-2/3 bg-white/5 rounded-2xl" />
+                <Skeleton className="h-28 w-2/3 bg-white/5 rounded-xl" />
                 <Skeleton className="h-16 w-1/2 bg-white/5 rounded-xl" />
                 <div className="flex gap-4 pt-4">
                     <Skeleton className="h-14 w-40 bg-white/5 rounded-xl" />

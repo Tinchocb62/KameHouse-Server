@@ -47,9 +47,8 @@ const config: Config = {
                 "4xl": "1800px",
             },
             fontFamily: {
-                sans: ["Inter Variable", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue",
-                    "Arial", "sans-serif"],
-                bebas: ["Bebas Neue", "cursive"],
+                sans: ["Outfit Variable", "Outfit", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+                display: ["Outfit Variable", "Outfit", "sans-serif"],
                 mono: ["Space Mono", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
             },
             animationDuration: {
@@ -127,6 +126,19 @@ const config: Config = {
             transformOrigin: {
                 "left-right": "0% 100%",
             },
+            letterSpacing: {
+                // Escala 0.2em del design system (typography.css --tracking-ultra),
+                // usada por label-sm/button-xs/overline. Tailwind no la trae por
+                // defecto, por eso los labels caían en el arbitrario tracking-[0.2em].
+                ultra: "var(--tracking-ultra)",
+                // Pasos cinematic (mayúsculas muy espaciadas del look v3) — antes
+                // eran arbitrarios tracking-[0.15em..0.5em] en player/heroes/overlays.
+                display: "var(--tracking-display)",
+                cinema: "var(--tracking-cinema)",
+                "cinema-md": "var(--tracking-cinema-md)",
+                "cinema-lg": "var(--tracking-cinema-lg)",
+                "cinema-xl": "var(--tracking-cinema-xl)",
+            },
             boxShadow: {
                 "md": "0 1px 3px 0 rgba(0, 0, 0, 0.1),0 1px 2px 0 rgba(0, 0, 0, 0.06)",
                 "glass": "0 20px 40px -15px rgba(0,0,0,0.7)",
@@ -135,6 +147,7 @@ const config: Config = {
                 "elevation-3": "var(--elevation-3)",
                 "elevation-4": "var(--elevation-4)",
                 "elevation-5": "var(--elevation-5)",
+                "brand-focus": "var(--shadow-brand-focus)",
             },
             borderRadius: {
                 lg: "var(--radius)",
@@ -203,10 +216,15 @@ const config: Config = {
             "on-surface": "rgba(var(--on-surface-rgb), <alpha-value>)",
             "on-surface-variant": "rgba(var(--on-surface-variant-rgb), <alpha-value>)",
             "on-primary": "rgba(var(--on-primary-rgb), <alpha-value>)",
+            "on-secondary": "rgba(var(--on-secondary-rgb), <alpha-value>)",
+            // Familia semántica de estado (error/success/warning) — separada de
+            // los brand-* (que son era colors decorativos, no estado).
+            "status-error": "rgba(var(--status-error-rgb), <alpha-value>)",
+            "status-success": "rgba(var(--status-success-rgb), <alpha-value>)",
+            "status-warning": "rgba(var(--status-warning-rgb), <alpha-value>)",
             "secondary-container": "var(--md-sys-color-secondary-container)",
             "on-secondary-container": "var(--md-sys-color-on-secondary-container)",
             "brand-accent": "hsl(var(--brand-accent) / <alpha-value>)",
-            "brand-orange": "hsl(var(--brand-orange) / <alpha-value>)",
             "brand-primary": "hsl(var(--brand-primary) / <alpha-value>)",
             "brand-secondary": "hsl(var(--brand-secondary) / <alpha-value>)",
             "brand-destructive": "hsl(var(--era-dbgt-hsl) / <alpha-value>)",

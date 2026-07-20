@@ -1,6 +1,6 @@
 import React from "react"
 import { cn } from "@/components/ui/core/styling"
-import { Ghost } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 
 interface EmptyStateProps {
     title?: string
@@ -31,15 +31,15 @@ export function EmptyState({
         )}>
             {/* Diffused series colors inside the empty state card */}
             <div className="absolute inset-0 -z-10 overflow-hidden opacity-30 pointer-events-none">
-                <div className="absolute top-[-30%] left-[-30%] w-[80%] h-[80%] rounded-full bg-brand-orange/20 blur-[50px]" />
+                <div className="absolute top-[-30%] left-[-30%] w-[80%] h-[80%] rounded-full bg-brand-accent/20 blur-[50px]" />
                 <div className="absolute bottom-[-30%] right-[-30%] w-[80%] h-[80%] rounded-full bg-indigo-500/20 blur-[50px]" />
             </div>
 
             {illustration ? (
                 <div className="mb-8 opacity-90">{illustration}</div>
             ) : (
-                <div className="mb-8 flex h-20 w-20 items-center justify-center border border-white/5 text-white rounded-2xl" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 50%, transparent)" }}>
-                    {icon ?? <Ghost className="h-10 w-10 animate-pulse-slow" />}
+                <div className="mb-8 flex h-20 w-20 items-center justify-center border border-white/5 text-white rounded-container" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 50%, transparent)" }}>
+                    {icon ?? <Icons.status.ghost className="h-10 w-10 text-brand-accent animate-pulse-slow" />}
                 </div>
             )}
             
@@ -49,7 +49,7 @@ export function EmptyState({
             </p>
             
             {action && (
-                <div className="mt-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="mt-10 animate-in fade-in slide-in-from-bottom-4 duration-slow">
                     {action}
                 </div>
             )}

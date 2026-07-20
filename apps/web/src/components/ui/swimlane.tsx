@@ -45,7 +45,6 @@ interface MediaStackProps extends MediaCardProps {
 
 function MediaStack({ stackCount = 2, className, ...props }: MediaStackProps) {
     const stackItems = Array.from({ length: stackCount }).map((_, i) => i + 1)
-    const [isPopupOpen, setIsPopupOpen] = React.useState(false)
     const isPoster = props.aspect === "poster"
 
     return (
@@ -57,14 +56,14 @@ function MediaStack({ stackCount = 2, className, ...props }: MediaStackProps) {
                     className={cn(
                         "absolute inset-0 border border-white/5 shadow-2xl overflow-hidden",
                         "bg-zinc-900/50 backdrop-blur-[var(--blur-overlay-sm)]",
-                        isPoster ? "rounded-xl" : "rounded-2xl"
+                        isPoster ? "rounded-xl" : "rounded-xl"
                     )}
                     initial={false}
                     animate={{
-                        x: isPopupOpen ? 0 : idx * 4,
-                        y: isPopupOpen ? 0 : idx * 4,
-                        scale: isPopupOpen ? 0.95 : 1,
-                        opacity: isPopupOpen ? 0 : 1,
+                        x: idx * 4,
+                        y: idx * 4,
+                        scale: 1,
+                        opacity: 1,
                     }}
                     whileHover={{
                         x: idx * 12,
@@ -90,11 +89,11 @@ function MediaStack({ stackCount = 2, className, ...props }: MediaStackProps) {
                     transition: { type: "spring", stiffness: 300, damping: 25 }
                 }}
             >
-                <MediaCard {...props} onPopupOpenChange={setIsPopupOpen} />
+                <MediaCard {...props} />
                 
                 {/* Minimalist Series Indicator */}
                 <div className="absolute top-4 right-4 z-30">
-                    <div className="bg-black/60 backdrop-blur-[var(--blur-overlay-sm)] text-white/70 text-[8px] font-black px-2 py-1 rounded-md border border-white/10 uppercase tracking-[0.2em]">
+                    <div className="bg-black/60 backdrop-blur-[var(--blur-overlay-sm)] text-white/70 text-caption font-black px-2 py-1 rounded-md border border-white/10 uppercase tracking-ultra">
                         Serie
                     </div>
                 </div>
@@ -121,7 +120,7 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
         <section className={cn("relative py-8 max-w-content mx-auto", className)}>
             {title && (
                 <div className="mb-8 flex items-center page-px [&>*:not(:first-child)]:ml-4">
-                    <h2 className="text-3xl font-bebas font-normal uppercase tracking-[0.15em] text-white/90">
+                    <h2 className="text-3xl font-display font-normal uppercase tracking-display text-white/90">
                         {title}
                     </h2>
                 </div>
@@ -160,12 +159,14 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
                                     {...item}
                                     artwork={item.image}
                                     aspect={item.aspect ?? defaultAspect}
+                                    compact={!!ts.themeSmallerEpisodeCarouselSize}
                                 />
                             ) : (
                                 <MediaCard
                                     {...item}
                                     artwork={item.image}
                                     aspect={item.aspect ?? defaultAspect}
+                                    compact={!!ts.themeSmallerEpisodeCarouselSize}
                                 />
                             )}
                         </motion.div>
@@ -178,7 +179,6 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
 SwimlaneInner.displayName = "Swimlane"
 
 export function SwimlaneSkeleton({
-    title,
     aspect = "poster",
     itemCount = 6,
     className,
@@ -209,7 +209,7 @@ export function SwimlaneSkeleton({
             <div className="flex overflow-hidden page-px pb-3 [&>*:not(:first-child)]:ml-6">
                 {Array.from({ length: itemCount }).map((_, i) => (
                     <div key={i} className={cn("flex-shrink-0", cardWidths[aspect])}>
-                        <Skeleton className={cn("mb-6 bg-white/[0.03] border border-white/5 rounded-2xl shadow-2xl", cardAspects[aspect])} />
+                        <Skeleton className={cn("mb-6 bg-white/[0.03] border border-white/5 rounded-xl shadow-2xl", cardAspects[aspect])} />
                         <Skeleton className="mb-3 h-5 w-3/4 bg-white/[0.02] rounded-md" />
                         <Skeleton className="h-4 w-1/2 bg-white/[0.015] rounded-md" />
                     </div>

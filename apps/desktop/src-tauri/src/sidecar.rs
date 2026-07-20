@@ -133,6 +133,65 @@ impl SidecarManager {
         }
     }
 
+    /// Preflight cleanup: if a previous KameHouse sidecar (typically orphaned by an abrupt
+    /// `tauri dev` restart / Ctrl-C) is still listening on `port`, terminate it so the freshly
+    /// spawned server can bind the port. We confirm the shape via `/api/v1/status`
+    /// (`isDesktopSidecar == true`) before killing so we never touch an unrelated process that
+    /// happens to occupy the port.
+    async fn reap_orphan_on_port(&self, port: u16) {
+        let client = reqwest::Client::new();
+        let url = format!("http://{}:{}/api/v1/status", DESKTOP_SERVER_HOST, port);
+
+        let orphan_pid = match timeout(Duration::from_millis(500), client.get(&url).send()).await {
+            Ok(Ok(resp)) if resp.status().is_success() => {
+                match resp.json::<serde_json::Value>().await {
+                    Ok(body) => {
+                        let is_sidecar = body.get("isDesktopSidecar").and_then(|v| v.as_bool()).unwrap_or(false);
+                        let pid = body.get("pid").and_then(|v| v.as_u64());
+                        if is_sidecar {
+                            pid
+                        } else {
+                            None
+                        }
+                    }
+                    Err(_) => None,
+                }
+            }
+            // No response / error / non-2xx: no orphan to reap, healthy fast path.
+            _ => return,
+        };
+
+        let pid = match orphan_pid {
+            Some(pid) if pid > 0 => pid,
+            _ => return,
+        };
+
+        warn!("[Sidecar] Found orphan KameHouse sidecar (pid {}) on port {}, terminating", pid, port);
+
+        #[cfg(windows)]
+        {
+            let _ = std::process::Command::new("taskkill")
+                .args(["/PID", &pid.to_string(), "/F"])
+                .output();
+        }
+        #[cfg(unix)]
+        {
+            let _ = std::process::Command::new("kill")
+                .args(["-9", &pid.to_string()])
+                .output();
+        }
+
+        // Wait (up to ~2s) for the port to actually free up before we let the new process try to
+        // bind it, avoiding a race against the dying process' socket / TIME_WAIT.
+        for _ in 0..20 {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            match timeout(Duration::from_millis(300), client.get(&url).send()).await {
+                Ok(Ok(_)) => continue, // still responding, keep waiting
+                _ => break,            // port no longer answers -> freed
+            }
+        }
+    }
+
     pub async fn launch<R: Runtime>(
         &self,
         app_handle: &AppHandle<R>,
@@ -206,6 +265,10 @@ impl SidecarManager {
         if settings.disable_hardware_acceleration {
             env_vars.insert("KAMEHOUSE_DISABLE_GPU".to_string(), "1".to_string());
         }
+
+        // Reap any orphaned KameHouse sidecar still holding our port before spawning, so the
+        // new process can bind cleanly instead of dying with "port is busy".
+        self.reap_orphan_on_port(self.get_port()).await;
 
         info!("[Sidecar] Spawning server process: {:?} with args: {:?}", binary_path, args);
 

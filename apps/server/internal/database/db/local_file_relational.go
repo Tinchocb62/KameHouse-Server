@@ -26,6 +26,34 @@ func GetAllLocalFilesRelational(d *Database) ([]*dto.LocalFile, error) {
 }
 
 // GetLocalFilesByMediaIDRelational retrieves all local files for a specific media ID.
+// GetLibraryMediaByExternalMediaID resuelve el LibraryMedia a partir del mediaId
+// EXTERNO (derivado de TMDB) con el que se indexan la API, local_file.media_id y
+// episode_skip_times.media_id.
+//
+// Ese id NO es la PK de library_media: los dos espacios de ids no se solapan, así
+// que un `Where("id = ?", mediaID)` sobre library_media devuelve siempre
+// ErrRecordNotFound. Como ese "not found" suele tratarse como "esta media no
+// tiene mapeo" en vez de como un bug, la feature que dependa de él se apaga en
+// silencio (le pasó al Método A de skipdetect y a HandleResolveMAL). Resolvemos
+// por la FK library_media_id de los archivos locales, que vale igual para series
+// y para películas (cuyo id externo va prefijado).
+//
+// Devuelve ErrRecordNotFound si la media no está en la librería local.
+func GetLibraryMediaByExternalMediaID(d *Database, mediaID int) (*models.LibraryMedia, error) {
+	var lf models.LocalFile
+	if err := d.gormdb.
+		Where("media_id = ? AND library_media_id > 0", mediaID).
+		First(&lf).Error; err != nil {
+		return nil, err
+	}
+
+	var lm models.LibraryMedia
+	if err := d.gormdb.Where("id = ?", lf.LibraryMediaId).First(&lm).Error; err != nil {
+		return nil, err
+	}
+	return &lm, nil
+}
+
 func GetLocalFilesByMediaIDRelational(d *Database, mediaID int) ([]*dto.LocalFile, error) {
 	var dbFiles []*models.LocalFile
 	err := d.gormdb.Where("media_id = ?", mediaID).Find(&dbFiles).Error
@@ -101,7 +129,7 @@ func SyncLocalFilesRelational(d *Database, files []*dto.LocalFile) error {
 				end = len(paths)
 			}
 			batch := paths[i:end]
-			
+
 			// GORM doesn't easily support batch insert of primitives into raw tables, so we build the SQL
 			placeholders := make([]string, len(batch))
 			vals := make([]interface{}, len(batch))

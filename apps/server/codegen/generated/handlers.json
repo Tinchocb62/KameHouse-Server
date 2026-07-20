@@ -882,6 +882,81 @@
     }
   },
   {
+    "name": "connectedCastDevices",
+    "trimmedName": "connectedCastDevices",
+    "comments": [
+      "connectedCastDevices devuelve los IDs de conexión WS que pertenecen a TVs.",
+      ""
+    ],
+    "filepath": "internal/handlers/cast.go",
+    "filename": "cast.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleGetCastDevices",
+    "trimmedName": "GetCastDevices",
+    "comments": [
+      "HandleGetCastDevices",
+      "",
+      "\t@summary lista las TVs (KameHouseTV) conectadas por WebSocket disponibles para cast.",
+      "\t@route /api/v1/cast/devices [GET]",
+      "\t@returns handlers.CastDevicesResponse",
+      ""
+    ],
+    "filepath": "internal/handlers/cast.go",
+    "filename": "cast.go",
+    "api": {
+      "summary": "lista las TVs (KameHouseTV) conectadas por WebSocket disponibles para cast.",
+      "descriptions": [],
+      "endpoint": "/api/v1/cast/devices",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "handlers.CastDevicesResponse",
+      "returnGoType": "handlers.CastDevicesResponse",
+      "returnTypescriptType": "CastDevicesResponse"
+    }
+  },
+  {
+    "name": "HandleCastPlay",
+    "trimmedName": "CastPlay",
+    "comments": [
+      "HandleCastPlay",
+      "",
+      "\t@summary envía un comando de reproducción a una TV conectada (o a todas si no se indica deviceId).",
+      "\t@route /api/v1/cast/play [POST]",
+      "\t@returns handlers.CastPlayResponse",
+      ""
+    ],
+    "filepath": "internal/handlers/cast.go",
+    "filename": "cast.go",
+    "api": {
+      "summary": "envía un comando de reproducción a una TV conectada (o a todas si no se indica deviceId).",
+      "descriptions": [],
+      "endpoint": "/api/v1/cast/play",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "handlers.CastPlayResponse",
+      "returnGoType": "handlers.CastPlayResponse",
+      "returnTypescriptType": "CastPlayResponse"
+    }
+  },
+  {
     "name": "HandleGetCollection",
     "trimmedName": "GetCollection",
     "comments": [
@@ -2780,6 +2855,91 @@
     }
   },
   {
+    "name": "autoDetectSkipTimesEnabled",
+    "trimmedName": "autoDetectSkipTimesEnabled",
+    "comments": [
+      "autoDetectSkipTimesEnabled indica si el scan oportunista de skip times está",
+      "habilitado en la configuración de la biblioteca (default true).",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "transcodeActive",
+    "trimmedName": "transcodeActive",
+    "comments": [
+      "transcodeActive indica si hay una reproducción en curso servida por el",
+      "transcoder (que compite fuerte por CPU/IO). El direct play es barato y no se",
+      "considera. Ante cualquier duda (repo no inicializado) devolvemos false para no",
+      "bloquear la detección.",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleScanEpisodeSkipTimes",
+    "trimmedName": "ScanEpisodeSkipTimes",
+    "comments": [
+      "HandleScanEpisodeSkipTimes triggers a background scan to detect skip times for a series.",
+      "",
+      "\t@summary trigger skip times auto-scan.",
+      "\t@desc Starts a background detection job (AnimeThemes → cross-episode fingerprint → ASS subtitles) to find intro/outro boundaries for all episodes of a series.",
+      "\t@route /api/v1/mediastream/skip-times/scan [POST]",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "trigger skip times auto-scan.",
+      "descriptions": [
+        "Starts a background detection job (AnimeThemes → cross-episode fingerprint → ASS subtitles) to find intro/outro boundaries for all episodes of a series."
+      ],
+      "endpoint": "/api/v1/mediastream/skip-times/scan",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [
+        {
+          "name": "MediaID",
+          "jsonName": "mediaId",
+          "goType": "int",
+          "usedStructType": "",
+          "typescriptType": "number",
+          "required": true,
+          "descriptions": []
+        }
+      ],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
     "name": "HandleResolveMAL",
     "trimmedName": "ResolveMAL",
     "comments": [
@@ -3015,6 +3175,59 @@
           "descriptions": []
         }
       ],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleScanBackgroundMusic",
+    "trimmedName": "ScanBackgroundMusic",
+    "comments": [
+      "HandleScanBackgroundMusic",
+      "",
+      "\t@summary lista los archivos de audio de la carpeta indicada para usarlos como música de fondo.",
+      "\t@route /api/v1/music/scan [GET]",
+      "\t@returns handlers.BackgroundMusicScanResponse",
+      ""
+    ],
+    "filepath": "internal/handlers/music.go",
+    "filename": "music.go",
+    "api": {
+      "summary": "lista los archivos de audio de la carpeta indicada para usarlos como música de fondo.",
+      "descriptions": [],
+      "endpoint": "/api/v1/music/scan",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "handlers.BackgroundMusicScanResponse",
+      "returnGoType": "handlers.BackgroundMusicScanResponse",
+      "returnTypescriptType": "BackgroundMusicScanResponse"
+    }
+  },
+  {
+    "name": "HandleStreamBackgroundMusic",
+    "trimmedName": "StreamBackgroundMusic",
+    "comments": [
+      "HandleStreamBackgroundMusic",
+      "",
+      "\t@summary sirve un archivo de audio de la carpeta de música de fondo (soporta byte-range).",
+      "\t@route /api/v1/music/stream [GET]",
+      ""
+    ],
+    "filepath": "internal/handlers/music.go",
+    "filename": "music.go",
+    "api": {
+      "summary": "sirve un archivo de audio de la carpeta de música de fondo (soporta byte-range).",
+      "descriptions": [],
+      "endpoint": "/api/v1/music/stream",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
       "returns": "bool",
       "returnGoType": "bool",
       "returnTypescriptType": "boolean"
@@ -3376,6 +3589,129 @@
       "descriptions": [],
       "endpoint": "",
       "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "preTranscoder",
+    "trimmedName": "preTranscoder",
+    "comments": [
+      "preTranscoder resolves the pre-transcode manager, which only exists while the",
+      "feature is enabled in Settings → Streaming.",
+      ""
+    ],
+    "filepath": "internal/handlers/pretranscode.go",
+    "filename": "pretranscode.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "HandleEnqueuePreTranscode",
+    "trimmedName": "EnqueuePreTranscode",
+    "comments": [
+      "HandleEnqueuePreTranscode queues a file for background pre-transcoding.",
+      "",
+      "\t@summary queue a file for pre-transcoding.",
+      "\t@desc Queues a library file to be transcoded to HLS in the background so it plays instantly later.",
+      "\t@returns pretranscode.PreTranscodeJob",
+      "\t@route /api/v1/mediastream/pretranscode [POST]",
+      ""
+    ],
+    "filepath": "internal/handlers/pretranscode.go",
+    "filename": "pretranscode.go",
+    "api": {
+      "summary": "queue a file for pre-transcoding.",
+      "descriptions": [
+        "Queues a library file to be transcoded to HLS in the background so it plays instantly later."
+      ],
+      "endpoint": "/api/v1/mediastream/pretranscode",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [
+        {
+          "name": "Path",
+          "jsonName": "path",
+          "goType": "string",
+          "usedStructType": "",
+          "typescriptType": "string",
+          "required": true,
+          "descriptions": []
+        }
+      ],
+      "returns": "pretranscode.PreTranscodeJob",
+      "returnGoType": "pretranscode.PreTranscodeJob",
+      "returnTypescriptType": "PreTranscodeJob"
+    }
+  },
+  {
+    "name": "HandleGetPreTranscodeJobs",
+    "trimmedName": "GetPreTranscodeJobs",
+    "comments": [
+      "HandleGetPreTranscodeJobs lists every tracked pre-transcode job.",
+      "",
+      "\t@summary list pre-transcode jobs.",
+      "\t@desc Returns the pre-transcode queue with each job's status and progress.",
+      "\t@returns []pretranscode.PreTranscodeJob",
+      "\t@route /api/v1/mediastream/pretranscode [GET]",
+      ""
+    ],
+    "filepath": "internal/handlers/pretranscode.go",
+    "filename": "pretranscode.go",
+    "api": {
+      "summary": "list pre-transcode jobs.",
+      "descriptions": [
+        "Returns the pre-transcode queue with each job's status and progress."
+      ],
+      "endpoint": "/api/v1/mediastream/pretranscode",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "[]pretranscode.PreTranscodeJob",
+      "returnGoType": "pretranscode.PreTranscodeJob",
+      "returnTypescriptType": "Array\u003cPreTranscodeJob\u003e"
+    }
+  },
+  {
+    "name": "HandleCancelPreTranscode",
+    "trimmedName": "CancelPreTranscode",
+    "comments": [
+      "HandleCancelPreTranscode cancels a queued or running pre-transcode and drops",
+      "its partial output.",
+      "",
+      "\t@summary cancel a pre-transcode job.",
+      "\t@desc Cancels a queued or running pre-transcode job and deletes its partial output.",
+      "\t@returns bool",
+      "\t@route /api/v1/mediastream/pretranscode/:hash [DELETE]",
+      ""
+    ],
+    "filepath": "internal/handlers/pretranscode.go",
+    "filename": "pretranscode.go",
+    "api": {
+      "summary": "cancel a pre-transcode job.",
+      "descriptions": [
+        "Cancels a queued or running pre-transcode job and deletes its partial output."
+      ],
+      "endpoint": "/api/v1/mediastream/pretranscode/:hash",
+      "methods": [
+        "DELETE"
+      ],
       "params": [],
       "bodyFields": [],
       "returns": "bool",

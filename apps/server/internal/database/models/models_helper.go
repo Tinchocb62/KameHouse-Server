@@ -13,19 +13,12 @@ func (s *Settings) GetMediaPlayer() *MediaPlayerSettings {
 	return &s.MediaPlayer
 }
 
-
-
 func (s *Settings) GetLibrary() *LibrarySettings {
 	if s == nil {
 		return &LibrarySettings{}
 	}
 	return &s.Library
 }
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -25,7 +25,7 @@ const getType = (field: z.ZodTypeAny) => {
     }
 }
 
-const getArrayOption = (field: z.ZodTypeAny | any, name: string) => {
+const getArrayOption = (field: z.ZodTypeAny, name: string) => {
     return field._def[name]?.value
 }
 
@@ -38,7 +38,7 @@ const getArrayOption = (field: z.ZodTypeAny | any, name: string) => {
 export const getFieldsFromSchema = (schema: z.ZodTypeAny): FieldValues[] => {
     const fields: FieldValues[] = []
 
-    let schemaFields: Record<string, any> = {}
+    let schemaFields: Record<string, z.ZodTypeAny> = {}
     if (schema._def.typeName === "ZodArray") {
         schemaFields = schema._def.type.shape
     } else if (schema._def.typeName === "ZodObject") {
@@ -56,12 +56,13 @@ export const getFieldsFromSchema = (schema: z.ZodTypeAny): FieldValues[] => {
             options.max = getArrayOption(field, "maxLength")
         }
 
-        const meta = field.description && zodParseMeta(field.description)
+        const meta = field.description ? zodParseMeta(field.description) : undefined
+        const metaObj = typeof meta === "object" && meta !== null ? meta : undefined
 
         fields.push({
             name,
-            label: meta?.label || field.description || name,
-            type: meta?.type || getType(field),
+            label: metaObj?.label || field.description || name,
+            type: metaObj?.type || getType(field),
             ...options,
         })
     }
@@ -93,9 +94,9 @@ export const zodMeta = (meta: ZodMeta) => {
     return JSON.stringify(meta)
 }
 
-export const zodParseMeta = (meta: string) => {
+export const zodParseMeta = (meta: string): { label?: string; type?: string } | string => {
     try {
-        return JSON.parse(meta)
+        return JSON.parse(meta) as { label?: string; type?: string } | string
     }
     catch (_e) {
         return meta
@@ -121,7 +122,7 @@ export function getZodDefaults<Schema extends z.AnyZodObject>(schema: Schema) {
 export function getZodDescriptions<Schema extends z.AnyZodObject>(schema: Schema) {
     return Object.fromEntries(
         Object.entries(schema.shape).map(([key, value]) => {
-            return [key, (value as any)._def.description ?? undefined]
+            return [key, (value as z.ZodTypeAny)._def.description ?? undefined]
         }),
     )
 }

@@ -1,5 +1,61 @@
 [
   {
+    "filepath": "../internal/api/animethemes/client.go",
+    "filename": "client.go",
+    "name": "Client",
+    "formattedName": "Client",
+    "package": "animethemes",
+    "fields": [
+      {
+        "name": "logger",
+        "jsonName": "logger",
+        "goType": "zerolog.Logger",
+        "typescriptType": "Logger",
+        "usedTypescriptType": "Logger",
+        "usedStructName": "zerolog.Logger",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "httpClient",
+        "jsonName": "httpClient",
+        "goType": "http.Client",
+        "typescriptType": "Client",
+        "usedTypescriptType": "Client",
+        "usedStructName": "http.Client",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "db",
+        "jsonName": "db",
+        "goType": "db.Database",
+        "typescriptType": "DB_Database",
+        "usedTypescriptType": "DB_Database",
+        "usedStructName": "db.Database",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "limiter",
+        "jsonName": "limiter",
+        "goType": "limiter.Limiter",
+        "typescriptType": "Limiter",
+        "usedTypescriptType": "Limiter",
+        "usedStructName": "limiter.Limiter",
+        "required": false,
+        "public": false,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " Client consulta AnimeThemes con rate limiting y cache persistente en la DB."
+    ]
+  },
+  {
     "filepath": "../internal/api/fanart/fanart.go",
     "filename": "fanart.go",
     "name": "Client",
@@ -3996,6 +4052,17 @@
         "typescriptType": "VideoCore_VideoCore",
         "usedTypescriptType": "VideoCore_VideoCore",
         "usedStructName": "videocore.VideoCore",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "SkipDetector",
+        "jsonName": "SkipDetector",
+        "goType": "skipdetect.Detector",
+        "typescriptType": "Detector",
+        "usedTypescriptType": "Detector",
+        "usedStructName": "skipdetect.Detector",
         "required": false,
         "public": true,
         "comments": []
@@ -9947,15 +10014,6 @@
         "comments": []
       },
       {
-        "name": "DisableAnimeCardTrailers",
-        "jsonName": "disableAnimeCardTrailers",
-        "goType": "bool",
-        "typescriptType": "boolean",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
         "name": "OpenWebURLOnStart",
         "jsonName": "openWebURLOnStart",
         "goType": "bool",
@@ -9976,6 +10034,15 @@
       {
         "name": "AutoPlayNextEpisode",
         "jsonName": "autoPlayNextEpisode",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "AutoDetectSkipTimes",
+        "jsonName": "autoDetectSkipTimes",
         "goType": "bool",
         "typescriptType": "boolean",
         "required": true,
@@ -10233,15 +10300,6 @@
         "required": true,
         "public": true,
         "comments": []
-      },
-      {
-        "name": "DisableAutoDownloaderNotifications",
-        "jsonName": "disableAutoDownloaderNotifications",
-        "goType": "bool",
-        "typescriptType": "boolean",
-        "required": true,
-        "public": true,
-        "comments": []
       }
     ],
     "comments": []
@@ -10311,15 +10369,6 @@
       {
         "name": "HideAudienceScore",
         "jsonName": "hideAudienceScore",
-        "goType": "bool",
-        "typescriptType": "boolean",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "DisableCacheLayer",
-        "jsonName": "disableCacheLayer",
         "goType": "bool",
         "typescriptType": "boolean",
         "required": true,
@@ -10658,15 +10707,6 @@
         "comments": []
       },
       {
-        "name": "ContinueWatchingDefaultSorting",
-        "jsonName": "themeContinueWatchingDefaultSorting",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
         "name": "AnimeLibraryCollectionDefaultSorting",
         "jsonName": "themeAnimeLibraryCollectionDefaultSorting",
         "goType": "string",
@@ -10829,6 +10869,15 @@
       {
         "name": "DirectPlayOnly",
         "jsonName": "directPlayOnly",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "DisableAutoSwitchToDirectPlay",
+        "jsonName": "disableAutoSwitchToDirectPlay",
         "goType": "bool",
         "typescriptType": "boolean",
         "required": true,
@@ -11924,6 +11973,138 @@
       " SettingsCache provides in-memory caching for application settings to reduce repeated database calls.",
       " It stores the settings and can be invalidated when settings are updated."
     ]
+  },
+  {
+    "filepath": "../internal/handlers/cast.go",
+    "filename": "cast.go",
+    "name": "CastDevice",
+    "formattedName": "CastDevice",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "ID",
+        "jsonName": "id",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Name",
+        "jsonName": "name",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/cast.go",
+    "filename": "cast.go",
+    "name": "CastDevicesResponse",
+    "formattedName": "CastDevicesResponse",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "Devices",
+        "jsonName": "devices",
+        "goType": "[]CastDevice",
+        "typescriptType": "Array\u003cCastDevice\u003e",
+        "usedTypescriptType": "CastDevice",
+        "usedStructName": "handlers.CastDevice",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/cast.go",
+    "filename": "cast.go",
+    "name": "CastPlayRequest",
+    "formattedName": "CastPlayRequest",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "DeviceID",
+        "jsonName": "deviceId",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "MediaID",
+        "jsonName": "mediaId",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "EpisodeNumber",
+        "jsonName": "episodeNumber",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "EpisodeID",
+        "jsonName": "episodeId",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Title",
+        "jsonName": "title",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "EpisodeLabel",
+        "jsonName": "episodeLabel",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/cast.go",
+    "filename": "cast.go",
+    "name": "CastPlayResponse",
+    "formattedName": "CastPlayResponse",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "SentTo",
+        "jsonName": "sentTo",
+        "goType": "[]string",
+        "typescriptType": "Array\u003cstring\u003e",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
   },
   {
     "filepath": "../internal/handlers/directory_selector.go",
@@ -13074,6 +13255,64 @@
     "comments": []
   },
   {
+    "filepath": "../internal/handlers/music.go",
+    "filename": "music.go",
+    "name": "BackgroundMusicTrack",
+    "formattedName": "BackgroundMusicTrack",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "Name",
+        "jsonName": "name",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "File",
+        "jsonName": "file",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/music.go",
+    "filename": "music.go",
+    "name": "BackgroundMusicScanResponse",
+    "formattedName": "BackgroundMusicScanResponse",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "Dir",
+        "jsonName": "dir",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Tracks",
+        "jsonName": "tracks",
+        "goType": "[]BackgroundMusicTrack",
+        "typescriptType": "Array\u003cBackgroundMusicTrack\u003e",
+        "usedTypescriptType": "BackgroundMusicTrack",
+        "usedStructName": "handlers.BackgroundMusicTrack",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
     "filepath": "../internal/handlers/notifications.go",
     "filename": "notifications.go",
     "name": "NotificationList",
@@ -13453,6 +13692,17 @@
         "required": true,
         "public": true,
         "comments": []
+      },
+      {
+        "name": "Pid",
+        "jsonName": "pid",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": [
+          " OS process id of the server; used by the desktop sidecar to reap orphans"
+        ]
       }
     ],
     "comments": [
@@ -25374,6 +25624,298 @@
     "comments": []
   },
   {
+    "filepath": "../internal/mediastream/pretranscode/pretranscode.go",
+    "filename": "pretranscode.go",
+    "name": "JobStatus",
+    "formattedName": "JobStatus",
+    "package": "pretranscode",
+    "fields": [],
+    "aliasOf": {
+      "goType": "string",
+      "typescriptType": "string",
+      "declaredValues": [
+        "\"queued\"",
+        "\"running\"",
+        "\"completed\"",
+        "\"failed\""
+      ]
+    },
+    "comments": []
+  },
+  {
+    "filepath": "../internal/mediastream/pretranscode/pretranscode.go",
+    "filename": "pretranscode.go",
+    "name": "PreTranscodeJob",
+    "formattedName": "PreTranscodeJob",
+    "package": "pretranscode",
+    "fields": [
+      {
+        "name": "Hash",
+        "jsonName": "hash",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "FilePath",
+        "jsonName": "filePath",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Status",
+        "jsonName": "status",
+        "goType": "JobStatus",
+        "typescriptType": "JobStatus",
+        "usedTypescriptType": "JobStatus",
+        "usedStructName": "pretranscode.JobStatus",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Progress",
+        "jsonName": "progress",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": [
+          " 0-100"
+        ]
+      },
+      {
+        "name": "Error",
+        "jsonName": "error",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "QueuedAt",
+        "jsonName": "queuedAt",
+        "goType": "time.Time",
+        "typescriptType": "string",
+        "usedStructName": "time.Time",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "EndedAt",
+        "jsonName": "endedAt",
+        "goType": "time.Time",
+        "typescriptType": "string",
+        "usedStructName": "time.Time",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " PreTranscodeJob is one file's pre-transcode, tracked from queue to completion."
+    ]
+  },
+  {
+    "filepath": "../internal/mediastream/pretranscode/pretranscode.go",
+    "filename": "pretranscode.go",
+    "name": "Options",
+    "formattedName": "Options",
+    "package": "pretranscode",
+    "fields": [
+      {
+        "name": "Logger",
+        "jsonName": "Logger",
+        "goType": "zerolog.Logger",
+        "typescriptType": "Logger",
+        "usedTypescriptType": "Logger",
+        "usedStructName": "zerolog.Logger",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "OutputDir",
+        "jsonName": "OutputDir",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "FfmpegPath",
+        "jsonName": "FfmpegPath",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "FfprobePath",
+        "jsonName": "FfprobePath",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "HwAccel",
+        "jsonName": "HwAccel",
+        "goType": "cassette.HwAccelOptions",
+        "typescriptType": "HwAccelOptions",
+        "usedTypescriptType": "HwAccelOptions",
+        "usedStructName": "cassette.HwAccelOptions",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Concurrency",
+        "jsonName": "Concurrency",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Extractor",
+        "jsonName": "Extractor",
+        "goType": "videofile.MediaInfoExtractor",
+        "typescriptType": "MediaInfoExtractor",
+        "usedTypescriptType": "MediaInfoExtractor",
+        "usedStructName": "videofile.MediaInfoExtractor",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " Options configures a Manager. All fields are required except Concurrency."
+    ]
+  },
+  {
+    "filepath": "../internal/mediastream/pretranscode/pretranscode.go",
+    "filename": "pretranscode.go",
+    "name": "Manager",
+    "formattedName": "Manager",
+    "package": "pretranscode",
+    "fields": [
+      {
+        "name": "opts",
+        "jsonName": "opts",
+        "goType": "Options",
+        "typescriptType": "Options",
+        "usedTypescriptType": "Options",
+        "usedStructName": "pretranscode.Options",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "logger",
+        "jsonName": "logger",
+        "goType": "zerolog.Logger",
+        "typescriptType": "Logger",
+        "usedTypescriptType": "Logger",
+        "usedStructName": "zerolog.Logger",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "mu",
+        "jsonName": "mu",
+        "goType": "sync.RWMutex",
+        "typescriptType": "RWMutex",
+        "usedTypescriptType": "RWMutex",
+        "usedStructName": "sync.RWMutex",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "jobs",
+        "jsonName": "jobs",
+        "goType": "map[string]PreTranscodeJob",
+        "typescriptType": "Record\u003cstring, PreTranscodeJob\u003e",
+        "usedTypescriptType": "PreTranscodeJob",
+        "usedStructName": "pretranscode.PreTranscodeJob",
+        "required": false,
+        "public": false,
+        "comments": [
+          " by hash"
+        ]
+      },
+      {
+        "name": "queue",
+        "jsonName": "queue",
+        "goType": "",
+        "typescriptType": "any",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "cancelMu",
+        "jsonName": "cancelMu",
+        "goType": "sync.Mutex",
+        "typescriptType": "Mutex",
+        "usedTypescriptType": "Mutex",
+        "usedStructName": "sync.Mutex",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "cancels",
+        "jsonName": "cancels",
+        "goType": "map[string]context.CancelFunc",
+        "typescriptType": "Record\u003cstring, CancelFunc\u003e",
+        "usedTypescriptType": "CancelFunc",
+        "usedStructName": "context.CancelFunc",
+        "required": false,
+        "public": false,
+        "comments": [
+          " running jobs, by hash"
+        ]
+      },
+      {
+        "name": "startOnce",
+        "jsonName": "startOnce",
+        "goType": "sync.Once",
+        "typescriptType": "Once",
+        "usedTypescriptType": "Once",
+        "usedStructName": "sync.Once",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "stopCh",
+        "jsonName": "stopCh",
+        "goType": "",
+        "typescriptType": "any",
+        "required": true,
+        "public": false,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " Manager owns the pre-transcode queue and its workers."
+    ]
+  },
+  {
     "filepath": "../internal/mediastream/repository.go",
     "filename": "repository.go",
     "name": "Repository",
@@ -25383,6 +25925,15 @@
       {
         "name": "transcoder",
         "jsonName": "transcoder",
+        "goType": "",
+        "typescriptType": "any",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "preTranscoder",
+        "jsonName": "preTranscoder",
         "goType": "",
         "typescriptType": "any",
         "required": true,
@@ -29246,6 +29797,317 @@
       }
     ],
     "comments": []
+  },
+  {
+    "filepath": "../internal/skipdetect/compare.go",
+    "filename": "compare.go",
+    "name": "MatchWindow",
+    "formattedName": "MatchWindow",
+    "package": "skipdetect",
+    "fields": [
+      {
+        "name": "Start1",
+        "jsonName": "Start1",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Start2",
+        "jsonName": "Start2",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "MatchedSeconds",
+        "jsonName": "MatchedSeconds",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Score",
+        "jsonName": "Score",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "OK",
+        "jsonName": "OK",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " MatchWindow describe el segmento de audio común hallado entre dos fingerprints.",
+      " Start/End están en segundos relativos al inicio de cada fingerprint (no al",
+      " archivo). Score es la densidad media de items matcheados dentro de la ventana",
+      " [0..1], útil para rankear varios candidatos (p. ej. OP1 vs OP2)."
+    ]
+  },
+  {
+    "filepath": "../internal/skipdetect/detector.go",
+    "filename": "detector.go",
+    "name": "Detector",
+    "formattedName": "Detector",
+    "package": "skipdetect",
+    "fields": [
+      {
+        "name": "db",
+        "jsonName": "db",
+        "goType": "db.Database",
+        "typescriptType": "DB_Database",
+        "usedTypescriptType": "DB_Database",
+        "usedStructName": "db.Database",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "logger",
+        "jsonName": "logger",
+        "goType": "zerolog.Logger",
+        "typescriptType": "Logger",
+        "usedTypescriptType": "Logger",
+        "usedStructName": "zerolog.Logger",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "ws",
+        "jsonName": "ws",
+        "goType": "events.WSEventManagerInterface",
+        "typescriptType": "Events_WSEventManagerInterface",
+        "usedTypescriptType": "Events_WSEventManagerInterface",
+        "usedStructName": "events.WSEventManagerInterface",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "cacheDir",
+        "jsonName": "cacheDir",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "ffmpegPath",
+        "jsonName": "ffmpegPath",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "ffprobePath",
+        "jsonName": "ffprobePath",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "scanMu",
+        "jsonName": "scanMu",
+        "goType": "sync.Mutex",
+        "typescriptType": "Mutex",
+        "usedTypescriptType": "Mutex",
+        "usedStructName": "sync.Mutex",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "isScanning",
+        "jsonName": "isScanning",
+        "goType": "map[int]bool",
+        "typescriptType": "Record\u003cnumber, boolean\u003e",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "attemptedMu",
+        "jsonName": "attemptedMu",
+        "goType": "sync.Mutex",
+        "typescriptType": "Mutex",
+        "usedTypescriptType": "Mutex",
+        "usedStructName": "sync.Mutex",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "attempted",
+        "jsonName": "attempted",
+        "goType": "map[int]bool",
+        "typescriptType": "Record\u003cnumber, boolean\u003e",
+        "required": false,
+        "public": false,
+        "comments": [
+          " trigger oportunista: máx. una vez por media por run"
+        ]
+      },
+      {
+        "name": "athClient",
+        "jsonName": "athClient",
+        "goType": "AnimeThemesClient",
+        "typescriptType": "AnimeThemesClient",
+        "usedTypescriptType": "AnimeThemesClient",
+        "usedStructName": "skipdetect.AnimeThemesClient",
+        "required": true,
+        "public": false,
+        "comments": [
+          " Método A (puede ser nil → cae a Método B)"
+        ]
+      },
+      {
+        "name": "fileCacher",
+        "jsonName": "fileCacher",
+        "goType": "filecache.Cacher",
+        "typescriptType": "Filecache_Cacher",
+        "usedTypescriptType": "Filecache_Cacher",
+        "usedStructName": "filecache.Cacher",
+        "required": false,
+        "public": false,
+        "comments": [
+          " Método C: extracción on-demand de subs (puede ser nil)"
+        ]
+      }
+    ],
+    "comments": [
+      " Detector orquesta la cadena de detección de intros/outros para una serie."
+    ]
+  },
+  {
+    "filepath": "../internal/skipdetect/subtitle_hints.go",
+    "filename": "subtitle_hints.go",
+    "name": "SubHint",
+    "formattedName": "SubHint",
+    "package": "skipdetect",
+    "fields": [
+      {
+        "name": "OpWindow",
+        "jsonName": "OpWindow",
+        "goType": "[]float64",
+        "typescriptType": "Array\u003cnumber\u003e",
+        "usedStructName": "skipdetect.[]float64",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "EdWindow",
+        "jsonName": "EdWindow",
+        "goType": "[]float64",
+        "typescriptType": "Array\u003cnumber\u003e",
+        "usedStructName": "skipdetect.[]float64",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "GapWindow",
+        "jsonName": "GapWindow",
+        "goType": "[]float64",
+        "typescriptType": "Array\u003cnumber\u003e",
+        "usedStructName": "skipdetect.[]float64",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": [
+      " SubHint son pistas de intro/outro extraídas de los subtítulos ASS de un",
+      " episodio: ventanas directas (bloques de karaoke con estilo OP/ED) y un hueco",
+      " de diálogo largo que suele coincidir con la OP. Cada ventana es [start, end]",
+      " en segundos, o nil si no se detectó."
+    ]
+  },
+  {
+    "filepath": "../internal/skipdetect/types.go",
+    "filename": "types.go",
+    "name": "Theme",
+    "formattedName": "Theme",
+    "package": "skipdetect",
+    "fields": [
+      {
+        "name": "Slug",
+        "jsonName": "Slug",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": [
+          " \"OP1\", \"OP2\", \"ED1\"..."
+        ]
+      },
+      {
+        "name": "Type",
+        "jsonName": "Type",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": [
+          " \"OP\" | \"ED\""
+        ]
+      },
+      {
+        "name": "Sequence",
+        "jsonName": "Sequence",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Episodes",
+        "jsonName": "Episodes",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "AudioURL",
+        "jsonName": "AudioURL",
+        "goType": "string",
+        "typescriptType": "string",
+        "required": true,
+        "public": true,
+        "comments": [
+          " link al audio (.ogg) del theme"
+        ]
+      }
+    ],
+    "comments": [
+      " Theme es un opening/ending oficial de una serie según AnimeThemes.moe. Vive en",
+      " este paquete (no en api/animethemes) para que el cliente concreto lo produzca",
+      " sin que skipdetect dependa del paquete HTTP: skipdetect define el contrato,",
+      " api/animethemes lo implementa."
+    ]
   },
   {
     "filepath": "../internal/test_utils/data.go",

@@ -5,7 +5,7 @@ import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query"
 import React, { useMemo, useRef } from "react"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Play, Calendar, Tag, ChevronLeft, Star, CheckCircle2 } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 import gsap from "gsap"
@@ -105,7 +105,7 @@ function CollectionDetailPage() {
             <div className="min-h-screen bg-transparent text-on-surface flex flex-col items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-2 border-outline-variant/10 border-t-on-surface rounded-full animate-spin" />
-                    <span className="text-[10px] font-black tracking-[0.4em] uppercase text-on-surface-variant/80">Cargando Cronología...</span>
+                    <span className="text-label-sm font-black tracking-cinema-lg uppercase text-on-surface-variant/80">Cargando Cronología...</span>
                 </div>
             </div>
         )
@@ -120,9 +120,9 @@ function CollectionDetailPage() {
                     action={
                         <button
                             onClick={() => navigate({ to: "/collections" })}
-                            className="mt-6 flex items-center gap-2 px-6 py-3 bg-on-surface text-black font-black uppercase text-[11px] tracking-[0.2em] hover:bg-surface-container-high transition-colors"
+                            className="mt-6 flex items-center gap-2 px-6 py-3 bg-on-surface text-black font-black uppercase text-caption tracking-ultra hover:bg-surface-container-high transition-colors"
                         >
-                            <ChevronLeft /> Volver a Sagas
+                            <Icons.navigation.chevronLeft className="w-4 h-4" /> Volver a Sagas
                         </button>
                     }
                 />
@@ -140,10 +140,10 @@ function CollectionDetailPage() {
             {/* Back Button */}
             <button
                 onClick={() => navigate({ to: "/collections" })}
-                className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 border border-outline-variant/10 backdrop-blur-overlay-md hover:border-on-surface text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 border border-outline-variant/10 backdrop-blur-overlay-md hover:border-on-surface text-label-sm font-black uppercase tracking-ultra transition-all"
                 style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 40%, transparent)" }}
             >
-                <ChevronLeft /> Volver a Sagas
+                <Icons.navigation.chevronLeft className="w-4 h-4" /> Volver a Sagas
             </button>
 
             {/* Cinematic Hero Header */}
@@ -164,12 +164,12 @@ function CollectionDetailPage() {
                 <div className="relative z-10 flex flex-col lg:flex-row items-end gap-12 max-w-[1600px] mx-auto w-full">
                     {/* Big poster */}
                     {posterUrl && (
-                        <div className="hero-content-anim hidden lg:block shrink-0 w-60 xl:w-72 border border-outline-variant/10 bg-surface-container group transition-all duration-500 hover:border-on-surface shadow-elevation-5">
+                        <div className="hero-content-anim hidden lg:block shrink-0 w-60 xl:w-72 border border-outline-variant/10 bg-surface-container group transition-all duration-slow hover:border-on-surface shadow-elevation-5">
                             <DeferredImage
                                 src={posterUrl}
                                 alt={collection.name}
                                 priority={true}
-                                className="w-full aspect-[2/3] object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                className="w-full aspect-[2/3] object-cover grayscale group-hover:grayscale-0 transition-all duration-slow"
                             />
                         </div>
                     )}
@@ -178,21 +178,21 @@ function CollectionDetailPage() {
                     <div className="flex-1 flex flex-col gap-6">
                         <div className="hero-content-anim flex items-center gap-4">
                             <div className="h-[2px] w-12 bg-on-surface" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-on-surface-variant/80">Cronología Unificada</span>
+                            <span className="text-caption font-black uppercase tracking-cinema-lg text-on-surface-variant/80">Cronología Unificada</span>
                         </div>
 
-                        <h1 className="hero-content-anim font-bebas text-6xl md:text-8xl xl:text-[8.5rem] leading-[0.85] tracking-tight text-on-surface uppercase select-all">
+                        <h1 className="hero-content-anim font-display text-3xl sm:text-6xl md:text-8xl xl:text-[8.5rem] leading-[0.9] sm:leading-[0.85] tracking-tight text-on-surface uppercase select-all">
                             {collection.name}
                         </h1>
 
-                        <div className="hero-content-anim flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-[0.4em] text-on-surface-variant">
+                        <div className="hero-content-anim flex flex-wrap items-center gap-6 text-label-sm font-black uppercase tracking-cinema-lg text-on-surface-variant">
                             <span>SAGA COMPLETA</span>
                             <span className="w-1.5 h-1.5 bg-on-surface/25 rounded-full" />
                             <span className="text-on-surface">{partCount} ENTREGAS</span>
                         </div>
 
                         {collection.overview && (
-                            <p className="hero-content-anim max-w-4xl text-[14px] text-on-surface-variant leading-relaxed font-semibold uppercase tracking-wide">
+                            <p className="hero-content-anim max-w-4xl text-sm text-on-surface-variant leading-relaxed font-semibold uppercase tracking-wide">
                                 {collection.overview}
                             </p>
                         )}
@@ -201,11 +201,11 @@ function CollectionDetailPage() {
             </section>
 
             {/* Timeline Section */}
-            <section className="relative z-10 px-8 md:pl-[120px] md:pr-16 lg:pl-[120px] lg:pr-24 max-w-[1400px] mx-auto w-full">
+            <section className="relative z-10 px-4 sm:px-8 md:pl-[120px] md:pr-16 lg:pl-[120px] lg:pr-24 max-w-[1400px] mx-auto w-full">
                 <div className="space-y-1 border-b border-outline-variant/10 pb-8 mb-20 flex items-center justify-between">
                     <div>
-                        <h2 className="text-4xl font-bebas tracking-widest text-on-surface uppercase">LINEA TEMPORAL</h2>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/80">
+                        <h2 className="text-2xl sm:text-4xl font-display tracking-widest text-on-surface uppercase">LINEA TEMPORAL</h2>
+                        <p className="text-label-sm font-black uppercase tracking-widest text-on-surface-variant/80">
                             Orden recomendado de visualización (Saga principal)
                         </p>
                     </div>
@@ -248,29 +248,29 @@ function CollectionDetailPage() {
                                 <div className={cn("w-full md:w-1/2 flex justify-end md:pr-12", !isEven && "md:order-3 md:justify-start md:pl-12")}>
                                     <div
                                         className={cn(
-                                            "timeline-card-anim w-full md:max-w-xl group relative border border-outline-variant/10 hover:border-on-surface bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_60%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_80%,transparent)] transition-all duration-300 p-6 md:p-8 flex flex-col md:flex-row gap-6 text-left"
+                                            "timeline-card-anim w-full md:max-w-xl group relative border border-outline-variant/10 hover:border-on-surface bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_60%,transparent)] hover:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_80%,transparent)] transition-all duration-base p-6 md:p-8 flex flex-col md:flex-row gap-6 text-left"
                                         )}
                                     >
                                         {/* Entry Poster */}
                                         {part.posterPath && (
-                                            <div className="shrink-0 w-28 md:w-32 bg-surface-container border border-outline-variant/5 group-hover:border-outline-variant/20 overflow-hidden transition-all duration-500 aspect-[2/3] relative">
+                                            <div className="shrink-0 w-28 md:w-32 bg-surface-container border border-outline-variant/5 group-hover:border-outline-variant/20 overflow-hidden transition-all duration-slow aspect-[2/3] relative">
                                                 <DeferredImage
                                                     src={part.posterPath}
                                                     alt={part.title}
-                                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-transform duration-500 group-hover:scale-105"
+                                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-transform duration-slow group-hover:scale-105"
                                                 />
                                                 
                                                 {/* LOC Badge */}
                                                 {hasLocal && (
-                                                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded backdrop-blur-overlay-md border border-green-500/40 text-[7px] font-black text-green-400 tracking-wider shadow-[0_0_10px_rgba(34,197,94,0.2)]" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 75%, transparent)" }}>
+                                                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded backdrop-blur-overlay-md border border-brand-success/40 text-label-sm font-black text-brand-success tracking-wider shadow-elevation-2" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 75%, transparent)" }}>
                                                         LOC
                                                     </div>
                                                 )}
 
                                                 {/* Score Badge */}
                                                 {userScore > 0 && (
-                                                    <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded backdrop-blur-overlay-md border border-yellow-500/40 text-[7px] font-black text-yellow-500 tracking-wider flex items-center gap-1 shadow-elevation-2" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 75%, transparent)" }}>
-                                                        <Star className="w-2 h-2" />
+                                                    <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded backdrop-blur-overlay-md border border-brand-accent/40 text-label-sm font-black text-brand-accent tracking-wider flex items-center gap-1 shadow-elevation-2" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 75%, transparent)" }}>
+                                                        <Icons.ui.star className="w-2.5 h-2.5" />
                                                         <span>{userScore}</span>
                                                     </div>
                                                 )}
@@ -280,15 +280,15 @@ function CollectionDetailPage() {
                                         {/* Entry Info */}
                                         <div className="flex-1 flex flex-col justify-between gap-4">
                                             <div className="space-y-2">
-                                                <div className="flex flex-wrap items-center gap-3 text-[9px] font-black uppercase tracking-widest text-on-surface-variant/80">
-                                                    <span className="flex items-center gap-1.5"><Calendar className="text-[8px]" /> {formattedDate}</span>
+                                                <div className="flex flex-wrap items-center gap-3 text-label-sm font-black uppercase tracking-widest text-on-surface-variant/80">
+                                                    <span className="flex items-center gap-1.5"><Icons.time.calendar className="w-3 h-3" /> {formattedDate}</span>
                                                     <span>•</span>
-                                                    <span className="flex items-center gap-1.5"><Tag className="text-[8px]" /> {part.format || "N/A"}</span>
+                                                    <span className="flex items-center gap-1.5"><Icons.ui.tag className="w-3 h-3" /> {part.format || "N/A"}</span>
                                                     {isCompleted && (
                                                         <>
                                                             <span>•</span>
-                                                            <span className="flex items-center gap-1 text-green-400 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20 shadow-sm">
-                                                                <CheckCircle2 className="text-[8px]" /> COMPLETADO
+                                                            <span className="flex items-center gap-1 text-brand-success bg-brand-success/10 px-2 py-0.5 rounded border border-brand-success/20 shadow-sm">
+                                                                <Icons.ui.checkCircle className="w-3 h-3" /> COMPLETADO
                                                             </span>
                                                         </>
                                                     )}
@@ -309,11 +309,11 @@ function CollectionDetailPage() {
                                                         </>
                                                     )}
                                                 </div>
-                                                <h3 className="text-xl md:text-2xl font-black text-on-surface leading-tight uppercase tracking-tight group-hover:text-yellow-500 transition-colors">
+                                                <h3 className="text-xl md:text-2xl font-black text-on-surface leading-tight uppercase tracking-tight group-hover:text-brand-accent transition-colors">
                                                     {part.title}
                                                 </h3>
                                                 {part.overview && (
-                                                    <p className="text-[12px] text-on-surface-variant/80 group-hover:text-on-surface-variant font-bold uppercase tracking-wider leading-relaxed line-clamp-3">
+                                                    <p className="text-caption text-on-surface-variant/80 group-hover:text-on-surface-variant font-bold uppercase tracking-wider leading-relaxed line-clamp-3">
                                                         {part.overview}
                                                     </p>
                                                 )}
@@ -321,13 +321,13 @@ function CollectionDetailPage() {
                                                 {/* Watch progress bar for CURRENT */}
                                                 {isCurrent && progressPercent > 0 && (
                                                     <div className="pt-2 space-y-1">
-                                                        <div className="flex justify-between items-center text-[8px] font-bold tracking-widest text-on-surface-variant uppercase">
+                                                        <div className="flex justify-between items-center text-label-sm font-bold tracking-widest text-on-surface-variant uppercase">
                                                             <span>PROGRESO VISTA</span>
                                                             <span>{Math.round(progressPercent)}%</span>
                                                         </div>
                                                         <div className="h-1 w-full bg-surface-container-high rounded-full overflow-hidden border border-outline-variant/5">
                                                             <div 
-                                                                className="h-full bg-gradient-to-r from-brand-secondary to-on-surface rounded-full transition-all duration-500" 
+                                                                className="h-full bg-gradient-to-r from-brand-secondary to-on-surface rounded-full transition-all duration-slow" 
                                                                 style={{ width: `${progressPercent}%` }}
                                                             />
                                                         </div>
@@ -352,11 +352,11 @@ function CollectionDetailPage() {
                                                     }
                                                 }}
                                                 className={cn(
-                                                    "self-start flex items-center gap-2 py-2.5 px-5 bg-on-surface text-black text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-200",
-                                                    isCurrent ? "bg-brand-secondary text-on-surface hover:bg-brand-secondary/80 shadow-[0_4px_20px_rgba(255,107,0,0.2)]" : "hover:bg-yellow-500"
+                                                    "self-start flex items-center gap-2 py-2.5 px-5 bg-on-surface text-black text-caption font-black uppercase tracking-ultra transition-all duration-base",
+                                                    isCurrent ? "bg-brand-secondary text-on-secondary hover:bg-brand-secondary/80 shadow-brand-secondary" : "hover:bg-brand-accent"
                                                 )}
                                             >
-                                                <Play className="text-[8px]" /> {isCurrent ? "REANUDAR PELÍCULA" : "VER DETALLES"}
+                                                <Icons.media.play className="w-3 h-3" /> {isCurrent ? "REANUDAR PELÍCULA" : "VER DETALLES"}
                                             </button>
                                         </div>
                                     </div>
@@ -365,7 +365,7 @@ function CollectionDetailPage() {
                                 {/* Center Node (Dynamic badge/dot) */}
                                 <div className="absolute left-6 md:left-1/2 -translate-x-1/2 top-4 md:top-auto z-20 flex items-center justify-center md:order-2">
                                     <div className="timeline-node-anim flex items-center justify-center w-12 h-12 rounded-full bg-surface-container border border-outline-variant/20 group-hover:border-on-surface shadow-elevation-4 relative">
-                                        <div className="absolute inset-0 bg-yellow-500/20 rounded-full animate-ping opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="absolute inset-0 bg-brand-accent/20 rounded-full animate-ping opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <span className="text-xs font-black text-on-surface tabular-nums">{index + 1}</span>
                                     </div>
                                 </div>

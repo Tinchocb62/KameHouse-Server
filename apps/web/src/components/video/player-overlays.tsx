@@ -5,7 +5,7 @@ import { cn } from "@/components/ui/core/styling"
 export function LoadingErrorOverlay({
     status,
     errorMsg,
-    streamType,
+    streamType: _streamType,
     isBuffering,
     isSeeking,
     isStreamSwitching,
@@ -48,14 +48,14 @@ export function LoadingErrorOverlay({
             return (
                 <div className="absolute inset-0 flex flex-col items-center justify-center z-30 text-white"
                     style={{ backdropFilter: "blur(var(--blur-overlay-sm))", background: "color-mix(in srgb, black 55%, transparent)" }}>
-                    <div className="flex flex-col items-center gap-5 px-8 py-6 rounded-2xl border border-white/10"
+                    <div className="flex flex-col items-center gap-5 px-8 py-6 rounded-container border border-white/10"
                         style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 60%, transparent)" }}>
                         <Icons.ui.spinner className="w-10 h-10 text-white animate-spin" />
                         <div className="flex flex-col items-center gap-1">
-                            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-white/90">
+                            <span className="text-label-md font-black uppercase tracking-cinema-md text-white/90">
                                 Cambiando pista de audio
                             </span>
-                            <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-white/40">
+                            <span className="text-label-sm font-medium uppercase tracking-ultra text-white/40">
                                 Iniciando transcodificación…
                             </span>
                         </div>
@@ -76,7 +76,7 @@ export function LoadingErrorOverlay({
             <div className="absolute inset-0 flex flex-col items-center justify-center z-30 text-white pointer-events-none" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 20%, transparent)" }}>
                 <Icons.ui.spinner className="w-16 h-16 text-white animate-spin" />
                 {isSeeking && (
-                    <p className="mt-4 font-black tracking-[0.4em] uppercase text-[10px] opacity-50">
+                    <p className="mt-4 font-black tracking-cinema-lg uppercase text-label-sm opacity-50">
                         Buscando...
                     </p>
                 )}
@@ -87,12 +87,12 @@ export function LoadingErrorOverlay({
     if (status === "error") {
         return (
             <div className="absolute inset-0 flex flex-col items-center justify-center z-30 px-8 text-center text-white backdrop-blur-[var(--blur-overlay-lg)] [&>*:not(:first-child)]:mt-6" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 85%, transparent)" }}>
-                <Icons.ui.alert className="w-16 h-16 text-brand-orange animate-pulse" />
-                <h3 className="font-bebas text-3xl tracking-[0.2em] uppercase">TRANSMISIÓN CAÍDA</h3>
+                <Icons.ui.alert className="w-16 h-16 text-brand-accent animate-pulse" />
+                <h3 className="font-display text-3xl tracking-ultra uppercase">TRANSMISIÓN CAÍDA</h3>
                 <p className="text-zinc-400 max-w-md text-sm font-medium uppercase tracking-wide leading-relaxed">{errorMsg}</p>
                 <button
                     onClick={onClose}
-                    className="mt-6 px-10 py-3.5 bg-brand-orange hover:brightness-110 text-white font-black text-[11px] uppercase tracking-[0.3em] transition-all rounded-xl active:scale-95"
+                    className="mt-6 px-10 py-3.5 bg-brand-accent hover:brightness-110 text-on-primary font-black text-label-md uppercase tracking-cinema-md transition-all rounded-xl active:scale-95"
                 >
                     REGRESAR
                 </button>
@@ -113,11 +113,11 @@ export function ResumeOverlay({ show, time, onResume, onClose }: { show: boolean
     }
 
     return (
-        <div className="absolute bottom-20 left-4 sm:bottom-32 sm:left-10 z-50 pointer-events-auto animate-in slide-in-from-left-4 duration-500">
-            <div className="bg-[var(--bg-secondary)] border border-[var(--glass-strong)] rounded-[22px] shadow-[var(--shadow-modal)] p-5 flex flex-col min-w-[240px] sm:min-w-[280px] [&>*:not(:first-child)]:mt-4">
+        <div className="absolute bottom-20 left-4 sm:bottom-32 sm:left-10 z-50 pointer-events-auto animate-in slide-in-from-left-4 duration-slow">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--glass-strong)] rounded-modal shadow-[var(--shadow-modal)] p-5 flex flex-col min-w-[240px] sm:min-w-[280px] [&>*:not(:first-child)]:mt-4">
                 <div className="flex items-center justify-between ml-8">
                     <div className="flex flex-col [&>*:not(:first-child)]:mt-0.5">
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Continuar viendo</span>
+                        <span className="text-label-sm font-black text-zinc-500 uppercase tracking-ultra">Continuar viendo</span>
                         <span className="text-white font-bold text-sm">Desde {formatTime(time)}</span>
                     </div>
                     <button
@@ -131,7 +131,7 @@ export function ResumeOverlay({ show, time, onResume, onClose }: { show: boolean
                     <button
                         tabIndex={0}
                         onClick={onResume}
-                        className="flex-1 py-3 bg-brand-orange hover:brightness-110 text-white font-black text-[9px] uppercase tracking-widest transition-all rounded-xl active:scale-95 flex items-center justify-center [&>*:not(:first-child)]:ml-2 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-orange"
+                        className="flex-1 py-3 bg-brand-accent hover:brightness-110 text-on-primary font-black text-label-sm uppercase tracking-widest transition-all rounded-xl active:scale-95 flex items-center justify-center [&>*:not(:first-child)]:ml-2 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-accent"
                     >
                         <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                         REANUDAR
@@ -139,7 +139,7 @@ export function ResumeOverlay({ show, time, onResume, onClose }: { show: boolean
                     <button
                         tabIndex={0}
                         onClick={onClose}
-                        className="flex-1 py-3 bg-surface-container border border-white/5 text-zinc-300 font-black text-[9px] uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all rounded-xl active:scale-95 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                        className="flex-1 py-3 bg-surface-container border border-white/5 text-zinc-300 font-black text-label-sm uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all rounded-xl active:scale-95 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                     >
                         IGNORAR
                     </button>
@@ -187,7 +187,7 @@ export function SkipIntroOverlay({
 
     return (
         <div className={cn(
-            "absolute bottom-20 left-4 sm:bottom-24 sm:left-10 md:left-12 z-30 transition-all duration-300 pointer-events-auto",
+            "absolute bottom-20 left-4 sm:bottom-24 sm:left-10 md:left-12 z-30 transition-all duration-base pointer-events-auto",
             show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
             <button
@@ -200,22 +200,22 @@ export function SkipIntroOverlay({
                 }}
                 className={cn(
                     "relative flex items-center px-6 py-3 overflow-hidden text-white backdrop-blur-[var(--blur-overlay-lg)]",
-                    "bg-black/60 border border-[var(--glass-strong)] rounded-[22px] shadow-[var(--shadow-modal)]",
+                    "bg-black/60 border border-[var(--glass-strong)] rounded-modal shadow-[var(--shadow-modal)]",
                     isOutro
                         ? "border-brand-secondary/30 hover:border-brand-secondary/60 hover:bg-brand-secondary/15"
                         : "border-white/10 hover:border-brand-accent/40 hover:bg-brand-accent/15",
-                    "text-[10px] font-black uppercase tracking-[0.3em]",
-                    "transition-all duration-300",
+                    "text-label-sm font-black uppercase tracking-cinema-md",
+                    "transition-all duration-base",
                     "active:scale-95",
                     "group",
                     "[&>*:not(:first-child)]:ml-3",
-                    "focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                    "focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 )}
             >
                 {/* Animated segment countdown fill — shrinks from full to empty */}
                 <div
                     className={cn(
-                        "absolute bottom-0 left-0 h-[2px] transition-all duration-1000 ease-linear",
+                        "absolute bottom-0 left-0 h-[2px] transition-all duration-slow ease-linear",
                         isOutro ? "bg-brand-secondary" : "bg-brand-accent"
                     )}
                     style={{ width: `${fillProgress}%` }}
@@ -234,7 +234,7 @@ export function SkipIntroOverlay({
                 {/* Remaining seconds badge */}
                 {remainingSeconds !== undefined && remainingSeconds > 0 && (
                     <span className={cn(
-                        "text-[9px] font-mono tabular-nums tracking-widest",
+                        "text-label-sm font-mono tabular-nums tracking-widest",
                         "px-2 py-0.5 rounded",
                         isOutro
                             ? "bg-brand-secondary/20 text-brand-secondary group-hover:bg-white/20 group-hover:text-white"
@@ -244,7 +244,7 @@ export function SkipIntroOverlay({
                     </span>
                 )}
 
-                <span className="text-white/30 text-[9px] font-black ml-1 hidden sm:inline group-hover:text-white/40">
+                <span className="text-white/30 text-label-sm font-black ml-1 hidden sm:inline group-hover:text-white/40">
                     [{shortcutKey}]
                 </span>
             </button>
@@ -267,13 +267,13 @@ export function AutoSkipToastOverlay({
 
     return (
         <div className={cn(
-            "absolute bottom-20 left-4 sm:bottom-24 sm:left-10 md:left-12 z-30 transition-all duration-300 pointer-events-auto",
+            "absolute bottom-20 left-4 sm:bottom-24 sm:left-10 md:left-12 z-30 transition-all duration-base pointer-events-auto",
             showType ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
         )}>
             <div className={cn(
                 "flex items-center px-5 py-3 text-white backdrop-blur-[var(--blur-overlay-lg)]",
-                "bg-black/60 border border-white/10 rounded-[22px] shadow-[var(--shadow-modal)]",
-                "text-[10px] font-black uppercase tracking-[0.3em]",
+                "bg-black/60 border border-white/10 rounded-modal shadow-[var(--shadow-modal)]",
+                "text-label-sm font-black uppercase tracking-cinema-md",
                 "[&>*:not(:first-child)]:ml-3"
             )}>
                 <span className="text-white">{label}</span>
@@ -286,9 +286,9 @@ export function AutoSkipToastOverlay({
                         onUndo()
                     }}
                     className={cn(
-                        "text-brand-accent hover:brightness-125 transition-all duration-300 active:scale-95",
-                        "text-[10px] font-black uppercase tracking-[0.3em]",
-                        "focus-visible:ring-2 focus-visible:ring-brand-orange focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded"
+                        "text-brand-accent hover:brightness-125 transition-all duration-base active:scale-95",
+                        "text-label-sm font-black uppercase tracking-cinema-md",
+                        "focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 rounded"
                     )}
                 >
                     Deshacer
@@ -325,12 +325,12 @@ export function NextEpisodeOverlay({
 }) {
     return (
         <div className={cn(
-            "absolute bottom-20 right-4 sm:bottom-32 sm:right-8 md:right-12 z-30 transition-all duration-300 pointer-events-auto",
+            "absolute bottom-20 right-4 sm:bottom-32 sm:right-8 md:right-12 z-30 transition-all duration-base pointer-events-auto",
             show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8 pointer-events-none"
         )}>
             <div className={cn(
                 "flex flex-col w-64 sm:w-72 bg-[var(--glass-panel-bg-strong)] backdrop-blur-[var(--blur-overlay-md)] border border-white/[0.08]",
-                "shadow-player overflow-hidden rounded-2xl",
+                "shadow-player overflow-hidden rounded-container",
                 "[&>*:not(:first-child)]:mt-4"
             )}>
                 {/* Thumbnail */}
@@ -344,7 +344,7 @@ export function NextEpisodeOverlay({
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         {showCountdown && (
-                            <div className="absolute top-3 right-3 bg-black/70 text-[9px] font-black uppercase tracking-widest text-white px-2 py-1 rounded">
+                            <div className="absolute top-3 right-3 bg-black/70 text-label-sm font-black uppercase tracking-widest text-white px-2 py-1 rounded-md">
                                 AUTO: {countdownSeconds}S
                             </div>
                         )}
@@ -358,11 +358,11 @@ export function NextEpisodeOverlay({
                 <div className="flex flex-col px-5 pb-5 pt-2 [&>*:not(:first-child)]:mt-3">
                     {/* Label */}
                     <div className="flex items-center justify-between">
-                        <span className="text-zinc-500 text-[9px] font-black uppercase tracking-[0.3em]">
+                        <span className="text-zinc-500 text-label-sm font-black uppercase tracking-cinema-md">
                             {nextEpisodeNumber ? `EPISODIO ${nextEpisodeNumber}` : "SIGUIENTE"}
                         </span>
                         {!nextEpisodeImage && showCountdown && (
-                            <span className="text-white text-[10px] font-black tabular-nums tracking-widest">
+                            <span className="text-white text-label-sm font-black tabular-nums tracking-widest">
                                 AUTO: {countdownSeconds}S
                             </span>
                         )}
@@ -379,7 +379,7 @@ export function NextEpisodeOverlay({
                     {showCountdown && (
                         <div className="w-full h-1 bg-surface-container overflow-hidden rounded-full">
                             <div
-                                className="h-full bg-brand-orange transition-all duration-1000 ease-linear"
+                                className="h-full bg-brand-accent transition-all duration-slow ease-linear"
                                 style={{ width: `${remainingProgress}%` }}
                             />
                         </div>
@@ -393,10 +393,10 @@ export function NextEpisodeOverlay({
                             onNext()
                         }}
                         className={cn(
-                            "w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] rounded-xl",
-                            "bg-brand-orange text-white hover:brightness-110",
-                            "transition-all duration-300 active:scale-95",
-                            "focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-orange"
+                            "w-full py-3 text-label-sm font-black uppercase tracking-cinema-md rounded-xl",
+                            "bg-brand-accent text-on-primary hover:brightness-110",
+                            "transition-all duration-base active:scale-95",
+                            "focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-accent"
                         )}
                     >
                         SIGUIENTE →

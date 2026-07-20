@@ -163,7 +163,7 @@ export function useServerMutation<R = void, V = void, C = unknown>(
 
     return useMutation<R | undefined, ApiError, V, C>({
         onError: (...args) => {
-            const [error, variables, context] = args;
+            const [error] = args;
             console.debug("Mutation error", error)
             const errorMsg = _handleSeaError(error.data)
             if (errorMsg.includes("feature disabled")) {
@@ -263,7 +263,7 @@ function _handleSeaError(data: unknown): string {
         }
         return "Platform error"
     }
-    catch (e) {
+    catch {
         if (err.includes("no cached data") || err.includes("cache lookup failed")) {
             return ""
         }

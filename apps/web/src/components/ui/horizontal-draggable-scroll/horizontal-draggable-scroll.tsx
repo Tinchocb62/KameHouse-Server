@@ -19,7 +19,7 @@ const HorizontalDraggableScrollAnatomy = defineStyleAnatomy({
     ]),
     chevronOverlay: cva([
         "flex flex-none items-center justify-center cursor-pointer absolute z-40 group/chevron",
-        "h-full w-24 opacity-90 hover:opacity-100 transition-all duration-500",
+        "h-full w-24 opacity-90 hover:opacity-100 transition-all duration-slow",
         "data-[state=hidden]:opacity-0 data-[state=hidden]:pointer-events-none",
         "data-[state=visible]:animate-in data-[state=hidden]:animate-out",
         "data-[state=visible]:fade-in-0 data-[state=hidden]:fade-out-0",
@@ -38,8 +38,8 @@ const HorizontalDraggableScrollAnatomy = defineStyleAnatomy({
     ]),
     chevronIcon: cva([
         "w-12 h-12 stroke-[2.5px] p-3 rounded-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_70%,transparent)] text-white/80 border border-white/10 shadow-lg",
-        "backdrop-blur-[var(--blur-overlay-md)] transition-all duration-300",
-        "group-hover/chevron:bg-brand-orange group-hover/chevron:text-white group-hover/chevron:border-brand-orange group-hover/chevron:scale-110 group-hover/chevron:shadow-[0_0_15px_rgba(255,110,58,0.4)]",
+        "backdrop-blur-[var(--blur-overlay-md)] transition-all duration-base",
+        "group-hover/chevron:bg-brand-accent group-hover/chevron:text-on-primary group-hover/chevron:border-brand-accent group-hover/chevron:scale-110 group-hover/chevron:shadow-[0_0_15px_hsl(var(--brand-accent)/0.4)]",
     ]),
 
 })

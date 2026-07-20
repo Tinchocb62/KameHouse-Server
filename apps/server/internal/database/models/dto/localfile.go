@@ -99,10 +99,10 @@ type (
 
 	// LocalFileMetadata holds metadata related to a media episode.
 	LocalFileMetadata struct {
-		Episodes     []int        `json:"episodes"` // Multi-episode support for files like "01-03"
-		AniDBEpisode string      `json:"aniDBEpisode"`
+		Episodes     []int         `json:"episodes"` // Multi-episode support for files like "01-03"
+		AniDBEpisode string        `json:"aniDBEpisode"`
 		Type         LocalFileType `json:"type"`
-		EpisodeType  EpisodeType `json:"episodeType,omitempty"` // Canon, Filler, Hyped
+		EpisodeType  EpisodeType   `json:"episodeType,omitempty"` // Canon, Filler, Hyped
 
 		// Deprecated: Use Episodes instead. Kept for backwards compatibility.
 		Episode int `json:"episode"`
@@ -164,7 +164,7 @@ func newLocalFile(opath string, info *filesystem.SeparatedFilePath) *LocalFile {
 		ParsedData:       parsedInfo,
 		ParsedFolderData: parsedFolderInfo,
 		Metadata: &LocalFileMetadata{
-			Episodes:      nil,
+			Episodes:     nil,
 			AniDBEpisode: "",
 			Type:         "",
 		},

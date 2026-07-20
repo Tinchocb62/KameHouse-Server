@@ -1,14 +1,14 @@
-"use client"
+import { Icons } from "@/components/ui/icons"
 
 import { Link, useRouterState } from "@tanstack/react-router"
-import { Home, Tv, Film, Settings } from "lucide-react"
+
 import { cn } from "../core/styling"
 
 const TV_NAV_ITEMS = [
-    { to: "/home",     label: "Inicio",     Icon: Home },
-    { to: "/series",   label: "Series",     Icon: Tv },
-    { to: "/movies",   label: "Películas",  Icon: Film },
-    { to: "/settings", label: "Ajustes",    Icon: Settings },
+    { to: "/", label: "Inicio", Icon: Icons.navigation.home },
+    { to: "/series", label: "Series", Icon: Icons.navigation.tv },
+    { to: "/movies", label: "Películas", Icon: Icons.navigation.film },
+    { to: "/settings", label: "Ajustes", Icon: Icons.navigation.settings },
 ]
 
 export function TvNavBar() {
@@ -27,12 +27,12 @@ export function TvNavBar() {
                             "focus:outline-none focus-visible:outline-none",
                             "tv-focusable",
                             isActive
-                                ? "bg-primary/15 text-primary"
+                                ? "bg-brand-accent/15 text-brand-accent"
                                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
                         )}
                     >
                         <Icon className="w-6 h-6 shrink-0" />
-                        <span className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">{label}</span>
+                        <span className="text-label-sm font-bold uppercase tracking-widest whitespace-nowrap">{label}</span>
                     </Link>
                 )
             })}

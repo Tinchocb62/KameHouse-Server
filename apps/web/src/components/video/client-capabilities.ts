@@ -24,7 +24,7 @@ export function getClientCapabilities(): Mediastream_ClientCapabilities {
 
     // Chromium demuxes Matroska via its WebM/MKV pipeline but reports "" for
     // video/x-matroska in canPlayType, so also accept engine detection.
-    const isChromium = typeof (window as any).chrome !== "undefined" ||
+    const isChromium = typeof (window as Window & { chrome?: unknown }).chrome !== "undefined" ||
         /chrome|chromium|edg\//i.test(navigator.userAgent)
     const matroska = canPlay(video, 'video/x-matroska; codecs="avc1.42E01E, mp4a.40.2"') || isChromium
 

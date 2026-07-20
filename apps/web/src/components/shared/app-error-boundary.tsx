@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useRouter } from "@tanstack/react-router"
 import React from "react"
-import { ErrorBoundary as ReactErrorBoundary, ErrorBoundaryProps as ReactErrorBoundaryProps } from "react-error-boundary"
+import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary"
 
 interface AppErrorBoundaryProps {
     error: unknown
@@ -52,7 +52,7 @@ export function AppErrorBoundary({ error, resetErrorBoundary }: AppErrorBoundary
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center bg-black border border-zinc-800">
-            <h2 className="text-2xl font-bebas tracking-widest text-white mb-4 uppercase">
+            <h2 className="text-2xl font-display tracking-widest text-white mb-4 uppercase">
                 {isChunkLoadError ? "Actualización disponible" : "Error en el cliente"}
             </h2>
             <p className="text-zinc-400 mb-6 leading-relaxed text-sm max-w-md">
@@ -62,14 +62,14 @@ export function AppErrorBoundary({ error, resetErrorBoundary }: AppErrorBoundary
             </p>
             {!isChunkLoadError && (
                 <div className="mb-8 p-4 bg-zinc-900 border border-zinc-800 text-left overflow-hidden w-full max-w-md">
-                    <p className="text-red-500 font-mono text-xs break-all">
+                    <p className="text-status-error font-mono text-xs break-all">
                         {(error as Error)?.message || "Unknown Error"}
                     </p>
                 </div>
             )}
             <button
                 onClick={handleReset}
-                className="px-8 py-3 bg-white text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-colors"
+                className="px-8 py-3 bg-white text-black font-black text-xs uppercase tracking-ultra hover:bg-zinc-200 transition-colors"
             >
                 {isChunkLoadError ? "RECARGAR AHORA" : "REINTENTAR ACCESO"}
             </button>

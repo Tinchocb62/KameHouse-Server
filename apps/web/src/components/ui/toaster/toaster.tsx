@@ -17,7 +17,7 @@ export const ToasterAnatomy = defineStyleAnatomy({
         "group-[.toaster]:rounded-corner-lg group-[.toaster]:border group-[.toaster]:shadow-elevation-3",
         "group-[.toaster]:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_90%,transparent)] group-[.toaster]:backdrop-blur-[var(--blur-overlay-sm)] group-[.toaster]:border-outline-variant",
         "group-[.toaster]:text-on-surface",
-        "group-[.toaster]:transition-all group-[.toaster]:duration-200",
+        "group-[.toaster]:transition-all group-[.toaster]:duration-base",
         // Success
         "group-[.toaster]:data-[type=success]:bg-success-bg group-[.toaster]:data-[type=success]:border-success-border group-[.toaster]:data-[type=success]:text-success-bg",
         // Warning
@@ -25,7 +25,7 @@ export const ToasterAnatomy = defineStyleAnatomy({
         // Error
         "group-[.toaster]:data-[type=error]:bg-error-bg group-[.toaster]:data-[type=error]:border-error-border group-[.toaster]:data-[type=error]:text-error-bg",
         // Info
-        "group-[.toaster]:data-[type=info]:bg-brand-primary/15 group-[.toaster]:data-[type=info]:border-brand-primary/30 group-[.toaster]:data-[type=info]:text-brand-primary",
+        "group-[.toaster]:data-[type=info]:bg-brand-accent/15 group-[.toaster]:data-[type=info]:border-brand-accent/30 group-[.toaster]:data-[type=info]:text-brand-accent",
     ]),
     description: cva([
         "group/toast:text-xs group/toast:font-normal group/toast:mt-1",

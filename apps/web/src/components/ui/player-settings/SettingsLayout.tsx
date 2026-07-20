@@ -1,6 +1,6 @@
 import * as React from "react"
 import { motion } from "framer-motion"
-import { ChevronLeft, X } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 
 interface SettingsLayoutProps {
     title: string
@@ -16,7 +16,7 @@ export function SettingsLayout({ title, onBack, onClose, children }: SettingsLay
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="w-full max-w-80 bg-black/60 backdrop-blur-md border border-white/10 rounded-[22px] shadow-[var(--shadow-glass-liquid)] overflow-hidden flex flex-col"
+            className="w-full max-w-80 bg-black/60 backdrop-blur-md border border-white/10 rounded-modal shadow-[var(--shadow-glass-liquid)] overflow-hidden flex flex-col"
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.02]">
@@ -24,20 +24,20 @@ export function SettingsLayout({ title, onBack, onClose, children }: SettingsLay
                     {onBack && (
                         <button
                             onClick={onBack}
-                            className="p-2 md:p-1 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200 text-zinc-400 hover:text-white"
+                            className="p-2 md:p-1 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-base text-zinc-400 hover:text-white"
                         >
-                            <ChevronLeft className="w-5 h-5 md:w-4 md:h-4" />
+                            <Icons.navigation.chevronLeft className="w-5 h-5 md:w-4 md:h-4" />
                         </button>
                     )}
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">
+                    <span className="text-label-sm font-black uppercase tracking-ultra text-white/70">
                         {title}
                     </span>
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-2 md:p-1 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-200 text-zinc-500 hover:text-white"
+                    className="p-2 md:p-1 hover:bg-white/10 active:scale-90 rounded-full transition-all duration-base text-zinc-500 hover:text-white"
                 >
-                    <X className="w-5 h-5 md:w-4 md:h-4" />
+                    <Icons.ui.close className="w-5 h-5 md:w-4 md:h-4" />
                 </button>
             </div>
 
@@ -61,30 +61,30 @@ export function MenuButton({ icon, label, value, onClick, rightElement }: MenuBu
     return (
         <button
             onClick={onClick}
-            className="w-full flex items-center justify-between px-4 py-3 md:py-3 hover:bg-white/5 transition-all duration-300 ease-out group text-left relative overflow-hidden"
+            className="w-full flex items-center justify-between px-4 py-3 md:py-3 hover:bg-white/5 transition-all duration-base ease-out group text-left relative overflow-hidden"
         >
             {/* Hover visual accent indicator on the left edge */}
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-0 bg-brand-orange group-hover:h-1/2 transition-all duration-300 ease-out rounded-r-md" />
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-0 bg-brand-accent group-hover:h-1/2 transition-all duration-base ease-out rounded-r-md" />
             
-            <div className="flex items-center ml-3 group-hover:translate-x-1.5 transition-transform duration-300 ease-out [&>*:not(:first-child)]:ml-3">
-                <div className="text-zinc-500 group-hover:text-brand-orange transition-colors duration-300">
+            <div className="flex items-center ml-3 group-hover:translate-x-1.5 transition-transform duration-base ease-out [&>*:not(:first-child)]:ml-3">
+                <div className="text-zinc-500 group-hover:text-brand-accent transition-colors duration-base">
                     {icon}
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors duration-300">
+                    <span className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors duration-base">
                         {label}
                     </span>
                     {value && (
-                        <span className="text-[10px] font-medium text-zinc-500 group-hover:text-zinc-400 transition-colors duration-300">
+                        <span className="text-label-sm font-medium text-zinc-500 group-hover:text-zinc-400 transition-colors duration-base">
                             {value}
                         </span>
                     )}
                 </div>
             </div>
             
-            <div className="group-hover:-translate-x-0.5 transition-transform duration-300 ease-out">
+            <div className="group-hover:-translate-x-0.5 transition-transform duration-base ease-out">
                 {rightElement || (
-                    <ChevronLeft className="w-4 h-4 rotate-180 text-zinc-600 group-hover:text-zinc-400 transition-colors duration-300" />
+                    <Icons.navigation.chevronLeft className="w-4 h-4 rotate-180 text-zinc-600 group-hover:text-zinc-400 transition-colors duration-base" />
                 )}
             </div>
         </button>

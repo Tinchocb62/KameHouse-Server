@@ -6,11 +6,10 @@ import { DangerZone } from "@/components/settings/danger-zone"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
 import { toast } from "sonner"
-import { useAppStore } from "@/lib/store"
 import { useBackupDatabase } from "@/api/hooks/system.hooks"
 import { getServerBaseUrl } from "@/api/client/server-url"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
-
+import { Button } from "@/components/ui/button"
 interface SystemTabProps {
     control: Control<SettingsFormValues>
 }
@@ -33,17 +32,6 @@ const formatBytes = (bytes: number) => {
 }
 
 export function SystemTab({ control }: SystemTabProps) {
-    const {
-        bgMusicEnabled,
-        setBgMusicEnabled,
-        bgMusicVolume,
-        setBgMusicVolume,
-        uiSoundsEnabled,
-        setUiSoundsEnabled,
-        uiSoundsVolume,
-        setUiSoundsVolume,
-    } = useAppStore()
-
     const { mutate: backupDb, isPending: isBackingUp } = useBackupDatabase()
 
     const handleBackup = () => {
@@ -83,22 +71,36 @@ export function SystemTab({ control }: SystemTabProps) {
             window.URL.revokeObjectURL(downloadUrl)
             a.remove()
             toast.success("Reporte descargado", { id: "report-toast" })
-        } catch (error) {
+        } catch {
             toast.error("Error al generar el reporte", { id: "report-toast" })
         }
     }
 
-    const handleClearCache = () => {
-        toast.success("Caché de imágenes restablecida con éxito")
+    const handleClearCache = async () => {
+        if (!("caches" in window)) {
+            toast.error("Este navegador no soporta la API de cachés")
+            return
+        }
+        try {
+            const keys = await caches.keys()
+            await Promise.all(keys.map((k) => caches.delete(k)))
+            if (keys.length > 0) {
+                toast.success(`${keys.length} caché(s) locales eliminadas — recargá la página para regenerarlas`)
+            } else {
+                toast.info("No había cachés locales que limpiar")
+            }
+        } catch {
+            toast.error("No se pudo limpiar la caché local")
+        }
     }
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-slow outline-none">
             {/* Aplicación & Core DB Bento Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
                 {/* Aplicación */}
                 <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 md:col-span-2 space-y-5 divide-y divide-outline-variant/3">
-                    <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Aplicación</h4>
+                    <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Aplicación</h4>
                     <Controller
                         control={control}
                         name="library.openWebURLOnStart"
@@ -123,136 +125,42 @@ export function SystemTab({ control }: SystemTabProps) {
                             />
                         )}
                     />
-                    <Controller
-                        control={control}
-                        name="Platform.disableCacheLayer"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Desactivar Capa de Caché"
-                                description="Desactiva el cacheo de respuestas de la plataforma (útil para depuración)."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
                 </div>
 
                 {/* Base de Datos Core */}
                 <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 flex flex-col justify-between">
                     <div className="space-y-1">
-                        <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wide flex items-center gap-2">
+                        <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
                             <HardDriveIcon /> Base de Datos Core
                         </h4>
-                        <span className="text-[10px] font-mono text-on-surface-variant block">Engine: SQLite 3</span>
+                        <span className="text-label-sm font-mono text-on-surface-variant block">Engine: SQLite 3</span>
                     </div>
                     <div className="pt-5 flex flex-col gap-2">
                         <button
                             type="button"
                             onClick={handleBackup}
                             disabled={isBackingUp}
-                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-[10px] font-bold uppercase tracking-wider text-on-surface-variant rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-label-sm font-bold uppercase tracking-widest text-on-surface-variant rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
                         >
                             {isBackingUp ? "Respaldando..." : "Respaldar DB"}
                         </button>
                         <button
                             type="button"
                             onClick={handleGenerateReport}
-                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-[10px] font-bold uppercase tracking-wider text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
+                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-label-sm font-bold uppercase tracking-widest text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
                         >
                             Generar Reporte
                         </button>
                         <button
                             type="button"
                             onClick={handleClearCache}
-                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-[10px] font-bold uppercase tracking-wider text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
+                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-label-sm font-bold uppercase tracking-widest text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
                         >
-                            Limpiar Caché Imágenes
+                            Limpiar Caché Local
                         </button>
                     </div>
                 </div>
             </div>
-
-            {/* Gestión de Notificaciones */}
-            <Section label="Notificaciones de la Aplicación">
-                <Card className="divide-y divide-outline-variant/3">
-                    <Controller
-                        control={control}
-                        name="notifications.disableNotifications"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Desactivar Notificaciones Globales"
-                                description="Evita que se muestren alertas toast de eventos del sistema."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
-                    <Controller
-                        control={control}
-                        name="notifications.disableAutoScannerNotifications"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Desactivar Avisos del Escáner"
-                                description="No mostrar notificaciones toast en tiempo real cuando se encuentren, indexen o enriquezcan archivos nuevos."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
-                    <Controller
-                        control={control}
-                        name="notifications.disableAutoDownloaderNotifications"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Desactivar Avisos del Descargador"
-                                description="No mostrar notificaciones toast de progreso de descargas automáticas."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
-                </Card>
-            </Section>
-
-            {/* Audio y Efectos — preferencia local del dispositivo */}
-            <LocalDeviceSection title="Audio y Efectos">
-                <OsToggle
-                    label="Efectos de Sonido"
-                    description="Habilita los sonidos de interacción al pasar el cursor o hacer clic sobre tarjetas y menús."
-                    checked={uiSoundsEnabled}
-                    onChange={setUiSoundsEnabled}
-                />
-                {uiSoundsEnabled && (
-                    <RangeSlider
-                        label="Volumen de los Efectos"
-                        description="Ajusta el volumen general de los efectos de sonido de la interfaz."
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        value={uiSoundsVolume}
-                        onChange={setUiSoundsVolume}
-                        formatValue={(v) => `${Math.round(v * 100)}%`}
-                    />
-                )}
-                <OsToggle
-                    label="Música de Fondo"
-                    description="Habilita la reproducción de música ambiental de fondo mientras navegas por KameHouse."
-                    checked={bgMusicEnabled}
-                    onChange={setBgMusicEnabled}
-                />
-                {bgMusicEnabled && (
-                    <RangeSlider
-                        label="Volumen de la Música"
-                        description="Ajusta el volumen general de la música de fondo."
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        value={bgMusicVolume}
-                        onChange={setBgMusicVolume}
-                        formatValue={(v) => `${Math.round(v * 100)}%`}
-                    />
-                )}
-            </LocalDeviceSection>
 
             {/* Zona de Peligro */}
             <Section label="Zona de Peligro">

@@ -1,14 +1,15 @@
-"use client"
+import { Icons } from "@/components/ui/icons"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Clapperboard, Tv, Loader2 } from "lucide-react"
+import { motion } from "framer-motion"
+
 import { toast } from "sonner"
 import * as Popover from "@radix-ui/react-popover"
 
 import { cn } from "@/components/ui/core/styling"
 import { useGetLibraryCollection } from "@/api/hooks/anime_collection.hooks"
 import { fetchAnimeEntryLocalFiles } from "@/api/hooks/anime_entries.hooks"
+import { fetchCastDevices, useCastPlay } from "@/api/hooks/cast.hooks"
 import { useSound } from "@/hooks/use-sound"
 import { useAppStore, PlaylistItem } from "@/lib/store"
 
@@ -21,6 +22,7 @@ export function RandomPlayButton() {
     const tvMode = useAppStore(state => state.tvMode)
     const sidebarOpen = useAppStore(state => state.sidebarOpen)
     const setTvMode = useAppStore(state => state.setTvMode)
+    const { mutate: castPlay } = useCastPlay()
 
     const { data: collection } = useGetLibraryCollection()
 
@@ -133,6 +135,27 @@ export function RandomPlayButton() {
             
             if (!activeItem) return
 
+            // Si hay una KameHouseTV (Tizen) conectada al servidor, el Modo TV
+            // se reproduce en la tele vía cast y la UI del PC queda como está.
+            const devices = (await fetchCastDevices().catch(() => undefined))?.devices ?? []
+            if (devices.length > 0) {
+                const epNum = activeItem.episodeNumber ?? 1
+                castPlay({
+                    mediaId: randomEntry.mediaId,
+                    episodeNumber: epNum,
+                    title: seriesTitle,
+                    episodeLabel: isMovie ? "Película" : `Episodio ${epNum}`,
+                }, {
+                    onSuccess: () => {
+                        toast.success(`📺 Modo TV ${isMovie ? "Películas" : "Series"} enviado a la TV`, {
+                            description: `${seriesTitle}${!isMovie ? ` — Ep. ${epNum}` : ""}`,
+                            duration: 3000,
+                        })
+                    },
+                })
+                return
+            }
+
             useAppStore.setState({
                 playlistQueue: newQueue,
                 currentQueueIndex: 0,
@@ -171,7 +194,7 @@ export function RandomPlayButton() {
                             disabled={isLoading}
                             title="Modo TV"
                             className={cn(
-                                "flex items-center h-14 rounded-2xl group px-4 relative transition-all duration-300 w-full",
+                                "flex items-center h-14 rounded-xl group px-4 relative transition-all duration-base w-full",
                                 "active:scale-95 font-bold outline-none",
                                 sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
                                 tvMode || showPicker || isLoading
@@ -180,12 +203,12 @@ export function RandomPlayButton() {
                             )}
                         >
                             <div className={cn(
-                                "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-500 hidden md:block",
+                                "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-slow hidden md:block",
                                 (tvMode || showPicker || isLoading) ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                             )} />
                             
                             <span className={cn(
-                                "shrink-0 z-10 group-hover:scale-110 transition-transform duration-300",
+                                "shrink-0 z-10 group-hover:scale-110 transition-transform duration-base",
                                 (tvMode || showPicker || isLoading) && "text-on-surface"
                             )}>
                                 {isLoading ? (
@@ -193,18 +216,18 @@ export function RandomPlayButton() {
                                         animate={{ rotate: 360 }}
                                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                                     >
-                                        <Loader2 className="w-5 h-5" />
+                                        <Icons.ui.spinner className="w-5 h-5" />
                                     </motion.div>
                                 ) : (
-                                    <Tv className={cn(
-                                        "w-5 h-5 transition-transform duration-300",
+                                    <Icons.navigation.tv className={cn(
+                                        "w-5 h-5 transition-transform duration-base",
                                         "group-hover:scale-110"
                                     )} />
                                 )}
                             </span>
                             
                             <span className={cn(
-                                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                                "uppercase tracking-ultra text-label-sm font-black z-10 text-left transition-colors whitespace-nowrap",
                                 (sidebarOpen) ? "block" : "hidden md:hidden",
                                 (tvMode || showPicker || isLoading) ? "text-on-surface" : "group-hover:text-on-surface"
                             )}>
@@ -219,20 +242,20 @@ export function RandomPlayButton() {
                             align="end"
                             sideOffset={16}
                             className={cn(
-                                "z-[999] w-56 border border-outline-variant rounded-2xl p-1.5 outline-none",
+                                "z-[999] w-56 border border-outline-variant rounded-xl p-1.5 outline-none",
                                 "backdrop-blur-[var(--blur-overlay-xl)] backdrop-saturate-[var(--glass-saturate)]",
                                 "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
                                 "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
                                 "data-[side=right]:slide-in-from-left-4 data-[side=bottom]:slide-in-from-top-4",
-                                "duration-300 ease-out"
+                                "duration-base ease-out"
                             )}
                             style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 80%, transparent)" }}
                         >
                             {/* Header */}
                             <div className="px-3 pt-2.5 pb-2">
                                 <div className="flex items-center gap-2">
-                                    <Tv className="w-3 h-3 text-on-surface-variant opacity-75" />
-                                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-on-surface-variant">
+                                    <Icons.navigation.tv className="w-3 h-3 text-on-surface-variant opacity-75" />
+                                    <p className="text-caption font-black uppercase tracking-cinema-lg text-on-surface-variant">
                                         Modo TV
                                     </p>
                                 </div>
@@ -245,10 +268,9 @@ export function RandomPlayButton() {
                             <PickerOption
                                 id="tv-mode-movie"
                                 onClick={() => pick("movie")}
-                                icon={<Clapperboard className="w-4 h-4 text-on-surface-variant" />}
+                                icon={<Icons.media.clapperboard className="w-4 h-4 text-on-surface-variant" />}
                                 iconBg="bg-surface-container-high border-outline-variant"
-                                label="Modo TV Películas"
-                                description="Película aleatoria continua"
+                                label="Películas"
                                 accentColor="group-hover:text-on-surface"
                             />
 
@@ -256,19 +278,11 @@ export function RandomPlayButton() {
                             <PickerOption
                                 id="tv-mode-episode"
                                 onClick={() => pick("episode")}
-                                icon={<Tv className="w-4 h-4 text-on-surface-variant" />}
+                                icon={<Icons.navigation.tv className="w-4 h-4 text-on-surface-variant" />}
                                 iconBg="bg-surface-container-high border-outline-variant"
-                                label="Modo TV Series"
-                                description="Episodio aleatorio y orden cronológico"
+                                label="Series"
                                 accentColor="group-hover:text-on-surface"
                             />
-
-                            {/* Tip */}
-                            <div className="px-3 py-2.5">
-                                <p className="text-[9px] text-on-surface-variant font-medium leading-tight">
-                                    Solo se incluyen títulos con archivos descargados
-                                </p>
-                            </div>
                         </Popover.Content>
                     </Popover.Portal>
                 </Popover.Root>
@@ -286,21 +300,20 @@ interface PickerOptionProps {
     icon: React.ReactNode
     iconBg: string
     label: string
-    description: string
     accentColor: string
 }
 
-function PickerOption({ id, onClick, icon, iconBg, label, description, accentColor }: PickerOptionProps) {
+function PickerOption({ id, onClick, icon, iconBg, label, accentColor }: PickerOptionProps) {
     return (
         <button
             id={id}
             role="menuitem"
             onClick={onClick}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-transparent hover:bg-surface-container-high border border-transparent hover:border-outline-variant transition-all duration-300 text-left group active:scale-95"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-transparent hover:bg-surface-container-high border border-transparent hover:border-outline-variant transition-all duration-base text-left group active:scale-95"
         >
             {/* Icon badge */}
             <div className={cn(
-                "w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-transform duration-300",
+                "w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 transition-transform duration-base",
                 iconBg,
                 "group-hover:scale-110"
             )}>
@@ -310,19 +323,16 @@ function PickerOption({ id, onClick, icon, iconBg, label, description, accentCol
             {/* Text */}
             <div>
                 <p className={cn(
-                    "text-sm font-bold text-on-surface transition-colors duration-200",
+                    "text-sm font-bold text-on-surface transition-colors duration-base",
                     accentColor
                 )}>
                     {label}
-                </p>
-                <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">
-                    {description}
                 </p>
             </div>
 
             {/* Arrow hint */}
             <span
-                className="ml-auto text-on-surface-variant/50 group-hover:text-on-surface-variant text-xs transition-all duration-300 group-hover:translate-x-1"
+                className="ml-auto text-on-surface-variant/50 group-hover:text-on-surface-variant text-xs transition-all duration-base group-hover:translate-x-1"
             >
                 ›
             </span>

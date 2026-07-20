@@ -15,6 +15,9 @@ func (h *Handler) RegisterStreamingRoutes(v1 *echo.Group) {
 	v1Mediastream.POST("/request", h.HandleRequestMediastreamMediaContainer)
 	v1Mediastream.POST("/preload", h.HandlePreloadMediastreamMediaContainer)
 	v1Mediastream.POST("/shutdown-transcode", h.HandleMediastreamShutdownTranscodeStream)
+	v1Mediastream.POST("/pretranscode", h.HandleEnqueuePreTranscode)
+	v1Mediastream.GET("/pretranscode", h.HandleGetPreTranscodeJobs)
+	v1Mediastream.DELETE("/pretranscode/:hash", h.HandleCancelPreTranscode)
 	v1Mediastream.GET("/direct/play", h.HandleMediastreamDirectPlay)
 	v1Mediastream.GET("/transcode/*", h.HandleMediastreamTranscode)
 	v1Mediastream.GET("/hls/*", h.HandleMediastreamServeOptimizedStatic)
@@ -26,6 +29,7 @@ func (h *Handler) RegisterStreamingRoutes(v1 *echo.Group) {
 	v1Mediastream.GET("/skip-times", h.HandleGetEpisodeSkipTimes)
 	v1Mediastream.POST("/skip-times", h.HandleSaveEpisodeSkipTimes)
 	v1Mediastream.GET("/skip-times/resolve-mal", h.HandleResolveMAL)
+	v1Mediastream.POST("/skip-times/scan", h.HandleScanEpisodeSkipTimes)
 
 	// Video Thumbnail
 	v1.GET("/video-thumbnail", h.HandleGetVideoThumbnail)

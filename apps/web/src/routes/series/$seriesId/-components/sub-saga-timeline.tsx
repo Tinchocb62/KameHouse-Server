@@ -43,29 +43,29 @@ export function SubSagaTimeline({ items, activeId, onSelect }: SubSagaTimelinePr
             }}
             aria-label={`${item.title}, ${item.episodeRange}`}
             aria-current={isActive ? "true" : undefined}
-            className="relative text-left flex items-start gap-3 py-0.5 group/subsaga cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70 rounded-md"
+            className="relative text-left flex items-start gap-3 py-2 md:py-0.5 group/subsaga cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70 rounded-md"
           >
             <div className={cn(
-              "relative mt-1 flex items-center justify-center shrink-0 w-2.5 h-2.5 rounded-full border transition-all duration-300",
+              "relative mt-1 flex items-center justify-center shrink-0 w-2.5 h-2.5 rounded-full border transition-all duration-base",
               isActive
                 ? "border-brand-accent bg-brand-accent shadow-[0_0_8px_hsl(var(--brand-accent)/0.5)]"
                 : "border-outline-variant/20 bg-surface-container group-hover/subsaga:border-brand-accent group-hover/subsaga:scale-110"
             )}>
               <div className={cn(
-                "w-1.5 h-1.5 rounded-full transition-colors duration-300",
+                "w-1.5 h-1.5 rounded-full transition-colors duration-base",
                 isActive ? "bg-on-surface" : "bg-transparent group-hover/subsaga:bg-brand-accent"
               )} />
             </div>
 
             <div className="flex-1 space-y-0.5 pb-1">
               <span className={cn(
-                "block text-xs font-bold transition-colors duration-300 leading-normal",
+                "block text-xs font-bold transition-colors duration-base leading-normal",
                 isActive ? "text-on-surface" : "text-on-surface-variant group-hover/subsaga:text-on-surface"
               )}>
                 {item.title}
               </span>
               <span className={cn(
-                "block text-[8px] font-black tracking-widest transition-colors duration-300",
+                "block text-xs font-black tracking-widest transition-colors duration-base",
                 isActive ? "text-brand-accent" : "text-on-surface-variant group-hover/subsaga:text-brand-accent/80"
               )}>
                 {item.episodeRange}

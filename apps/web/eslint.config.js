@@ -73,7 +73,12 @@ export default tseslint.config(
 
             // TypeScript
             "@typescript-eslint/no-explicit-any": "warn",
-            "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+            "@typescript-eslint/no-unused-vars": ["warn", {
+                argsIgnorePattern: "^_",
+                varsIgnorePattern: "^_",
+                caughtErrorsIgnorePattern: "^_",
+                ignoreRestSiblings: true,
+            }],
             "@typescript-eslint/ban-ts-comment": "warn",
 
             // React Compiler

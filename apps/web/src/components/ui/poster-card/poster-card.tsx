@@ -1,11 +1,11 @@
 import { cn } from "@/components/ui/core/styling";
 import * as React from "react";
-import { Play, Info, Plus, Check, Clock, Star, Sparkles } from "lucide-react";
-import { getHighResImage, getMediumResImage, getLowResImage } from "@/lib/helpers/images";
+import { Icons } from "@/components/ui/icons";
+import { getMediumResImage } from "@/lib/helpers/images";
 import { DeferredImage } from "@/components/shared/deferred-image";
 
-import { Icons } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
+import { useGetSettings } from "@/api/hooks/settings.hooks";
 
 export type PosterAspect = "poster" | "landscape" | "square" | "ultrawide";
 export type PosterSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -81,6 +81,8 @@ export const PosterCard = React.memo(function PosterCard({
   isSelected = false,
 }: PosterCardProps) {
   const isPoster = aspect === "poster";
+  const { data: serverSettings } = useGetSettings();
+  const hideAudienceScore = !!serverSettings?.Platform?.hideAudienceScore;
   const [isHovered, setIsHovered] = React.useState(false);
   const [showPopup, setShowPopup] = React.useState(false);
   const hoverTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,10 +166,10 @@ export const PosterCard = React.memo(function PosterCard({
           <div
             className={cn(
               "absolute inset-0 bg-surface-container shadow-elevation-2 border border-outline-variant overflow-hidden",
-              isPoster ? "rounded-2xl" : "rounded-3xl"
+              isPoster ? "rounded-xl" : "rounded-container"
             )}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-primary/10 via-transparent to-transparent pointer-events-none rounded-[inherit] opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-accent/10 via-transparent to-transparent pointer-events-none rounded-[inherit] opacity-50" />
           </div>
         )}
 
@@ -175,8 +177,8 @@ export const PosterCard = React.memo(function PosterCard({
           <div
             className={cn(
               "absolute inset-0 bg-surface-container shadow-elevation-2 border border-outline-variant",
-              isPoster ? "rounded-xl" : "rounded-2xl",
-              "bg-[var(--bg-secondary)]/40 hover:border-brand-primary/30 hover:shadow-[var(--shadow-brand-primary)]"
+              isPoster ? "rounded-lg" : "rounded-xl",
+              "bg-[var(--bg-secondary)]/40 hover:border-brand-accent/30 hover:shadow-[var(--shadow-brand-primary)]"
             )}
           />
         )}
@@ -185,7 +187,7 @@ export const PosterCard = React.memo(function PosterCard({
           <DeferredImage
             src={getMediumResImage(artwork)}
             alt={title}
-            className="h-full w-full object-cover transition-transform duration-1000 ease-smooth group-hover:scale-[1.05]"
+            className="h-full w-full object-cover transition-transform duration-slow ease-smooth group-hover:scale-[1.05]"
           />
 
           <div className={cn(
@@ -197,7 +199,7 @@ export const PosterCard = React.memo(function PosterCard({
             <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-[inherit]">
               <div
                 className={cn(
-                  "w-1/3 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 absolute inset-y-0 transition-transform duration-700 ease-out -translate-x-[150%]",
+                  "w-1/3 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 absolute inset-y-0 transition-transform duration-slow ease-out -translate-x-[150%]",
                   isHovered && "translate-x-[150%]"
                 )}
               />
@@ -208,8 +210,8 @@ export const PosterCard = React.memo(function PosterCard({
             <div className="absolute top-0 left-0 z-20">
               <Badge variant="primary" size="sm" className="rounded-br-xl border-r-0 border-b-0 px-3 py-1.5">
                 <span className="flex items-center gap-1">
-                  <span className="font-black text-[10px] tracking-[0.15em] uppercase">EP</span>
-                  <span className="font-black text-[10px] tracking-[0.15em] uppercase">{episodeNumber}</span>
+                  <span className="font-black text-label-sm tracking-display uppercase">EP</span>
+                  <span className="font-black text-label-sm tracking-display uppercase">{episodeNumber}</span>
                 </span>
               </Badge>
             </div>
@@ -218,7 +220,7 @@ export const PosterCard = React.memo(function PosterCard({
           {mediaTypeBadge && (
             <div className="absolute top-0 right-0 z-20">
               <Badge variant="muted" size="sm" className="rounded-bl-xl border-l-0 border-b-0 px-2.5 py-1">
-                <span className="font-black text-[8px] tracking-[0.2em] uppercase">{mediaTypeBadge}</span>
+                <span className="font-black text-label-sm tracking-ultra uppercase">{mediaTypeBadge}</span>
               </Badge>
             </div>
           )}
@@ -250,14 +252,14 @@ export const PosterCard = React.memo(function PosterCard({
 
           {showPopup && showQuickActions && (
             <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2">
-              <button className="h-9 w-9 flex items-center justify-center rounded-full shadow-lg hover:scale-110 hover:shadow-[var(--shadow-brand-primary)] bg-primary text-on-primary">
-                <Play size={14} />
+              <button className="h-9 w-9 flex items-center justify-center rounded-full shadow-lg hover:scale-110 hover:shadow-[var(--shadow-brand-primary)] bg-brand-accent text-on-primary">
+                <Icons.media.play size={14} />
               </button>
-              <button className="h-9 w-9 flex items-center justify-center rounded-full bg-transparent border border-[var(--glass-border)] text-primary">
-                <Plus size={14} />
+              <button className="h-9 w-9 flex items-center justify-center rounded-full bg-transparent border border-[var(--glass-border)] text-brand-accent">
+                <Icons.ui.plus size={14} />
               </button>
-              <button className="h-9 w-9 flex items-center justify-center rounded-full bg-transparent border border-[var(--glass-border)] text-primary">
-                <Info size={14} />
+              <button className="h-9 w-9 flex items-center justify-center rounded-full bg-transparent border border-[var(--glass-border)] text-brand-accent">
+                <Icons.ui.info size={14} />
               </button>
             </div>
           )}
@@ -280,7 +282,7 @@ export const PosterCard = React.memo(function PosterCard({
           {progress !== undefined && (
             <div className="absolute inset-x-0 bottom-0 z-20 h-1 bg-[var(--glass-border-side)]">
               <div
-                className="h-full bg-brand-primary shadow-[var(--shadow-brand-primary)] transition-all duration-base"
+                className="h-full bg-brand-accent shadow-[var(--shadow-brand-primary)] transition-all duration-base"
                 style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
               />
             </div>
@@ -295,9 +297,9 @@ export const PosterCard = React.memo(function PosterCard({
               </h3>
 
               <div className="flex flex-wrap items-center gap-1.5 text-caption font-bold uppercase tracking-wider text-on-surface-variant/70">
-                {rating && (
+                {rating && !hideAudienceScore && (
                   <span className="text-brand-success font-extrabold flex items-center gap-1">
-                    <Star size={10} fill="currentColor" />
+                    <Icons.ui.star size={10} fill="currentColor" />
                     {(rating * 10).toFixed(0)}%
                   </span>
                 )}
@@ -308,7 +310,7 @@ export const PosterCard = React.memo(function PosterCard({
                   </Badge>
                 )}
                 {episodeTitle && (
-                  <span className="text-on-surface-variant/70 text-[9px]">
+                  <span className="text-on-surface-variant/70 text-label-sm">
                     {episodeTitle}
                   </span>
                 )}
@@ -322,9 +324,9 @@ export const PosterCard = React.memo(function PosterCard({
                       variant="primary"
                       size="sm"
                       dot
-                      className="text-[7px] tracking-widest px-2 py-0.5"
+                      className="text-label-sm tracking-widest px-2 py-0.5"
                     >
-                      <Sparkles size={8} className="animate-pulse" />
+                      <Icons.status.sparkles size={8} className="animate-pulse" />
                       {vibe}
                     </Badge>
                   ))}
@@ -339,12 +341,12 @@ export const PosterCard = React.memo(function PosterCard({
 
               {showQuickActions && showPopup && (
                 <div className="flex items-center gap-2 pt-2 border-t border-[var(--glass-border-top)]">
-                  <button className="flex-1 flex items-center justify-center gap-2 bg-primary text-on-primary rounded-pill px-4 py-2">
-                    <Play size={14} />
+                  <button className="flex-1 flex items-center justify-center gap-2 bg-brand-accent text-on-primary rounded-pill px-4 py-2">
+                    <Icons.media.play size={14} />
                     Reproducir
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 bg-transparent border border-[var(--glass-border)] text-primary rounded-pill px-4 py-2">
-                    <Info size={14} />
+                  <button className="flex-1 flex items-center justify-center gap-2 bg-transparent border border-[var(--glass-border)] text-brand-accent rounded-pill px-4 py-2">
+                    <Icons.ui.info size={14} />
                     Detalles
                   </button>
                 </div>
@@ -356,7 +358,7 @@ export const PosterCard = React.memo(function PosterCard({
       </div>
 
       {isSelected && (
-        <div className="absolute inset-0 border-2 border-brand-primary rounded-[inherit] pointer-events-none opacity-50" />
+        <div className="absolute inset-0 border-2 border-brand-accent rounded-[inherit] pointer-events-none opacity-50" />
       )}
     </div>
   );

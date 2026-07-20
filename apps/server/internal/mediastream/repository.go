@@ -7,10 +7,12 @@ import (
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/events"
 	"kamehouse/internal/mediastream/cassette"
+	"kamehouse/internal/mediastream/pretranscode"
 	"kamehouse/internal/mediastream/videofile"
 	"kamehouse/internal/util/filecache"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,6 +24,7 @@ import (
 type (
 	Repository struct {
 		transcoder         mo.Option[*cassette.Cassette]
+		preTranscoder      mo.Option[*pretranscode.Manager]
 		settings           mo.Option[*models.MediastreamSettings]
 		playbackManager    *PlaybackManager
 		mediaInfoExtractor *videofile.MediaInfoExtractor
@@ -45,9 +48,10 @@ type (
 
 func NewRepository(opts *NewRepositoryOptions) *Repository {
 	ret := &Repository{
-		logger: opts.Logger,
+		logger:             opts.Logger,
 		settings:           mo.None[*models.MediastreamSettings](),
 		transcoder:         mo.None[*cassette.Cassette](),
+		preTranscoder:      mo.None[*pretranscode.Manager](),
 		wsEventManager:     opts.WSEventManager,
 		fileCacher:         opts.FileCacher,
 		mediaInfoExtractor: videofile.NewMediaInfoExtractor(opts.FileCacher, opts.Logger),
@@ -94,10 +98,72 @@ func (r *Repository) InitializeModules(settings *models.MediastreamSettings, cac
 	// Initialize the transcoder (respects the TranscodeEnabled setting on startup)
 	_ = r.initializeTranscoder(r.settings, false)
 
+	// Initialize the pre-transcoder (respects the PreTranscodeEnabled setting)
+	r.initializePreTranscoder(settings)
+
 	// Purge stale transcode directory leftovers on startup
 	r.ClearTranscodeDir()
 
 	r.logger.Info().Msg("mediastream: Module initialized")
+}
+
+// PreTranscodeDir returns the base directory holding pre-transcoded output. The
+// user may point it at a roomy disk (Settings → Streaming); otherwise it lives
+// beside the rest of the cache, which is also where the "optimized" stream type
+// has always looked.
+func (r *Repository) PreTranscodeDir() string {
+	if r.settings.IsPresent() {
+		if s := r.settings.MustGet(); s != nil && strings.TrimSpace(s.PreTranscodeLibraryDir) != "" {
+			return strings.TrimSpace(s.PreTranscodeLibraryDir)
+		}
+	}
+	return filepath.Join(r.cacheDir, "optimized")
+}
+
+// initializePreTranscoder (re)builds the pre-transcode manager from settings. A
+// previous manager is stopped first so a settings change doesn't leave orphan
+// ffmpeg processes writing to the old directory.
+func (r *Repository) initializePreTranscoder(settings *models.MediastreamSettings) {
+	if r.preTranscoder.IsPresent() {
+		r.preTranscoder.MustGet().Stop()
+		r.preTranscoder = mo.None[*pretranscode.Manager]()
+	}
+
+	if !settings.PreTranscodeEnabled {
+		r.logger.Debug().Msg("mediastream: Pre-transcoding is disabled")
+		return
+	}
+
+	outputDir := r.PreTranscodeDir()
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		r.logger.Error().Err(err).Str("dir", outputDir).Msg("mediastream: Could not create pre-transcode directory, pre-transcoding stays off")
+		return
+	}
+
+	m := pretranscode.New(pretranscode.Options{
+		Logger:      r.logger,
+		OutputDir:   outputDir,
+		FfmpegPath:  settings.FfmpegPath,
+		FfprobePath: settings.FfprobePath,
+		HwAccel: cassette.HwAccelOptions{
+			Kind:           settings.TranscodeHwAccel,
+			Preset:         settings.TranscodePreset,
+			CustomSettings: settings.TranscodeHwAccelCustomSettings,
+		},
+		// Pre-transcoding is background work: keep it to a single ffmpeg so it can't
+		// starve a live playback transcode of CPU/GPU.
+		Concurrency: 1,
+		Extractor:   r.mediaInfoExtractor,
+	})
+	m.Start()
+
+	r.preTranscoder = mo.Some(m)
+}
+
+// PreTranscoder returns the pre-transcode manager, present only while the
+// feature is enabled in settings.
+func (r *Repository) PreTranscoder() (*pretranscode.Manager, bool) {
+	return r.preTranscoder.Get()
 }
 
 
@@ -222,7 +288,11 @@ func (r *Repository) TranscoderIsInitialized() bool {
 // used for explicit user actions (e.g. switching audio track during direct play) that
 // require HLS but shouldn't demand the user flip the global setting. For H264 sources
 // the video is stream-copied and only the audio is re-encoded, so the cost is low.
-func (r *Repository) RequestTranscodeStream(filepath string, clientID string, force bool) (ret *MediaContainer, err error) {
+//
+// caps lets the playback manager upgrade the stream to Direct Play when the client can
+// decode the file natively (see DisableAutoSwitchToDirectPlay). force=true suppresses
+// that upgrade: the caller explicitly needs HLS, so caps are withheld.
+func (r *Repository) RequestTranscodeStream(filepath string, clientID string, force bool, caps *ClientCapabilities) (ret *MediaContainer, err error) {
 	r.logger.Debug().Str("filepath", filepath).Bool("force", force).Msg("mediastream: Transcode stream requested")
 
 	if !r.IsInitialized() {
@@ -247,7 +317,13 @@ func (r *Repository) RequestTranscodeStream(filepath string, clientID string, fo
 		r.reqMu.Unlock()
 	}
 
-	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeTranscode, clientID, nil)
+	// force means the caller needs HLS specifically (audio-track switch): withhold caps
+	// so the playback manager can't undo that by switching back to Direct Play.
+	if force {
+		caps = nil
+	}
+
+	ret, err = r.playbackManager.RequestPlayback(filepath, StreamTypeTranscode, clientID, caps)
 
 	return
 }

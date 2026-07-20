@@ -12,15 +12,15 @@ function ApiKeyCard({ name, connected, children }: { name: string; connected: bo
     return (
         <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 space-y-4">
             <div className="flex items-center justify-between border-b border-outline-variant pb-2">
-                <h4 className="text-xs font-bold text-on-surface uppercase tracking-wide flex items-center gap-2">{name}</h4>
+                <h4 className="text-xs font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">{name}</h4>
                 {connected ? (
-                    <div className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-0.5 rounded-full">
-                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest font-mono">Conectado</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />
+                    <div className="flex items-center gap-1.5 bg-brand-success/15 border border-brand-success/25 px-2.5 py-0.5 rounded-full">
+                        <span className="text-caption font-black text-brand-success uppercase tracking-widest font-mono">Conectado</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-success shadow-[0_0_6px_hsl(var(--brand-success))]" />
                     </div>
                 ) : (
                     <div className="flex items-center gap-1.5 bg-surface-container border border-outline-variant px-2.5 py-0.5 rounded-full">
-                        <span className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest font-mono">Sin configurar</span>
+                        <span className="text-caption font-black text-on-surface-variant uppercase tracking-widest font-mono">Sin configurar</span>
                         <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/60" />
                     </div>
                 )}
@@ -37,7 +37,7 @@ export function IntegrationsTab({ control }: IntegrationsTabProps) {
 
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-slow outline-none">
             {/* Bento grids for integrations */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ApiKeyCard name="The Movie Database (TMDB)" connected={!!tmdbApiKey}>

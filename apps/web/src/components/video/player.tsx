@@ -54,23 +54,23 @@ export function VideoPlayer(props: VideoPlayerProps) {
         // Attempt to enter fullscreen
         try {
             if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch((err: any) => {
+                document.documentElement.requestFullscreen().catch((err: unknown) => {
                     console.warn("Fullscreen request failed:", err)
                 })
             }
-        } catch (err: any) {
+        } catch (err) {
             console.warn("Fullscreen error:", err)
         }
 
         // Try lock screen orientation to landscape
         try {
-            const screenAny = window.screen as any
+            const screenAny = window.screen as Screen & { orientation?: { lock?: (o: string) => Promise<void>; unlock?: () => void } }
             if (screenAny && screenAny.orientation && screenAny.orientation.lock) {
-                screenAny.orientation.lock("landscape").catch((err: any) => {
+                screenAny.orientation.lock("landscape").catch((err: unknown) => {
                     console.warn("Orientation lock failed:", err)
                 })
             }
-        } catch (err: any) {
+        } catch (err) {
             console.warn("Orientation lock error:", err)
         }
 
@@ -83,21 +83,21 @@ export function VideoPlayer(props: VideoPlayerProps) {
             setVideoActive(false)
             // Unlock screen orientation
             try {
-                const screenAny = window.screen as any
+                const screenAny = window.screen as Screen & { orientation?: { lock?: (o: string) => Promise<void>; unlock?: () => void } }
                 if (screenAny && screenAny.orientation && screenAny.orientation.unlock) {
                     screenAny.orientation.unlock()
                 }
-            } catch (err: any) {
+            } catch (err) {
                 console.warn("Orientation unlock error:", err)
             }
             // Attempt to exit fullscreen when closing player
             try {
                 if (document.fullscreenElement && document.exitFullscreen) {
-                    document.exitFullscreen().catch((err: any) => {
+                    document.exitFullscreen().catch((err: unknown) => {
                         console.warn("Exit fullscreen failed:", err)
                     })
                 }
-            } catch (err: any) {
+            } catch (err) {
                 console.warn("Exit fullscreen error:", err)
             }
         }
@@ -119,7 +119,7 @@ export function VideoPlayer(props: VideoPlayerProps) {
 
     return createPortal(
         <PlayerErrorBoundary label="Video Player">
-            <div className="fixed inset-0 z-[10000] animate-in fade-in zoom-in-95 duration-500 fill-mode-forwards">
+            <div className="fixed inset-0 z-[10000] animate-in fade-in zoom-in-95 duration-slow fill-mode-forwards">
                 <Suspense fallback={<PlayerLoadingScreen />}>
                     {playerContent}
                 </Suspense>

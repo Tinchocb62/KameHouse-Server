@@ -15,13 +15,13 @@ export const RadioGroupAnatomy = defineStyleAnatomy({
     ]),
     item: cva([
         "UI-RadioGroup__item",
-        "block aspect-square rounded-full border text-brand-primary ring-offset-1 ring-offset-[hsl(var(--background))]",
+        "block aspect-square rounded-full border text-brand-accent ring-offset-1 ring-offset-[hsl(var(--background))]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed data-[disabled=true]:opacity-50 data-[readonly=true]:cursor-not-allowed",
         "border-outline-variant",
         "data-[state=unchecked]:bg-surface-container", // Unchecked
         "data-[state=unchecked]:hover:bg-surface-container-high", // Unchecked hover
-        "data-[state=checked]:bg-brand-primary data-[state=checked]:border-transparent", // Checked
+        "data-[state=checked]:bg-brand-accent data-[state=checked]:border-transparent", // Checked
         "data-[error=true]:border-brand-destructive data-[error=true]:data-[state=checked]:border-brand-destructive", // Error
     ], {
         variants: {

@@ -13,18 +13,18 @@ import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
 export const ModalAnatomy = defineStyleAnatomy({
     overlay: cva([
         "UI-Modal__overlay",
-        "fixed inset-0 z-50 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_60%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] transition-all duration-300",
+        "fixed inset-0 z-50 bg-[color:color-mix(in_srgb,var(--md-sys-color-surface)_60%,transparent)] backdrop-blur-[var(--blur-overlay-xl)] transition-all duration-base",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         // "overflow-y-auto p-0 md:p-4 grid place-items-center",
     ]),
     content: cva([
         "UI-Modal__content",
-        "z-50 grid relative w-full shadow-2xl border border-white/5 max-w-lg gap-4 glass-liquid glass-refract p-6 duration-200",
+        "z-50 grid relative w-full shadow-2xl border border-white/5 max-w-lg gap-4 glass-liquid glass-refract p-6 duration-base",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-        "rounded-2xl",
+        "rounded-xl",
     ]),
     close: cva([
         "UI-Modal__close",
@@ -204,12 +204,6 @@ export function ConfirmModal({
   onOpenChange,
   title = "Confirmar",
   description,
-  confirmLabel = "Confirmar",
-  cancelLabel = "Cancelar",
-  variant = "primary",
-  onConfirm,
-  onCancel,
-  loading = false,
   children,
 }: ConfirmModalProps) {
   return (
@@ -241,10 +235,6 @@ export function AlertModal({
   onOpenChange,
   title = "Aviso",
   description,
-  confirmLabel = "Entendido",
-  variant = "primary",
-  onConfirm,
-  icon,
   children,
 }: AlertModalProps) {
   return (

@@ -197,6 +197,30 @@
 // }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// cast
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useGetCastDevices() {
+//     return useServerQuery<CastDevicesResponse>({
+//         endpoint: API_ENDPOINTS.CAST.GetCastDevices.endpoint,
+//         method: API_ENDPOINTS.CAST.GetCastDevices.methods[0],
+//         queryKey: [API_ENDPOINTS.CAST.GetCastDevices.key],
+//         enabled: true,
+//     })
+// }
+
+// export function useCastPlay() {
+//     return useServerMutation<CastPlayResponse>({
+//         endpoint: API_ENDPOINTS.CAST.CastPlay.endpoint,
+//         method: API_ENDPOINTS.CAST.CastPlay.methods[0],
+//         mutationKey: [API_ENDPOINTS.CAST.CastPlay.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // continuity
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -653,6 +677,17 @@
 //     })
 // }
 
+// export function useScanEpisodeSkipTimes() {
+//     return useServerMutation<boolean, ScanEpisodeSkipTimes_Variables>({
+//         endpoint: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.endpoint,
+//         method: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.methods[0],
+//         mutationKey: [API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
 // export function useResolveMAL() {
 //     return useServerQuery<boolean>({
 //         endpoint: API_ENDPOINTS.MEDIASTREAM.ResolveMAL.endpoint,
@@ -720,6 +755,28 @@
 // }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// music
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useScanBackgroundMusic() {
+//     return useServerQuery<BackgroundMusicScanResponse>({
+//         endpoint: API_ENDPOINTS.MUSIC.ScanBackgroundMusic.endpoint,
+//         method: API_ENDPOINTS.MUSIC.ScanBackgroundMusic.methods[0],
+//         queryKey: [API_ENDPOINTS.MUSIC.ScanBackgroundMusic.key],
+//         enabled: true,
+//     })
+// }
+
+// export function useStreamBackgroundMusic() {
+//     return useServerQuery<boolean>({
+//         endpoint: API_ENDPOINTS.MUSIC.StreamBackgroundMusic.endpoint,
+//         method: API_ENDPOINTS.MUSIC.StreamBackgroundMusic.methods[0],
+//         queryKey: [API_ENDPOINTS.MUSIC.StreamBackgroundMusic.key],
+//         enabled: true,
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // notifications
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -763,6 +820,41 @@
 //         endpoint: API_ENDPOINTS.PLAYBACK_SYNC.PlaybackSync.endpoint,
 //         method: API_ENDPOINTS.PLAYBACK_SYNC.PlaybackSync.methods[0],
 //         mutationKey: [API_ENDPOINTS.PLAYBACK_SYNC.PlaybackSync.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// pretranscode
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useEnqueuePreTranscode() {
+//     return useServerMutation<PreTranscodeJob, EnqueuePreTranscode_Variables>({
+//         endpoint: API_ENDPOINTS.PRETRANSCODE.EnqueuePreTranscode.endpoint,
+//         method: API_ENDPOINTS.PRETRANSCODE.EnqueuePreTranscode.methods[0],
+//         mutationKey: [API_ENDPOINTS.PRETRANSCODE.EnqueuePreTranscode.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+// export function useGetPreTranscodeJobs() {
+//     return useServerQuery<Array<PreTranscodeJob>>({
+//         endpoint: API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.endpoint,
+//         method: API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.methods[0],
+//         queryKey: [API_ENDPOINTS.PRETRANSCODE.GetPreTranscodeJobs.key],
+//         enabled: true,
+//     })
+// }
+
+// export function useCancelPreTranscode() {
+//     return useServerMutation<boolean>({
+//         endpoint: API_ENDPOINTS.PRETRANSCODE.CancelPreTranscode.endpoint,
+//         method: API_ENDPOINTS.PRETRANSCODE.CancelPreTranscode.methods[0],
+//         mutationKey: [API_ENDPOINTS.PRETRANSCODE.CancelPreTranscode.key],
 //         onSuccess: async () => {
 // 
 //         },

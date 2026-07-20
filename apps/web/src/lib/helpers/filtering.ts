@@ -9,7 +9,7 @@ import {
 import { media_getUnwatchedCount } from "./media"
 import { asUnifiedMedia } from "./type-guards"
 
-function sortBy<T>(array: T[], iteratee: (item: T) => any): T[] {
+function sortBy<T>(array: T[], iteratee: (item: T) => string | number | Date | null | undefined): T[] {
     return [...array].sort((a, b) => {
         const valueA = iteratee(a)
         const valueB = iteratee(b)

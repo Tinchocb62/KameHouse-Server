@@ -158,7 +158,7 @@ export async function getAniSkipTimes({
 
     // 1. Try local KameHouse server database first
     try {
-        const localData = await buildSeaQuery<LocalSkipTimeResponse, any>({
+        const localData = await buildSeaQuery<LocalSkipTimeResponse, { mediaId?: number; malId?: number; episodeNumber: number }>({
             endpoint: "/api/v1/mediastream/skip-times",
             method: "GET",
             params: {
@@ -210,7 +210,7 @@ export async function getAniSkipTimes({
 
     if (!activeMalId && mediaId) {
         try {
-            const res = await buildSeaQuery<any, any>({
+            const res = await buildSeaQuery<{ malId?: number }>({
                 endpoint: `/api/v1/mediastream/skip-times/resolve-mal?mediaId=${mediaId}`,
                 method: "GET",
             })
@@ -266,7 +266,18 @@ export async function getAniSkipTimes({
         // Enviar la confianza basada en los votos (o 1 como base si AniSkip fue exitoso)
         const confidence = Math.max(bestOp?.votes || 0, bestEd?.votes || 0, 1)
 
-        buildSeaQuery<any, any>({
+        buildSeaQuery<unknown, {
+            mediaId?: number
+            malId?: number
+            episodeNumber: number
+            opStart: number
+            opEnd: number
+            edOffset: number
+            edEnd: number
+            applyToSeason: boolean
+            source: string
+            confidence: number
+        }>({
             endpoint: "/api/v1/mediastream/skip-times",
             method: "POST",
             data: {

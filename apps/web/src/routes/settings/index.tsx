@@ -8,22 +8,27 @@ import { toast } from "sonner"
 import { LoadingOverlayWithLogo } from "@/components/shared/loading-overlay-with-logo"
 
 import { useGetSettings, useSaveSettings } from "@/api/hooks/settings.hooks"
-import {
-    LucideHardDrive, LucideSettings, LucideRadar, LucideCloud, LucidePlay, LucideTv, LucidePalette
-} from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/components/ui/core/styling"
+import { Icons } from "@/components/ui/icons"
 import type { SaveSettings_Variables } from "@/api/generated/endpoint.types"
 
 import React, { Suspense } from "react"
 // Import extracted tabs with lazy loading
-const LibraryTab = React.lazy(() => import("./tabs/library-tab").then(m => ({ default: m.LibraryTab })))
+const ThemeTab = React.lazy(() => import("./tabs/theme-tab").then(m => ({ default: m.ThemeTab })))
+const EffectsTab = React.lazy(() => import("./tabs/effects-tab").then(m => ({ default: m.EffectsTab })))
+const NavigationTab = React.lazy(() => import("./tabs/navigation-tab").then(m => ({ default: m.NavigationTab })))
+const CardsTab = React.lazy(() => import("./tabs/cards-tab").then(m => ({ default: m.CardsTab })))
+const ViewsTab = React.lazy(() => import("./tabs/views-tab").then(m => ({ default: m.ViewsTab })))
+const AudioTab = React.lazy(() => import("./tabs/audio-tab").then(m => ({ default: m.AudioTab })))
+const NotificationsTab = React.lazy(() => import("./tabs/notifications-tab").then(m => ({ default: m.NotificationsTab })))
+const PlayerTab = React.lazy(() => import("./tabs/player-tab").then(m => ({ default: m.PlayerTab })))
+const DeviceModesTab = React.lazy(() => import("./tabs/device-modes-tab").then(m => ({ default: m.DeviceModesTab })))
+const StreamingTab = React.lazy(() => import("./tabs/streaming-tab").then(m => ({ default: m.StreamingTab })))
+const DirectoriesTab = React.lazy(() => import("./tabs/directories-tab").then(m => ({ default: m.DirectoriesTab })))
 const ScannerTab = React.lazy(() => import("./tabs/scanner-tab").then(m => ({ default: m.ScannerTab })))
 const IntegrationsTab = React.lazy(() => import("./tabs/integrations-tab").then(m => ({ default: m.IntegrationsTab })))
 const SystemTab = React.lazy(() => import("./tabs/system-tab").then(m => ({ default: m.SystemTab })))
-const PlayerTab = React.lazy(() => import("./tabs/player-tab").then(m => ({ default: m.PlayerTab })))
-const StreamingTab = React.lazy(() => import("./tabs/streaming-tab").then(m => ({ default: m.StreamingTab })))
-const AppearanceTab = React.lazy(() => import("./tabs/appearance-tab").then(m => ({ default: m.AppearanceTab })))
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 // Matches backend Models_Settings exactly
@@ -33,10 +38,10 @@ const settingsSchema = z.object({
         seriesPaths: z.array(z.string()).nullish().transform(v => v ?? []),
         moviePaths: z.array(z.string()).nullish().transform(v => v ?? []),
         autoScan: z.boolean().default(false),
-        disableAnimeCardTrailers: z.boolean().default(false),
         openWebURLOnStart: z.boolean().default(false),
         refreshLibraryOnStart: z.boolean().default(false),
         autoPlayNextEpisode: z.boolean().default(true),
+        autoDetectSkipTimes: z.boolean().default(true),
         enableWatchContinuity: z.boolean().default(false),
         scannerMatchingThreshold: z.number().default(0),
         scannerMatchingAlgorithm: z.string().default(""),
@@ -95,7 +100,6 @@ const settingsSchema = z.object({
         themeMediaPageBannerSize: z.string().default("default"),
         themeMediaPageBannerInfoBoxSize: z.string().default("default"),
         themeShowEpisodeCardAnimeInfo: z.boolean().default(true),
-        themeContinueWatchingDefaultSorting: z.string().default("LAST_WATCHED_DESC"),
         themeAnimeLibraryCollectionDefaultSorting: z.string().default("TITLE_ASC"),
         themeShowAnimeUnwatchedCount: z.boolean().default(true),
         themeHideEpisodeCardDescription: z.boolean().default(false),
@@ -110,12 +114,10 @@ const settingsSchema = z.object({
 
     notifications: z.object({
         disableNotifications: z.boolean().default(false),
-        disableAutoDownloaderNotifications: z.boolean().default(false),
         disableAutoScannerNotifications: z.boolean().default(false),
     }).default({}),
     Platform: z.object({
         hideAudienceScore: z.boolean().default(false),
-        disableCacheLayer: z.boolean().default(false),
     }).default({}),
 })
 
@@ -125,31 +127,69 @@ export const Route = createFileRoute("/settings/")(({
     component: SettingsPage,
 }))
 
-const NAV_ITEMS: { id: string; label: string; icon: React.ElementType; desc?: string }[] = [
-    { id: "general",      label: "General",         icon: LucideSettings },
-    { id: "appearance",   label: "Apariencia",    icon: LucidePalette },
-    { id: "library",      label: "Biblioteca",    icon: LucideHardDrive },
-    { id: "scanner",      label: "Escáner",       icon: LucideRadar },
-    { id: "player",       label: "Reproductor",   icon: LucidePlay },
-    { id: "streaming",    label: "Streaming",     icon: LucideTv },
-    { id: "integrations", label: "Integraciones", icon: LucideCloud },
-
+const NAV_GROUPS = [
+    {
+        groupLabel: "PERSONALIZACIÓN Y TEMAS",
+        items: [
+            { id: "theme", label: "Temas y Colores", icon: Icons.ui.palette, desc: "Paleta visual y skins" },
+            { id: "effects", label: "Efectos Visuales", icon: Icons.status.sparkles, desc: "Blur, líquidos y grano" },
+        ]
+    },
+    {
+        groupLabel: "INTERFAZ Y VISTAS",
+        items: [
+            { id: "navigation", label: "Navegación", icon: Icons.navigation.menu, desc: "Menú lateral y layouts" },
+            { id: "cards", label: "Tarjetas", icon: Icons.navigation.grid, desc: "Tamaños y visibilidad" },
+            { id: "views", label: "Pantallas", icon: Icons.navigation.layers, desc: "Biblioteca y detalles" },
+        ]
+    },
+    {
+        groupLabel: "SONIDO Y NOTIFICACIONES",
+        items: [
+            { id: "audio", label: "Audio y Música", icon: Icons.media.volume2, desc: "Música y UI" },
+            { id: "notifications", label: "Notificaciones", icon: Icons.ui.bell, desc: "Alertas globales" },
+        ]
+    },
+    {
+        groupLabel: "REPRODUCCIÓN",
+        items: [
+            { id: "player", label: "Reproductor Web", icon: Icons.media.play, desc: "Autoplay y progreso" },
+            { id: "device-modes", label: "Modos Locales", icon: Icons.status.monitor, desc: "TV y Maratón" },
+            { id: "streaming", label: "Streaming", icon: Icons.media.cast, desc: "Transcodificación" },
+        ]
+    },
+    {
+        groupLabel: "CONTENIDO Y BIBLIOTECA",
+        items: [
+            { id: "directories", label: "Directorios", icon: Icons.navigation.library, desc: "Carpetas de medios" },
+            { id: "scanner", label: "Escáner", icon: Icons.status.radar, desc: "Motor de análisis" },
+        ]
+    },
+    {
+        groupLabel: "SERVICIOS Y SISTEMA",
+        items: [
+            { id: "integrations", label: "Integraciones", icon: Icons.status.cloud, desc: "APIs y servicios" },
+            { id: "system", label: "Mantenimiento", icon: Icons.ui.settings, desc: "Arranque y base de datos" },
+        ]
+    }
 ]
-
-const SECTION_LABELS: Record<string, string> = {
-    general:      "CONFIGURACIÓN DEL SISTEMA",
-    library:      "DIRECTORIOS DE BIBLIOTECA",
-    player:       "MOTOR DE REPRODUCCIÓN",
-    scanner:      "MOTOR ESCÁNER",
-    streaming:    "MEDIASTREAM ENGINE",
-    integrations: "SERVICIOS EXTERNOS",
-    appearance:   "PERSONALIZACIÓN VISUAL",
-}
 
 function SettingsPage() {
     const { data: serverSettings, isLoading } = useGetSettings()
     const { mutateAsync: saveSettings, isPending: isSaving } = useSaveSettings()
-    const [activeTab, setActiveTab] = useState<string>("general")
+    const initialActiveTab = "theme"
+    const [activeTab, setActiveTab] = useState<string>(initialActiveTab)
+    const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>(() => {
+        const initialIndex = NAV_GROUPS.findIndex(g => g.items.some(i => i.id === initialActiveTab))
+        return { [initialIndex !== -1 ? initialIndex : 0]: true }
+    })
+
+    const toggleGroup = (idx: number) => {
+        setExpandedGroups(prev => {
+            const isCurrentlyExpanded = !!prev[idx]
+            return isCurrentlyExpanded ? {} : { [idx]: true }
+        })
+    }
 
     // KameHouse backdrop for settings
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
@@ -206,87 +246,143 @@ function SettingsPage() {
     if (isLoading && !serverSettings) return <LoadingOverlayWithLogo />
 
     return (
-        <div className="flex flex-col md:flex-row h-full w-full text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative bg-transparent">
-            {/* ── Left Sidebar Nav ─────────────────────────────────────── */}
-            <nav
-                className="relative w-full md:w-[260px] shrink-0 h-auto md:h-full flex flex-row md:flex-col border-b md:border-b-0 md:border-r border-outline-variant/30 backdrop-blur-overlay-xl overflow-x-auto md:overflow-y-auto md:overflow-x-hidden no-scrollbar"
-                style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container-low) 40%, transparent)" }}
-            >
+        // pt-16 en mobile: despeja el AppTopNav fijo (h-16); en desktop no hay top nav
+        <div className="flex flex-col md:flex-row h-full w-full pt-16 md:pt-0 text-on-surface-variant selection:bg-brand-accent/30 overflow-hidden relative bg-transparent">
+            {/* ── Mobile Tab Bar (Chips horizontal) ─────────────────────────────────── */}
+            <nav className="md:hidden shrink-0 w-full flex flex-row overflow-x-auto no-scrollbar border-b border-outline-variant/20 bg-zinc-950/80 backdrop-blur-md px-3 py-2.5 gap-2">
+                {NAV_GROUPS.flatMap(g => g.items).map((item) => {
+                    const isActive = activeTab === item.id
+                    const Icon = item.icon
+                    return (
+                        <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setActiveTab(item.id)}
+                            className={cn(
+                                "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all duration-base border active:scale-95",
+                                isActive
+                                    ? "bg-brand-accent/20 border-brand-accent/50 text-on-surface shadow-[0_0_12px_hsl(var(--brand-accent)/0.3)]"
+                                    : "bg-white/[0.04] border-white/10 text-on-surface-variant hover:text-on-surface hover:bg-white/[0.08]"
+                            )}
+                        >
+                            <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-brand-accent" : "text-on-surface-variant")} />
+                            <span>{item.label}</span>
+                        </button>
+                    )
+                })}
+            </nav>
 
+            {/* ── Left Sidebar Nav for Desktop (Linear / Vercel Minimalist) ─ */}
+            <nav
+                className="hidden md:flex relative w-[280px] shrink-0 h-full flex-col border-r border-outline-variant/20 backdrop-blur-md overflow-y-auto overflow-x-hidden no-scrollbar"
+                style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 80%, transparent)" }}
+            >
                 {/* Sidebar header */}
-                <div className="relative z-10 px-6 pt-8 pb-6 hidden md:block">
-                    <div className="flex items-center gap-2.5 mb-3">
-                        <span className="w-2 h-2 rounded-full bg-brand-accent" />
-                        <span className="text-label-sm tracking-[0.3em] text-on-surface-variant uppercase font-mono">PANEL DE CONTROL</span>
+                <div className="relative z-10 px-6 pt-8 pb-5 border-b border-outline-variant/10">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-2xl font-bold text-on-surface tracking-tight select-none">
+                            AJUSTES
+                        </h1>
+                        <span className="w-2 h-2 rounded-full bg-brand-accent/80 shadow-[0_0_8px_hsl(var(--brand-accent)/0.6)]" />
                     </div>
-                    <h1 className="font-bebas text-4xl tracking-wider text-on-surface select-none leading-none">
-                        AJUSTES
-                    </h1>
-                    <div className="h-[2px] w-10 bg-gradient-to-r from-brand-accent to-transparent rounded-full mt-3" />
                 </div>
 
                 {/* Nav items */}
-                <div className="relative z-10 flex-1 px-3 py-3 md:pb-4 flex flex-row md:flex-col items-center md:items-stretch space-x-2 md:space-x-0 md:space-y-0.5 w-max md:w-auto">
-                    {NAV_ITEMS.map((item) => {
-                        const isActive = activeTab === item.id
+                <div className="relative z-10 flex-1 px-4 py-5 flex flex-col space-y-3 w-full">
+                    {NAV_GROUPS.map((group, groupIdx) => {
+                        const isExpanded = expandedGroups[groupIdx]
                         return (
-                            <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => setActiveTab(item.id)}
-                                className={cn(
-                                    "w-auto md:w-full flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-full md:rounded-xl text-left transition-all duration-200 group relative shrink-0",
-                                    isActive
-                                        ? "bg-white/[0.06]"
-                                        : "hover:bg-surface-container-high"
-                                )}
-                            >
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="sidebar-active"
-                                        className="absolute inset-0 rounded-full md:rounded-xl bg-white/[0.06] border border-white/10"
-                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                    />
-                                )}
-                                <div className={cn(
-                                    "relative z-10 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 shrink-0",
-                                    isActive
-                                        ? "bg-brand-accent/20 text-brand-accent"
-                                        : "bg-surface-container text-on-surface-variant group-hover:text-on-surface group-hover:bg-surface-container-high"
-                                )}>
-                                    <item.icon className="w-4 h-4" />
-                                </div>
-                                <div className="relative z-10 flex-1 min-w-0 hidden md:block">
-                                    <span className={cn(
-                                        "text-caption font-bold uppercase tracking-wider block transition-colors duration-200",
-                                        isActive ? "text-on-surface" : "text-on-surface-variant group-hover:text-on-surface"
-                                    )}>
-                                        {item.label}
-                                    </span>
-                                    {item.desc && (
-                                        <span className={cn(
-                                            "text-label-sm block mt-0.5 font-mono truncate transition-colors duration-200",
-                                            isActive ? "text-on-surface-variant" : "text-on-surface-variant/60 group-hover:text-on-surface-variant"
-                                        )}>{item.desc}</span>
+                            <div key={groupIdx} className="flex flex-col space-y-1">
+                                {/* Group Header */}
+                                <button 
+                                    type="button"
+                                    onClick={() => toggleGroup(groupIdx)}
+                                    className={cn(
+                                        "w-full flex items-center justify-between px-5 py-3.5 my-0.5 cursor-pointer rounded-full backdrop-blur-md transition-all duration-base group/header border select-none relative overflow-hidden",
+                                        isExpanded
+                                            ? "bg-white/[0.08] border-brand-accent/40 text-on-surface shadow-[0_4px_20px_rgba(0,0,0,0.25),0_0_15px_hsl(var(--brand-accent)/0.2)]"
+                                            : "bg-white/[0.03] hover:bg-white/[0.07] border-white/10 text-on-surface-variant hover:text-on-surface hover:border-white/20"
                                     )}
-                                </div>
-                                <div className="relative z-10 flex-1 min-w-0 md:hidden">
-                                    <span className={cn(
-                                        "text-caption font-bold uppercase tracking-wider block transition-colors duration-200",
-                                        isActive ? "text-on-surface" : "text-on-surface-variant group-hover:text-on-surface"
+                                >
+                                    {isExpanded && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-brand-accent/15 via-transparent to-transparent pointer-events-none" />
+                                    )}
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <span className={cn(
+                                            "w-2.5 h-2.5 rounded-full transition-all duration-base shrink-0",
+                                            isExpanded 
+                                                ? "bg-brand-accent shadow-[0_0_10px_hsl(var(--brand-accent)/0.9)] scale-110" 
+                                                : "bg-white/20 group-hover/header:bg-white/50"
+                                        )} />
+                                        <span className="text-xs font-bold uppercase tracking-widest">{group.groupLabel}</span>
+                                    </div>
+                                    <div className={cn(
+                                        "w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-base shrink-0 relative z-10 border",
+                                        isExpanded 
+                                            ? "bg-brand-accent/20 border-brand-accent/30 text-brand-accent shadow-[0_0_8px_hsl(var(--brand-accent)/0.4)]" 
+                                            : "bg-white/5 border-white/10 text-on-surface-variant/60 group-hover/header:bg-white/10 group-hover/header:text-on-surface"
                                     )}>
-                                        {item.label}
-                                    </span>
-                                </div>
-                                {isActive && (
-                                    <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-brand-accent shrink-0 hidden md:block" />
-                                )}
-                            </button>
+                                        <Icons.navigation.chevronDown className={cn("w-4 h-4 transition-transform duration-base", isExpanded ? "rotate-180" : "")} />
+                                    </div>
+                                </button>
+                                
+                                <AnimatePresence initial={false}>
+                                    {isExpanded && (
+                                        <motion.div
+                                            key="accordion-content"
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                            className="overflow-hidden flex flex-col space-y-2 pt-1 pb-1"
+                                        >
+                                            {group.items.map((item) => {
+                                                const isActive = activeTab === item.id
+                                                return (
+                                                    <motion.button
+                                                        key={item.id}
+                                                        type="button"
+                                                        whileHover={{ scale: 1.01, x: 3 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        onClick={() => setActiveTab(item.id)}
+                                                        className={cn(
+                                                            "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-left transition-all duration-base group relative shrink-0 overflow-hidden backdrop-blur-sm",
+                                                            isActive
+                                                                ? "bg-brand-accent/15 border border-brand-accent/40 text-on-surface shadow-[0_2px_14px_hsl(var(--brand-accent)/0.2)]"
+                                                                : "bg-white/[0.02] border border-white/5 text-on-surface-variant hover:text-on-surface hover:bg-white/[0.06] hover:border-white/15"
+                                                        )}
+                                                    >
+                                                        <item.icon className={cn(
+                                                            "w-5 h-5 shrink-0 transition-colors duration-base",
+                                                            isActive ? "text-brand-accent" : "text-on-surface-variant/70 group-hover:text-on-surface"
+                                                        )} />
+                                                        
+                                                        <div className="flex-1 min-w-0">
+                                                            <span className={cn(
+                                                                "text-sm block leading-snug transition-colors duration-base",
+                                                                isActive ? "font-bold text-on-surface" : "font-medium text-on-surface-variant group-hover:text-on-surface"
+                                                            )}>
+                                                                {item.label}
+                                                            </span>
+                                                            {item.desc && (
+                                                                <span className={cn(
+                                                                    "text-xs block mt-0.5 font-normal truncate transition-colors duration-base",
+                                                                    isActive ? "text-on-surface-variant" : "text-on-surface-variant/60 group-hover:text-on-surface-variant/80"
+                                                                )}>
+                                                                    {item.desc}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </motion.button>
+                                                )
+                                            })}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         )
                     })}
                 </div>
-
-
             </nav>
 
             {/* ── Main Content Area ────────────────────────────────────── */}
@@ -295,23 +391,23 @@ function SettingsPage() {
                 <header className="shrink-0 page-px pt-8 pb-6 border-b border-outline-variant">
                     <div className="flex items-center gap-2 mb-2">
                         {(() => {
-                            const nav = NAV_ITEMS.find(n => n.id === activeTab)
+                            const nav = NAV_GROUPS.flatMap(g => g.items).find(n => n.id === activeTab)
                             if (!nav) return null
                             const Icon = nav.icon
                             return (
                                 <>
-                                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                                        <Icon className="h-4 w-4 text-white/70" />
+                                    <div className="w-8 h-8 rounded-lg bg-surface-container border border-outline-variant/30 flex items-center justify-center">
+                                        <Icon className="h-4 w-4 text-on-surface-variant" />
                                     </div>
-                                    <span className="text-label-sm uppercase tracking-[0.35em] text-on-surface-variant font-mono">
+                                    <span className="text-label-sm uppercase tracking-widest text-on-surface-variant font-mono">
                                         {nav.label}
                                     </span>
                                 </>
                             )
                         })()}
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-bebas tracking-wider text-on-surface leading-none">
-                        {SECTION_LABELS[activeTab] || "CONFIGURACIÓN"}
+                    <h2 className="text-3xl md:text-4xl font-display tracking-wider text-on-surface leading-none">
+                        {NAV_GROUPS.find(g => g.items.some(i => i.id === activeTab))?.groupLabel || "CONFIGURACIÓN"}
                     </h2>
                     <div className="h-[2px] w-10 bg-gradient-to-r from-brand-accent/60 to-transparent rounded-full mt-3" />
                 </header>
@@ -325,13 +421,20 @@ function SettingsPage() {
                             className="page-px py-8 pb-32 md:pb-32 space-y-10 min-h-full"
                         >
                             <Suspense fallback={<div className="flex items-center justify-center w-full h-64"><div className="w-8 h-8 rounded-full border-2 border-brand-accent border-t-transparent animate-spin" /></div>}>
-                                {activeTab === "general"      && <SystemTab control={control} />}
-                                {activeTab === "library"      && <LibraryTab control={control} />}
-                                {activeTab === "player"       && <PlayerTab control={control} />}
-                                {activeTab === "scanner"      && <ScannerTab control={control} />}
-                                {activeTab === "streaming"    && <StreamingTab control={control} />}
-                                {activeTab === "integrations" && <IntegrationsTab control={control} />}
-                                {activeTab === "appearance"   && <AppearanceTab control={control} />}
+                                {activeTab === "theme"         && <ThemeTab control={control} />}
+                                {activeTab === "effects"       && <EffectsTab control={control} />}
+                                {activeTab === "navigation"    && <NavigationTab control={control} />}
+                                {activeTab === "cards"         && <CardsTab control={control} />}
+                                {activeTab === "views"         && <ViewsTab control={control} />}
+                                {activeTab === "audio"         && <AudioTab control={control} />}
+                                {activeTab === "notifications" && <NotificationsTab control={control} />}
+                                {activeTab === "player"        && <PlayerTab control={control} />}
+                                {activeTab === "device-modes"  && <DeviceModesTab />}
+                                {activeTab === "streaming"     && <StreamingTab control={control} />}
+                                {activeTab === "directories"   && <DirectoriesTab control={control} />}
+                                {activeTab === "scanner"       && <ScannerTab control={control} />}
+                                {activeTab === "integrations"  && <IntegrationsTab control={control} />}
+                                {activeTab === "system"        && <SystemTab control={control} />}
                             </Suspense>
                         </form>
                     </FormProvider>
@@ -368,7 +471,7 @@ function SettingsPage() {
                                 type="submit"
                                 form="settings-form"
                                 disabled={isSaving}
-                                className="bg-brand-accent hover:brightness-110 text-zinc-950 px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-300 disabled:opacity-50 uppercase tracking-widest active:scale-95 shadow-[var(--shadow-brand-primary)]"
+                                className="bg-brand-accent hover:brightness-110 text-on-primary px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-base disabled:opacity-50 uppercase tracking-widest active:scale-95 shadow-[var(--shadow-brand-primary)]"
                             >
                                 {isSaving ? "Guardando..." : "Guardar"}
                             </button>

@@ -168,6 +168,18 @@ func (p *PlaybackManager) PreloadPlayback(filepath string, streamType StreamType
 		return nil, fmt.Errorf("failed to create media container: %v", err)
 	}
 
+	// A preload means the user is likely to watch this file next. If it needs a live
+	// transcode, queue a full background pre-transcode so the play after this one is
+	// instant and costs nothing at watch time. Idempotent: already-done or
+	// already-queued files are no-ops.
+	if ret.StreamType == StreamTypeTranscode {
+		if ptm, ok := p.repository.PreTranscoder(); ok {
+			if _, err := ptm.Enqueue(ret.Filepath); err != nil {
+				p.logger.Debug().Err(err).Str("filepath", ret.Filepath).Msg("mediastream: Could not queue pre-transcode")
+			}
+		}
+	}
+
 	// Zero Latency Next: Pre-transcode and cache the first N segments (video and audio) of the next episode in the background.
 	if ret.StreamType == StreamTypeTranscode && p.repository.transcoder.IsPresent() {
 		go func() {
@@ -337,38 +349,37 @@ func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, stre
 	// watched extracts first.
 	p.startAttachmentExtraction(filePath, hash, ret.MediaInfo, priority)
 
-	// Dynamic fallback from Direct Play to Transcode if the browser doesn't support the container/codecs natively.
-	// We bypass this check if DirectPlayOnly is set to true in settings.
-	isDirectPlayOnly := false
+	// Resolve the playback policy: the requested stream type is a hint, not a verdict.
+	policy := playbackPolicy{}
 	if p.repository.settings.IsPresent() {
 		if s := p.repository.settings.MustGet(); s != nil {
-			isDirectPlayOnly = s.DirectPlayOnly
+			policy.directPlayOnly = s.DirectPlayOnly
+			policy.disableAutoSwitchToDirect = s.DisableAutoSwitchToDirectPlay
 		}
 	}
 
-	if streamType == StreamTypeDirect && !isDirectPlayOnly {
-		isDirectPlayable := isDirectPlayableByClient(ret.MediaInfo, caps)
-
-		if !isDirectPlayable {
-			vCodec := ""
-			if ret.MediaInfo.Video != nil {
-				vCodec = strings.ToLower(ret.MediaInfo.Video.Codec)
-			}
-			aCodec := ""
-			if len(ret.MediaInfo.Audios) > 0 {
-				var audioCodecs []string
-				for _, audio := range ret.MediaInfo.Audios {
-					audioCodecs = append(audioCodecs, strings.ToLower(audio.Codec))
-				}
-				aCodec = strings.Join(audioCodecs, ",")
-			}
-			p.logger.Info().Str("filepath", filePath).Str("ext", strings.ToLower(ret.MediaInfo.Extension)).Str("videoCodec", vCodec).Str("audioCodec", aCodec).Str("caps", caps.fingerprint()).Msg("mediastream: File container or codecs not supported by this client. Falling back to Transcode HLS.")
-			streamType = StreamTypeTranscode
-			ret.StreamType = StreamTypeTranscode
-		}
+	if resolved, reason := resolveStreamType(streamType, ret.MediaInfo, caps, policy); resolved != streamType {
+		p.logger.Info().
+			Str("filepath", filePath).
+			Str("ext", strings.ToLower(ret.MediaInfo.Extension)).
+			Str("from", string(streamType)).
+			Str("to", string(resolved)).
+			Str("caps", caps.fingerprint()).
+			Str("reason", reason).
+			Msg("mediastream: Stream type switched")
+		streamType = resolved
+		ret.StreamType = resolved
 	}
 
-
+	// A live transcode is pointless when this file was already pre-transcoded:
+	// serve the finished HLS off disk instead of re-encoding it every play.
+	if streamType == StreamTypeTranscode {
+		if ptm, ok := p.repository.PreTranscoder(); ok && ptm.IsAvailable(hash) {
+			p.logger.Info().Str("filepath", filePath).Msg("mediastream: Pre-transcoded output found. Serving the optimized stream.")
+			streamType = StreamTypeOptimized
+			ret.StreamType = StreamTypeOptimized
+		}
+	}
 
 	streamURL := ""
 	switch streamType {
@@ -379,7 +390,7 @@ func (p *PlaybackManager) buildMediaContainer(filePath string, hash string, stre
 		// Live transcode the file.
 		streamURL = "/api/v1/mediastream/transcode/master.m3u8"
 	case StreamTypeOptimized:
-		optimizedPath := filepath.Join(p.repository.cacheDir, "optimized", hash, "master.m3u8")
+		optimizedPath := filepath.Join(p.repository.PreTranscodeDir(), hash, "master.m3u8")
 		if _, err := os.Stat(optimizedPath); err == nil {
 			streamURL = "/api/v1/mediastream/hls/master.m3u8"
 		} else {
@@ -455,6 +466,49 @@ func (p *PlaybackManager) WaitForExtraction(ctx context.Context, hash string) er
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+// playbackPolicy carries the user's stream-type preferences (Settings → Streaming)
+// into the pure resolveStreamType decision.
+type playbackPolicy struct {
+	// directPlayOnly: never fall back to transcode — the user prefers a hard
+	// failure over burning CPU/GPU.
+	directPlayOnly bool
+	// disableAutoSwitchToDirect: keep transcoding even when the client could play
+	// the file natively.
+	disableAutoSwitchToDirect bool
+}
+
+// resolveStreamType decides the stream type actually used for playback. The
+// requested type is a hint: a Direct request falls back to Transcode when the
+// client can't decode the file, and a Transcode request upgrades to Direct when
+// it can — transcoding a natively-playable file wastes CPU/GPU for no gain.
+// Both switches are gated by the user's policy. Returns the resolved type and a
+// short reason for logging ("" when unchanged).
+//
+// The Transcode→Direct upgrade requires explicit caps: a nil caps means the
+// caller either doesn't know the client's codecs or deliberately needs HLS (an
+// audio-track switch passes nil), and in neither case should we gamble.
+func resolveStreamType(requested StreamType, info *videofile.MediaInfo, caps *ClientCapabilities, policy playbackPolicy) (StreamType, string) {
+	switch requested {
+	case StreamTypeDirect:
+		if policy.directPlayOnly {
+			return StreamTypeDirect, ""
+		}
+		if !isDirectPlayableByClient(info, caps) {
+			return StreamTypeTranscode, "container or codecs not supported by this client"
+		}
+
+	case StreamTypeTranscode:
+		if policy.disableAutoSwitchToDirect || caps == nil {
+			return StreamTypeTranscode, ""
+		}
+		if isDirectPlayableByClient(info, caps) {
+			return StreamTypeDirect, "client decodes this file natively"
+		}
+	}
+
+	return requested, ""
 }
 
 // isDirectPlayableByClient decides whether the file can be played natively by

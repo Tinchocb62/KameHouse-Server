@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react"
 import { PlayerPreviewManager } from "./player-preview"
-import { cn } from "@/components/ui/core/styling"
 
 interface PlayerSeekPreviewProps {
     previewManager: PlayerPreviewManager | null
@@ -18,7 +17,7 @@ const formatTime = (secs: number) => {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-export function PlayerSeekPreview({ previewManager, hoverTime, hoverPosPercent, duration }: PlayerSeekPreviewProps) {
+export function PlayerSeekPreview({ previewManager, hoverTime, hoverPosPercent }: PlayerSeekPreviewProps) {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const lastRenderedSegmentRef = useRef<number>(-1)
 
@@ -39,7 +38,7 @@ export function PlayerSeekPreview({ previewManager, hoverTime, hoverPosPercent, 
                     setPreviewUrl(url)
                     lastRenderedSegmentRef.current = segment
                 }
-            } catch (e) {
+            } catch {
                 // Ignore errors
             }
         }
@@ -68,17 +67,17 @@ export function PlayerSeekPreview({ previewManager, hoverTime, hoverPosPercent, 
                     <img 
                         src={previewUrl} 
                         alt="Preview" 
-                        className="w-full h-full object-cover animate-in fade-in duration-200"
+                        className="w-full h-full object-cover animate-in fade-in duration-base"
                     />
                 ) : (
                     <div className="w-full h-full bg-surface-container flex items-center justify-center">
-                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
                     </div>
                 )}
             </div>
             
             {/* Time badge */}
-            <div className="mt-2 bg-surface-container-high/90 backdrop-blur-[var(--blur-overlay-sm)] px-2.5 py-0.5 rounded-sm border border-outline-variant/30 text-xs font-mono font-medium text-white shadow-elevation-2">
+            <div className="mt-2 bg-surface-container-high/90 backdrop-blur-[var(--blur-overlay-sm)] px-2.5 py-0.5 rounded-md border border-outline-variant/30 text-xs font-mono font-medium text-white shadow-elevation-2">
                 {formatTime(hoverTime)}
             </div>
             

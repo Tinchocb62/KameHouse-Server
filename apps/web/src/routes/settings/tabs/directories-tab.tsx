@@ -1,20 +1,17 @@
 import React from "react"
-import { Section, Card, PathList, OsToggle, OsSelect, ScanButton } from "../components"
+import { Section, Card, PathList, OsToggle, OsSelect } from "../components"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
-import { useScanLocalFiles } from "@/api/hooks/scan.hooks"
 
-interface LibraryTabProps {
+interface DirectoriesTabProps {
     control: Control<SettingsFormValues>
 }
 
-export function LibraryTab({ control }: LibraryTabProps) {
-    const { mutate: scanLibrary, isPending } = useScanLocalFiles()
-
+export function DirectoriesTab({ control }: DirectoriesTabProps) {
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
-            {/* 1. Directorios de Almacenamiento */}
-            <Section label="Directorios locales">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-slow outline-none">
+            {/* Directorios de Almacenamiento */}
+            <Section label="Directorios locales" description="Carpetas donde KameHouse buscará tus medios.">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     <Card>
                         <Controller
@@ -66,8 +63,8 @@ export function LibraryTab({ control }: LibraryTabProps) {
                 </div>
             </Section>
 
-            {/* 2. Escaneo de biblioteca */}
-            <Section label="Escaneo de Biblioteca">
+            {/* Escaneo de biblioteca (automático) */}
+            <Section label="Comportamiento del Escáner">
                 <Card className="divide-y divide-outline-variant/4">
                     <Controller
                         control={control}
@@ -108,43 +105,7 @@ export function LibraryTab({ control }: LibraryTabProps) {
                 </Card>
             </Section>
 
-            <Section label="Acciones de escaneo" description="Inicia un escaneo manual de los directorios de tu biblioteca local.">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                    <ScanButton
-                        title="Escanear Biblioteca"
-                        description="Busca nuevos episodios y películas en las carpetas de origen."
-                        onClick={() => scanLibrary({ mode: "fast", skipLockedFiles: false, skipIgnoredFiles: false })}
-                        loading={isPending}
-                    />
-                    <ScanButton
-                        title="Re-Scan Forzado"
-                        description="Vuelve a analizar toda la biblioteca desde cero ignorando la caché."
-                        onClick={() => scanLibrary({ mode: "deep", skipLockedFiles: false, skipIgnoredFiles: false })}
-                        loading={isPending}
-                        destructive
-                    />
-                </div>
-            </Section>
-
-            {/* 5. Contenido */}
-            <Section label="Contenido">
-                <Card className="divide-y divide-outline-variant/4">
-                    <Controller
-                        control={control}
-                        name="library.disableAnimeCardTrailers"
-                        render={({ field }) => (
-                            <OsToggle
-                                label="Desactivar Trailers en Tarjetas de Anime"
-                                description="Evita la reproducción automática de trailers al pasar el cursor sobre una tarjeta."
-                                checked={!!field.value}
-                                onChange={field.onChange}
-                            />
-                        )}
-                    />
-                </Card>
-            </Section>
-
-            {/* 6. Metadatos */}
+            {/* Metadatos */}
             <Section label="Metadatos">
                 <Card className="divide-y divide-outline-variant/4">
                     <Controller
@@ -153,7 +114,7 @@ export function LibraryTab({ control }: LibraryTabProps) {
                         render={({ field }) => (
                             <OsSelect
                                 label="Idioma de Metadatos"
-                                description="Idioma preferido para descargar sinopsis, títulos y metadatos."
+                                description="Idioma preferido para descargar sinopsis, títulos y metadatos de TMDB/OMDB."
                                 options={[
                                     { value: "es-MX", label: "Español Latino" },
                                     { value: "es-ES", label: "Español (España)" },

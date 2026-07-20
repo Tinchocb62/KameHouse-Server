@@ -103,7 +103,7 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
                 url: s.isImageBased ? undefined : `/api/v1/mediastream/subtitles?path=${encodeURIComponent(props.streamUrl)}&trackIndex=${s.index ?? i}&clientId=${clientId}`
             })) || [],
 
-            chapters: data.mediaInfo.chapters?.map((c: any) => ({
+            chapters: data.mediaInfo.chapters?.map((c: { startTime?: number; endTime?: number; name?: string; type?: string }) => ({
                 startTime: c.startTime || 0,
                 endTime: c.endTime || 0,
                 name: c.name || "",

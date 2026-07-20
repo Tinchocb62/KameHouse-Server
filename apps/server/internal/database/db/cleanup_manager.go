@@ -157,5 +157,3 @@ func (cm *CleanupManager) removeOrphanedAndCollidedMedia() {
 		})
 	}
 }
-
-

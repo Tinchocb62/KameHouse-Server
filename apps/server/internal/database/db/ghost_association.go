@@ -91,4 +91,3 @@ func (db *Database) ResolveGhostAssociation(path string, targetMediaId int) erro
 	existing.AlgorithmScore = 1.0
 	return db.gormdb.Save(&existing).Error
 }
-

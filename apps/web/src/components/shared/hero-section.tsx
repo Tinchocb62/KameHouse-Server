@@ -26,14 +26,14 @@ export function HeroSection({
     maxWidth = "max-w-none"
 }: HeroSectionProps) {
     return (
-        <div className={cn("relative overflow-hidden pt-24 pb-14 px-6 md:px-14", className)}>
+        <div className={cn("relative overflow-hidden pt-20 sm:pt-24 pb-10 sm:pb-14 px-4 sm:px-6 md:px-14", className)}>
             {/* Cinematic Glow & Decorations */}
-            <div className="absolute top-[-160px] left-[-80px] w-[640px] h-[520px] rounded-full bg-gradient-to-br from-primary to-rose-600 opacity-[0.08] blur-[120px] pointer-events-none" />
+            <div className="absolute top-[-160px] left-[-80px] w-[640px] h-[520px] rounded-full bg-gradient-to-br from-brand-accent to-brand-secondary opacity-[0.08] blur-[120px] pointer-events-none" />
             <SpeedLines opacity={0.03} />
             <HalftoneDots />
             
             {/* Vertical Decoration */}
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 [writing-mode:vertical-rl] font-black text-[10px] tracking-[0.5em] text-on-surface-variant/30 uppercase pointer-events-none select-none">
+            <div className="hidden sm:block absolute right-6 top-1/2 -translate-y-1/2 [writing-mode:vertical-rl] font-black text-label-sm tracking-cinema-xl text-on-surface-variant/30 uppercase pointer-events-none select-none">
                 {verticalTag}
             </div>
 
@@ -44,15 +44,15 @@ export function HeroSection({
                     transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                     className="flex items-center gap-3 mb-4"
                 >
-                    <div className="h-[2px] w-8 bg-primary shadow-[0_0_15px_hsl(var(--brand-orange)/0.5)]" />
-                    <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary/90">{decorationTag}</p>
+                    <div className="h-[2px] w-8 bg-brand-accent shadow-[0_0_15px_hsl(var(--brand-accent)/0.5)]" />
+                    <p className="text-label-sm font-black uppercase tracking-cinema-lg text-brand-accent/90">{decorationTag}</p>
                 </motion.div>
                 
                 <motion.h1 
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                    className="font-bebas text-6xl md:text-8xl lg:text-9xl leading-[0.8] tracking-[0.02em] text-white"
+                    className="font-display text-3xl sm:text-6xl md:text-8xl lg:text-9xl leading-[0.9] sm:leading-[0.8] tracking-wide text-white"
                 >
                     {title}
                 </motion.h1>
@@ -62,7 +62,7 @@ export function HeroSection({
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                        className="font-bebas text-3xl md:text-5xl tracking-[0.1em] text-white mt-4 uppercase"
+                        className="font-display text-xl sm:text-3xl md:text-5xl tracking-widest text-white mt-4 uppercase"
                     >
                         {subtitle}
                     </motion.p>
@@ -76,8 +76,8 @@ export function HeroSection({
                 >
                     {count !== undefined && (
                         <div className="inline-block px-4 py-2 bg-surface-container border border-outline-variant">
-                            <p className="text-[14px] font-black text-on-surface tabular-nums uppercase tracking-widest">
-                                {count} <span className="text-[11px] font-black text-on-surface-variant/60 uppercase ml-2 tracking-widest">{countLabel}</span>
+                            <p className="text-label-md font-black text-on-surface tabular-nums uppercase tracking-widest">
+                                {count} <span className="text-label-sm font-black text-on-surface-variant/60 uppercase ml-2 tracking-widest">{countLabel}</span>
                             </p>
                         </div>
                     )}

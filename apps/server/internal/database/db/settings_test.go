@@ -34,16 +34,13 @@ func TestSettingsPersistence(t *testing.T) {
 			TmdbApiKey:               "test_tmdb_api_key",
 			ScannerUseLegacyMatching: true,
 		},
-		MediaPlayer: models.MediaPlayerSettings{
-		},
+		MediaPlayer: models.MediaPlayerSettings{},
 		Notifications: models.NotificationSettings{
-			DisableNotifications:               true,
-			DisableAutoScannerNotifications:    false,
-			DisableAutoDownloaderNotifications: true, // our new field!
+			DisableNotifications:            true,
+			DisableAutoScannerNotifications: false,
 		},
 		Platform: models.PlatformSettings{
-			HideAudienceScore: true,  // our new field!
-			DisableCacheLayer: false, // our new field!
+			HideAudienceScore: true,
 		},
 	}
 
@@ -59,9 +56,6 @@ func TestSettingsPersistence(t *testing.T) {
 	// Validate returned settings
 	if savedSettings.Library.TmdbApiKey != "test_tmdb_api_key" {
 		t.Errorf("Expected TMDB Api Key to be 'test_tmdb_api_key', got '%s'", savedSettings.Library.TmdbApiKey)
-	}
-	if savedSettings.Notifications.DisableAutoDownloaderNotifications != true {
-		t.Errorf("Expected DisableAutoDownloaderNotifications to be true, got %t", savedSettings.Notifications.DisableAutoDownloaderNotifications)
 	}
 	if savedSettings.Platform.HideAudienceScore != true {
 		t.Errorf("Expected HideAudienceScore to be true, got %t", savedSettings.Platform.HideAudienceScore)
@@ -88,16 +82,10 @@ func TestSettingsPersistence(t *testing.T) {
 	if retrievedSettings.Notifications.DisableNotifications != true {
 		t.Errorf("Expected DisableNotifications to be true, got %t", retrievedSettings.Notifications.DisableNotifications)
 	}
-	if retrievedSettings.Notifications.DisableAutoDownloaderNotifications != true {
-		t.Errorf("Expected DisableAutoDownloaderNotifications to be true, got %t", retrievedSettings.Notifications.DisableAutoDownloaderNotifications)
-	}
 
 	// D. Platform Settings assertions
 	if retrievedSettings.Platform.HideAudienceScore != true {
 		t.Errorf("Expected HideAudienceScore to be true, got %t", retrievedSettings.Platform.HideAudienceScore)
-	}
-	if retrievedSettings.Platform.DisableCacheLayer != false {
-		t.Errorf("Expected DisableCacheLayer to be false, got %t", retrievedSettings.Platform.DisableCacheLayer)
 	}
 
 	t.Log("Settings persistence and integration test succeeded perfectly!")

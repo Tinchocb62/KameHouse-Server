@@ -173,7 +173,9 @@ pub fn run() {
                         } else {
                             // Persist final window bounds synchronously before we tear down.
                             let _ = window_manager.save_window_state(&window);
-                            let _ = sidecar_manager.shutdown();
+                            // Block so the server process is actually killed before the app exits;
+                            // `shutdown()` is async and would otherwise be dropped without running.
+                            tauri::async_runtime::block_on(sidecar_manager.shutdown());
                         }
                     }
                 }

@@ -17,6 +17,10 @@ import { LibraryBanner } from "./-components/library-banner"
 import { Vaul, VaulContent } from "@/components/vaul"
 import { Icons } from "@/components/ui/icons"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
+import { getLargeResImage } from "@/lib/helpers/images"
+
+// Blur del fondo personalizado de biblioteca (Settings → Apariencia)
+const LIBRARY_BG_BLUR_PX: Record<string, number> = { none: 0, sm: 8, md: 16, lg: 32 }
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 
 export const Route = createFileRoute("/movies/")({
@@ -168,9 +172,24 @@ function MoviesPage() {
     }, [])
 
     return (
-        <div className="min-h-screen text-white overflow-x-hidden selection:bg-orange-500/20 relative z-10" style={{ background: "var(--bg-primary)" }}>
+        <div className="min-h-screen text-on-surface overflow-x-hidden selection:bg-brand-accent/30 relative z-10" style={{ background: "var(--bg-primary)" }}>
 
-
+            {/* Fondo personalizado de biblioteca (Settings → Apariencia → Pantalla de Biblioteca) */}
+            {ts.themeLibraryScreenCustomBackgroundImage && (
+                <div className="fixed inset-0 pointer-events-none" aria-hidden>
+                    <img
+                        src={getLargeResImage(ts.themeLibraryScreenCustomBackgroundImage)}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        style={{
+                            opacity: (ts.themeLibraryScreenCustomBackgroundOpacity ?? 10) / 100,
+                            filter: LIBRARY_BG_BLUR_PX[ts.themeLibraryScreenCustomBackgroundBlur || "none"]
+                                ? `blur(${LIBRARY_BG_BLUR_PX[ts.themeLibraryScreenCustomBackgroundBlur || "none"]}px)`
+                                : undefined,
+                        }}
+                    />
+                </div>
+            )}
 
             {ts.themeLibraryScreenBannerType === "dynamic" || !ts.themeLibraryScreenBannerType ? (
                 <MoviesHero
@@ -183,7 +202,7 @@ function MoviesPage() {
                 <LibraryBanner />
             )}
 
-            <div className="w-full max-w-content mx-auto px-6 md:px-12 lg:px-16 mt-12">
+            <div className="relative w-full max-w-content mx-auto px-6 md:px-12 lg:px-16 mt-12">
                 <div className="flex flex-col lg:flex-row gap-8 min-h-[70vh]">
                     {/* Left Column: Filter Sidebar */}
                     <div className="lg:w-80 flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)] flex flex-col gap-4">
@@ -215,7 +234,7 @@ function MoviesPage() {
                             <Vaul open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
                                 <VaulContent className="bg-zinc-950/95 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/10 p-5 pb-8 flex flex-col focus:outline-none">
                                     <div className="flex justify-between items-center mb-4 px-1">
-                                        <h3 className="font-bebas text-2xl tracking-widest text-on-surface uppercase">
+                                        <h3 className="font-display text-2xl tracking-widest text-on-surface uppercase">
                                             Filtros y Búsqueda
                                         </h3>
                                         <button 

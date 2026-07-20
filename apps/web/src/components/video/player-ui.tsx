@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react"
 import { cn } from "@/components/ui/core/styling"
 import { PlayerTopBar } from "./player-topbar"
 import { PlayerBottomBar } from "./player-bottombar"
-import { LoadingErrorOverlay, CenterPlayFlash, SkipIntroOverlay, NextEpisodeOverlay, ResumeOverlay, AutoSkipToastOverlay } from "./player-overlays"
+import { LoadingErrorOverlay, CenterPlayFlash, SkipIntroOverlay, NextEpisodeOverlay, ResumeOverlay } from "./player-overlays"
 import type { EpisodeSource } from "@/api/types/unified.types"
 import { useGetVideoInsights } from "@/api/hooks/videocore.hooks"
 import type { PlayerCore, PlayerStats } from "./player-core"
@@ -21,13 +21,13 @@ import { Icons } from "@/components/ui/icons"
 function StatsOverlay({ show, data }: { show: boolean, data: PlayerStats }) {
     if (!show || !data) return null
     return (
-        <div className="absolute top-24 left-10 z-[100] backdrop-blur-overlay-md p-6 rounded-corner-lg border border-outline-variant text-[10px] font-mono uppercase tracking-[0.2em] text-on-surface-variant space-y-3 pointer-events-none shadow-elevation-3 min-w-[320px]" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 95%, transparent)" }}>
+        <div className="absolute top-24 left-10 z-[100] backdrop-blur-overlay-md p-6 rounded-corner-lg border border-outline-variant text-label-sm font-mono uppercase tracking-ultra text-on-surface-variant space-y-3 pointer-events-none shadow-elevation-3 min-w-[320px]" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 95%, transparent)" }}>
             <h4 className="text-on-surface font-black border-b border-outline-variant/50 pb-3 mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
                     DEEP INSIGHTS
                 </span>
-                <span className="text-[9px] opacity-40 font-mono tracking-tighter">V2.4.0</span>
+                <span className="text-caption opacity-40 font-mono tracking-tighter">V2.4.0</span>
             </h4>
             <div className="space-y-2">
                 <div className="flex justify-between items-center"><span className="opacity-50">Timeline</span> <span className="text-on-surface font-bold">{data.currentTime} <span className="text-on-surface-variant/50">/</span> {data.duration}</span></div>
@@ -36,7 +36,7 @@ function StatsOverlay({ show, data }: { show: boolean, data: PlayerStats }) {
                 <div className="flex justify-between items-center"><span className="opacity-50">Rate</span> <span className="text-on-surface font-bold">{data.playbackRate}x</span></div>
                 <div className="flex justify-between items-center"><span className="opacity-50">Volume</span> <span className="text-on-surface font-bold">{data.volume}%</span></div>
             </div>
-            <div className="pt-3 opacity-20 max-w-full truncate font-sans lowercase tracking-normal italic border-t border-outline-variant/50 mt-4 text-[9px]">
+            <div className="pt-3 opacity-20 max-w-full truncate font-sans lowercase tracking-normal italic border-t border-outline-variant/50 mt-4 text-caption">
                 {data.source}
             </div>
         </div>
@@ -251,7 +251,7 @@ export function PlayerUI(props: PlayerUIProps) {
                     const video = localVideoRef.current
                     if (video) {
                         video.volume = newVolume
-                        actions.handleVolume({ target: { value: String(newVolume) } } as any)
+                        actions.handleVolume({ target: { value: String(newVolume) } } as unknown as React.ChangeEvent<HTMLInputElement>)
                     }
                     setSwipeIndicator({
                         type: "volume",
@@ -502,7 +502,7 @@ export function PlayerUI(props: PlayerUIProps) {
                         {swipeIndicator.type === "brightness" && (
                             <Icons.ui.star className="w-5 h-5 text-brand-secondary shrink-0" />
                         )}
-                        <span className="font-bebas text-lg tracking-wider text-on-surface uppercase">
+                        <span className="font-display text-lg tracking-wider text-on-surface uppercase">
                             {swipeIndicator.value}
                         </span>
                     </div>
@@ -514,13 +514,13 @@ export function PlayerUI(props: PlayerUIProps) {
                 className="skip-indicator-left absolute left-0 top-0 bottom-0 w-[30%] z-[13] pointer-events-none flex items-center justify-center bg-surface-container opacity-0"
                 style={{ clipPath: "ellipse(70% 100% at 0% 50%)" }}
             >
-                <div className="flex flex-col items-center text-white/95 px-6 py-4 rounded-2xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 30%, transparent)" }}>
+                <div className="flex flex-col items-center text-white/95 px-6 py-4 rounded-xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 30%, transparent)" }}>
                     <div className="flex [&>*:not(:first-child)]:ml-0.5">
                         <svg className="w-8 h-8 fill-current rotate-180" viewBox="0 0 24 24">
                             <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
                         </svg>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.25em]">-10s</span>
+                    <span className="text-label-sm font-black uppercase tracking-cinema">-10s</span>
                 </div>
             </div>
 
@@ -529,24 +529,24 @@ export function PlayerUI(props: PlayerUIProps) {
                 className="skip-indicator-right absolute right-0 top-0 bottom-0 w-[30%] z-[13] pointer-events-none flex items-center justify-center bg-surface-container opacity-0"
                 style={{ clipPath: "ellipse(70% 100% at 100% 50%)" }}
             >
-                <div className="flex flex-col items-center text-white/95 px-6 py-4 rounded-2xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 30%, transparent)" }}>
+                <div className="flex flex-col items-center text-white/95 px-6 py-4 rounded-xl backdrop-blur-[var(--blur-overlay-sm)] [&>*:not(:first-child)]:mt-1.5" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 30%, transparent)" }}>
                     <div className="flex [&>*:not(:first-child)]:ml-0.5">
                         <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
                             <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
                         </svg>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.25em]">+10s</span>
+                    <span className="text-label-sm font-black uppercase tracking-cinema">+10s</span>
                 </div>
             </div>
 
             {/* 2x Speed Hold Indicator */}
             {isHoldSpeedActive && (
-                <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[31] pointer-events-none animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[31] pointer-events-none animate-in fade-in zoom-in-95 duration-base">
                     <div className="flex items-center px-5 py-2.5 rounded-full border border-white/10 backdrop-blur-[var(--blur-overlay-sm)] text-white shadow-xl [&>*:not(:first-child)]:ml-2" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 60%, transparent)" }}>
-                        <svg className="w-3.5 h-3.5 fill-current text-brand-orange animate-pulse" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 fill-current text-brand-accent animate-pulse" viewBox="0 0 24 24">
                             <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />
                         </svg>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-100">
+                        <span className="text-label-sm font-black uppercase tracking-ultra text-zinc-100">
                             2.0x Velocidad
                         </span>
                     </div>
@@ -572,10 +572,6 @@ export function PlayerUI(props: PlayerUIProps) {
                 onClose={onClose}
             />
 
-            <AutoSkipToastOverlay
-                showType={state.showAutoSkipToast}
-                onUndo={actions.undoSkip}
-            />
 
             <CenterPlayFlash flash={state.flash} />
 

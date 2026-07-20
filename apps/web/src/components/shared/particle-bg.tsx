@@ -41,18 +41,6 @@ function hexToRgb(hex: string): number[] {
     return [red, green, blue]
 }
 
-function remapValue(
-    value: number,
-    start1: number,
-    end1: number,
-    start2: number,
-    end2: number,
-): number {
-    const remapped =
-        ((value - start1) * (end2 - start2)) / (end1 - start1) + start2
-    return remapped > 0 ? remapped : 0
-}
-
 type Circle = {
     x: number;
     y: number;
@@ -80,7 +68,7 @@ export const ParticleBackground: React.FC<ParticleBackgroundProps> = ({
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const context = useRef<CanvasRenderingContext2D | null>(null)
-    const circles = useRef<any[]>([])
+    const circles = useRef<Circle[]>([])
     const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
     const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 })
     const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 1.5) : 1

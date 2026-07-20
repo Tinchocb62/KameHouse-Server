@@ -158,5 +158,5 @@ function runIfFn<T, U>(
     valueOrFn: T | ((...fnArgs: U[]) => T),
     ...args: U[]
 ): T {
-    return isFunction(valueOrFn) ? (valueOrFn as any)(...args) : (valueOrFn as any)
+    return isFunction(valueOrFn) ? (valueOrFn as (...fnArgs: U[]) => T)(...args) : valueOrFn as T
 }

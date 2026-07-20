@@ -79,6 +79,25 @@ export default function PlayerScreen() {
     }
   };
 
+  // Al terminar un episodio seguimos con el siguiente de la lista (mismo orden
+  // que muestra DetailsScreen); si no hay más, volvemos a detalles.
+  const handleEnded = async () => {
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/library/anime-entry/${selectedAnimeId}`);
+      const data = await res.json();
+      const episodes: any[] = data?.episodes || [];
+      const idx = episodes.findIndex((e: any) => String(e.id) === String(selectedEpisodeId));
+      const next = idx >= 0 ? episodes[idx + 1] : undefined;
+      if (next && next.id != null) {
+        useStore.getState().setSelectedEpisode(String(next.id));
+        return;
+      }
+    } catch (err) {
+      console.error('auto-next failed', err);
+    }
+    setScreen('details');
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       triggerOSD();
@@ -109,7 +128,7 @@ export default function PlayerScreen() {
         id="tv-video"
         src={streamUrl}
         onTimeUpdate={handleTimeUpdate}
-        onEnded={() => setScreen('details')}
+        onEnded={handleEnded}
       />
       <div className={`player-osd ${!showOSD ? 'hidden' : ''}`}>
         <div className="osd-title">Reproduciendo...</div>

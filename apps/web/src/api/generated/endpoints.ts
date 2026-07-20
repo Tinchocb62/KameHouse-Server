@@ -177,6 +177,18 @@ export const API_ENDPOINTS = {
             endpoint: "/api/v1/auth/logout",
         },
     },
+    CAST: {
+        GetCastDevices: {
+            key: "CAST-get-cast-devices",
+            methods: ["GET"],
+            endpoint: "/api/v1/cast/devices",
+        },
+        CastPlay: {
+            key: "CAST-cast-play",
+            methods: ["POST"],
+            endpoint: "/api/v1/cast/play",
+        },
+    },
     CONTINUITY: {
         /**
          *  @description
@@ -574,6 +586,16 @@ export const API_ENDPOINTS = {
         },
         /**
          *  @description
+         *  Route trigger skip times auto-scan.
+         *  Starts a background detection job (AnimeThemes → cross-episode fingerprint → ASS subtitles) to find intro/outro boundaries for all episodes of a series.
+         */
+        ScanEpisodeSkipTimes: {
+            key: "MEDIASTREAM-scan-episode-skip-times",
+            methods: ["POST"],
+            endpoint: "/api/v1/mediastream/skip-times/scan",
+        },
+        /**
+         *  @description
          *  Route resolve MAL ID.
          *  Looks up MAL ID on Jikan.
          */
@@ -635,6 +657,18 @@ export const API_ENDPOINTS = {
             endpoint: "/api/v1/metadata/parent",
         },
     },
+    MUSIC: {
+        ScanBackgroundMusic: {
+            key: "MUSIC-scan-background-music",
+            methods: ["GET"],
+            endpoint: "/api/v1/music/scan",
+        },
+        StreamBackgroundMusic: {
+            key: "MUSIC-stream-background-music",
+            methods: ["GET"],
+            endpoint: "/api/v1/music/stream",
+        },
+    },
     NOTIFICATIONS: {
         /**
          *  @description
@@ -667,6 +701,38 @@ export const API_ENDPOINTS = {
             key: "PLAYBACK-SYNC-playback-sync",
             methods: ["POST"],
             endpoint: "/api/v1/playback/sync",
+        },
+    },
+    PRETRANSCODE: {
+        /**
+         *  @description
+         *  Route queue a file for pre-transcoding.
+         *  Queues a library file to be transcoded to HLS in the background so it plays instantly later.
+         */
+        EnqueuePreTranscode: {
+            key: "PRETRANSCODE-enqueue-pre-transcode",
+            methods: ["POST"],
+            endpoint: "/api/v1/mediastream/pretranscode",
+        },
+        /**
+         *  @description
+         *  Route list pre-transcode jobs.
+         *  Returns the pre-transcode queue with each job's status and progress.
+         */
+        GetPreTranscodeJobs: {
+            key: "PRETRANSCODE-get-pre-transcode-jobs",
+            methods: ["GET"],
+            endpoint: "/api/v1/mediastream/pretranscode",
+        },
+        /**
+         *  @description
+         *  Route cancel a pre-transcode job.
+         *  Cancels a queued or running pre-transcode job and deletes its partial output.
+         */
+        CancelPreTranscode: {
+            key: "PRETRANSCODE-cancel-pre-transcode",
+            methods: ["DELETE"],
+            endpoint: "/api/v1/mediastream/pretranscode/:hash",
         },
     },
     RESOLVER: {

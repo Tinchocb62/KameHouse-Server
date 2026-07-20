@@ -38,7 +38,7 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
     }] = extractInputPartProps<NativeSelectProps>({
         ...props1,
         size: props1.size ?? "md",
-        intent: (props1.intent ?? "basic") as any,
+        intent: (props1.intent ?? "basic") as InputStyling["intent"],
         leftAddon: props1.leftAddon,
         leftIcon: props1.leftIcon,
         rightAddon: props1.rightAddon,

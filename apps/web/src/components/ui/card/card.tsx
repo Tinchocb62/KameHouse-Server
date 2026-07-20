@@ -8,7 +8,7 @@ import { cn, defineStyleAnatomy } from "../core/styling"
 
 export const CardAnatomy = defineStyleAnatomy({
     root: cva([
-        "UI-Card__root bg-surface border border-outline-variant rounded-container shadow-elevation-1 transition-all duration-200 ease-standard",
+        "UI-Card__root bg-surface border border-outline-variant rounded-container shadow-elevation-1 transition-all duration-base ease-standard",
     ], {
         variants: {
             variant: {

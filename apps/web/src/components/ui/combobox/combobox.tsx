@@ -1,10 +1,10 @@
+import { Icons } from "@/components/ui/icons"
 import { cva } from "class-variance-authority"
 import * as React from "react"
-import { X } from "lucide-react"
+
 import { BasicField, BasicFieldOptions, extractBasicFieldProps } from "../basic-field"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandProps } from "../command"
 import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
-import { mergeRefs } from "../core/utils"
 import { extractInputPartProps, hiddenInputStyles, InputAddon, InputAnatomy, InputContainer, InputIcon, InputStyling } from "../input"
 import { Popover } from "../popover"
 
@@ -164,7 +164,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>((prop
                             if (!multiple) setOpen(false)
                         }}
                     >
-                        <X />
+                        <Icons.ui.close />
                     </span>
                 </div>
             )) : <span className="truncate">{selectedOptions[0].label}</span>

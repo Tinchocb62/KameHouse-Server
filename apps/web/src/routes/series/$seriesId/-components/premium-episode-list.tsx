@@ -1,5 +1,7 @@
 import React from "react"
-import { motion, AnimatePresence, type Variants } from "framer-motion"
+import { motion } from "framer-motion"
+import { staggerList, staggerItem } from "@/components/ui/core/motion"
+import { EpisodeBadge } from "@/components/ui/episode-badge"
 import { Icons } from "@/components/ui/icons"
 import type { PremiumEpisode } from "@/api/types/series.types"
 import { cn } from "@/components/ui/core/styling"
@@ -20,15 +22,7 @@ function findScrollParent(el: HTMLElement): HTMLElement | null {
     return null
 }
 
-const listVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
-}
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.2, 1, 0.2, 1] } },
-}
 
 interface PremiumEpisodeListProps {
   episodes: PremiumEpisode[]
@@ -37,6 +31,7 @@ interface PremiumEpisodeListProps {
   activeSubSagaEnd?: number
   scrollToEp?: number
   onPlay?: (episodeNumber: number) => void
+  onCast?: (episodeNumber: number) => void
   onPreload?: (filePath: string) => void
 }
 
@@ -47,6 +42,7 @@ export function PremiumEpisodeList({
   activeSubSagaEnd,
   scrollToEp,
   onPlay,
+  onCast,
   onPreload
 }: PremiumEpisodeListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -121,6 +117,7 @@ export function PremiumEpisodeList({
             searchActive={!!searchQuery.trim()}
             ts={ts}
             onPlay={onPlay}
+            onCast={onCast}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         />
@@ -130,8 +127,20 @@ export function PremiumEpisodeList({
 }
 
 function EpisodeVirtualList({
-    filteredEpisodes, activeSagaId, activeSubSagaStart, activeSubSagaEnd, scrollToEp, searchActive, ts, onPlay, onMouseEnter, onMouseLeave
-}: any) {
+    filteredEpisodes, activeSagaId, activeSubSagaStart, activeSubSagaEnd, scrollToEp, searchActive, ts, onPlay, onCast, onMouseEnter, onMouseLeave
+}: {
+    filteredEpisodes: PremiumEpisode[]
+    activeSagaId?: string
+    activeSubSagaStart?: number
+    activeSubSagaEnd?: number
+    scrollToEp?: number
+    searchActive: boolean
+    ts: ReturnType<typeof useThemeSettings>
+    onPlay?: (episodeNumber: number) => void
+    onCast?: (episodeNumber: number) => void
+    onMouseEnter: (id: string) => void
+    onMouseLeave: (id: string) => void
+}) {
     const listRef = React.useRef<HTMLDivElement>(null)
     // El detalle de serie scrollea dentro de su propio contenedor, no con la ventana, así
     // que hay que virtualizar contra ese elemento: window.scrollY nunca cambia.
@@ -211,7 +220,7 @@ function EpisodeVirtualList({
     }, [activeSagaId, activeSubSagaStart, scrollToEp, scrollEl])
 
     return (
-        <div ref={listRef} className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+        <motion.div ref={listRef} variants={staggerList} initial="hidden" animate="visible" className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
             {virtualizer.getVirtualItems().map((virtualRow) => {
                 const ep = filteredEpisodes[virtualRow.index]
                 const isHighlighted = activeSubSagaStart != null &&
@@ -220,6 +229,9 @@ function EpisodeVirtualList({
                                     ep.number <= activeSubSagaEnd;
 
                 return (
+                    // El wrapper posicional tiene que ser un div plano: si fuera motion.div,
+                    // framer deja `transform: none` al terminar la animación y pisa el
+                    // translateY del virtualizer (todas las filas quedan superpuestas).
                     <div
                         key={ep.id}
                         className="absolute top-0 left-0 w-full pb-4"
@@ -228,6 +240,7 @@ function EpisodeVirtualList({
                             transform: `translateY(${virtualRow.start - (virtualizer.options.scrollMargin || 0)}px)`,
                         }}
                     >
+                    <motion.div variants={staggerItem} className="h-full">
                         <div
                             id={`episode-${ep.number}`}
                             role="button"
@@ -243,8 +256,8 @@ function EpisodeVirtualList({
                             onMouseEnter={() => onMouseEnter(ep.id)}
                             onMouseLeave={() => onMouseLeave(ep.id)}
                             className={cn(
-                            "h-full group flex gap-4 rounded-2xl cursor-pointer transition-all duration-base ease-smooth-out active:scale-[0.98]",
-                            ts.themeUseLegacyEpisodeCard ? "p-2 items-center" : "p-3",
+                            "h-full group flex gap-2.5 sm:gap-4 rounded-xl cursor-pointer transition-all duration-base ease-smooth-out active:scale-[0.98]",
+                            ts.themeUseLegacyEpisodeCard ? "p-2 items-center" : "p-2.5 sm:p-3",
                             "border border-white/[0.06]",
                             !ts.themeUseLegacyEpisodeCard && "shadow-card hover:shadow-elevated hover:-translate-y-0.5",
                             "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
@@ -256,7 +269,7 @@ function EpisodeVirtualList({
                             {/* Thumbnail */}
                             <div className={cn(
                                 "relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-surface-container",
-                                ts.themeUseLegacyEpisodeCard ? "w-28" : "w-32 sm:w-40 md:w-52 lg:w-64 shadow-card"
+                                ts.themeUseLegacyEpisodeCard ? "w-24 sm:w-28" : "w-28 sm:w-36 md:w-52 lg:w-64 shadow-card"
                             )}>
                                 <img
                                 src={ep.thumbnailUrl}
@@ -267,14 +280,14 @@ function EpisodeVirtualList({
                                 {!ts.themeUseLegacyEpisodeCard && (
                                 <div className="absolute inset-0 bg-scrim/20 md:bg-scrim/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center justify-center transition-opacity duration-base cursor-pointer">
                                     <div className="w-9 h-9 md:w-12 md:h-12 rounded-full glass-liquid flex items-center justify-center">
-                                    <Icons.media.play className="w-4 h-4 md:w-6 md:h-6 text-white ml-0.5 md:ml-1" fill="currentColor" />
+                                    <Icons.media.play className="w-4 h-4 md:w-6 md:h-6 text-on-surface ml-0.5 md:ml-1" fill="currentColor" />
                                     </div>
                                 </div>
                                 )}
 
                                 {/* Progress/Watched Indicator */}
                                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-container-high">
-                                {ep.isWatched && <div className="h-full bg-brand-success w-full" />}
+                                {ep.isWatched && <motion.div variants={staggerItem} className="h-full bg-brand-success w-full" />}
                                 </div>
                             </div>
 
@@ -288,16 +301,34 @@ function EpisodeVirtualList({
 
                                 <div className="flex items-center gap-1.5 shrink-0">
 
+                                    {/* Enviar a TV */}
+                                    {onCast && (
+                                    <button
+                                        type="button"
+                                        title="Enviar a TV"
+                                        aria-label={`Enviar episodio ${ep.number} a la TV`}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onCast(ep.number)
+                                        }}
+                                        className={cn(
+                                            "flex items-center justify-center w-7 h-7 rounded-full",
+                                            "border border-white/10 bg-white/5 hover:bg-surface-variant text-on-surface-variant hover:text-on-surface",
+                                            "transition-all duration-base ease-smooth-out",
+                                            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+                                            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70 focus-visible:opacity-100"
+                                        )}
+                                    >
+                                        <Icons.media.cast className="w-3.5 h-3.5" />
+                                    </button>
+                                    )}
+
                                     {/* Type Badge */}
                                     {ep.episodeType === 'Filler' && (
-                                    <span className="inline-flex items-center text-label-sm uppercase bg-brand-destructive/15 text-brand-destructive border border-brand-destructive/25 px-3 py-1 rounded-full">
-                                        Relleno
-                                    </span>
+                                    <EpisodeBadge variant="filler">Relleno</EpisodeBadge>
                                     )}
                                     {ep.episodeType === 'Hyped' && (
-                                    <span className="inline-flex items-center text-label-sm uppercase bg-brand-secondary/15 text-brand-secondary border border-brand-secondary/25 px-3 py-1 rounded-full shadow-[0_0_8px_hsl(var(--brand-secondary)/0.2)]">
-                                        Premium
-                                    </span>
+                                    <EpisodeBadge variant="premium" className="shadow-brand-secondary">Premium</EpisodeBadge>
                                     )}
                                 </div>
                                 </div>
@@ -309,7 +340,7 @@ function EpisodeVirtualList({
                                 )}
 
                                 {!ts.themeHideDownloadedEpisodeCardFilename && ep.localFilePath && (
-                                <p className="text-[9px] font-mono text-on-surface-variant/50 truncate mb-1">
+                                <p className="text-label-sm font-mono text-on-surface-variant/50 truncate mb-1">
                                     {ep.localFilePath.split(/[\\/]/).pop()}
                                 </p>
                                 )}
@@ -320,7 +351,7 @@ function EpisodeVirtualList({
                                     {ts.themeShowEpisodeCardAnimeInfo && (
                                     <div className="flex items-center gap-1.5">
                                         {[ep.resolution, ep.videoCodec, ep.audioCodec].filter(Boolean).map((spec) => (
-                                        <span key={spec as string} className="text-[10px] font-mono font-medium bg-white/[0.06] border border-white/[0.06] text-on-surface-variant px-2 py-0.5 rounded-md uppercase">
+                                        <span key={spec as string} className="text-label-sm font-mono font-medium bg-white/[0.06] border border-white/[0.06] text-on-surface-variant px-2 py-0.5 rounded-md uppercase">
                                             {spec}
                                         </span>
                                         ))}
@@ -334,9 +365,10 @@ function EpisodeVirtualList({
                                 )}
                             </div>
                         </div>
+                    </motion.div>
                     </div>
                 )
             })}
-        </div>
+        </motion.div>
     )
 }

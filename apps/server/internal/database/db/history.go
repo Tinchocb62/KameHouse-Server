@@ -34,4 +34,3 @@ func (r *WatchHistoryRepository) UpsertBatch(items []models.WatchHistory) error 
 		DoUpdates: clause.AssignmentColumns([]string{"current_time", "duration"}),
 	}).CreateInBatches(items, 50).Error
 }
-

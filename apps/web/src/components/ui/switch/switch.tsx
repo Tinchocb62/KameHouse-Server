@@ -1,9 +1,10 @@
+import { Icons } from "@/components/ui/icons"
 import { hiddenInputStyles } from "@/components/ui/input"
 import { Popover } from "@/components/ui/popover"
 import * as SwitchPrimitive from "@radix-ui/react-switch"
 import { cva, VariantProps } from "class-variance-authority"
 import * as React from "react"
-import { AlertCircle } from "lucide-react"
+
 import { BasicField, BasicFieldOptions, extractBasicFieldProps } from "../basic-field"
 import { cn, ComponentAnatomy, defineStyleAnatomy } from "../core/styling"
 
@@ -18,7 +19,7 @@ export const SwitchAnatomy = defineStyleAnatomy({
         "outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-1",
         "data-[state=unchecked]:bg-surface-container", // Unchecked
         "data-[state=unchecked]:hover:bg-surface-container-high", // Unchecked hover
-        "data-[state=checked]:bg-brand-primary", // Checked
+        "data-[state=checked]:bg-brand-accent", // Checked
         "data-[error=true]:border-brand-destructive", // Checked
     ], {
         variants: {
@@ -139,7 +140,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>((props, r
             id={basicFieldProps.id}
             fieldClass={cn(
                 "w-fit",
-                side === "right" && "w-full group/switch transition-all duration-200 hover:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_50%,transparent)] rounded-[--radius] p-2 w-[calc(100%_+_1rem)] -ml-2 border border-transparent hover:border-outline-variant",
+                side === "right" && "w-full group/switch transition-all duration-base hover:bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_50%,transparent)] rounded-[--radius] p-2 w-[calc(100%_+_1rem)] -ml-2 border border-transparent hover:border-outline-variant",
                 basicFieldProps.fieldClass,
             )}
             fieldHelpTextClass={cn("")}
@@ -175,7 +176,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>((props, r
                     </label>
                     {moreHelp && <Popover
                         className="text-sm"
-                        trigger={<span><AlertCircle className="transition-opacity opacity-45 hover:opacity-90" /></span>}
+                        trigger={<span><Icons.ui.alertCircle className="transition-opacity opacity-45 hover:opacity-90" /></span>}
                     >
                         {moreHelp}
                     </Popover>}

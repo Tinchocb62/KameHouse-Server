@@ -263,7 +263,7 @@ export class PlayerPreviewManager {
             }
             return previewUrl
         }
-        catch (error) {
+        catch {
             return undefined
         }
     }
@@ -321,7 +321,7 @@ export class PlayerPreviewManager {
                 )
                 resolve(preview)
             }
-            catch (error) {
+            catch {
                 resolve(undefined)
             }
             finally {
@@ -477,7 +477,7 @@ export class PlayerPreviewManager {
             }
             return previewUrl
         }
-        catch (error) {
+        catch {
             return undefined
         }
     }

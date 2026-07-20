@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"kamehouse/internal/api/animethemes"
 	"kamehouse/internal/api/metadata_provider"
 	"kamehouse/internal/api/tmdb"
 	"kamehouse/internal/continuity"
@@ -20,6 +21,7 @@ import (
 	"kamehouse/internal/library_explorer"
 	"kamehouse/internal/mediastream"
 	"kamehouse/internal/platforms/jikan_platform"
+	"kamehouse/internal/skipdetect"
 	"kamehouse/internal/util"
 
 	"github.com/cli/browser"
@@ -67,6 +69,18 @@ func (a *App) initModulesOnce() {
 	a.AddCleanupFunction(func() {
 		a.MediastreamRepository.OnCleanup()
 	})
+
+	// +---------------------+
+	// |   Skip Detector     |
+	// +---------------------+
+	// Detección automática de intros/outros (AnimeThemes → cross-episodio → ASS).
+	// El cliente de AnimeThemes se inyecta en Fase 3 (nil → arranca en Método B).
+	ffmpegPath := "ffmpeg"
+	if ok && mSettings.FfmpegPath != "" {
+		ffmpegPath = mSettings.FfmpegPath
+	}
+	athClient := animethemes.NewClient(a.Logger, a.Database)
+	a.SkipDetector = skipdetect.New(a.Database, a.Logger, a.WSEventManager, a.Config.Cache.Dir, ffmpegPath, ffprobePath, athClient, a.FileCacher)
 
 	// +---------------------+
 	// | Transcode Cleanup   |

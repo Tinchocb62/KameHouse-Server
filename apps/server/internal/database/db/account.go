@@ -48,5 +48,3 @@ func (db *Database) GetAccount() (*models.Account, error) {
 
 	return &acc, err
 }
-
-

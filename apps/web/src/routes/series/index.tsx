@@ -4,7 +4,7 @@ import { useGetLibraryCollection, fetchLibraryCollection } from '@/api/hooks/ani
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { API_ENDPOINTS } from '@/api/generated/endpoints';
 import { SeriesCard, getVhsColor } from './-SeriesCard';
-import { getLargeResImage, getMediumResImage } from '@/lib/helpers/images';
+import { getMediumResImage } from '@/lib/helpers/images';
 import { useIntelligenceStore } from '@/hooks/use-home-intelligence';
 import { getSeriesIdFromMedia, getSeriesYear } from '@/lib/helpers/series';
 import { Skeleton } from '@/components/ui/skeleton/skeleton';
@@ -135,12 +135,12 @@ function SeriesFullscreenIndex() {
 
             {/* Main Shelf Container */}
             <div
-                className="flex-1 min-h-0 backdrop-blur-[var(--blur-overlay-xl)] rounded-[var(--radius-corner-lg)] border border-outline-variant/50 shadow-elevation-3 overflow-hidden relative z-10 flex flex-col"
+                className="flex-1 min-h-0 backdrop-blur-[var(--blur-overlay-xl)] rounded-corner-lg border border-outline-variant/50 shadow-elevation-3 overflow-hidden relative z-10 flex flex-col"
                 style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 50%, transparent)" }}
             >
                 <main
                     className={isMobile 
-                        ? "w-full h-full bg-transparent overflow-y-auto no-scrollbar relative z-10 p-4" 
+                        ? "w-full h-full bg-transparent overflow-y-auto no-scrollbar relative z-10 p-4 pt-20"
                         : "vhs-shelf w-full h-full flex bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar relative z-10 scroll-smooth"}
                     role="listbox"
                     aria-orientation="horizontal"
@@ -177,7 +177,18 @@ function SeriesFullscreenIndex() {
                             />
                         </div>
                     ) : isMobile ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 w-full h-max pb-24">
+                        <div className="w-full h-max pb-24">
+                            {/* Encabezado de página (solo mobile: en desktop la estantería VHS es el header) */}
+                            <div className="mb-6 pl-1">
+                                <div className="flex items-center gap-2.5 mb-2">
+                                    <span className="w-2 h-2 rounded-full bg-brand-accent" />
+                                    <span className="text-label-sm tracking-widest text-on-surface-variant uppercase font-mono">Colección</span>
+                                </div>
+                                <h1 className="font-display text-4xl tracking-wider text-on-surface select-none leading-none">SERIES</h1>
+                                <div className="h-[2px] w-10 bg-gradient-to-r from-brand-accent to-transparent rounded-full mt-3" />
+                                <p className="text-label-sm text-on-surface-variant font-mono uppercase mt-2">{seriesList.length} {seriesList.length === 1 ? "serie" : "series"} en tu biblioteca</p>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 w-full">
                             {seriesList.map((item) => (
                                 <MediaCard
                                     key={item.id}
@@ -190,9 +201,10 @@ function SeriesFullscreenIndex() {
                                     year={item.year}
                                     onClick={() => handleNavigate(item.id.toString())}
                                     aspect="poster"
-                                    className="w-full h-auto aspect-auto"
+                                    className="w-full"
                                 />
                             ))}
+                            </div>
                         </div>
                     ) : (
                         seriesList.map((item, i) => (

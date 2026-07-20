@@ -7,6 +7,7 @@ import DetailsScreen from './screens/DetailsScreen';
 import PlayerScreen from './screens/PlayerScreen';
 import ErrorScreen from './screens/ErrorScreen';
 import { registerTizenKeys, exitTizenApp } from './utils/tizen';
+import { connectCastSocket, disconnectCastSocket } from './utils/ws';
 
 // Initialize spatial navigation globally
 init({
@@ -63,6 +64,17 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Canal de cast: mientras haya un servidor configurado mantenemos el
+  // WebSocket abierto (con reconexión) para que la web pueda mandarnos
+  // contenido con "Enviar a TV". Se reconecta solo si cambia la URL.
+  useEffect(() => {
+    if (!serverUrl) {
+      disconnectCastSocket();
+      return;
+    }
+    connectCastSocket(serverUrl);
+  }, [serverUrl]);
 
   return (
     <div id="app">

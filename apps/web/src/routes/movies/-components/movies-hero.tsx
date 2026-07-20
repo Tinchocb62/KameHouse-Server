@@ -158,7 +158,7 @@ export function MoviesHero({
                                 transition={{ duration: 0.25 }}
                             >
                                 <span
-                                    className="inline-flex items-center text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-sm border"
+                                    className="inline-flex items-center text-label-sm font-bold tracking-widest uppercase px-2.5 py-1 rounded-sm border"
                                     style={{
                                         color: currentEraConfig.color,
                                         borderColor: `color-mix(in srgb, ${currentEraConfig.color} 27%, transparent)`,
@@ -179,7 +179,7 @@ export function MoviesHero({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -12 }}
                             transition={{ duration: 0.4, ease: "easeOut" }}
-                            className="font-extrabold leading-[1.05] tracking-tight text-white uppercase cursor-pointer hover:text-zinc-200 transition-colors duration-300"
+                            className="font-extrabold leading-[1.05] tracking-tight text-white uppercase cursor-pointer hover:text-zinc-200 transition-colors duration-base"
                             style={{ fontSize: "max(1.6rem, min(3.5vw, 2.8rem))" }}
                             onClick={() => currentMovie && handleMovieClick(currentMovie.mediaId!)}
                         >
@@ -198,21 +198,23 @@ export function MoviesHero({
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.3 }}
-                                className="flex items-center gap-3 text-zinc-400 text-[11px] font-medium tracking-wide"
+                                className="flex items-center gap-3 text-zinc-400 text-label-sm font-medium tracking-wide"
                             >
-                                {displayMedia.score && displayMedia.score > 0 && (
-                                    <span className="flex items-center gap-1 text-amber-400">
+                                {/* (x ?? 0) > 0 y no `x && x > 0`: con x === 0 el && devuelve 0
+                                    y React renderiza ese cero suelto en la fila de metadatos. */}
+                                {(displayMedia.score ?? 0) > 0 && (
+                                    <span className="flex items-center gap-1 text-status-warning">
                                         <Icons.ui.star size={11} fill="currentColor" className="stroke-none" />
-                                        {(displayMedia.score / 10).toFixed(1)} Ki
+                                        {(displayMedia.score! / 10).toFixed(1)} Ki
                                     </span>
                                 )}
-                                {displayMedia.year && displayMedia.year > 0 && (
+                                {(displayMedia.year ?? 0) > 0 && (
                                     <>
-                                        {displayMedia.score && displayMedia.score > 0 && <span className="text-zinc-600 select-none">·</span>}
+                                        {(displayMedia.score ?? 0) > 0 && <span className="text-zinc-600 select-none">·</span>}
                                         <span>{displayMedia.year}</span>
                                     </>
                                 )}
-                                {displayMedia.runtime && displayMedia.runtime > 0 && (
+                                {(displayMedia.runtime ?? 0) > 0 && (
                                     <>
                                         <span className="text-zinc-600 select-none">·</span>
                                         <span>{displayMedia.runtime} min</span>
@@ -249,7 +251,7 @@ export function MoviesHero({
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 0.3, delay: 0.15 }}
                                     onClick={() => handleMovieClick(currentMovie.mediaId!)}
-                                    className="flex items-center gap-2 px-5 py-2 bg-white text-black text-[11px] font-bold tracking-widest uppercase rounded-sm hover:bg-zinc-100 active:scale-95 transition-all duration-200"
+                                    className="flex items-center gap-2 px-5 py-2 bg-white text-black text-label-sm font-bold tracking-widest uppercase rounded-sm hover:bg-zinc-100 active:scale-95 transition-all duration-base"
                                 >
                                     <Icons.media.play size={11} fill="currentColor" />
                                     Ver Ahora
@@ -264,7 +266,7 @@ export function MoviesHero({
                                         key={i}
                                         onClick={() => setFeaturedIndex(i)}
                                         className={cn(
-                                            "h-[2px] rounded-full transition-all duration-300",
+                                            "h-[2px] rounded-full transition-all duration-base",
                                             i !== featuredIndex && "w-4 bg-white/20 hover:bg-white/45"
                                         )}
                                         style={

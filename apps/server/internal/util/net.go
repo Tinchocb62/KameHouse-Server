@@ -66,4 +66,3 @@ func GetLocalIPv4Addresses() []string {
 
 	return ipAddresses
 }
-

@@ -569,7 +569,7 @@ func (c *Cacher) PruneMediastreamVideoFilesByAge(maxAge time.Duration, inUse fun
 
 		if info.ModTime().Before(cutoff) {
 			fullPath := filepath.Join(videofilesDir, hash)
-			
+
 			// Calculate size before removing
 			var dirSize int64
 			_ = filepath.Walk(fullPath, func(_ string, f os.FileInfo, err error) error {

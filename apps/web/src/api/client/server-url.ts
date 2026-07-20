@@ -1,6 +1,13 @@
 import { __DEV_SERVER_PORT } from "@/lib/server/config"
 import { __isDesktop__ } from "@/types/constants"
 
+declare global {
+    interface Window {
+        /** Puerto dinámico del server local, seteado por el runtime desktop (ver main.tsx). */
+        __KAMEHOUSE_PORT__?: number | string
+    }
+}
+
 function devOrProd(dev: string, prod: string): string {
     return import.meta.env.MODE === "development" ? dev : prod
 }
@@ -23,7 +30,7 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
     if (typeof window !== "undefined") {
         const o = window.location?.origin ?? ""
         if (o.includes("wails.localhost") || o.startsWith("wails://")) {
-            const port = (window as any).__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
+            const port = window.__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
             let ret = `http://127.0.0.1:${port}`
             if (removeProtocol) {
                 ret = ret.replace("http://", "").replace("https://", "")
@@ -43,7 +50,7 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
                 if (o.startsWith("http://") || o.startsWith("https://")) {
                     ret = ""
                 } else {
-                    const port = (window as any).__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
+                    const port = window.__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
                     ret = `http://127.0.0.1:${port}`
                 }
             } else {
@@ -54,7 +61,7 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
             if (o.startsWith("http://") || o.startsWith("https://")) {
                 ret = o
             } else {
-                const port = (window as any).__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
+                const port = window.__KAMEHOUSE_PORT__ || __DEV_SERVER_PORT
                 ret = `http://127.0.0.1:${port}`
             }
         } else {

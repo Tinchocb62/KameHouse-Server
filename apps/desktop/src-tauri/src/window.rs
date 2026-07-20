@@ -141,7 +141,7 @@ impl WindowManager {
         Ok(())
     }
 
-    pub fn finalize_startup<R: Runtime>(&self, app_handle: &AppHandle<R>, source: &str) {
+    pub fn finalize_startup<R: Runtime>(&self, _app_handle: &AppHandle<R>, source: &str) {
         info!("[WindowManager] Finalizing startup from: {}", source);
         *self.startup_ready.write().unwrap() = true;
     }

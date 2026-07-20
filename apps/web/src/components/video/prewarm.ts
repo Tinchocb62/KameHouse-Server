@@ -26,7 +26,7 @@ export function prewarmVideoPlayer() {
         try {
             void import("./player").catch(() => {})
             void import("./player-orchestrator").catch(() => {})
-        } catch (e) {}
+        } catch { /* noop */ }
     }
 
     if (typeof window.requestIdleCallback === "function") {

@@ -2,15 +2,21 @@ import { create, StateCreator } from "zustand"
 import { persist } from "zustand/middleware"
 
 // --- UI Slice ---
+export interface BackgroundMusicTrack {
+    name: string
+    file: string
+}
+
 export interface UIState {
     sidebarOpen: boolean
     searchQuery: string
     isVideoActive: boolean
     bgMusicEnabled: boolean
     bgMusicVolume: number
+    bgMusicDir: string
+    bgMusicTracks: BackgroundMusicTrack[]
     uiSoundsEnabled: boolean
     uiSoundsVolume: number
-    isGlobalMuted: boolean
     globalQueueOpen: boolean
     dynamicBackdropEnabled: boolean
     dynamicBackdropMotionEnabled: boolean
@@ -19,9 +25,10 @@ export interface UIState {
     setVideoActive: (active: boolean) => void
     setBgMusicEnabled: (enabled: boolean) => void
     setBgMusicVolume: (volume: number) => void
+    setBgMusicDir: (dir: string) => void
+    setBgMusicTracks: (tracks: BackgroundMusicTrack[]) => void
     setUiSoundsEnabled: (enabled: boolean) => void
     setUiSoundsVolume: (volume: number) => void
-    setGlobalMuted: (muted: boolean) => void
     setGlobalQueueOpen: (open: boolean) => void
     setDynamicBackdropEnabled: (enabled: boolean) => void
     setDynamicBackdropMotionEnabled: (enabled: boolean) => void
@@ -73,9 +80,10 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     isVideoActive: false,
     bgMusicEnabled: false,
     bgMusicVolume: 0.25,
+    bgMusicDir: "",
+    bgMusicTracks: [],
     uiSoundsEnabled: true,
     uiSoundsVolume: 1.0,
-    isGlobalMuted: false,
     globalQueueOpen: false,
     dynamicBackdropEnabled: false,
     dynamicBackdropMotionEnabled: false,
@@ -84,9 +92,10 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     setVideoActive: (active) => set({ isVideoActive: active }),
     setBgMusicEnabled: (enabled) => set({ bgMusicEnabled: enabled }),
     setBgMusicVolume: (volume) => set({ bgMusicVolume: volume }),
+    setBgMusicDir: (dir) => set({ bgMusicDir: dir }),
+    setBgMusicTracks: (tracks) => set({ bgMusicTracks: tracks }),
     setUiSoundsEnabled: (enabled) => set({ uiSoundsEnabled: enabled }),
     setUiSoundsVolume: (volume) => set({ uiSoundsVolume: volume }),
-    setGlobalMuted: (muted) => set({ isGlobalMuted: muted }),
     setGlobalQueueOpen: (open) => set({ globalQueueOpen: open }),
     setDynamicBackdropEnabled: (enabled) => {
         set({ dynamicBackdropEnabled: enabled })
@@ -305,7 +314,7 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
         {
             name: "kamehouse-app-settings",
             merge: (persistedState, currentState) => {
-                const p = persistedState as any
+                const p = persistedState as (Partial<UIState & PlayerState & ScannerState> & { aspectRatio?: string; sidebarOpen?: unknown }) | undefined
                 if (p && (p.aspectRatio === "fill" || p.aspectRatio === "16/9")) {
                     p.aspectRatio = "contain"
                 }
@@ -319,9 +328,10 @@ export const useAppStore = create<UIState & PlayerState & ScannerState>()(
 
                 bgMusicEnabled: state.bgMusicEnabled,
                 bgMusicVolume: state.bgMusicVolume,
+                bgMusicDir: state.bgMusicDir,
+                bgMusicTracks: state.bgMusicTracks,
                 uiSoundsEnabled: state.uiSoundsEnabled,
                 uiSoundsVolume: state.uiSoundsVolume,
-                isGlobalMuted: state.isGlobalMuted,
                 autoSkipIntro: state.autoSkipIntro,
                 autoSkipOutro: state.autoSkipOutro,
                 skipStepSeconds: state.skipStepSeconds,
@@ -409,7 +419,7 @@ export const useSkipTimesStore = create<SkipTimesState>()(
         {
             name: "kamehouse-skip-times",
             version: 2,
-            migrate: (persistedState: any, version: number) => {
+            migrate: (persistedState: unknown, version: number) => {
                 // v1 → v2: purge corrupt marks produced by the acoustic fingerprint scanner
                 // (which stored intro-end at ~9:03 due to a secondsPerFrame scaling bug).
                 // v0 → v1: same, clear everything.

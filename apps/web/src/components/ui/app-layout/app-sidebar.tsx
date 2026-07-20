@@ -3,9 +3,8 @@
 import { useAppStore } from "@/lib/store"
 import { Vaul, VaulContent } from "@/components/vaul"
 import { Link, useRouterState } from "@tanstack/react-router"
-import { AnimatePresence } from "framer-motion"
 import * as React from "react"
-import { Settings, Home, Film, Tv, Layers, Rocket, Menu, User } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import gsap from "gsap"
 import { useGSAP } from "@gsap/react"
 import { cn } from "../core/styling"
@@ -14,13 +13,7 @@ import { useSound } from "@/hooks/use-sound"
 import { useResponsive } from "@/hooks/use-responsive"
 import { BackgroundMusicPlayer } from "./background-music"
 import { NotificationBell } from "./notification-center"
-import { useGetLibraryCollection } from "@/api/hooks/anime_collection.hooks"
-import { toast } from "sonner"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
-
-const VideoPlayer = React.lazy(() =>
-    import("@/components/video/player").then((m) => ({ default: m.VideoPlayer }))
-)
 
 interface SidebarItem {
     id: string
@@ -37,7 +30,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         id: "home",
         to: "/home",
         label: "Inicio",
-        icon: <Home className="w-5 h-5" />,
+        icon: <Icons.navigation.home className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
         activeBgClass: "glass-liquid glass-active glass-refract"
@@ -46,7 +39,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         id: "series",
         to: "/series",
         label: "Series",
-        icon: <Tv className="w-5 h-5" />,
+        icon: <Icons.navigation.tv className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
         activeBgClass: "glass-liquid glass-active glass-refract"
@@ -55,20 +48,20 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         id: "movies",
         to: "/movies",
         label: "Películas",
-        icon: <Film className="w-5 h-5" />,
+        icon: <Icons.navigation.film className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
         activeBgClass: "glass-liquid glass-active glass-refract"
     },
     {
-        id: "profile",
-        to: "/profile",
-        label: "Perfil",
-        icon: <User className="w-5 h-5" />,
+        id: "collections",
+        to: "/collections",
+        label: "Colecciones",
+        icon: <Icons.navigation.layers className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
         activeBgClass: "glass-liquid glass-active glass-refract"
-    },
+    }
 ]
 
 // Lightweight id/label pairs for consumers (e.g. Settings → Apariencia) that
@@ -104,7 +97,7 @@ export function AppSidebar() {
                 onMouseEnter={() => canHoverExpand && setHoverExpanded(true)}
                 onMouseLeave={() => canHoverExpand && setHoverExpanded(false)}
                 className={cn(
-                    "hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen border-r border-[color:var(--sidebar-active-border)] z-50 overflow-visible transition-all duration-300 ease-in-out sidebar-gradient",
+                    "hidden md:flex flex-col fixed left-0 top-0 bottom-0 h-screen border-r border-[color:var(--sidebar-active-border)] z-50 overflow-visible transition-all duration-base ease-in-out sidebar-gradient",
                     isGlass
                         ? "backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
                         : "",
@@ -120,7 +113,7 @@ export function AppSidebar() {
                 <Vaul open={sidebarOpen} onOpenChange={setSidebarOpen} direction="left">
                     <VaulContent
                         className={cn(
-                            "md:hidden fixed inset-y-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-[color:var(--sidebar-active-border)] !border-y-0 !border-l-0 !rounded-none sidebar-gradient",
+                            "md:hidden fixed inset-y-0 left-0 z-50 flex h-full w-[280px] flex-col border-r border-[color:var(--sidebar-active-border)] !border-y-0 !border-l-0 !rounded-none !mt-0 sidebar-gradient",
                             isGlass
                                 ? "backdrop-blur-[var(--blur-sidebar)] backdrop-saturate-[var(--glass-saturate)]"
                                 : ""
@@ -150,7 +143,6 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
         () => SIDEBAR_ITEMS.filter(item => !ts.themeUnpinnedMenuItems?.includes(item.id)),
         [ts.themeUnpinnedMenuItems]
     )
-    const isVideoActive = useAppStore(state => state.isVideoActive)
     const { isMobile } = useResponsive()
 
     const containerRef = React.useRef<HTMLDivElement>(null)
@@ -162,13 +154,6 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
     const playChangeSound = () => {
         playSound("category", 0.4)
     }
-
-    const { data: collection } = useGetLibraryCollection()
-
-    const allEntries = React.useMemo(() => {
-        if (!collection?.lists) return []
-        return collection.lists.flatMap(list => list.entries ?? [])
-    }, [collection])
 
     // Staggered entrance for nav items/buttons on mount
     useGSAP(() => {
@@ -183,12 +168,12 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
 
     return (
         <div ref={containerRef} className={cn(
-            "flex flex-col h-full py-8 w-full items-center bg-transparent transition-all duration-300",
+            "flex flex-col h-full py-8 w-full items-center bg-transparent transition-all duration-base",
             sidebarOpen ? "px-4" : "px-4 md:px-0"
         )}>
             {/* Header / Logo */}
             <div className={cn(
-                "mb-10 w-full flex items-center gsap-sidebar-item transition-all duration-300",
+                "mb-10 w-full flex items-center gsap-sidebar-item transition-all duration-base",
                 sidebarOpen ? "justify-between px-2" : "justify-center"
             )}>
                 <Link
@@ -200,11 +185,11 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                         <img
                             src="/kamehouse-logo.png"
                             alt="KameHouse"
-                            className="h-9 w-9 shrink-0 object-contain group-hover:scale-110 transition-transform duration-500"
+                            className="h-9 w-9 shrink-0 object-contain group-hover:scale-110 transition-transform duration-slow"
                         />
                     </div>
                     {sidebarOpen && (
-                        <span className="font-bebas text-xl text-on-surface tracking-wider whitespace-nowrap">
+                        <span className="font-display text-xl text-on-surface tracking-wider whitespace-nowrap">
                             KAMEHOUSE
                         </span>
                     )}
@@ -224,7 +209,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                                 className={cn("w-full flex justify-center")}
                             >
                                 <div className={cn(
-                                    "flex items-center h-14 rounded-2xl group px-4 relative transition-all duration-300 w-full",
+                                    "flex items-center h-14 rounded-xl group px-4 relative transition-all duration-base w-full",
                                     "active:scale-95 font-bold",
                                     sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
                                     isActive
@@ -233,16 +218,16 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                                 )}>
                                     {/* Static Indicator Dot */}
                                     <div className={cn(
-                                        "absolute left-0 w-1 h-6 rounded-r-full transition-all duration-500 hidden md:block",
+                                        "absolute left-0 w-1 h-6 rounded-r-full transition-all duration-slow hidden md:block",
                                         item.activeColorClass.replace("text-", "bg-"),
                                         isActive ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                                     )} />
 
-                                    <span className={cn("shrink-0 z-10 group-hover:scale-110 transition-transform duration-300", isActive && item.activeColorClass)}>
+                                    <span className={cn("shrink-0 z-10 group-hover:scale-110 transition-transform duration-base", isActive && item.activeColorClass)}>
                                         {item.icon}
                                     </span>
                                     <span className={cn(
-                                        "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                                        "uppercase tracking-ultra text-label-sm font-black z-10 text-left transition-colors whitespace-nowrap",
                                         (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
                                         isActive ? item.activeColorClass : item.hoverColorClass
                                     )}>
@@ -265,7 +250,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                             }}
                             title="Cola de Reproducción"
                             className={cn(
-                                "flex items-center h-14 rounded-2xl group px-4 relative border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 w-full",
+                                "flex items-center h-14 rounded-xl group px-4 relative border border-white/[0.06] hover:border-white/[0.12] transition-all duration-base w-full",
                                 "active:scale-95 font-bold",
                                 sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
                                 globalQueueOpen
@@ -275,19 +260,19 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                         >
                             {/* Active Indicator Dot */}
                             <div className={cn(
-                                "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-500 hidden md:block",
+                                "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-slow hidden md:block",
                                 globalQueueOpen ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                             )} />
 
-                            <span className={cn("shrink-0 z-10 relative group-hover:scale-110 transition-transform duration-300", globalQueueOpen && "text-on-surface")}>
-                                <Layers className="w-5 h-5" />
+                            <span className={cn("shrink-0 z-10 relative group-hover:scale-110 transition-transform duration-base", globalQueueOpen && "text-on-surface")}>
+                                <Icons.navigation.layers className="w-5 h-5" />
                                 {/* Badge count */}
-                                <span className="absolute -top-2.5 -right-2.5 bg-on-surface text-surface text-[8px] font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center border border-surface px-[3px]">
+                                <span className="absolute -top-2.5 -right-2.5 bg-on-surface text-surface text-label-sm font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center border border-surface px-[3px]">
                                     {playlistQueue.length}
                                 </span>
                             </span>
                             <span className={cn(
-                                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                                "uppercase tracking-ultra text-label-sm font-black z-10 text-left transition-colors whitespace-nowrap",
                                 (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
                                 globalQueueOpen ? "text-on-surface" : "group-hover:text-on-surface"
                             )}>
@@ -303,7 +288,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                         onClick={() => { setMarathonMode(!marathonMode); playChangeSound() }}
                         title={marathonMode ? "Desactivar Modo Maratón" : "Activar Modo Maratón"}
                         className={cn(
-                            "flex items-center h-14 rounded-2xl group px-4 relative border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 w-full",
+                            "flex items-center h-14 rounded-xl group px-4 relative border border-white/[0.06] hover:border-white/[0.12] transition-all duration-base w-full",
                             "active:scale-95 font-bold",
                             sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
                             marathonMode
@@ -312,14 +297,14 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                         )}
                     >
                         <div className={cn(
-                            "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-500 hidden md:block",
+                            "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-slow hidden md:block",
                             marathonMode ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                         )} />
-                        <span className={cn("shrink-0 z-10 group-hover:scale-110 transition-transform duration-300", marathonMode && "text-on-surface")}>
-                            <Rocket className="w-5 h-5" />
+                        <span className={cn("shrink-0 z-10 group-hover:scale-110 transition-transform duration-base", marathonMode && "text-on-surface")}>
+                            <Icons.navigation.rocket className="w-5 h-5" />
                         </span>
                         <span className={cn(
-                            "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                            "uppercase tracking-ultra text-label-sm font-black z-10 text-left transition-colors whitespace-nowrap",
                             (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
                             marathonMode ? "text-on-surface" : "group-hover:text-on-surface"
                         )}>
@@ -332,9 +317,11 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
             {/* Footer / Info */}
             <div className="mt-auto pb-6 w-full flex flex-col items-center gap-6 pt-8">
                 {/* Background Music and Random Play buttons */}
+                {/* Apilados también en modo expandido: dos botones w-full con labels
+                    nowrap en una misma fila desbordan el drawer de 280px */}
                 <div className={cn(
-                    "flex gsap-sidebar-item transition-all duration-300 w-full justify-center items-center",
-                    sidebarOpen ? "flex-row gap-4 px-4" : "flex-col gap-6"
+                    "flex gsap-sidebar-item transition-all duration-base w-full justify-center items-center flex-col",
+                    sidebarOpen ? "gap-4 px-4" : "gap-6"
                 )}>
                     <BackgroundMusicPlayer />
                     <RandomPlayButton />
@@ -351,20 +338,25 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                         className={cn("w-full flex justify-center")}
                     >
                         <div className={cn(
-                            "flex items-center h-14 rounded-2xl group px-4 relative border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 w-full",
+                            "flex items-center h-14 rounded-xl group px-4 relative transition-all duration-base w-full",
                             "active:scale-95 font-bold",
                             sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
-                            currentPath === "/settings"
-                                ? "text-on-surface bg-white/[0.08]"
-                                : "text-on-surface-variant hover:text-on-surface bg-white/[0.03] hover:bg-white/[0.07]"
+                            currentPath.startsWith("/settings")
+                                ? "glass-liquid glass-active glass-refract text-on-surface"
+                                : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-white/[0.12] text-on-surface-variant hover:text-on-surface"
                         )}>
-                            <span className={cn("shrink-0 z-10 group-hover:rotate-45 group-hover:scale-110 transition-transform duration-500", currentPath === "/settings" && "text-on-surface")}>
-                                <Settings className="w-5 h-5" />
+                            {/* Active Indicator Dot */}
+                            <div className={cn(
+                                "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-slow hidden md:block",
+                                currentPath.startsWith("/settings") ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                            )} />
+                            <span className={cn("shrink-0 z-10 group-hover:rotate-45 group-hover:scale-110 transition-transform duration-slow", currentPath.startsWith("/settings") && "text-on-surface")}>
+                                <Icons.navigation.settings className="w-5 h-5" />
                             </span>
                             <span className={cn(
-                                "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                                "uppercase tracking-ultra text-label-sm font-black z-10 text-left transition-colors whitespace-nowrap",
                                 (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
-                                currentPath === "/settings" ? "text-on-surface" : "group-hover:text-on-surface"
+                                currentPath.startsWith("/settings") ? "text-on-surface" : "group-hover:text-on-surface"
                             )}>
                                 Configuración
                             </span>
@@ -372,14 +364,6 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                     </Link>
                 </div>
             </div>
-        </div>
-    )
-}
-
-function Magnetic({ children, className }: { children: React.ReactNode, className?: string }) {
-    return (
-        <div className={cn("w-full flex justify-center", className)}>
-            {children}
         </div>
     )
 }

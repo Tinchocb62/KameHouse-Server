@@ -855,6 +855,54 @@ export type VideoStreamInfo = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * - Filepath: internal/handlers/music.go
+ * - Filename: music.go
+ * - Package: handlers
+ */
+export type BackgroundMusicScanResponse = {
+    dir: string
+    tracks?: Array<BackgroundMusicTrack>
+}
+
+/**
+ * - Filepath: internal/handlers/music.go
+ * - Filename: music.go
+ * - Package: handlers
+ */
+export type BackgroundMusicTrack = {
+    name: string
+    file: string
+}
+
+/**
+ * - Filepath: internal/handlers/cast.go
+ * - Filename: cast.go
+ * - Package: handlers
+ */
+export type CastDevice = {
+    id: string
+    name: string
+}
+
+/**
+ * - Filepath: internal/handlers/cast.go
+ * - Filename: cast.go
+ * - Package: handlers
+ */
+export type CastDevicesResponse = {
+    devices?: Array<CastDevice>
+}
+
+/**
+ * - Filepath: internal/handlers/cast.go
+ * - Filename: cast.go
+ * - Package: handlers
+ */
+export type CastPlayResponse = {
+    sentTo?: Array<string>
+}
+
+/**
  * - Filepath: internal/handlers/directory_selector.go
  * - Filename: directory_selector.go
  * - Package: handlers
@@ -944,6 +992,10 @@ export type Status = {
     showChangelogTour: string
     serverIPs?: Array<string>
     serverPort: number
+    /**
+     * OS process id of the server; used by the desktop sidecar to reap orphans
+     */
+    pid: number
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1658,10 +1710,10 @@ export type Models_LibrarySeason = {
 export type Models_LibrarySettings = {
     seriesPaths: Models_LibraryPaths
     moviePaths: Models_LibraryPaths
-    disableAnimeCardTrailers: boolean
     openWebURLOnStart: boolean
     refreshLibraryOnStart: boolean
     autoPlayNextEpisode: boolean
+    autoDetectSkipTimes: boolean
     enableWatchContinuity: boolean
     scannerMatchingThreshold: number
     scannerMatchingAlgorithm: string
@@ -1717,6 +1769,7 @@ export type Models_MediastreamSettings = {
     preTranscodeEnabled: boolean
     transcodeThreads: number
     directPlayOnly: boolean
+    disableAutoSwitchToDirectPlay: boolean
     id: number
     createdAt?: string
     updatedAt?: string
@@ -1752,7 +1805,6 @@ export type Models_Notification = {
 export type Models_NotificationSettings = {
     disableNotifications: boolean
     disableAutoScannerNotifications: boolean
-    disableAutoDownloaderNotifications: boolean
 }
 
 /**
@@ -1762,7 +1814,6 @@ export type Models_NotificationSettings = {
  */
 export type Models_PlatformSettings = {
     hideAudienceScore: boolean
-    disableCacheLayer: boolean
 }
 
 /**
@@ -1832,7 +1883,6 @@ export type Models_Theme = {
     themeShowAnimeUnwatchedCount: boolean
     themeHideEpisodeCardDescription: boolean
     themeHideDownloadedEpisodeCardFilename: boolean
-    themeContinueWatchingDefaultSorting: string
     themeAnimeLibraryCollectionDefaultSorting: string
     themeCustomCSS: string
     themeMobileCustomCSS: string
@@ -2050,6 +2100,37 @@ export type UnifiedMediaRelation = {
     id: number
     relationType: MediaRelationType
     media?: UnifiedMedia
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Pretranscode
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * - Filepath: internal/mediastream/pretranscode/pretranscode.go
+ * - Filename: pretranscode.go
+ * - Package: pretranscode
+ */
+export type JobStatus = "queued" | "running" | "completed" | "failed"
+
+/**
+ * - Filepath: internal/mediastream/pretranscode/pretranscode.go
+ * - Filename: pretranscode.go
+ * - Package: pretranscode
+ * @description
+ *  PreTranscodeJob is one file's pre-transcode, tracked from queue to completion.
+ */
+export type PreTranscodeJob = {
+    hash: string
+    filePath: string
+    status: JobStatus
+    /**
+     * 0-100
+     */
+    progress: number
+    error?: string
+    queuedAt?: string
+    endedAt?: string
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

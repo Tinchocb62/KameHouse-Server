@@ -1,6 +1,6 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Loader2, Zap, FastForward, Check, Monitor, Settings, Volume2, Subtitles } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
 import { Vaul, VaulContent } from "@/components/vaul"
 
@@ -56,11 +56,7 @@ export function PlayerSettingsMenu({
     onTvModeChange,
     marathonMode = false,
     onMarathonModeChange,
-    videoRef,
-    malId,
     mediaId,
-    duration,
-    episodeNumber,
     mediaFormat,
     ambientModeEnabled = true,
     onAmbientModeEnabledChange,
@@ -137,14 +133,6 @@ export function PlayerSettingsMenu({
         ? subtitleTracks.find(t => t.index === activeSubtitleIndex)
         : null
 
-    const hlsQuality = activeHlsLevel === -1
-        ? "Auto"
-        : hlsLevels.find(l => l.index === activeHlsLevel)?.label || "Auto"
-
-    const activeQuality = hlsLevels.length > 0
-        ? hlsQuality
-        : (sources.find(s => s.url === currentSourceUrl)?.quality || "Original")
-
     const autoSkipLabel = [
         autoSkipIntro ? "Intro" : null,
         autoSkipOutro ? "Outro" : null,
@@ -156,26 +144,26 @@ export function PlayerSettingsMenu({
             {view === "main" && (
                 <SettingsLayout title="Configuración" onClose={() => setIsOpen(false)}>
                     <MenuButton
-                        icon={<Volume2 className="w-4 h-4" />}
+                        icon={<Icons.media.volume2 className="w-4 h-4" />}
                         label="Audio"
                         value={activeAudio ? (activeAudio.title || langLabel(activeAudio.language)) : "Desconocido"}
                         onClick={() => setView("audio")}
                     />
                     <MenuButton
-                        icon={<Subtitles className="w-4 h-4" />}
+                        icon={<Icons.media.subtitles className="w-4 h-4" />}
                         label="Subtítulos"
                         value={activeSubtitle ? (activeSubtitle.title || langLabel(activeSubtitle.language)) : "Desactivado"}
                         onClick={() => setView("subtitles")}
                     />
                     
                     <MenuButton
-                        icon={<Monitor className="w-4 h-4" />}
+                        icon={<Icons.status.monitor className="w-4 h-4" />}
                         label="Imagen"
                         value={ASPECT_RATIO_LABELS[aspectRatio] || "Ajustado"}
                         onClick={() => setView("image")}
                     />
                     <MenuButton
-                        icon={<FastForward className="w-4 h-4" />}
+                        icon={<Icons.media.forward className="w-4 h-4" />}
                         label="Reproducción"
                         value={`Skip ${autoSkipLabel}`}
                         onClick={() => setView("playback")}
@@ -229,7 +217,7 @@ export function PlayerSettingsMenu({
                 >
                     {hlsLevels.length > 0 && (
                         <div className="flex flex-col border-b border-white/5 pb-2 mb-2">
-                            <div className="px-4 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Resolución HLS</div>
+                            <div className="px-4 py-2 text-label-sm font-black text-zinc-500 uppercase tracking-widest">Resolución HLS</div>
                             <button
                                 onClick={() => { onHlsLevelChange?.(-1); setIsOpen(false) }}
                                 className={cn(
@@ -238,7 +226,7 @@ export function PlayerSettingsMenu({
                                 )}
                             >
                                 <span className="text-xs font-bold">Auto</span>
-                                {activeHlsLevel === -1 && <Check className="w-3.5 h-3.5" />}
+                                {activeHlsLevel === -1 && <Icons.ui.check className="w-3.5 h-3.5" />}
                             </button>
                             {hlsLevels.map((level) => (
                                 <button
@@ -250,7 +238,7 @@ export function PlayerSettingsMenu({
                                     )}
                                 >
                                     <span className="text-xs font-bold">{level.label}</span>
-                                    {activeHlsLevel === level.index && <Check className="w-3.5 h-3.5" />}
+                                    {activeHlsLevel === level.index && <Icons.ui.check className="w-3.5 h-3.5" />}
                                 </button>
                             ))}
                         </div>
@@ -258,7 +246,7 @@ export function PlayerSettingsMenu({
 
                     {sources.length > 0 && (
                         <>
-                            {hlsLevels.length > 0 && <div className="px-4 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Fuentes</div>}
+                            {hlsLevels.length > 0 && <div className="px-4 py-2 text-label-sm font-black text-zinc-500 uppercase tracking-widest">Fuentes</div>}
                             <QualitySettings
                                 sources={sources}
                                 currentSourceUrl={currentSourceUrl}
@@ -279,7 +267,7 @@ export function PlayerSettingsMenu({
                     onBack={() => setView("main")}
                     onClose={() => setIsOpen(false)}
                 >
-                    <div className="px-4 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Relación de aspecto</div>
+                    <div className="px-4 py-2 text-label-sm font-black text-zinc-500 uppercase tracking-widest">Relación de aspecto</div>
                     {(["contain", "cover", "fill"] as const).map((ratio) => (
                         <button
                             key={ratio}
@@ -291,13 +279,13 @@ export function PlayerSettingsMenu({
                         >
                             <div className="flex flex-col items-start">
                                 <span className="text-xs font-bold">{ASPECT_RATIO_LABELS[ratio]}</span>
-                                <span className="text-[9px] text-zinc-600 mt-0.5">
+                                <span className="text-label-sm text-zinc-600 mt-0.5">
                                     {ratio === "contain" && "Barras negras · conserva proporción"}
                                     {ratio === "cover" && "Rellena y recorta bordes"}
                                     {ratio === "fill" && "Estira la imagen sin recortar"}
                                 </span>
                             </div>
-                            {aspectRatio === ratio && <Check className="w-3.5 h-3.5 shrink-0" />}
+                            {aspectRatio === ratio && <Icons.ui.check className="w-3.5 h-3.5 shrink-0" />}
                         </button>
                     ))}
                 </SettingsLayout>
@@ -331,6 +319,7 @@ export function PlayerSettingsMenu({
                         onMarathonModeChange={onMarathonModeChange}
                         showSeparator={false}
                         mediaFormat={mediaFormat}
+                        mediaId={mediaId}
                     />
                 </SettingsLayout>
             )}
@@ -348,14 +337,14 @@ export function PlayerSettingsMenu({
                 className={cn(
                     "relative flex items-center justify-center w-11 h-11 md:w-7 md:h-7",
                     "text-zinc-500 hover:text-white",
-                    "transition-all duration-200",
+                    "transition-all duration-base",
                     isOpen && "text-white"
                 )}
             >
-                <Settings className={cn("w-4 h-4 md:w-3.5 md:h-3.5 transition-transform duration-300", isOpen && "rotate-90")} />
+                <Icons.ui.settings className={cn("w-4 h-4 md:w-3.5 md:h-3.5 transition-transform duration-base", isOpen && "rotate-90")} />
                 {isLoadingSubtitle && (
                     <span className="absolute -top-0.5 -right-0.5">
-                        <Loader2 className="w-3 h-3 text-white animate-spin" />
+                        <Icons.ui.spinner className="w-3 h-3 text-white animate-spin" />
                     </span>
                 )}
             </button>
@@ -381,14 +370,14 @@ export function PlayerSettingsMenu({
                 <Vaul open={isOpen} onOpenChange={setIsOpen}>
                     <VaulContent className="bg-zinc-950/95 backdrop-blur-[var(--blur-overlay-xl)] border-t border-outline-variant/10 p-5 pb-8 focus:outline-none max-h-[80vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-4 px-1">
-                            <h3 className="font-bebas text-2xl tracking-widest text-on-surface uppercase">
+                            <h3 className="font-display text-2xl tracking-widest text-on-surface uppercase">
                                 Ajustes
                             </h3>
                             <button 
                                 onClick={() => setIsOpen(false)}
                                 className="p-1.5 rounded-full text-on-surface-variant hover:text-on-surface active:scale-95"
                             >
-                                <Settings className="w-5 h-5 animate-spin" style={{ animationDuration: '4s' }} />
+                                <Icons.navigation.settings className="w-5 h-5 animate-spin" style={{ animationDuration: '4s' }} />
                             </button>
                         </div>
                         {renderContent()}

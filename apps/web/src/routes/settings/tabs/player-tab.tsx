@@ -1,9 +1,7 @@
 import React from "react"
-import { Section, Card, OsToggle, OsInput } from "../components"
+import { Section, Card, OsToggle } from "../components"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
-import { useAppStore } from "@/lib/store"
-import { LocalDeviceSection } from "@/components/settings/local-device-section"
 
 interface PlayerTabProps {
     control: Control<SettingsFormValues>
@@ -11,9 +9,8 @@ interface PlayerTabProps {
 
 
 export function PlayerTab({ control }: PlayerTabProps) {
-    const { marathonMode, setMarathonMode } = useAppStore()
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-slow outline-none">
 
             {/* Reproducción */}
             <Section label="Comportamiento de Reproducción">
@@ -42,20 +39,23 @@ export function PlayerTab({ control }: PlayerTabProps) {
                             />
                         )}
                     />
+                    <Controller
+                        control={control}
+                        name="library.autoDetectSkipTimes"
+                        render={({ field }) => (
+                            <OsToggle
+                                label="Detectar Intro/Outro automáticamente"
+                                description="Analiza los episodios en segundo plano (AnimeThemes, huella de audio y subtítulos) para ubicar OP y ED. La detección manual desde el reproductor funciona igual con esto apagado."
+                                checked={!!field.value}
+                                onChange={field.onChange}
+                            />
+                        )}
+                    />
 
                 </Card>
             </Section>
 
 
-            {/* Preferencia local: modo maratón */}
-            <LocalDeviceSection title="Reproducción en Este Dispositivo">
-                <OsToggle
-                    label="Modo Maratón"
-                    description="Encadena episodios sin pantallas de confirmación intermedias en este dispositivo."
-                    checked={marathonMode}
-                    onChange={setMarathonMode}
-                />
-            </LocalDeviceSection>
         </div>
     )
 }

@@ -1,39 +1,72 @@
 "use client"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { useAppStore } from "@/lib/store"
 import { useShallow } from "zustand/react/shallow"
-import { Music, VolumeX } from "lucide-react"
+import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
+import { getServerBaseUrl } from "@/api/client/server-url"
 
 
-const PLAYLIST = [
+// Playlist por defecto (bundleada con la app) que se usa cuando el usuario
+// todavía no ha escaneado una carpeta de música propia.
+const DEFAULT_PLAYLIST = [
     "/sounds/music/Dragon ball dvd.m4a",
     "/sounds/music/Dragon ball dvd 2.m4a",
     "/sounds/music/the-meteor.m4a"
-    //aca agrego mas musica
 ]
 
+// Construye la URL de streaming para un track escaneado del servidor.
+function buildTrackUrl(dir: string, file: string): string {
+    const base = getServerBaseUrl() || window.location.origin
+    const params = new URLSearchParams({ dir, file })
+    return `${base}/api/v1/music/stream?${params.toString()}`
+}
+
 export function BackgroundMusicPlayer() {
-    const { bgMusicEnabled, setBgMusicEnabled, bgMusicVolume, isVideoActive, isGlobalMuted, sidebarOpen } = useAppStore(
+    const { bgMusicEnabled, setBgMusicEnabled, uiSoundsEnabled, setUiSoundsEnabled, bgMusicVolume, bgMusicDir, bgMusicTracks, isVideoActive, sidebarOpen } = useAppStore(
         useShallow((state) => ({
             bgMusicEnabled: state.bgMusicEnabled,
             setBgMusicEnabled: state.setBgMusicEnabled,
+            uiSoundsEnabled: state.uiSoundsEnabled,
+            setUiSoundsEnabled: state.setUiSoundsEnabled,
             bgMusicVolume: state.bgMusicVolume,
+            bgMusicDir: state.bgMusicDir,
+            bgMusicTracks: state.bgMusicTracks,
             isVideoActive: state.isVideoActive,
-            isGlobalMuted: state.isGlobalMuted,
             sidebarOpen: state.sidebarOpen,
         }))
     )
+
+    // El botón de la sidebar es el interruptor MAESTRO de audio: agrupa la
+    // música de fondo y los efectos de UI, igual que el switch de audio global
+    // en Ajustes → Audio. Está "encendido" si cualquiera de los dos suena.
+    const audioMasterOn = bgMusicEnabled || uiSoundsEnabled
+
+    // La playlist activa: los tracks escaneados por el usuario tienen prioridad;
+    // si no hay ninguno, se usa la playlist por defecto empaquetada con la app.
+    const PLAYLIST = React.useMemo(() => {
+        if (bgMusicDir && bgMusicTracks.length > 0) {
+            return bgMusicTracks.map((t) => buildTrackUrl(bgMusicDir, t.file))
+        }
+        return DEFAULT_PLAYLIST
+    }, [bgMusicDir, bgMusicTracks])
 
     const audioRef = React.useRef<HTMLAudioElement | null>(null)
     const [isPlaying, setIsPlaying] = React.useState(false)
     const [isAnyVideoPlaying, setIsAnyVideoPlaying] = React.useState(false)
     const [currentTrackIndex, setCurrentTrackIndex] = React.useState(() => {
         // Start with a random track
-        return Math.floor(Math.random() * PLAYLIST.length)
+        return Math.floor(Math.random() * DEFAULT_PLAYLIST.length)
     })
+
+    // Si la playlist cambia (el usuario re-escanea otra carpeta) y el índice
+    // actual queda fuera de rango, lo reiniciamos a una pista aleatoria válida.
+    React.useEffect(() => {
+        if (currentTrackIndex >= PLAYLIST.length) {
+            setCurrentTrackIndex(PLAYLIST.length > 0 ? Math.floor(Math.random() * PLAYLIST.length) : 0)
+        }
+    }, [PLAYLIST, currentTrackIndex])
 
     // Sync volume when bgMusicVolume changes (using quadratic curve for natural logarithmic hearing)
     React.useEffect(() => {
@@ -47,7 +80,7 @@ export function BackgroundMusicPlayer() {
         let playTimeout: NodeJS.Timeout
 
         const playAudio = () => {
-            if (audioRef.current && !isGlobalMuted) {
+            if (audioRef.current) {
                 audioRef.current.play()
                     .then(() => setIsPlaying(true))
                     .catch((err) => {
@@ -69,10 +102,13 @@ export function BackgroundMusicPlayer() {
             audioRef.current = new Audio(PLAYLIST[currentTrackIndex])
             audioRef.current.volume = Math.pow(bgMusicVolume, 2)
         } else {
-            // Update source if track changed
+            // Update source if track changed. Resolve both to absolute URLs so the
+            // comparison is uniform for relative default tracks and absolute
+            // server-streamed tracks (scanned folder).
             const currentSrc = audioRef.current.src
             const expectedSrc = PLAYLIST[currentTrackIndex]
-            if (!currentSrc.endsWith(encodeURI(expectedSrc))) {
+            const expectedAbsolute = new URL(expectedSrc, window.location.origin).href
+            if (currentSrc !== expectedAbsolute) {
                 audioRef.current.src = expectedSrc
                 audioRef.current.load()
                 audioRef.current.volume = Math.pow(bgMusicVolume, 2)
@@ -86,8 +122,8 @@ export function BackgroundMusicPlayer() {
         }
         audio.addEventListener("ended", handleEnded)
 
-        // If enabled, not globally muted, and no video is playing, start background music with a debounce to prevent pops during transitions
-        if (bgMusicEnabled && !isGlobalMuted && !isVideoActive && !isAnyVideoPlaying) {
+        // If enabled and no video is playing, start background music with a debounce to prevent pops during transitions
+        if (bgMusicEnabled && !isVideoActive && !isAnyVideoPlaying) {
             playTimeout = setTimeout(() => {
                 playAudio()
             }, 1000)
@@ -101,7 +137,7 @@ export function BackgroundMusicPlayer() {
             audio.removeEventListener("ended", handleEnded)
             audio.pause()
         }
-    }, [bgMusicEnabled, isGlobalMuted, isVideoActive, currentTrackIndex, isAnyVideoPlaying, bgMusicVolume])
+    }, [bgMusicEnabled, isVideoActive, currentTrackIndex, isAnyVideoPlaying, bgMusicVolume, PLAYLIST])
 
     // Listen to any other video/audio playing on the page to automatically pause background music
     React.useEffect(() => {
@@ -133,11 +169,29 @@ export function BackgroundMusicPlayer() {
         }
     }, [])
 
-    // Handle user interaction click to override browser autoplay blocks
+    // Handle user interaction click to override browser autoplay blocks.
+    // Respeta bgMusicEnabled: si el usuario apagó la música (directamente o vía
+    // el interruptor de audio global), no la reanudamos con el próximo click.
     React.useEffect(() => {
         if (!bgMusicEnabled || isVideoActive) return
 
-        const handleFirstInteraction = () => {
+        const handleFirstInteraction = (e: Event) => {
+            // Ignorá el click que viene del propio botón de música: ese ya lo
+            // maneja togglePlayback. Si no, este listener (registrado con el
+            // bgMusicEnabled anterior) reproduciría de nuevo el audio que el
+            // toggle acaba de pausar, haciendo que el botón "switchee solo".
+            const target = e.target as HTMLElement | null
+            if (target?.closest("#bg-music-toggle-btn")) return
+
+            // Releé el estado vivo del store (zustand es síncrono) en vez de
+            // confiar en el closure, que puede haber quedado obsoleto dentro
+            // del mismo ciclo de despacho del evento.
+            const { bgMusicEnabled: liveEnabled, isVideoActive: liveVideoActive } = useAppStore.getState()
+            if (!liveEnabled || liveVideoActive) {
+                removeInteractionListeners()
+                return
+            }
+
             if (audioRef.current && audioRef.current.paused) {
                 audioRef.current.play()
                     .then(() => {
@@ -162,19 +216,17 @@ export function BackgroundMusicPlayer() {
     }, [bgMusicEnabled, isVideoActive])
 
     const togglePlayback = () => {
-        // Direct mute/unmute of the background OST. This mirrors the music toggle
-        // in Settings (both drive `bgMusicEnabled`). Volume is left untouched.
-        // We don't call play() here: flipping `bgMusicEnabled` lets the main effect
-        // start/stop playback with the correct, up-to-date gating (avoids the
-        // play-then-immediately-pause flicker).
-        if (bgMusicEnabled) {
-            setBgMusicEnabled(false)
-            if (audioRef.current) {
-                audioRef.current.pause()
-                setIsPlaying(false)
-            }
-        } else {
-            setBgMusicEnabled(true)
+        // Interruptor maestro de audio: enciende/apaga música de fondo y efectos
+        // de UI a la vez (espeja el switch de audio global de Ajustes). No
+        // llamamos play() acá: al cambiar `bgMusicEnabled` el efecto principal
+        // arranca/para la reproducción con el gating correcto (evita el flicker
+        // de play-inmediatamente-pause).
+        const next = !audioMasterOn
+        setBgMusicEnabled(next)
+        setUiSoundsEnabled(next)
+        if (!next && audioRef.current) {
+            audioRef.current.pause()
+            setIsPlaying(false)
         }
     }
 
@@ -183,45 +235,39 @@ export function BackgroundMusicPlayer() {
             <button
                 id="bg-music-toggle-btn"
                 onClick={togglePlayback}
-                title={bgMusicEnabled ? "Silenciar música" : "Activar música"}
+                title={audioMasterOn ? "Silenciar audio" : "Activar audio"}
                 className={cn(
-                    "flex items-center h-14 rounded-2xl group px-4 relative transition-all duration-300 w-full",
+                    "flex items-center h-14 rounded-xl group px-4 relative transition-all duration-base w-full",
                     "active:scale-95 font-bold",
                     sidebarOpen ? "w-full justify-start gap-4 px-5" : "justify-center md:w-14 w-full md:px-0",
-                    bgMusicEnabled
+                    audioMasterOn
                         ? "text-on-surface bg-white/[0.08]"
                         : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-white/[0.12] text-on-surface-variant hover:text-on-surface"
                 )}
             >
                 {/* Active Indicator Line */}
                 <div className={cn(
-                    "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-500 hidden md:block",
-                    bgMusicEnabled ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                    "absolute left-0 w-1 h-6 bg-on-surface rounded-r-full transition-all duration-slow hidden md:block",
+                    audioMasterOn ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                 )} />
 
                 <span className={cn(
-                    "shrink-0 z-10 group-hover:scale-110 transition-transform duration-300 relative",
-                    bgMusicEnabled && "text-on-surface"
+                    "shrink-0 z-10 group-hover:scale-110 transition-transform duration-base relative",
+                    audioMasterOn && "text-on-surface"
                 )}>
-                    {/* Audio playing waves overlay */}
-                    {bgMusicEnabled && isPlaying && !isVideoActive && !isGlobalMuted && (
-                        <div className="absolute inset-0 z-0 pointer-events-none -m-1">
-                            {/* We can put subtle visual feedback here if needed, or just let the icon speak for itself */}
-                        </div>
-                    )}
-                    {bgMusicEnabled ? (
-                        <Music className="w-5 h-5 relative z-10" />
+                    {audioMasterOn ? (
+                        <Icons.status.music className="w-5 h-5 text-on-surface" />
                     ) : (
-                        <VolumeX className="w-5 h-5 relative z-10" />
+                        <Icons.status.musicOff className="w-5 h-5 relative z-10" />
                     )}
                 </span>
 
                 <span className={cn(
-                    "uppercase tracking-[0.2em] text-[10px] font-black z-10 text-left transition-colors whitespace-nowrap",
+                    "uppercase tracking-ultra text-label-sm font-black z-10 text-left transition-colors whitespace-nowrap",
                     (sidebarOpen) ? "block" : "hidden md:hidden",
-                    bgMusicEnabled ? "text-on-surface" : "group-hover:text-on-surface"
+                    audioMasterOn ? "text-on-surface" : "group-hover:text-on-surface"
                 )}>
-                    Música {bgMusicEnabled ? "(ON)" : "(OFF)"}
+                    Audio {audioMasterOn ? "(ON)" : "(OFF)"}
                 </span>
             </button>
         </div>

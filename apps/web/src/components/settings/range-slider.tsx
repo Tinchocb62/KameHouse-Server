@@ -15,10 +15,10 @@ export interface RangeSliderProps {
 
 export function RangeSlider({ label, description, min, max, step = 1, value, onChange, formatValue, className }: RangeSliderProps) {
     return (
-        <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-5 border-b border-outline-variant/4 last:border-0 hover:bg-surface-variant/[0.01] transition-all duration-200 gap-5 group/slider">
+        <div className="flex flex-col md:flex-row md:items-center justify-between px-6 py-5 border-b border-outline-variant/4 last:border-0 hover:bg-surface-variant/[0.01] transition-all duration-base gap-5 group/slider">
             <div className="space-y-1 flex-1 max-w-xl">
                 <p className="text-sm font-semibold text-on-surface-variant group-hover/slider:text-on-surface transition-colors tracking-tight">{label}</p>
-                {description && <p className="text-[11px] text-on-surface-variant leading-relaxed font-medium">{description}</p>}
+                {description && <p className="text-caption text-on-surface-variant leading-relaxed font-medium">{description}</p>}
             </div>
             <div className={cn("flex items-center gap-3 w-full md:w-72", className)}>
                 <input

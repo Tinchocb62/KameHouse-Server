@@ -5,7 +5,10 @@ import { useAppStore } from "@/lib/store"
 import type { Anime_Entry } from "@/api/generated/types"
 import { Icons } from "@/components/ui/icons"
 import { getHighResImage, getMediumResImage } from "@/lib/helpers/images"
-import { MediaHero } from "@/components/ui/media-hero"
+import { MediaHero, MEDIA_HERO_TITLE_CLASS } from "@/components/ui/media-hero"
+import { PlayCta } from "@/components/ui/play-cta"
+import { GlassIconButton } from "@/components/ui/glass-icon-button"
+import { cn } from "@/components/ui/core/styling"
 
 interface SeriesHeroProps {
   entry: Anime_Entry | undefined
@@ -40,28 +43,12 @@ export function SeriesHero({
   const hasBannerImage = !!media?.bannerImage
   const posterUrl = getHighResImage(media?.posterImage || "")
 
-  // Technical details from files
-  const tech = entry?.localFiles?.[0]?.technicalInfo
-
-  const qualityBadge = useMemo(() => {
-    if (!tech?.videoStream) return null
-    const w = tech.videoStream.width
-    if (w === undefined) return null
-    if (w >= 3840) return "4K UHD"
-    if (w >= 1920) return "1080P FHD"
-    if (w >= 1280) return "720P HD"
-    return null
-  }, [tech])
-
-
-
-
   const addToQueue = useAppStore(state => state.addToQueue)
 
   const castList = useMemo(() => {
     if (!media?.characters?.edges) return []
     return media.characters.edges
-      .map((edge: any) => edge.node?.name?.full || edge.node?.name?.userPreferred)
+      .map((edge: { node?: { name?: { full?: string; userPreferred?: string } } }) => edge.node?.name?.full || edge.node?.name?.userPreferred)
       .filter(Boolean)
       .slice(0, 5)
   }, [media])
@@ -99,7 +86,7 @@ export function SeriesHero({
           {romajiTitle}
         </h2>
       )}
-      <h1 onClick={onPlay} className="font-sans font-extrabold leading-[1.05] tracking-tight text-on-surface drop-shadow-[0_4px_25px_rgba(0,0,0,0.85)] cursor-pointer hover:text-brand-secondary transition-colors duration-slow uppercase" style={{ fontSize: "max(2.5rem, min(5.5vw, 4.5rem))" }}>
+      <h1 onClick={onPlay} className={cn(MEDIA_HERO_TITLE_CLASS, "cursor-pointer hover:text-brand-secondary transition-colors duration-slow")} style={{ fontSize: "max(2.5rem, min(5.5vw, 4.5rem))" }}>
         {title}
       </h1>
     </div>
@@ -148,41 +135,23 @@ export function SeriesHero({
 
   const actionButtons = (
     <>
-      <button
-        onClick={onPlay}
-        onPointerEnter={onPlayHover}
-        onFocus={onPlayHover}
+      <PlayCta
+        onClick={onPlay || (() => {})}
+        onHoverIntent={onPlayHover}
         title={hasProgress && resumeEpisodeTitle ? resumeEpisodeTitle : undefined}
-        className="group/play relative flex items-center gap-4 px-8 py-4 text-zinc-950 rounded-2xl overflow-hidden shadow-brand-primary transition-all duration-300 hover:scale-[1.03] active:scale-95"
-        style={{ background: `linear-gradient(to right, var(--era-btn-from), var(--era-btn-to))` }}
-      >
-        <div className="absolute inset-0 transition-opacity duration-300 opacity-0 group-hover/play:opacity-100 z-0" style={{ background: `linear-gradient(to right, var(--era-btn-hover-from), var(--era-btn-hover-to))` }} />
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity duration-slow ease-smooth-out z-0" />
-
-        <div className="p-3 bg-black/15 backdrop-blur-[var(--blur-overlay-sm)] rounded-xl text-zinc-950 group-hover/play:bg-zinc-950 group-hover/play:text-zinc-50 transition-all duration-300 z-10 shrink-0">
-          <Icons.media.play className="w-4 h-4 fill-current" />
-        </div>
-
-        <div className="flex flex-col items-start z-10 select-none text-left">
-          <span className="font-sans text-button-md tracking-wider font-black uppercase text-zinc-950 transition-colors whitespace-nowrap">
-            {hasProgress ? "Reanudar" : "Reproducir"}
-          </span>
-          <span className="text-label-sm font-black text-zinc-950/70 tracking-widest uppercase transition-colors mt-0.5 whitespace-nowrap">
-            {hasProgress
-              ? (resumeEpisodeNumber != null ? `Continuar · Ep ${resumeEpisodeNumber}` : "Continuar viendo")
-              : "Comenzar episodio"}
-          </span>
-        </div>
-      </button>
+        label={hasProgress ? "Reanudar" : "Reproducir"}
+        sublabel={hasProgress
+          ? (resumeEpisodeNumber != null ? `Continuar · Ep ${resumeEpisodeNumber}` : "Continuar viendo")
+          : "Comenzar episodio"}
+        className="w-full md:w-auto"
+      />
 
       {entry?.localFiles && entry.localFiles.length > 0 && (
-        <button
+        <GlassIconButton
           onClick={handleAddToQueue}
-          className="group/queue flex items-center justify-center p-4 rounded-2xl glass-liquid transition-all duration-300 text-on-surface/70 hover:text-on-surface hover:scale-[1.03] active:scale-95"
+          icon={<Icons.ui.listPlus className="w-5 h-5" />}
           title="Añadir a la cola"
-        >
-          <Icons.ui.listPlus className="w-5 h-5 transition-transform group-hover/queue:-translate-y-0.5" />
-        </button>
+        />
       )}
     </>
   )

@@ -12,25 +12,25 @@ import (
 // It is decoupled from third-party platforms and uses its own primary key.
 type LibraryMedia struct {
 	BaseModel
-	Type   string `gorm:"column:type;uniqueIndex:idx_tmdb_id_type" json:"type"`     // e.g., "ANIME", "SHOW", "MOVIE"
-	Format         string `gorm:"column:format" json:"format"` // e.g., "TV", "TV_SHORT", "MOVIE", "OVA", "SPECIAL"
+	Type           string `gorm:"column:type;uniqueIndex:idx_tmdb_id_type" json:"type"` // e.g., "ANIME", "SHOW", "MOVIE"
+	Format         string `gorm:"column:format" json:"format"`                          // e.g., "TV", "TV_SHORT", "MOVIE", "OVA", "SPECIAL"
 	Status         string `gorm:"column:status" json:"status"`
 	MetadataStatus string `gorm:"column:metadata_status;default:'COMPLETE'" json:"metadataStatus"` // "COMPLETE", "MISSING", "LOCAL"
 
 	// Titles
-	TitleOriginal string `gorm:"column:title_original" json:"titleOriginal"`
-	TitleRomaji   string `gorm:"column:title_romaji" json:"titleRomaji"`
-	TitleEnglish  string `gorm:"column:title_english" json:"titleEnglish"`
-	TitleSpanish  string `gorm:"column:title_spanish" json:"titleSpanish"`
+	TitleOriginal string          `gorm:"column:title_original" json:"titleOriginal"`
+	TitleRomaji   string          `gorm:"column:title_romaji" json:"titleRomaji"`
+	TitleEnglish  string          `gorm:"column:title_english" json:"titleEnglish"`
+	TitleSpanish  string          `gorm:"column:title_spanish" json:"titleSpanish"`
 	Synonyms      json.RawMessage `gorm:"column:synonyms;type:text" json:"synonyms"` // JSON array of strings
 
 	Description string `gorm:"column:description;type:text" json:"description"`
 	PosterImage string `gorm:"column:poster_image" json:"posterImage"` // Path or URL
 	BannerImage string `gorm:"column:banner_image" json:"bannerImage"` // Path or URL
 
-	TmdbID         int    `gorm:"column:tmdb_id;uniqueIndex:idx_tmdb_id_type" json:"tmdbId"`
-	AnidbId        int    `gorm:"column:anidb_id" json:"anidbId"`
-	MyanimelistId int    `gorm:"column:myanimelist_id" json:"myanimelistId"`
+	TmdbID        int `gorm:"column:tmdb_id;uniqueIndex:idx_tmdb_id_type" json:"tmdbId"`
+	AnidbId       int `gorm:"column:anidb_id" json:"anidbId"`
+	MyanimelistId int `gorm:"column:myanimelist_id" json:"myanimelistId"`
 
 	SeasonNumber int       `gorm:"column:season_number" json:"seasonNumber"`
 	StartDate    time.Time `gorm:"column:start_date" json:"startDate"`
@@ -41,12 +41,12 @@ type LibraryMedia struct {
 	Rating float64 `gorm:"column:rating" json:"rating"`
 	IsNsfw bool    `gorm:"column:is_nsfw" json:"isNsfw"`
 
-	Genres        json.RawMessage `gorm:"column:genres;type:text" json:"genres"` // JSON array of strings
-	Tags          json.RawMessage `gorm:"column:tags;type:text" json:"tags"`     // JSON array of strings or objects
-	DominantVibe  string          `gorm:"column:dominant_vibe" json:"dominantVibe"`
-	SuggestedSwimlane string      `gorm:"column:suggested_swimlane;index" json:"suggestedSwimlane"`
-	TotalEpisodes int    `gorm:"column:total_episodes" json:"totalEpisodes"`
-	Runtime       int    `gorm:"column:runtime" json:"runtime"`
+	Genres            json.RawMessage `gorm:"column:genres;type:text" json:"genres"` // JSON array of strings
+	Tags              json.RawMessage `gorm:"column:tags;type:text" json:"tags"`     // JSON array of strings or objects
+	DominantVibe      string          `gorm:"column:dominant_vibe" json:"dominantVibe"`
+	SuggestedSwimlane string          `gorm:"column:suggested_swimlane;index" json:"suggestedSwimlane"`
+	TotalEpisodes     int             `gorm:"column:total_episodes" json:"totalEpisodes"`
+	Runtime           int             `gorm:"column:runtime" json:"runtime"`
 
 	AudioTracks    json.RawMessage `gorm:"column:audio_tracks;type:text" json:"audioTracks"`       // JSON array of strings
 	SubtitleTracks json.RawMessage `gorm:"column:subtitle_tracks;type:text" json:"subtitleTracks"` // JSON array of strings

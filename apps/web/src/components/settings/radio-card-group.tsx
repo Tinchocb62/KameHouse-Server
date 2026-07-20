@@ -24,7 +24,7 @@ export function RadioCardGroup({ name, options, value, onChange }: RadioCardGrou
                     <div
                         key={opt.value || "default"}
                         className={cn(
-                            "flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer group",
+                            "flex items-start gap-4 p-4 rounded-xl border transition-all duration-base cursor-pointer group",
                             isActive
                                 ? "border-brand-accent/30 bg-brand-accent/[0.03] bg-[radial-gradient(ellipse_at_left,hsl(var(--brand-accent)/0.04),transparent_70%)]"
                                 : "border-outline-variant hover:border-outline-variant hover:bg-surface-container-high"
@@ -48,11 +48,11 @@ export function RadioCardGroup({ name, options, value, onChange }: RadioCardGrou
                             >
                                 {opt.label}
                             </label>
-                            {opt.desc && <span className="text-[10px] text-on-surface-variant block mt-0.5">{opt.desc}</span>}
+                            {opt.desc && <span className="text-caption text-on-surface-variant block mt-0.5">{opt.desc}</span>}
                         </div>
                         {opt.badge && (
                             <div className={cn(
-                                "w-9 h-8 rounded-lg flex items-center justify-center text-[10px] font-black uppercase tracking-wider shrink-0",
+                                "h-8 px-3 rounded-lg flex items-center justify-center text-label-sm font-black uppercase tracking-wider shrink-0",
                                 isActive
                                     ? "bg-brand-accent/20 text-brand-accent border border-brand-accent/30"
                                     : "bg-surface-container text-on-surface-variant border border-outline-variant"

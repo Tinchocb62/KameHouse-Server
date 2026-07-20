@@ -1,5 +1,6 @@
+import { Icons } from "@/components/ui/icons"
 import * as React from "react"
-import { RefreshCw, AlertTriangle } from "lucide-react"
+
 
 interface Props {
     children: React.ReactNode
@@ -44,7 +45,7 @@ export class PlayerErrorBoundary extends React.Component<Props, State> {
             const { label = "Player" } = this.props
             return (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-black/80 text-white rounded-lg p-8 min-h-[200px]">
-                    <AlertTriangle className="w-10 h-10 text-amber-400 shrink-0" />
+                    <Icons.ui.alert className="w-10 h-10 text-status-warning shrink-0" />
                     <div className="text-center space-y-1">
                         <p className="font-semibold text-base">{label} encontró un error</p>
                         {this.state.errorMessage && (
@@ -57,7 +58,7 @@ export class PlayerErrorBoundary extends React.Component<Props, State> {
                         onClick={this.handleRetry}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-sm font-medium"
                     >
-                        <RefreshCw className="w-4 h-4" />
+                        <Icons.ui.refresh className="w-4 h-4" />
                         Reintentar
                     </button>
                 </div>
