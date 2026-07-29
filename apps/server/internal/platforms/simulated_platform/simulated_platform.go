@@ -66,9 +66,6 @@ func (p *SimulatedPlatform) GetMovie(ctx context.Context, mediaID int) (interfac
 func (p *SimulatedPlatform) SearchMedia(ctx context.Context, query string, page *int) (*platform.UnifiedMediaList, error) {
 	return &platform.UnifiedMediaList{}, nil
 }
-func (p *SimulatedPlatform) GetMediaCollection(ctx context.Context, collectionID int) (*platform.UnifiedCollection, error) {
-	return &platform.UnifiedCollection{}, nil
-}
 func (p *SimulatedPlatform) GetStudioDetails(ctx context.Context, studioID int) (interface{}, error) {
 	return nil, nil
 }

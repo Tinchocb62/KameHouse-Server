@@ -99,6 +99,11 @@ func New(opts Options) *Manager {
 	}
 }
 
+// QueueLength returns the number of jobs currently in the queue.
+func (m *Manager) QueueLength() int {
+	return len(m.queue)
+}
+
 // Start launches the workers. Safe to call more than once.
 func (m *Manager) Start() {
 	m.startOnce.Do(func() {

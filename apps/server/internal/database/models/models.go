@@ -67,8 +67,8 @@ type LibrarySettings struct {
 	SeriesPaths           LibraryPaths `gorm:"column:series_paths;type:text" json:"seriesPaths"`
 	MoviePaths            LibraryPaths `gorm:"column:movie_paths;type:text" json:"moviePaths"`
 	OpenWebURLOnStart     bool         `gorm:"column:open_web_url_on_start" json:"openWebURLOnStart"`
-	RefreshLibraryOnStart    bool         `gorm:"column:refresh_library_on_start" json:"refreshLibraryOnStart"`
-	AutoPlayNextEpisode      bool         `gorm:"column:auto_play_next_episode" json:"autoPlayNextEpisode"`
+	RefreshLibraryOnStart bool         `gorm:"column:refresh_library_on_start" json:"refreshLibraryOnStart"`
+	AutoPlayNextEpisode   bool         `gorm:"column:auto_play_next_episode" json:"autoPlayNextEpisode"`
 	// AutoDetectSkipTimes habilita el scan oportunista de OP/ED en segundo plano
 	// cuando se abre un episodio sin marcas. El botón manual de detección funciona
 	// siempre, independientemente de este flag.
@@ -346,22 +346,6 @@ type UserMediaProgress struct {
 	Status     string  `gorm:"column:status" json:"status"`
 	Progress   int     `gorm:"column:progress" json:"progress"`
 	Score      float64 `gorm:"column:score" json:"score"`
-}
-
-// MediaCollection groups movies or shows that belong to the same TMDB franchise/saga.
-// It is populated automatically when a scanned movie has a non-nil BelongsToCollection
-// field in its TMDB metadata.
-type MediaCollection struct {
-	BaseModel
-	// TMDBCollectionID is the TMDB /collection/{id} identifier — the canonical key.
-	TMDBCollectionID int    `gorm:"column:tmdb_collection_id;uniqueIndex" json:"tmdbCollectionId"`
-	Name             string `gorm:"column:name" json:"name"`
-	Overview         string `gorm:"column:overview" json:"overview"`
-	PosterPath       string `gorm:"column:poster_path" json:"posterPath"`
-	BackdropPath     string `gorm:"column:backdrop_path" json:"backdropPath"`
-	// MemberIDs is a comma-separated list of TMDB media IDs belonging to this collection.
-	// Stored as plain text for SQLite compatibility; use IntSlice scanner.
-	MemberIDs IntSlice `gorm:"column:member_ids;type:text" json:"memberIds"`
 }
 
 // MetadataCache stores raw JSON responses from metadata providers (TMDB, AniList, etc.)

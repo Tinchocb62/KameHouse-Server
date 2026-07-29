@@ -3,6 +3,8 @@ package skipdetect
 import (
 	"math/rand"
 	"testing"
+
+	"kamehouse/internal/database/models"
 )
 
 // randFP genera un fingerprint de n items pseudo-aleatorios con seed fija: los
@@ -110,6 +112,109 @@ func TestBestThemeMatch_PicksHigherScoreCandidate(t *testing.T) {
 	wantStart := float64(300) * chromaprintHopSeconds
 	if !approx(start, wantStart, 2*chromaprintHopSeconds) {
 		t.Errorf("eligió el candidato equivocado: start = %.3f, want ~%.3f", start, wantStart)
+	}
+}
+
+// skipRow arma una fila existente mínima para los tests de buildRows.
+func skipRow(source string, opStart, opEnd, edOffset, edEnd float64) models.EpisodeSkipTime {
+	return models.EpisodeSkipTime{Source: source, OpStart: opStart, OpEnd: opEnd, EdOffset: edOffset, EdEnd: edEnd}
+}
+
+func TestBuildRows_SourcePrecedence(t *testing.T) {
+	d := &Detector{}
+
+	cases := []struct {
+		name        string
+		existing    map[int]models.EpisodeSkipTime
+		result      detResult
+		wantRow     bool
+		wantOpStart float64
+	}{
+		{
+			name:     "manual nunca se pisa",
+			existing: map[int]models.EpisodeSkipTime{1: skipRow("manual", 10, 100, 0, 0)},
+			result:   detResult{OpStart: 5, OpEnd: 95, Source: "animethemes", Confidence: 1},
+			wantRow:  false,
+		},
+		{
+			name:     "animethemes previo no se re-escribe",
+			existing: map[int]models.EpisodeSkipTime{1: skipRow("animethemes", 10, 100, 0, 0)},
+			result:   detResult{OpStart: 5, OpEnd: 95, Source: "animethemes", Confidence: 1},
+			wantRow:  false,
+		},
+		{
+			name:        "aniskip cede ante el Método A",
+			existing:    map[int]models.EpisodeSkipTime{1: skipRow("aniskip", 10, 100, 0, 0)},
+			result:      detResult{OpStart: 12.5, OpEnd: 102.5, Source: "animethemes", Confidence: 1},
+			wantRow:     true,
+			wantOpStart: 12.5,
+		},
+		{
+			name:     "aniskip NO cede ante fpcross",
+			existing: map[int]models.EpisodeSkipTime{1: skipRow("aniskip", 10, 100, 0, 0)},
+			result:   detResult{OpStart: 12.5, OpEnd: 102.5, Source: "fpcross", Confidence: 0.8},
+			wantRow:  false,
+		},
+		{
+			name:     "aniskip NO cede ante subtitle",
+			existing: map[int]models.EpisodeSkipTime{1: skipRow("aniskip", 10, 100, 0, 0)},
+			result:   detResult{OpStart: 12.5, OpEnd: 102.5, Source: "subtitle", Confidence: 0.6},
+			wantRow:  false,
+		},
+		{
+			name:        "fuente de baja confianza se reemplaza",
+			existing:    map[int]models.EpisodeSkipTime{1: skipRow("heuristic", 0, 85, 0, 0)},
+			result:      detResult{OpStart: 12.5, OpEnd: 102.5, Source: "fpcross", Confidence: 0.8},
+			wantRow:     true,
+			wantOpStart: 12.5,
+		},
+		{
+			name:        "sin fila previa se persiste",
+			existing:    map[int]models.EpisodeSkipTime{},
+			result:      detResult{OpStart: 12.5, OpEnd: 102.5, Source: "animethemes", Confidence: 1},
+			wantRow:     true,
+			wantOpStart: 12.5,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rows := d.buildRows(7, map[int]detResult{1: tc.result}, tc.existing)
+			if got := len(rows) > 0; got != tc.wantRow {
+				t.Fatalf("persistió = %v, want %v (rows: %+v)", got, tc.wantRow, rows)
+			}
+			if tc.wantRow && rows[0].OpStart != tc.wantOpStart {
+				t.Errorf("OpStart = %v, want %v", rows[0].OpStart, tc.wantOpStart)
+			}
+		})
+	}
+}
+
+// Cuando A resuelve solo un lado (p. ej. la OP, porque el ED tiene narración
+// solapada y no matchea), el otro lado de la fila aniskip debe conservarse en
+// vez de quedar en cero.
+func TestBuildRows_AniskipOverride_PreservesUnmatchedSide(t *testing.T) {
+	d := &Detector{}
+	existing := map[int]models.EpisodeSkipTime{
+		1: skipRow("aniskip", 10, 100, 1300, 1390),
+	}
+	results := map[int]detResult{
+		1: {OpStart: 12.5, OpEnd: 102.5, Source: "animethemes", Confidence: 1},
+	}
+
+	rows := d.buildRows(7, results, existing)
+	if len(rows) != 1 {
+		t.Fatalf("rows = %d, want 1", len(rows))
+	}
+	r := rows[0]
+	if r.OpStart != 12.5 || r.OpEnd != 102.5 {
+		t.Errorf("OP = [%v, %v], want [12.5, 102.5] (lado medido por A)", r.OpStart, r.OpEnd)
+	}
+	if r.EdOffset != 1300 || r.EdEnd != 1390 {
+		t.Errorf("ED = [%v, %v], want [1300, 1390] (conservado de aniskip)", r.EdOffset, r.EdEnd)
+	}
+	if r.Source != "animethemes" {
+		t.Errorf("Source = %q, want animethemes", r.Source)
 	}
 }
 

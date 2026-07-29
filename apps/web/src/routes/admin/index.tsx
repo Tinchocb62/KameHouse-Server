@@ -4,6 +4,7 @@ import * as React from "react"
 import { cn } from "@/components/ui/core/styling"
 import { Icons } from "@/components/ui/icons"
 import { useScanLocalFiles } from "@/api/hooks/scan.hooks"
+import { useGetLibraryStats, useGetTranscodeStats } from "@/api/hooks/admin.hooks"
 
 export const Route = createFileRoute("/admin/")({
     component: AdminPage,
@@ -25,6 +26,10 @@ function AdminPage() {
 
                     <AdminSection title="Gestión de Biblioteca" subtitle="Escaneo y sincronización">
                         <AdminActionsGrid />
+                    </AdminSection>
+
+                    <AdminSection title="Transcodificación" subtitle="Motor de streaming, CPU, RAM y GPU en tiempo real">
+                        <AdminTranscodePanel />
                     </AdminSection>
 
                     <AdminSection title="Servicios Externos" subtitle="TMDB, AniList, Trakt, etc.">
@@ -68,13 +73,20 @@ function AdminHeader() {
 }
 
 function AdminStatsGrid() {
+    const { data: libStats } = useGetLibraryStats()
+    const { data: trStats } = useGetTranscodeStats()
+
+    const cpuPercent = trStats?.system.cpuPercent?.toFixed(1) || "0.0"
+    const memoryTotal = trStats?.system.memoryTotal ? (trStats.system.memoryTotal / 1024 / 1024 / 1024).toFixed(1) : "0.0"
+    const memoryUsed = trStats?.system.memoryUsed ? (trStats.system.memoryUsed / 1024 / 1024 / 1024).toFixed(1) : "0.0"
+
     const stats = [
-        { label: "Series", value: "247", change: "+12", trend: "up", icon: Icons.navigation.tv, color: "var(--brand-primary)" },
-        { label: "Películas", value: "89", change: "+3", trend: "up", icon: Icons.navigation.film, color: "var(--brand-secondary)" },
-        { label: "Episodios", value: "12,847", change: "+456", trend: "up", icon: Icons.status.activity, color: "var(--brand-success)" },
-        { label: "Espacio Usado", value: "2.4 TB", change: "156 GB libres", trend: "neutral", icon: Icons.status.hdd, color: "var(--brand-magic)" },
-        { label: "Usuarios Activos", value: "1", change: "Admin", trend: "neutral", icon: Icons.navigation.user, color: "var(--md-sys-color-on-surface-variant)" },
-        { label: "Salud del Servidor", value: "Óptimo", change: "99.9% uptime", trend: "up", icon: Icons.status.pulse, color: "var(--brand-success)" },
+        { label: "Medios", value: libStats?.totalMedia?.toString() || "0", change: "Series y Películas", trend: "neutral", icon: Icons.navigation.tv, color: "var(--brand-primary)" },
+        { label: "Archivos", value: libStats?.totalLocalFiles?.toString() || "0", change: "Ficheros indexados", trend: "neutral", icon: Icons.navigation.film, color: "var(--brand-secondary)" },
+        { label: "CPU", value: `${cpuPercent}%`, change: "Uso del sistema", trend: "neutral", icon: Icons.status.activity, color: "var(--brand-success)" },
+        { label: "Memoria", value: `${memoryUsed} GB`, change: `De ${memoryTotal} GB totales`, trend: "neutral", icon: Icons.status.hdd, color: "var(--brand-magic)" },
+        { label: "Transcoder NVENC", value: trStats?.transcoderInitialized && trStats.governor ? `${trStats.governor.activeNvenc} / ${trStats.governor.nvencCap}` : "Inactivo", change: "Sesiones GPU activas", trend: "neutral", icon: Icons.navigation.tv, color: "var(--md-sys-color-on-surface-variant)" },
+        { label: "Pre-Transcode", value: trStats?.preTranscodeQueue?.toString() || "0", change: "En cola", trend: "neutral", icon: Icons.status.pulse, color: "var(--brand-success)" },
     ]
 
     return (
@@ -211,10 +223,128 @@ function AdminServicesGrid() {
     )
 }
 
+function StatBar({ label, value, max, display, color }: { label: string; value: number; max: number; display: string; color?: string }) {
+    const percent = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
+    return (
+        <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-label-sm font-bold uppercase tracking-widest text-on-surface-variant">
+                <span>{label}</span>
+                <span className="font-mono normal-case tracking-normal" style={{ fontVariantNumeric: "tabular-nums" }}>{display}</span>
+            </div>
+            <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden border border-white/5">
+                <div
+                    className="h-full rounded-full transition-all duration-base ease-smooth-out"
+                    style={{ width: `${percent}%`, background: color || "var(--brand-accent)" }}
+                />
+            </div>
+        </div>
+    )
+}
+
+function formatGb(bytes: number | undefined): string {
+    return ((bytes || 0) / 1024 / 1024 / 1024).toFixed(1)
+}
+
+function AdminTranscodePanel() {
+    const { data: stats, isLoading } = useGetTranscodeStats()
+
+    const governor = stats?.governor
+    const system = stats?.system
+    const gpu = stats?.gpu
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Motor de transcodificación */}
+            <div className="bg-surface-container shadow-elevation-3 rounded-container p-6 border border-outline-variant flex flex-col gap-5">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-h6 font-display text-on-surface tracking-wide">Motor de Streaming</h3>
+                    <span className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-bold uppercase tracking-widest border",
+                        stats?.transcoderInitialized
+                            ? "bg-brand-success/15 border-brand-success/30 text-brand-success"
+                            : "bg-white/5 border-white/10 text-on-surface-variant"
+                    )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", stats?.transcoderInitialized ? "bg-brand-success animate-pulse" : "bg-on-surface-variant/50")} />
+                        {stats?.transcoderInitialized ? "Activo" : "En reposo"}
+                    </span>
+                </div>
+                {governor ? (
+                    <>
+                        <StatBar
+                            label="Procesos ffmpeg"
+                            value={governor.activeProcesses}
+                            max={governor.maxConcurrency}
+                            display={`${governor.activeProcesses} / ${governor.maxConcurrency}`}
+                        />
+                        <StatBar
+                            label="Sesiones NVENC"
+                            value={governor.activeNvenc}
+                            max={governor.nvencCap}
+                            display={`${governor.activeNvenc} / ${governor.nvencCap}`}
+                            color="var(--brand-success)"
+                        />
+                        <div className="flex items-center justify-between text-body-sm text-on-surface-variant/70 mt-auto pt-4 border-t border-outline-variant">
+                            <span>Lanzados: <span className="font-mono text-on-surface-variant">{governor.totalLaunched}</span></span>
+                            <span>Completados: <span className="font-mono text-on-surface-variant">{governor.totalCompleted}</span></span>
+                        </div>
+                    </>
+                ) : (
+                    <p className="text-body-sm text-on-surface-variant/70 my-auto">
+                        {isLoading ? "Cargando…" : "El transcoder está dormido. Se despierta al reproducir un stream que lo necesite."}
+                    </p>
+                )}
+                <div className="flex items-center justify-between text-body-sm text-on-surface-variant/70">
+                    <span>Cola de pre-transcode</span>
+                    <span className="font-mono text-on-surface-variant">{stats?.preTranscodeQueue ?? 0}</span>
+                </div>
+            </div>
+
+            {/* Sistema */}
+            <div className="bg-surface-container shadow-elevation-3 rounded-container p-6 border border-outline-variant flex flex-col gap-5">
+                <h3 className="text-h6 font-display text-on-surface tracking-wide">Sistema</h3>
+                <StatBar
+                    label="CPU"
+                    value={system?.cpuPercent || 0}
+                    max={100}
+                    display={`${(system?.cpuPercent || 0).toFixed(1)}%`}
+                />
+                <StatBar
+                    label="Memoria RAM"
+                    value={system?.memoryUsed || 0}
+                    max={system?.memoryTotal || 1}
+                    display={`${formatGb(system?.memoryUsed)} / ${formatGb(system?.memoryTotal)} GB`}
+                    color="var(--brand-secondary)"
+                />
+            </div>
+
+            {/* GPU (solo si nvidia-smi respondió) */}
+            <div className="bg-surface-container shadow-elevation-3 rounded-container p-6 border border-outline-variant flex flex-col gap-5">
+                <h3 className="text-h6 font-display text-on-surface tracking-wide">GPU · NVIDIA</h3>
+                {gpu ? (
+                    <>
+                        <StatBar label="Uso de GPU" value={gpu.utilization} max={100} display={`${gpu.utilization}%`} />
+                        <StatBar label="Encoder NVENC" value={gpu.encoder} max={100} display={`${gpu.encoder}%`} color="var(--brand-success)" />
+                        <StatBar
+                            label="VRAM"
+                            value={gpu.memoryUsed}
+                            max={gpu.memoryTotal || 1}
+                            display={`${gpu.memoryUsed} / ${gpu.memoryTotal} MB`}
+                            color="var(--brand-magic)"
+                        />
+                    </>
+                ) : (
+                    <p className="text-body-sm text-on-surface-variant/70 my-auto">
+                        {isLoading ? "Cargando…" : "No se detectó nvidia-smi en el servidor."}
+                    </p>
+                )}
+            </div>
+        </div>
+    )
+}
+
 function AdminSystemGrid() {
     const items = [
         { label: "Logs del Sistema", desc: "Ver eventos y errores recientes", icon: Icons.status.file, action: () => {} },
-        { label: "Rendimiento", desc: "CPU, RAM, Disco, Red", icon: Icons.status.activity, action: () => {} },
         { label: "Configuración Avanzada", desc: "Variables de entorno y features", icon: Icons.ui.sliders, action: () => {} },
         { label: "Usuarios y Permisos", desc: "Gestionar accesos", icon: Icons.navigation.users, action: () => {} },
         { label: "Backup y Restore", desc: "Respaldos automáticos y manuales", icon: Icons.status.hdd, action: () => {} },

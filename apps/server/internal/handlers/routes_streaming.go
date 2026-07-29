@@ -30,10 +30,10 @@ func (h *Handler) RegisterStreamingRoutes(v1 *echo.Group) {
 	v1Mediastream.POST("/skip-times", h.HandleSaveEpisodeSkipTimes)
 	v1Mediastream.GET("/skip-times/resolve-mal", h.HandleResolveMAL)
 	v1Mediastream.POST("/skip-times/scan", h.HandleScanEpisodeSkipTimes)
+	v1Mediastream.POST("/skip-times/scan-all", h.HandleScanAllSkipTimes)
 
 	// Video Thumbnail
 	v1.GET("/video-thumbnail", h.HandleGetVideoThumbnail)
-
 
 	// VideoCore insights
 	v1.GET("/videocore/insights/:episodeId", h.HandleGetVideoInsights)
@@ -41,4 +41,3 @@ func (h *Handler) RegisterStreamingRoutes(v1 *echo.Group) {
 	// Playback telemetry
 	v1.POST("/playback/sync", h.HandlePlaybackSync)
 }
-

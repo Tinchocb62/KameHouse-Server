@@ -226,7 +226,7 @@ func (l *ScanSummaryLogger) LogMetadataNC(lf *dto.LocalFile) {
 	if l == nil {
 		return
 	}
-	msg := fmt.Sprintf("Marked as NC file")
+	msg := "Marked as NC file"
 	l.logType(LogMetadataNC, lf, msg)
 }
 

@@ -21,6 +21,30 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 		normalizedMap[nm.ID] = nm
 	}
 
+	// Every tmdb id involved in this scan, whether or not we end up writing it.
+	// The ID mapping below needs all of them, not just the ones in the batch.
+	allTmdbIds := make([]int, 0, len(allMatchedIds))
+	for id := range allMatchedIds {
+		realTmdbId := id
+		if movieIds[id] {
+			realTmdbId = id - 1_000_000
+		}
+		allTmdbIds = append(allTmdbIds, realTmdbId)
+	}
+
+	// A partial scan (fast mode) only hydrates metadata for the files it actually
+	// scanned, so normalizedMap covers a subset of allMatchedIds. The upsert below
+	// is UpdateAll, so writing a bare stub for the rest would wipe the poster,
+	// titles and description of records that were already enriched.
+	alreadyPersisted := make(map[string]bool)
+	if scn.Database != nil && len(allTmdbIds) > 0 {
+		var persisted []*models.LibraryMedia
+		scn.Database.Gorm().Where("tmdb_id IN ?", allTmdbIds).Find(&persisted)
+		for _, m := range persisted {
+			alreadyPersisted[fmt.Sprintf("%d_%s", m.TmdbID, m.Type)] = true
+		}
+	}
+
 	for id := range allMatchedIds {
 		realTmdbId := id
 		if movieIds[id] {
@@ -30,6 +54,11 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 		mediaType := "SHOW"
 		if movieIds[id] {
 			mediaType = "MOVIE"
+		}
+
+		// Nothing fresh to write and the record already exists: leave it untouched.
+		if _, hasMetadata := normalizedMap[id]; !hasMetadata && alreadyPersisted[fmt.Sprintf("%d_%s", realTmdbId, mediaType)] {
+			continue
 		}
 
 		newMedia := &models.LibraryMedia{
@@ -126,28 +155,30 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 		mediaBatch = append(mediaBatch, newMedia)
 	}
 
+	upsertOk := true
 	if len(mediaBatch) > 0 {
-		scn.Logger.Debug().Int("batchSize", len(mediaBatch)).Msg("scanner: Persisting matched media batch")
+		scn.Logger.Debug().Int("batchSize", len(mediaBatch)).Int("skipped", len(allMatchedIds)-len(mediaBatch)).Msg("scanner: Persisting matched media batch")
 		err := db.UpsertLibraryMediaBatch(scn.Database, mediaBatch, 10)
 		if err != nil {
 			scn.Logger.Error().Err(err).Msg("scanner: Failed to bulk upsert LibraryMedia batch, skipping ID mapping")
-		} else if scn.Database != nil {
-			var insertedMedia []*models.LibraryMedia
-			tmdbIDs := make([]int, len(mediaBatch))
-			for i, m := range mediaBatch {
-				tmdbIDs[i] = m.TmdbID
-			}
-			scn.Database.Gorm().Where("tmdb_id IN ?", tmdbIDs).Find(&insertedMedia)
+			upsertOk = false
+		}
+	}
 
-			scn.Logger.Debug().Int("insertedCount", len(insertedMedia)).Msg("scanner: Retrieved persisted LibraryMedia records")
+	// Map over every id in the scan, not just the batch: records left untouched
+	// above still need their association with local files.
+	if upsertOk && scn.Database != nil && len(allTmdbIds) > 0 {
+		var insertedMedia []*models.LibraryMedia
+		scn.Database.Gorm().Where("tmdb_id IN ?", allTmdbIds).Find(&insertedMedia)
 
-			for _, m := range insertedMedia {
-				mapKey := m.TmdbID
-				if m.Type == "MOVIE" {
-					mapKey = m.TmdbID + 1_000_000
-				}
-				libraryMediaIdMap[mapKey] = m.ID
+		scn.Logger.Debug().Int("insertedCount", len(insertedMedia)).Msg("scanner: Retrieved persisted LibraryMedia records")
+
+		for _, m := range insertedMedia {
+			mapKey := m.TmdbID
+			if m.Type == "MOVIE" {
+				mapKey = m.TmdbID + 1_000_000
 			}
+			libraryMediaIdMap[mapKey] = m.ID
 		}
 	}
 
@@ -175,14 +206,3 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 	return libraryMediaIdMap
 }
 
-// persistLocalFiles saves the final state of all LocalFiles to the relational database.
-func (scn *Scanner) persistLocalFiles(localFiles []*dto.LocalFile) {
-	if len(localFiles) > 0 {
-		err := db.UpsertLocalFileRelationalBatch(scn.Database, localFiles)
-		if err != nil {
-			scn.Logger.Error().Err(err).Msg("scanner: Failed to save local files to database")
-		} else {
-			scn.Logger.Info().Int("count", len(localFiles)).Msg("scanner: Local files persisted to database")
-		}
-	}
-}

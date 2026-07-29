@@ -2,7 +2,6 @@ package anime
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
@@ -33,105 +32,6 @@ func GetCuratedHome(_ context.Context, database *db.Database) (*CuratedHomeRespo
 
 	curatedHomeCache.Set(cacheKey, resp)
 	return resp, nil
-}
-
-func (s *IntelligenceService) buildIntelligenceLane(id, title string) *CuratedSwimlane {
-	var media []*models.LibraryMedia
-	hasFiles := s.db.Gorm().Model(&models.LocalFile{}).Select("1").
-		Where("library_media_id = library_media.id AND library_media_id > 0").Limit(1)
-	if err := s.db.Gorm().
-		Omit("description", "synonyms", "audio_tracks", "subtitle_tracks").
-		Where("EXISTS (?) AND suggested_swimlane = ?", hasFiles, title).
-		Order("score DESC").
-		Limit(20).
-		Find(&media).Error; err != nil || len(media) == 0 {
-		return nil
-	}
-
-	lane := &CuratedSwimlane{
-		ID:      id,
-		Title:   title,
-		Type:    "intelligence",
-		Entries: make([]*LibraryCollectionEntry, 0, len(media)),
-	}
-	for _, m := range media {
-		if m.PosterImage == "" || m.GetPreferredTitle() == "" {
-			continue
-		}
-		lane.Entries = append(lane.Entries, &LibraryCollectionEntry{
-			Media:            m,
-			MediaID:          int(m.ID),
-			AvailabilityType: "HYBRID",
-		})
-	}
-	if len(lane.Entries) == 0 {
-		return nil
-	}
-	return lane
-}
-
-func (s *IntelligenceService) buildEpisodeTagLane(id, title, tag string) *CuratedSwimlane {
-	var localFiles []*models.LocalFile
-	query := fmt.Sprintf(`%%"%s"%%`, tag)
-	if err := s.db.Gorm().
-		Where("tags LIKE ?", query).
-		Limit(20).
-		Find(&localFiles).Error; err != nil || len(localFiles) == 0 {
-		return nil
-	}
-
-	lane := &CuratedSwimlane{
-		ID:      id,
-		Title:   title,
-		Type:    "episode_tag",
-		Entries: make([]*LibraryCollectionEntry, 0, len(localFiles)),
-	}
-
-	added := make(map[uint]bool)
-
-	for _, lf := range localFiles {
-		var media models.LibraryMedia
-		if err := s.db.Gorm().Where("id = ?", lf.LibraryMediaId).First(&media).Error; err != nil {
-			continue
-		}
-
-		var parsedInfo struct {
-			Episode int `json:"episode"`
-		}
-		if len(lf.ParsedData) > 0 {
-			_ = json.Unmarshal(lf.ParsedData, &parsedInfo)
-		}
-
-		var episode models.LibraryEpisode
-		if parsedInfo.Episode > 0 {
-			if err := s.db.Gorm().Where("library_media_id = ? AND episode_number = ?", media.ID, parsedInfo.Episode).First(&episode).Error; err != nil {
-				continue
-			}
-		} else {
-			continue
-		}
-
-		if added[episode.ID] {
-			continue
-		}
-		if media.PosterImage == "" || media.GetPreferredTitle() == "" {
-			continue
-		}
-		added[episode.ID] = true
-
-		lane.Entries = append(lane.Entries, &LibraryCollectionEntry{
-			Media:            &media,
-			MediaID:          int(media.ID),
-			Episode:          &episode,
-			AvailabilityType: "FULL_LOCAL",
-		})
-	}
-
-	if len(lane.Entries) == 0 {
-		return nil
-	}
-
-	return lane
 }
 
 func (s *IntelligenceService) buildEpisodeSwimlaneByTag(id, title, tag string) *CuratedSwimlane {

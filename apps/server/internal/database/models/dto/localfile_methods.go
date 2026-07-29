@@ -292,10 +292,8 @@ func (f *LocalFile) GetTitleVariations() []*string {
 	titleVariations := make([]string, 0, 10)
 
 	bothTitles := len(f.ParsedData.Title) > 0 && len(folderTitle) > 0
-	noSeasonsOrParts := folderSeason == 0 && season == 0 && part == 0
 	bothTitlesSimilar := bothTitles && strings.Contains(folderTitle, f.ParsedData.Title)
 	eitherSeason := folderSeason > 0 || season > 0
-	eitherSeasonFirst := folderSeason == 1 || season == 1
 
 	// Collect base titles to use
 	baseTitles := make([]string, 0, 4)
@@ -320,9 +318,7 @@ func (f *LocalFile) GetTitleVariations() []*string {
 	}
 
 	// Always add the raw base titles
-	for _, t := range baseTitles {
-		titleVariations = append(titleVariations, t)
-	}
+	titleVariations = append(titleVariations, baseTitles...)
 
 	// Part variations
 	if part > 0 {
@@ -366,11 +362,6 @@ func (f *LocalFile) GetTitleVariations() []*string {
 				)
 			}
 		}
-	}
-
-	// Season 1 or no season info. base titles already added
-	if noSeasonsOrParts || eitherSeasonFirst {
-		// Already added base titles above
 	}
 
 	// Combined folder + filename title variations

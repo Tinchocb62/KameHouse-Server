@@ -1,3 +1,4 @@
+import * as React from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Icons } from "@/components/ui/icons"
 
@@ -45,39 +46,46 @@ export function CharacterDetailModal({
     loreData, 
     onClose 
 }: CharacterDetailModalProps) {
-    if (!characterName) return null
-
-    // Find the character info in local lore data
-    const charInfo = loreData?.characters_wiki?.find(c =>
-        c.name.toLowerCase().includes(characterName.toLowerCase()) ||
-        characterName.toLowerCase().includes(c.name.toLowerCase())
-    )
-
-    if (!charInfo) return null
+    // Find the character info in local lore data if characterName is present
+    const charInfo = React.useMemo(() => {
+        if (!characterName || !loreData?.characters_wiki) return null
+        return loreData.characters_wiki.find(c =>
+            c.name.toLowerCase().includes(characterName.toLowerCase()) ||
+            characterName.toLowerCase().includes(c.name.toLowerCase())
+        )
+    }, [characterName, loreData])
 
     // Resolve avatar image from entry characters list
-    const charEdge = entry?.media?.characters?.edges?.find(e =>
-        e.node?.name?.full?.toLowerCase().includes(characterName.toLowerCase()) ||
-        characterName.toLowerCase().includes(e.node?.name?.full?.toLowerCase() ?? "")
-    )
-    const avatarUrl = charEdge?.node?.image?.large || ""
+    const avatarUrl = React.useMemo(() => {
+        if (!characterName || !entry?.media?.characters?.edges) return ""
+        const charEdge = entry.media.characters.edges.find(e =>
+            e.node?.name?.full?.toLowerCase().includes(characterName.toLowerCase()) ||
+            characterName.toLowerCase().includes(e.node?.name?.full?.toLowerCase() ?? "")
+        )
+        return charEdge?.node?.image?.large || ""
+    }, [characterName, entry])
+
+    const isOpen = Boolean(characterName && charInfo)
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-2.5 sm:p-4">
+            {isOpen && charInfo && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-2.5 sm:p-4">
                     <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/50 backdrop-blur-overlay-xl"
+                        className="absolute inset-0 bg-black/60 backdrop-blur-overlay-xl"
                     />
 
                     <motion.div 
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.94, y: 16 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="relative w-full max-w-3xl max-h-[90dvh] bg-surface-container border border-outline-variant rounded-corner-lg overflow-y-auto shadow-elevation-3 flex flex-col md:flex-row z-10 scrollbar-hide no-scrollbar"
+                        exit={{ opacity: 0, scale: 0.94, y: 16 }}
+                        transition={{ type: "spring", damping: 26, stiffness: 320 }}
+                        className="relative w-full max-w-3xl max-h-[90dvh] bg-surface-container border border-outline-variant rounded-corner-lg overflow-y-auto shadow-elevation-3 flex flex-col md:flex-row z-10 scrollbar-hide no-scrollbar transform-gpu"
                     >
                         <button 
                             onClick={onClose}
@@ -177,6 +185,7 @@ export function CharacterDetailModal({
                     </div>
                 </motion.div>
             </div>
+            )}
         </AnimatePresence>
     )
 }

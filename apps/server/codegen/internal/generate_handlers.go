@@ -303,6 +303,4 @@ func GenerateHandlers(dir string, outDir string) {
 		fmt.Println("Error:", err)
 		return
 	}
-
-	return
 }

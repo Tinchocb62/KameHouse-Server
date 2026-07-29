@@ -93,7 +93,12 @@ func (fh *FileHydrator) HydrateMetadata(ctx context.Context) {
 		capturedFiles := files
 
 		eg.Go(func() error {
-			fh.hydrateGroupMetadata(capturedMId, capturedFiles, rateLimiter)
+			// Respect cancellation: once the parent scan ctx is cancelled,
+			// stop launching work for the remaining groups.
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			fh.hydrateGroupMetadata(ctx, capturedMId, capturedFiles, rateLimiter)
 			return nil
 		})
 	}
@@ -107,10 +112,14 @@ func (fh *FileHydrator) HydrateMetadata(ctx context.Context) {
 }
 
 func (fh *FileHydrator) hydrateGroupMetadata(
+	ctx context.Context,
 	mID int,
 	lfs []*dto.LocalFile, // Grouped local files
 	rateLimiter *limiter.Limiter,
 ) {
+	if ctx.Err() != nil {
+		return
+	}
 
 	// Get the media
 	media, found := lo.Find(fh.AllMedia, func(media *dto.NormalizedMedia) bool {

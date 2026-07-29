@@ -18,10 +18,15 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+	"sync"
+
+	"kamehouse/internal/database/models"
 
 	"github.com/labstack/echo/v4"
 	"github.com/samber/lo"
 )
+
+var fillerFetchAttempts sync.Map
 
 func (h *Handler) getAnimeEntry(c echo.Context, lfs []*dto.LocalFile, mID int) (*anime.Entry, error) {
 	//
@@ -43,6 +48,28 @@ func (h *Handler) getAnimeEntry(c echo.Context, lfs []*dto.LocalFile, mID int) (
 	}
 
 	h.App.FillerManager.HydrateFillerData(entry)
+
+	if !h.App.FillerManager.HasFillerFetched(mID) {
+		if _, loading := fillerFetchAttempts.LoadOrStore(mID, true); !loading {
+			go func(mediaID int, media *models.LibraryMedia) {
+				defer fillerFetchAttempts.Delete(mediaID)
+				if media == nil {
+					return
+				}
+				titles := make([]string, 0)
+				if media.TitleRomaji != "" {
+					titles = append(titles, media.TitleRomaji)
+				}
+				if media.TitleEnglish != "" {
+					titles = append(titles, media.TitleEnglish)
+				}
+				if media.TitleOriginal != "" {
+					titles = append(titles, media.TitleOriginal)
+				}
+				_ = h.App.FillerManager.FetchAndStoreFillerData(mediaID, titles)
+			}(mID, entry.Media)
+		}
+	}
 
 	// ── TMDB Episode & Media Enrichment ──────────────────────────────────────────────────────────────────────────────
 	// If the media has a TmdbID and episodes are missing synopsis/image,

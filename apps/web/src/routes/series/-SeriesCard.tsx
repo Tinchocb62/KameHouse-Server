@@ -1,10 +1,13 @@
 import { memo, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Icons } from '@/components/ui/icons';
 import { cn } from '@/components/ui/core/styling';
 import { getSpineConfig } from '@/lib/helpers/goku-panorama';
-import { getHighResImage } from '@/lib/helpers/images';
+import { getHighResImage, getMediumResImage } from '@/lib/helpers/images';
 import { useDominantColors } from '@/hooks/use-dominant-colors';
 import { useThemeSettings } from '@/lib/theme/theme-hooks';
+import { API_ENDPOINTS } from '@/api/generated/endpoints';
+import { fetchAnimeEntry } from '@/api/hooks/anime_entries.hooks';
 
 export interface SeriesItem {
     id: number;
@@ -43,6 +46,7 @@ export const SeriesCard = memo(function SeriesCard({
     /** Delay del stagger de entrada, en ms. Reemplaza el hack de nth-child limitado a 16 cards. */
     entryDelayMs?: number;
 }) {
+    const queryClient = useQueryClient();
     const spineCfg = getSpineConfig(item.seriesId || "", item.id);
     const ts = useThemeSettings();
     const unwatchedCount = ts.themeShowAnimeUnwatchedCount && item.eps > 0
@@ -50,7 +54,7 @@ export const SeriesCard = memo(function SeriesCard({
         : null;
 
     const posterSrc = useMemo(() =>
-        getHighResImage(item.poster || item.img),
+        getMediumResImage(item.poster || item.img),
         [item.poster, item.img]);
 
     const characterSrc = spineCfg?.rawImg;
@@ -63,13 +67,23 @@ export const SeriesCard = memo(function SeriesCard({
         return `linear-gradient(165deg, ${c1} 0%, ${c2} 55%, ${c3} 100%)`;
     }, [dominantColors, spineCfg?.bg]);
 
+    const handlePrefetch = useCallback(() => {
+        const sId = item.id.toString();
+        queryClient.prefetchQuery({
+            queryKey: [API_ENDPOINTS.ANIME_ENTRIES.GetAnimeEntry.key, sId],
+            queryFn: () => fetchAnimeEntry(sId),
+            staleTime: 60000,
+        });
+    }, [queryClient, item.id]);
+
     const handleActivate = useCallback(() => {
+        handlePrefetch();
         if (!isSelected) {
             onSelect(item.id);
         } else {
             onNavigate(item.id.toString());
         }
-    }, [isSelected, item.id, onSelect, onNavigate]);
+    }, [isSelected, item.id, onSelect, onNavigate, handlePrefetch]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -81,8 +95,9 @@ export const SeriesCard = memo(function SeriesCard({
 
     const handlePlayClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
+        handlePrefetch();
         onNavigate(item.id.toString());
-    }, [onNavigate, item.id]);
+    }, [onNavigate, item.id, handlePrefetch]);
 
     return (
         <article
@@ -93,75 +108,101 @@ export const SeriesCard = memo(function SeriesCard({
             aria-label={`${item.title}, Año ${item.year}, ${item.eps} episodios, ${item.progress}% visto`}
             onClick={handleActivate}
             onKeyDown={handleKeyDown}
+            onMouseEnter={handlePrefetch}
+            onFocus={handlePrefetch}
             className={cn(
-                "h-full flex flex-col cursor-pointer overflow-visible relative group/card border-r border-zinc-950/40 select-none shrink-0",
+                "h-full flex flex-col cursor-pointer overflow-hidden relative group/card border-r border-zinc-950/40 select-none shrink-0 transform-gpu",
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
             )}
             style={{
                 flex: isSelected ? '3 0 380px' : '1 0 150px',
-                transition: 'flex 750ms cubic-bezier(0.2, 1, 0.2, 1)',
+                transition: 'flex-grow 600ms cubic-bezier(0.16, 1, 0.3, 1), flex-basis 600ms cubic-bezier(0.16, 1, 0.3, 1)',
                 animationDelay: `${entryDelayMs}ms`,
-                contain: 'layout',
+                contain: 'layout paint',
                 scrollSnapAlign: 'center',
+                willChange: 'flex-grow, flex-basis',
             } as React.CSSProperties}
         >
             {/* ─── VHS TAPE BODY ─── */}
             <div
-                className="flex-1 min-h-0 relative overflow-hidden bg-[#0a0d16] rounded-t-lg transition-all duration-slower"
+                className="flex-1 min-h-0 relative overflow-hidden rounded-t-xl transition-colors duration-500 border-t border-x border-white/10 shadow-lg"
                 style={{
-                    background: !isSelected ? bgGradient : '#0a0d16'
+                    background: !isSelected ? bgGradient : '#090b11'
                 }}
             >
-                {/* Background poster (visible only when selected/expanded, no blur) */}
+                {/* Upper Action/Manga Pose Layer (Top half wallpaper effect when unselected) */}
+                {!isSelected && (
+                    <div className="absolute top-0 inset-x-0 h-[55%] overflow-hidden pointer-events-none z-[1] opacity-35 mix-blend-overlay transition-opacity duration-300 group-hover/card:opacity-55 transform-gpu">
+                        <img
+                            src={posterSrc}
+                            alt=""
+                            className="w-full h-full object-cover object-top scale-110 grayscale brightness-125 contrast-150 transform-gpu"
+                            style={{
+                                maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
+                                WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
+                            }}
+                        />
+                    </div>
+                )}
+
+                {/* Vertical Spine Title (When unselected) */}
+                {!isSelected && (
+                    <div className="absolute top-6 inset-x-0 z-[4] flex justify-center pointer-events-none transition-opacity duration-300 opacity-85 group-hover/card:opacity-100">
+                        <span className="[writing-mode:vertical-lr] text-[11px] font-black tracking-[0.28em] uppercase text-white/95 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] font-display select-none">
+                            {spineCfg?.subtitle || item.title}
+                        </span>
+                    </div>
+                )}
+
+                {/* Background poster (visible only when selected/expanded) */}
                 <img
                     src={posterSrc}
                     alt={item.title}
                     loading={isSelected ? "eager" : "lazy"}
                     decoding="async"
                     className={cn(
-                        "absolute inset-0 w-full h-full object-cover",
+                        "absolute inset-0 w-full h-full object-cover transform-gpu",
                         isSelected
-                            ? 'opacity-100 scale-100 blur-none brightness-50 will-change-transform'
-                             : 'opacity-0 scale-105 blur-md pointer-events-none'
+                            ? 'opacity-100 scale-100 brightness-[0.45] will-change-transform'
+                             : 'opacity-0 scale-105 pointer-events-none'
                     )}
                     style={{
-                        // Crossfade con stagger: al seleccionar el poster espera a que el
-                        // personaje empiece a hundirse (150ms) y se revela con un zoom sutil
-                        // (expo-out); al deseleccionar se apaga rápido para cederle el foco.
                         transition: isSelected
-                            ? 'opacity 650ms cubic-bezier(0.16, 1, 0.3, 1) 150ms, transform 800ms cubic-bezier(0.16, 1, 0.3, 1) 150ms, filter 650ms cubic-bezier(0.16, 1, 0.3, 1) 150ms'
-                            : 'opacity 350ms cubic-bezier(0.4, 0, 1, 1), transform 350ms cubic-bezier(0.4, 0, 1, 1), filter 350ms cubic-bezier(0.4, 0, 1, 1)'
+                            ? 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms, transform 600ms cubic-bezier(0.16, 1, 0.3, 1) 100ms'
+                            : 'opacity 300ms cubic-bezier(0.4, 0, 1, 1), transform 300ms cubic-bezier(0.4, 0, 1, 1)'
                     }}
                 />
 
-                {/* Expanded content - clean info panel */}
+                {/* Expanded content - glassmorphic info panel */}
                 <div
                     className={cn(
-                        "absolute inset-0 z-[5] flex flex-col justify-end p-5 transition-opacity duration-slower ease-out",
+                        "absolute inset-0 z-[5] flex flex-col justify-end p-4 md:p-5 transition-opacity duration-300 ease-out",
                         isSelected ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
                     )}
                 >
-                    {/* Scrim de legibilidad sobre el poster (misma receta que media-spotlight) */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
+                    {/* Soft gradient scrim */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+
+                    {/* Glass card container */}
                     <div className={cn(
-                        "relative transition-all duration-slower ease-bounce-spring delay-150",
+                        "relative p-4 md:p-5 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.8)] transition-[opacity,transform] duration-500 ease-out delay-100 space-y-2.5 transform-gpu",
                         isSelected ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-95"
                     )}>
-                        {/* Badge */}
+                        {/* Badges */}
                         <div className={cn(
-                            "flex items-center gap-2 mb-2 transition-all duration-slower ease-out",
-                            isSelected ? "opacity-100 translate-y-0 delay-150" : "opacity-0 translate-y-3 delay-0"
+                            "flex flex-wrap items-center gap-1.5 transition-[opacity,transform] duration-400 ease-out",
+                            isSelected ? "opacity-100 translate-y-0 delay-150" : "opacity-0 translate-y-2 delay-0"
                         )}>
-                            <span className="badge badge-secondary">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/15 backdrop-blur-md border border-white/20 text-white shadow-sm">
                                 Serie
                             </span>
                             {item.eps > 0 && (
-                                <span className="text-badge text-on-surface-variant">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white/80 bg-black/40 backdrop-blur-md border border-white/10">
                                     {item.eps} eps
                                 </span>
                             )}
                             {!!unwatchedCount && (
-                                <span className="badge badge-success">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-emerald-400 bg-emerald-950/60 backdrop-blur-md border border-emerald-500/30">
                                     {unwatchedCount} sin ver
                                 </span>
                             )}
@@ -169,57 +210,57 @@ export const SeriesCard = memo(function SeriesCard({
 
                         {/* Title */}
                         <h3 className={cn(
-                            "text-lg md:text-xl font-black text-on-surface mb-2 leading-tight tracking-tight line-clamp-2 transition-all duration-slower ease-out",
-                            isSelected ? "opacity-100 translate-y-0 delay-200" : "opacity-0 translate-y-3 delay-0"
+                            "text-xl md:text-2xl font-black text-white leading-tight tracking-tight line-clamp-2 transition-[opacity,transform] duration-400 ease-out drop-shadow-md",
+                            isSelected ? "opacity-100 translate-y-0 delay-200" : "opacity-0 translate-y-2 delay-0"
                         )}>
                             {item.title}
                         </h3>
 
-                        {/* Description - only when selected; se oculta en ventanas bajas para que el panel no desborde el alto de la card */}
+                        {/* Description */}
                         {isSelected && (
-                            <p className="text-on-surface-variant/70 text-xs leading-relaxed mb-3 font-medium line-clamp-2 delay-300 transition-all duration-slower [@media(max-height:640px)]:hidden">
+                            <p className="text-white/75 text-xs leading-relaxed font-medium line-clamp-2 delay-250 transition-opacity duration-300 [@media(max-height:640px)]:hidden">
                                 {item.desc}
                             </p>
                         )}
 
                         {/* Progress bar */}
                         <div className={cn(
-                            "flex flex-col w-full transition-all duration-slower ease-out",
-                            isSelected ? "opacity-100 translate-y-0 delay-500" : "opacity-0 translate-y-3 delay-0"
+                            "flex flex-col w-full transition-[opacity,transform] duration-400 ease-out pt-1",
+                            isSelected ? "opacity-100 translate-y-0 delay-300" : "opacity-0 translate-y-2 delay-0"
                         )}>
-                            <div className="flex justify-between items-end mb-1">
-                                <span className="text-badge text-on-surface-variant">
+                            <div className="flex justify-between items-end mb-1 text-[11px] font-semibold">
+                                <span className="text-white/70 uppercase tracking-wider">
                                     Progreso
                                 </span>
-                                <span className="text-badge text-brand-secondary">{item.progress}%</span>
+                                <span className="text-amber-400 font-extrabold">{item.progress}%</span>
                             </div>
-                            <div className="h-1 w-full bg-surface-variant rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/10">
                                 <div
-                                    className="h-full bg-gradient-to-r from-brand-secondary to-[var(--brand-secondary-light)] rounded-full transition-all duration-slower ease-out origin-left"
+                                    className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400 rounded-full transition-[width] duration-700 ease-out origin-left shadow-[0_0_10px_rgba(245,158,11,0.6)]"
                                     style={{ width: isSelected ? `${item.progress}%` : '0%' }}
                                 />
                             </div>
                         </div>
 
-                        {/* Play button */}
+                        {/* Play CTA button */}
                         <div className={cn(
-                            "mt-3 transition-all duration-slower ease-out",
-                            isSelected ? "opacity-100 translate-y-0 delay-700" : "opacity-0 translate-y-3 delay-0"
+                            "pt-2 transition-[opacity,transform] duration-400 ease-out",
+                            isSelected ? "opacity-100 translate-y-0 delay-350" : "opacity-0 translate-y-2 delay-0"
                         )}>
                             <button
                                 type="button"
                                 onClick={handlePlayClick}
-                                className="w-full bg-brand-secondary hover:brightness-110 active:scale-[0.98] text-on-secondary rounded-lg text-button-sm py-2 transition-all duration-base flex justify-center items-center gap-2 shadow-[0_6px_16px_hsl(var(--brand-accent)/0.3)] hover:shadow-[0_10px_24px_hsl(var(--brand-accent)/0.45)] relative overflow-hidden group/btn"
+                                className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 hover:from-amber-400 hover:via-orange-400 hover:to-red-500 active:scale-[0.98] text-white font-extrabold uppercase tracking-wider rounded-xl text-xs py-2.5 transition-all duration-200 flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_28px_rgba(245,158,11,0.65)] relative overflow-hidden group/btn"
                             >
-                                <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-slower ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-                                <Icons.media.play className="w-3.5 h-3.5 fill-current" />
+                                <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" />
+                                <Icons.media.play className="w-4 h-4 fill-current drop-shadow-sm" />
                                 Reproducir
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Character cutout - hidden when selected, visible with their specific background when retracted */}
+                {/* Character cutout - standing pose at bottom of column */}
                 {characterSrc && (
                     <img
                         src={characterSrc}
@@ -227,23 +268,17 @@ export const SeriesCard = memo(function SeriesCard({
                         aria-hidden="true"
                         draggable={false}
                         className={cn(
-                            // z-[3]: debajo del panel de texto (z-5) para que al seleccionar el
-                            // personaje salga POR DETRÁS del contenido, no flotando sobre él.
-                            "pointer-events-none absolute z-[3] select-none object-contain origin-bottom bottom-0 right-1/2 translate-x-1/2 h-[72%]",
+                            "pointer-events-none absolute z-[3] select-none object-contain origin-bottom bottom-0 right-1/2 translate-x-1/2 h-[66%] transform-gpu will-change-transform",
                             isSelected
-                                ? "translate-y-6 scale-90 opacity-0"
-                                : "translate-y-0 opacity-90 scale-100 saturate-[0.95] group-hover/card:opacity-100 group-hover/card:scale-[1.06] group-hover/card:translate-y-[-6px] group-hover/card:saturate-[1.05] will-change-transform"
+                                ? "translate-y-6 scale-90 opacity-0 pointer-events-none"
+                                : "translate-y-0 opacity-95 scale-100 saturate-[1.05] group-hover/card:opacity-100 group-hover/card:scale-[1.08] group-hover/card:translate-y-[-6px] group-hover/card:saturate-[1.15] group-hover/card:drop-shadow-[0_0_20px_rgba(255,215,0,0.4)]"
                         )}
                         style={{
                             maskImage: 'linear-gradient(to top, transparent 0%, black 8%)',
                             WebkitMaskImage: 'linear-gradient(to top, transparent 0%, black 8%)',
-                            // Al seleccionar: se hunde y encoge rápido (ease-in) mientras el poster
-                            // se revela detrás. Al deseleccionar: re-entra con un rebote sutil
-                            // (back-out) y la opacidad entra apenas después, así aparece "en
-                            // movimiento" sin demorar el hover.
                             transition: isSelected
-                                ? 'opacity 260ms cubic-bezier(0.4, 0, 1, 1), transform 340ms cubic-bezier(0.4, 0, 1, 1)'
-                                : 'opacity 450ms cubic-bezier(0.2, 1, 0.2, 1) 120ms, transform 650ms cubic-bezier(0.34, 1.4, 0.64, 1)'
+                                ? 'opacity 200ms ease-in, transform 300ms ease-in'
+                                : 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1) 50ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1)'
                         }}
                     />
                 )}

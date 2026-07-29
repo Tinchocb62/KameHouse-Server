@@ -125,7 +125,7 @@ func NewLibraryCollection(ctx context.Context, opts *NewLibraryCollectionOptions
 	})
 
 	lc.IgnoredLocalFiles = lo.Filter(opts.LocalFiles, func(lf *LocalFile, index int) bool {
-		return lf.Ignored == true
+		return lf.Ignored
 	})
 
 	slices.SortStableFunc(lc.IgnoredLocalFiles, func(i, j *LocalFile) int {

@@ -20,13 +20,16 @@ import (
 )
 
 // protectedSources son las fuentes de skip times que NUNCA se sobrescriben con
-// una detección automática: marcas manuales del usuario, datos de AniSkip
-// (comunidad) y resultados previos de AnimeThemes (alta confianza). El scan solo
-// reemplaza filas de baja confianza (heuristic/propagated/fpcross/subtitle) o
-// episodios sin fila.
+// una detección automática: marcas manuales del usuario y resultados previos de
+// AnimeThemes (ya medidos sobre el archivo real). El scan reemplaza filas de baja
+// confianza (heuristic/propagated/fpcross/subtitle) o episodios sin fila.
+//
+// "aniskip" es un caso intermedio: son marcas de la comunidad tomadas sobre OTRA
+// release (broadcast TV, otro corte), así que pueden venir corridas segundos
+// respecto de los archivos del usuario. Solo el Método A (AnimeThemes, medido
+// sobre el archivo real) puede reemplazarlas; B y C no las tocan. Ver buildRows.
 var protectedSources = map[string]bool{
 	"manual":      true,
-	"aniskip":     true,
 	"animethemes": true,
 }
 
@@ -94,6 +97,9 @@ type Detector struct {
 
 	scanMu     sync.Mutex
 	isScanning map[int]bool
+
+	batchMu      sync.Mutex
+	batchRunning bool // scan de biblioteca completa en curso (uno a la vez)
 
 	attemptedMu sync.Mutex
 	attempted   map[int]bool // trigger oportunista: máx. una vez por media por run
@@ -174,7 +180,8 @@ func (d *Detector) emit(mediaID int, status, message string, percent int) {
 
 // ScanSeries detecta y persiste skip times para todos los episodios locales de
 // mediaID. Cadena: (C hints ASS) → (A AnimeThemes) → (B cross-episodio). No pisa
-// fuentes protegidas (manual/aniskip/animethemes). Emite eventos SKIP_SCAN_STATUS.
+// fuentes protegidas (manual/animethemes); las filas aniskip solo ceden ante el
+// Método A. Emite eventos SKIP_SCAN_STATUS.
 func (d *Detector) ScanSeries(ctx context.Context, mediaID int) error {
 	if d.IsScanning(mediaID) {
 		return errors.New("a skip scan is already in progress for this series")
@@ -202,15 +209,20 @@ func (d *Detector) ScanSeries(ctx context.Context, mediaID int) error {
 	}
 
 	// Episodios que necesitan detección: sin fila o con fuente de baja confianza.
+	// Las filas "aniskip" van en un set aparte: solo el Método A puede mejorarlas.
 	existing := d.existingSkipTimes(mediaID)
 	need := make(map[int]bool)
+	aniskipOnly := make(map[int]bool)
 	for _, ep := range episodes {
 		row, has := existing[ep.EpisodeNumber]
-		if !has || !protectedSources[row.Source] {
+		switch {
+		case !has || (!protectedSources[row.Source] && row.Source != "aniskip"):
 			need[ep.EpisodeNumber] = true
+		case row.Source == "aniskip":
+			aniskipOnly[ep.EpisodeNumber] = true
 		}
 	}
-	if len(need) == 0 {
+	if len(need) == 0 && len(aniskipOnly) == 0 {
 		d.emit(mediaID, "done", "Todos los episodios ya tienen marcas confiables.", -1)
 		return nil
 	}
@@ -221,9 +233,18 @@ func (d *Detector) ScanSeries(ctx context.Context, mediaID int) error {
 	hints := d.subtitleHints(ctx, episodes)
 
 	// Método A: AnimeThemes (primario). Resuelve episodios y los quita de `need`.
+	// También reintenta los episodios con marcas aniskip: si el theme oficial
+	// matchea sobre el archivo real, esa medición reemplaza a la de la comunidad.
 	if d.athClient != nil && malID > 0 {
 		d.emit(mediaID, "matching", "Buscando openings/endings oficiales (AnimeThemes)...", -1)
-		aResults := d.animeThemesScan(ctx, fpcalcBin, malID, episodes, need)
+		needA := make(map[int]bool, len(need)+len(aniskipOnly))
+		for ep := range need {
+			needA[ep] = true
+		}
+		for ep := range aniskipOnly {
+			needA[ep] = true
+		}
+		aResults := d.animeThemesScan(ctx, fpcalcBin, malID, episodes, needA)
 		for ep, r := range aResults {
 			results[ep] = r
 			delete(need, ep)
@@ -346,11 +367,29 @@ func (d *Detector) existingSkipTimes(mediaID int) map[int]models.EpisodeSkipTime
 
 // buildRows convierte los resultados en filas EpisodeSkipTime, descartando (belt
 // and suspenders) cualquier episodio cuya fila actual sea de fuente protegida.
+// Las filas "aniskip" solo ceden ante el Método A (source "animethemes"): está
+// medido sobre el archivo real del usuario, mientras que las marcas de la
+// comunidad pueden venir de otra release/corte y quedar corridas segundos.
 func (d *Detector) buildRows(mediaID int, results map[int]detResult, existing map[int]models.EpisodeSkipTime) []models.EpisodeSkipTime {
 	var rows []models.EpisodeSkipTime
 	for ep, r := range results {
-		if row, has := existing[ep]; has && protectedSources[row.Source] {
-			continue
+		if row, has := existing[ep]; has {
+			if protectedSources[row.Source] {
+				continue
+			}
+			if row.Source == "aniskip" {
+				if r.Source != "animethemes" {
+					continue
+				}
+				// A puede haber resuelto solo la OP o solo el ED: conservar el
+				// lado que no midió en vez de borrar la marca de la comunidad.
+				if r.OpEnd <= 0 && row.OpEnd > 0 {
+					r.OpStart, r.OpEnd = row.OpStart, row.OpEnd
+				}
+				if r.EdOffset <= 0 && row.EdOffset > 0 {
+					r.EdOffset, r.EdEnd = row.EdOffset, row.EdEnd
+				}
+			}
 		}
 		if r.OpEnd <= 0 && r.EdOffset <= 0 {
 			continue

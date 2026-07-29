@@ -20,6 +20,9 @@ tmp/
 testdata/
 scratch/
 apps/server/test_data_dir/cache/
+apps/server/test_data_dir/assets/
+apps/server/test_data_dir/logs/
+apps/server/test_data_dir/offline/
 
 # Environment and secrets
 .env
@@ -48,6 +51,8 @@ apps/server/kamehouse
 apps/server/kamehouse.exe
 apps/server/build/bin/
 apps/desktop/web/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/binaries/
 
 # Go
 coverage.out
@@ -80,6 +85,13 @@ skills/
 
 # Local reference/scratch directories
 referencia/
+
+# Scraping one-off scripts y sus volcados (Dragon Ball wiki/Jikan/Fandom)
+apps/server/*.py
+apps/server/dbz_*.json
+apps/server/dbz_*.txt
+apps/server/wiki.html
+apps/server/deadcode_report.txt
 
 .antigravityignore
 .cursorignore

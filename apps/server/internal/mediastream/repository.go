@@ -166,6 +166,15 @@ func (r *Repository) PreTranscoder() (*pretranscode.Manager, bool) {
 	return r.preTranscoder.Get()
 }
 
+// TranscoderStats returns the metrics from the real-time transcoder engine,
+// or false if the engine is dormant/disabled.
+func (r *Repository) TranscoderStats() (cassette.GovernorStats, bool) {
+	if r.transcoder.IsPresent() {
+		return r.transcoder.MustGet().GovernorStats(), true
+	}
+	return cassette.GovernorStats{}, false
+}
+
 
 
 // WarmMediaInfo pre-extracts and caches media info (ffprobe) for the given files
@@ -333,6 +342,17 @@ func (r *Repository) RequestPreloadTranscodeStream(filepath string, preferredAud
 
 	if !r.IsInitialized() {
 		return errors.New("module not initialized")
+	}
+
+	if r.transcoder.IsAbsent() {
+		r.reqMu.Lock()
+		if !r.transcoder.IsPresent() { // double-check under the lock
+			if ok := r.initializeTranscoder(r.settings, false); !ok {
+				r.reqMu.Unlock()
+				return errors.New("real-time transcoder not initialized, check your settings")
+			}
+		}
+		r.reqMu.Unlock()
 	}
 
 	_, err = r.playbackManager.PreloadPlayback(filepath, StreamTypeTranscode, preferredAudioLang)

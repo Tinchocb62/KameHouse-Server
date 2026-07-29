@@ -122,8 +122,4 @@ func (lp *OfflinePlatform) SearchMedia(ctx context.Context, query string, page *
 	return nil, ErrActionNotSupported
 }
 
-func (lp *OfflinePlatform) GetMediaCollection(ctx context.Context, collectionID int) (*platform.UnifiedCollection, error) {
-	return nil, ErrActionNotSupported
-}
-
 var _ platform.Platform = (*OfflinePlatform)(nil)

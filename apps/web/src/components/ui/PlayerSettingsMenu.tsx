@@ -50,6 +50,8 @@ export function PlayerSettingsMenu({
     onAspectRatioChange,
     subtitleSize = 100,
     onSubtitleSizeChange,
+    loopEnabled = false,
+    onLoopEnabledChange,
     autoDisableSubtitlesWhenDubbed = true,
     onAutoDisableSubtitlesWhenDubbedChange,
     tvMode = false,
@@ -138,6 +140,11 @@ export function PlayerSettingsMenu({
         autoSkipOutro ? "Outro" : null,
     ].filter(Boolean).join("+") || "Apagado"
 
+    const hasQualityOptions = hlsLevels.length > 0 || sources.length > 0
+    const qualityValue = hlsLevels.length > 0
+        ? (activeHlsLevel === -1 ? "Auto" : (hlsLevels.find(l => l.index === activeHlsLevel)?.label ?? "Auto"))
+        : `${sources.length} ${sources.length === 1 ? "fuente" : "fuentes"}`
+
     const renderContent = () => (
         <>
             {/* ── MAIN MENU ───────────────────────────────── */}
@@ -155,7 +162,16 @@ export function PlayerSettingsMenu({
                         value={activeSubtitle ? (activeSubtitle.title || langLabel(activeSubtitle.language)) : "Desactivado"}
                         onClick={() => setView("subtitles")}
                     />
-                    
+
+                    {hasQualityOptions && (
+                        <MenuButton
+                            icon={<Icons.navigation.layers className="w-4 h-4" />}
+                            label="Calidad / Fuente"
+                            value={qualityValue}
+                            onClick={() => setView("quality")}
+                        />
+                    )}
+
                     <MenuButton
                         icon={<Icons.status.monitor className="w-4 h-4" />}
                         label="Imagen"
@@ -309,6 +325,8 @@ export function PlayerSettingsMenu({
                         onSkipStepSecondsChange={onSkipStepSecondsChange ?? (() => {})}
                         showHeatmap={showHeatmap}
                         onShowHeatmapChange={onShowHeatmapChange ?? (() => {})}
+                        loopEnabled={loopEnabled}
+                        onLoopEnabledChange={onLoopEnabledChange ?? (() => {})}
                         autoDisableSubtitlesWhenDubbed={autoDisableSubtitlesWhenDubbed}
                         onAutoDisableSubtitlesWhenDubbedChange={onAutoDisableSubtitlesWhenDubbedChange ?? (() => {})}
                         tvMode={tvMode}

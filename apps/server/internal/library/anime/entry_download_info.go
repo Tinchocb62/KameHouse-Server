@@ -2,7 +2,6 @@
 
 import (
 	"errors"
-	"fmt"
 	"kamehouse/internal/api/metadata"
 	"kamehouse/internal/api/metadata_provider"
 	"kamehouse/internal/database/models"
@@ -273,25 +272,8 @@ func (s *episodeSlice) trimEnd(n int) {
 	*s = (*s)[:len(*s)-n]
 }
 
-func (s *episodeSlice) trimStart(n int) {
-	*s = (*s)[n:]
-}
-
 func (s *episodeSlice) len() int {
 	return len(*s)
-}
-
-func (s *episodeSlice) get(index int) *episodeSliceItem {
-	return (*s)[index]
-}
-
-func (s *episodeSlice) getEpisodeNumber(episodeNumber int) *episodeSliceItem {
-	for _, item := range *s {
-		if item.episodeNumber == episodeNumber {
-			return item
-		}
-	}
-	return nil
 }
 
 func (s *episodeSlice) filter(filter func(*episodeSliceItem, int) bool) {
@@ -308,20 +290,8 @@ func (s *episodeSlice) filterNew(filter func(*episodeSliceItem, int) bool) *epis
 	return &s2
 }
 
-func (s *episodeSlice) copy() *episodeSlice {
-	s2 := make(episodeSlice, len(*s), cap(*s))
-	copy(s2, *s)
-	return &s2
-}
-
 func (s *episodeSlice) getSlice() []*episodeSliceItem {
 	return *s
-}
-
-func (s *episodeSlice) print() {
-	for i, item := range *s {
-		fmt.Printf("(%d) %d -> %s\n", i, item.episodeNumber, item.aniDBEpisode)
-	}
 }
 
 

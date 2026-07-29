@@ -2,7 +2,6 @@ package crashlog
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"kamehouse/internal/util"
@@ -25,12 +24,10 @@ type CrashLogger struct {
 }
 
 type CrashLoggerArea struct {
-	name       string
-	logger     *zerolog.Logger
-	logBuffer  *bytes.Buffer
-	mu         sync.Mutex
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+	name      string
+	logger    *zerolog.Logger
+	logBuffer *bytes.Buffer
+	mu        sync.Mutex
 }
 
 var GlobalCrashLogger = NewCrashLogger()

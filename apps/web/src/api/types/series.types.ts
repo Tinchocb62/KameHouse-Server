@@ -50,7 +50,7 @@ export interface SeriesDetailsDTO {
 }
 
 export interface SagaDetailSearchParams {
-  tab?: "episodes" | "movie" | "relations" | "characters"
+  tab?: "episodes" | "movie" | "relations" | "characters" | "details"
   saga?: string
   subSaga?: string
   /**

@@ -257,9 +257,7 @@ func (c *Cacher) Remove(bucketName string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if _, ok := c.stores[bucketName]; ok {
-		delete(c.stores, bucketName)
-	}
+	delete(c.stores, bucketName)
 
 	_ = os.Remove(filepath.Join(c.dir, bucketName+".cache"))
 

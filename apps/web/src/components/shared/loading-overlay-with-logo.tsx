@@ -3,6 +3,7 @@ import { LoadingOverlay } from "@/components/ui/loading-spinner"
 import { __isDesktop__ } from "@/types/constants"
 import React, { useEffect, useState } from "react"
 import { Icons } from "@/components/ui/icons"
+import { DragonBallSpinner } from "@/components/ui/dragon-ball-spinner"
 
 const CONNECTION_TIMEOUT_MS = 20000 // 20 seconds
 
@@ -31,24 +32,8 @@ export function LoadingOverlayWithLogo({ refetch, title, isError }: { refetch?: 
 
     return (
         <LoadingOverlay showSpinner={false} className="bg-zinc-950 flex flex-col justify-center items-center">
-            <div className="relative flex items-center justify-center w-48 h-48">
-                {/* 7 Dragon Balls Orbiting - Pure CSS */}
-                <div className="absolute w-full h-full animate-[spin_4s_linear_infinite] will-change-transform">
-                    {Array.from({ length: 7 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className="absolute w-3 h-3 bg-brand-accent rounded-full shadow-[0_0_10px_hsl(var(--brand-accent)/0.8)]"
-                            style={{
-                                top: "50%",
-                                left: "50%",
-                                transform: `rotate(${i * (360 / 7)}deg) translate(70px) rotate(-${i * (360 / 7)}deg)`,
-                            }}
-                        />
-                    ))}
-                </div>
-
-                {/* Simple text or pulse inside the orbit */}
-                <div className="w-4 h-4 bg-brand-accent/20 rounded-full animate-ping" />
+            <div className="relative flex items-center justify-center my-4">
+                <DragonBallSpinner size={220} ballSize={28} />
             </div>
 
             {timedOut ? (

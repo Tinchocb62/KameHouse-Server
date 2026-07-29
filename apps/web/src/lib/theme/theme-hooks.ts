@@ -53,33 +53,11 @@ export const enum ThemeMediaPageBannerSize {
     Small = "small",
 }
 
-export const ThemeMediaPageBannerSizeOptions = [
-    {
-        value: ThemeMediaPageBannerSize.Default as string, label: "Large",
-        description: "Fill a large portion of the screen.",
-    },
-    {
-        value: ThemeMediaPageBannerSize.Small as string, label: "Smaller",
-        description: "Use a smaller banner size, displaying more of the image.",
-    },
-]
-
 export const enum ThemeMediaPageInfoBoxSize {
     // Default = "default",
     Fluid = "fluid",
     Boxed = "boxed",
 }
-
-export const ThemeMediaPageInfoBoxSizeOptions = [
-    {
-        value: ThemeMediaPageInfoBoxSize.Fluid as string, label: "Fluid",
-        // description: "Full-width info box with rearrangement of elements.",
-    },
-    {
-        value: ThemeMediaPageInfoBoxSize.Boxed as string, label: "Boxed",
-        // description: "Display the media banner as a box",
-    },
-]
 
 export type ThemeSettings = Omit<Models_Theme, "id" | "createdAt" | "updatedAt">
 

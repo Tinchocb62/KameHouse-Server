@@ -120,10 +120,16 @@ func executeWithRetry[T any](ctx context.Context, c *Client, endpoint string) (*
 
 		if err != nil {
 			lastErr = err
+			waitTime := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+			select {
+			case <-time.After(waitTime):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
 			continue
 		}
 
-		if resp.StatusCode == http.StatusTooManyRequests {
+		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
 			resp.Body.Close()
 
 			var waitTime time.Duration
@@ -139,7 +145,7 @@ func executeWithRetry[T any](ctx context.Context, c *Client, endpoint string) (*
 				return nil, ctx.Err()
 			}
 
-			lastErr = fmt.Errorf("rate limited")
+			lastErr = fmt.Errorf("retriable status code: %d", resp.StatusCode)
 			continue
 		}
 

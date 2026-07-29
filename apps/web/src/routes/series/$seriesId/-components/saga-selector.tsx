@@ -53,8 +53,8 @@ export function SagaSelector({
   const activeSaga = sagas.find(s => s.id === activeSagaId)
   const hasSubSagas = activeSaga?.subSagas && activeSaga.subSagas.length > 0
 
-  const mainList = useScrollFadeMask()
-  const subList = useScrollFadeMask()
+  const { ref: mainListRef, isAtBottom: mainListIsAtBottom, checkPosition: mainListCheckPosition } = useScrollFadeMask()
+  const { ref: subListRef, isAtBottom: subListIsAtBottom, checkPosition: subListCheckPosition } = useScrollFadeMask()
 
   useEffect(() => {
     if (activeSubSagaId) {
@@ -63,14 +63,14 @@ export function SagaSelector({
   }, [activeSubSagaId])
 
   useEffect(() => {
-    mainList.checkPosition()
-  }, [sagas, mainList.checkPosition])
+    mainListCheckPosition()
+  }, [sagas, mainListCheckPosition])
 
   useEffect(() => {
     if (isSubMenuOpen) {
-      subList.checkPosition()
+      subListCheckPosition()
     }
-  }, [isSubMenuOpen, activeSagaId, subList.checkPosition])
+  }, [isSubMenuOpen, activeSagaId, subListCheckPosition])
 
   return (
     <div className="w-full h-full flex flex-col p-5 glass-card overflow-hidden relative">
@@ -93,15 +93,15 @@ export function SagaSelector({
 
             <div className="relative flex-grow min-h-0 flex flex-col overflow-hidden">
               <motion.div
-                ref={mainList.ref}
-                onScroll={mainList.checkPosition}
+                ref={mainListRef}
+                onScroll={mainListCheckPosition}
                 key={sagas[0]?.id ?? "sagas"}
                 variants={staggerList}
                 initial="hidden"
                 animate="visible"
                 className={cn(
                   "flex flex-col gap-2.5 overflow-y-auto pr-1 no-scrollbar flex-grow min-h-0 pb-8",
-                  !mainList.isAtBottom && "[-webkit-mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)]"
+                  !mainListIsAtBottom && "[-webkit-mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)]"
                 )}
               >
                 {sagas.map((saga) => {
@@ -114,12 +114,14 @@ export function SagaSelector({
                       onClick={() => {
                         if (!isActive) {
                           onSelectSaga(saga.id)
-                        }
-                        if (saga.subSagas && saga.subSagas.length > 0) {
+                        } else if (saga.subSagas && saga.subSagas.length > 0) {
                           setIsSubMenuOpen(true)
                         }
                       }}
                       onDoubleClick={() => {
+                        if (!isActive) {
+                          onSelectSaga(saga.id)
+                        }
                         if (saga.subSagas && saga.subSagas.length > 0) {
                           setIsSubMenuOpen(true)
                         }
@@ -167,6 +169,7 @@ export function SagaSelector({
                                 e.stopPropagation();
                                 setIsSubMenuOpen(true);
                               }}
+                              title="Ver sub-sagas (doble clic)"
                               className="p-3 -m-2 rounded-full bg-white/5 hover:bg-white/15 text-brand-accent transition-colors cursor-pointer mt-0.5"
                             >
                               <Icons.navigation.chevronRight size={16} />
@@ -217,11 +220,11 @@ export function SagaSelector({
             
             <div className="flex-grow min-h-0 flex flex-col overflow-hidden relative">
               <div
-                ref={subList.ref}
-                onScroll={subList.checkPosition}
+                ref={subListRef}
+                onScroll={subListCheckPosition}
                 className={cn(
                   "flex-grow overflow-y-auto pr-1 no-scrollbar pb-8",
-                  !subList.isAtBottom && "[-webkit-mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)]"
+                  !subListIsAtBottom && "[-webkit-mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_80%,transparent_100%)]"
                 )}
               >
                 <SubSagaTimeline

@@ -112,7 +112,7 @@ export function DynamicBackdrop() {
             document.removeEventListener("visibilitychange", handleVisibility)
             if (rafId) cancelAnimationFrame(rafId)
         }
-    }, [isEnabled, isMotionEnabled])
+    }, [isEnabled, isMotionEnabled, tvMode])
 
     // Cross-fade orchestration
     React.useEffect(() => {

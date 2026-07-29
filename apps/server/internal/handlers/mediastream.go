@@ -529,6 +529,31 @@ func (h *Handler) HandleScanEpisodeSkipTimes(c echo.Context) error {
 	return h.RespondWithData(c, map[string]any{"ok": true, "message": "Scan started"})
 }
 
+// HandleScanAllSkipTimes triggers a library-wide background skip-times scan.
+//
+//	@summary trigger library-wide skip times scan.
+//	@desc Runs the skip-times detection chain (AnimeThemes → cross-episode fingerprint → ASS subtitles) for every series with local files, sequentially, in the background. Progress is emitted via SKIP_SCAN_STATUS events with mediaId -1.
+//	@route /api/v1/mediastream/skip-times/scan-all [POST]
+func (h *Handler) HandleScanAllSkipTimes(c echo.Context) error {
+	detector := h.App.SkipDetector
+	if detector == nil {
+		return h.RespondWithError(c, fmt.Errorf("skip detector is not initialized yet"))
+	}
+	if detector.IsLibraryScanning() {
+		return h.RespondWithError(c, fmt.Errorf("a library-wide scan is already in progress"))
+	}
+
+	// Async y sin timeout global: una biblioteca grande puede tardar horas; cada
+	// serie ya tiene su propio timeout dentro de ScanLibrary.
+	go func() {
+		if err := detector.ScanLibrary(context.Background()); err != nil {
+			h.App.Logger.Error().Err(err).Msg("mediastream: library-wide skip-time scan failed")
+		}
+	}()
+
+	return h.RespondWithData(c, map[string]any{"ok": true, "message": "Library scan started"})
+}
+
 // HandleResolveMAL resolves a media's MAL ID dynamically.
 //
 //	@summary resolve MAL ID.

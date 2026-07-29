@@ -251,6 +251,11 @@ export function usePlayerHls({
                 // startup sequence.
                 startFragPrefetch: true,
 
+                // Tell hls.js to start streaming from this position instead of zero.
+                // This prevents throwing away the first chunk when resuming playback
+                // or switching audio tracks (which resumes from streamSwitchResumeRef).
+                startPosition: Number.isFinite(progressSeconds) && progressSeconds > 0 ? progressSeconds : -1,
+
                 // Keep up to 6s buffered for initial start (hls.js declares
                 // canplay once this threshold is met). 30s was unnecessarily slow.
                 // maxMaxBufferLength lets it grow to 180s on fast connections.
@@ -300,9 +305,7 @@ export function usePlayerHls({
                 }))
                 setHlsLevels(levels)
 
-                if (Number.isFinite(progressSeconds) && progressSeconds > 0) {
-                    video.currentTime = progressSeconds
-                }
+                // startPosition in Hls constructor handles seeking to progressSeconds natively
 
                 // Autoplay when HLS manifest is parsed and stream is ready
                 attemptAutoplay(video, setIsPlaying)

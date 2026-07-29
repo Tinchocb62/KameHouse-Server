@@ -51,9 +51,8 @@ func (scn *Scanner) discoverFilePaths(ctx context.Context, _ time.Time) ([]strin
 		dirPath := dirPath
 		dirPool.Submit(func(_ context.Context) {
 			var retrievedPaths []string
-			var err error
 
-			err = filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+			err := filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					// Intercept and skip directory or file on permission error
 					if os.IsPermission(err) || errors.Is(err, fs.ErrPermission) {

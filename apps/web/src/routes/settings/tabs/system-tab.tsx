@@ -1,7 +1,5 @@
 import React from "react"
 import { Section, Card, OsToggle } from "../components"
-import { RangeSlider } from "@/components/settings/range-slider"
-import { LocalDeviceSection } from "@/components/settings/local-device-section"
 import { DangerZone } from "@/components/settings/danger-zone"
 import { type Control, Controller } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
@@ -9,7 +7,6 @@ import { toast } from "sonner"
 import { useBackupDatabase } from "@/api/hooks/system.hooks"
 import { getServerBaseUrl } from "@/api/client/server-url"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
-import { Button } from "@/components/ui/button"
 interface SystemTabProps {
     control: Control<SettingsFormValues>
 }

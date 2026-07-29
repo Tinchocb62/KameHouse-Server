@@ -100,21 +100,6 @@ func (l *LibraryExplorer) LoadDirectoryChildren(dirPath string) error {
 	return nil
 }
 
-// findNodeByPath recursively searches for a node with the given path
-func (l *LibraryExplorer) findNodeByPath(node *FileTreeNode, targetPath string) *FileTreeNode {
-	if node.Path == targetPath {
-		return node
-	}
-
-	for _, child := range node.Children {
-		if found := l.findNodeByPath(child, targetPath); found != nil {
-			return found
-		}
-	}
-
-	return nil
-}
-
 func (l *LibraryExplorer) getFileTree() (*FileTree, error) {
 	if l.fileTree == nil {
 		var err error

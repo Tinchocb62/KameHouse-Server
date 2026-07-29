@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"sync"
 
-	"kamehouse/internal/database/db"
-	"kamehouse/internal/database/models"
 	"kamehouse/internal/database/models/dto"
 	"kamehouse/internal/events"
 	librarymetadata "kamehouse/internal/library/metadata"
@@ -45,7 +43,6 @@ func (scn *Scanner) scanEnrichmentPhase(ctx context.Context, localFiles []*dto.L
 		mIdChan <- mID
 	}
 	close(mIdChan)
-
 
 	var enrichWg sync.WaitGroup
 	for i := 0; i < enrichWorkers; i++ {
@@ -97,102 +94,6 @@ func (scn *Scanner) scanEnrichmentPhase(ctx context.Context, localFiles []*dto.L
 		}()
 	}
 	enrichWg.Wait()
-}
-
-// scanFranchisePhase persists franchise/saga collections for scanned movies.
-func (scn *Scanner) scanFranchisePhase(ctx context.Context, movieIds map[int]bool) {
-	if scn.Database == nil || scn.TMDBClient == nil || len(movieIds) == 0 {
-		return
-	}
-
-	scn.Logger.Info().Int("movieCount", len(movieIds)).Msg("scanner: Fetching BelongsToCollection for movies")
-
-	realMovieIDs := make([]int, 0, len(movieIds))
-	for normalizedID := range movieIds {
-		if realMovieID := normalizedID - 1_000_000; realMovieID > 0 {
-			realMovieIDs = append(realMovieIDs, realMovieID)
-		}
-	}
-
-	var collectionMu sync.Mutex
-	collectionMembers := make(map[int][]int)
-
-	movieIDCh := make(chan int, len(realMovieIDs))
-	for _, id := range realMovieIDs {
-		movieIDCh <- id
-	}
-	close(movieIDCh)
-
-	collWorkers := 5
-	if len(realMovieIDs) < collWorkers {
-		collWorkers = len(realMovieIDs)
-	}
-	var collWg sync.WaitGroup
-	for w := 0; w < collWorkers; w++ {
-		collWg.Add(1)
-		go func() {
-			defer collWg.Done()
-			for realMovieID := range movieIDCh {
-				if ctx.Err() != nil {
-					return
-				}
-				details, detailErr := scn.TMDBClient.GetMovieDetailsV2(ctx, realMovieID)
-				if detailErr != nil {
-					scn.Logger.Debug().Err(detailErr).Int("tmdbID", realMovieID).Msg("scanner: Could not get movie details for collection lookup")
-					continue
-				}
-				if details.BelongsToCollection != nil && details.BelongsToCollection.ID > 0 {
-					collID := details.BelongsToCollection.ID
-					collectionMu.Lock()
-					collectionMembers[collID] = append(collectionMembers[collID], realMovieID)
-					collectionMu.Unlock()
-				}
-			}
-		}()
-	}
-	collWg.Wait()
-
-	for collID, memberIDs := range collectionMembers {
-		if ctx.Err() != nil {
-			break
-		}
-		collDetails, collErr := scn.TMDBClient.GetCollection(ctx, collID)
-		if collErr != nil {
-			scn.Logger.Warn().Err(collErr).Int("collectionId", collID).Msg("scanner: Could not fetch collection details")
-			continue
-		}
-
-		posterPath := ""
-		backdropPath := ""
-		if collDetails.PosterPath != "" {
-			posterPath = "https://image.tmdb.org/t/p/original" + collDetails.PosterPath
-		}
-		if collDetails.BackdropPath != "" {
-			backdropPath = "https://image.tmdb.org/t/p/original" + collDetails.BackdropPath
-		}
-
-		memberSlice := make(models.IntSlice, len(memberIDs))
-		copy(memberSlice, memberIDs)
-
-		coll := &models.MediaCollection{
-			TMDBCollectionID: collID,
-			Name:             collDetails.Name,
-			Overview:         collDetails.Overview,
-			PosterPath:       posterPath,
-			BackdropPath:     backdropPath,
-			MemberIDs:        memberSlice,
-		}
-
-		if upsertErr := db.UpsertMediaCollection(scn.Database, coll); upsertErr != nil {
-			scn.Logger.Warn().Err(upsertErr).Int("collectionId", collID).Msg("scanner: Failed to upsert MediaCollection")
-		} else {
-			scn.Logger.Info().
-				Int("collectionId", collID).
-				Str("name", collDetails.Name).
-				Int("members", len(memberIDs)).
-				Msg("scanner: Persisted saga collection")
-		}
-	}
 }
 
 // scanFinalizePhase sends completion events, merges skipped files, and logs scan summary.

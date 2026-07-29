@@ -8,23 +8,6 @@ import (
 
 // Object pools to reduce allocs during scanning
 
-// stringSlicePool provides reusable string slices for tokenization
-var stringSlicePool = sync.Pool{
-	New: func() interface{} {
-		s := make([]string, 0, 16)
-		return &s
-	},
-}
-
-func getStringSlice() *[]string {
-	return stringSlicePool.Get().(*[]string)
-}
-
-func putStringSlice(s *[]string) {
-	*s = (*s)[:0]
-	stringSlicePool.Put(s)
-}
-
 // tokenSetPool provides reusable maps for token set operations
 var tokenSetPool = sync.Pool{
 	New: func() interface{} {

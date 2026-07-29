@@ -43,7 +43,6 @@ type head struct {
 	cancel      context.CancelFunc // Cancels the head's soft-close goroutine.
 	release     func()             // Governor slot release function.
 	released    *sync.Once         // Ensures release is called at most once (early kill or natural exit).
-	speculative bool               // Whether this head was launched via prefetch
 }
 
 var deletedHead = head{segment: -1, end: -1}

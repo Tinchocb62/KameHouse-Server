@@ -20,6 +20,7 @@ export interface UIState {
     globalQueueOpen: boolean
     dynamicBackdropEnabled: boolean
     dynamicBackdropMotionEnabled: boolean
+    eraOpeningPlaying: boolean
     setSidebarOpen: (open: boolean) => void
     setSearchQuery: (query: string) => void
     setVideoActive: (active: boolean) => void
@@ -32,6 +33,7 @@ export interface UIState {
     setGlobalQueueOpen: (open: boolean) => void
     setDynamicBackdropEnabled: (enabled: boolean) => void
     setDynamicBackdropMotionEnabled: (enabled: boolean) => void
+    setEraOpeningPlaying: (playing: boolean) => void
 }
 
 import { type ScannerMessage } from "@/lib/server/ws-events"
@@ -85,8 +87,9 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     uiSoundsEnabled: true,
     uiSoundsVolume: 1.0,
     globalQueueOpen: false,
-    dynamicBackdropEnabled: false,
-    dynamicBackdropMotionEnabled: false,
+    dynamicBackdropEnabled: true,
+    dynamicBackdropMotionEnabled: true,
+    eraOpeningPlaying: false,
     setSidebarOpen: (open) => set({ sidebarOpen: open }),
     setSearchQuery: (query) => set({ searchQuery: query }),
     setVideoActive: (active) => set({ isVideoActive: active }),
@@ -102,6 +105,9 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     },
     setDynamicBackdropMotionEnabled: (enabled) => {
         set({ dynamicBackdropMotionEnabled: enabled })
+    },
+    setEraOpeningPlaying: (playing) => {
+        set({ eraOpeningPlaying: playing })
     },
 })
 

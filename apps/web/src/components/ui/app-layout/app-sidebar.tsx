@@ -52,15 +52,6 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
         activeBgClass: "glass-liquid glass-active glass-refract"
-    },
-    {
-        id: "collections",
-        to: "/collections",
-        label: "Colecciones",
-        icon: <Icons.navigation.layers className="w-5 h-5" />,
-        activeColorClass: "text-on-surface",
-        hoverColorClass: "group-hover:text-on-surface",
-        activeBgClass: "glass-liquid glass-active glass-refract"
     }
 ]
 

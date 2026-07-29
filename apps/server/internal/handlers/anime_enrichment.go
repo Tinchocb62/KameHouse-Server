@@ -295,7 +295,9 @@ func (h *Handler) enrichMediaWithTMDB(ctx context.Context, entry *anime.Entry, s
 
 	// Fetch details
 	lookUpID := strconv.Itoa(tmdbID)
-	if entry.Media.Format == string(platform.MediaFormatMovie) {
+	// Type is always set by the scanner; Format can be empty on records that never
+	// got enriched, which is precisely the case this function has to recover.
+	if entry.Media.Format == string(platform.MediaFormatMovie) || entry.Media.Type == "MOVIE" {
 		lookUpID = strconv.Itoa(tmdbID + 1000000)
 	}
 

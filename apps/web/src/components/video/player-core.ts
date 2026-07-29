@@ -187,7 +187,17 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     const [hlsLevels, setHlsLevels] = useState<{ index: number; label: string; height: number }[]>([])
     const [activeHlsLevel, setActiveHlsLevel] = useState<number>(-1) // -1 = auto
 
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+    const [isSettingsOpen, setIsSettingsOpenState] = useState(false)
+    // Mirror ref so the auto-hide setTimeout callback always sees the current value
+    // (setState closures capture the value at the time of creation).
+    const isSettingsOpenRef = useRef(false)
+    const setIsSettingsOpen = useCallback((action: React.SetStateAction<boolean>) => {
+        setIsSettingsOpenState(prev => {
+            const next = typeof action === "function" ? action(prev) : action
+            isSettingsOpenRef.current = next
+            return next
+        })
+    }, []) as React.Dispatch<React.SetStateAction<boolean>>
 
     const {
         setFullscreen: setGlobalFullscreen,
@@ -330,12 +340,15 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             clearTimeout(controlsTimeoutRef.current)
         }
         controlsTimeoutRef.current = setTimeout(() => {
-            if (isPlaying) {
+            // Do not auto-hide while the settings panel is open: the panel is a
+            // child of .player-bottom-bar and GSAP's autoAlpha:0 makes it
+            // non-interactive even though isSettingsOpen stays true.
+            if (isPlaying && !isSettingsOpenRef.current) {
                 setControlsVisible(false)
                 setIsSettingsOpen(false)
             }
         }, 3000)
-    }, [isPlaying])
+    }, [isPlaying, setIsSettingsOpen])
 
     const {
         skipTimesOp,

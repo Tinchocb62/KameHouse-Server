@@ -1324,56 +1324,12 @@
         "comments": []
       },
       {
-        "name": "db",
-        "jsonName": "db",
-        "goType": "db.Database",
-        "typescriptType": "DB_Database",
-        "usedTypescriptType": "DB_Database",
-        "usedStructName": "db.Database",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
         "name": "baseAnime",
         "jsonName": "baseAnime",
         "goType": "platform.UnifiedMedia",
         "typescriptType": "UnifiedMedia",
         "usedTypescriptType": "UnifiedMedia",
         "usedStructName": "platform.UnifiedMedia",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "fileCacher",
-        "jsonName": "fileCacher",
-        "goType": "filecache.Cacher",
-        "typescriptType": "Filecache_Cacher",
-        "usedTypescriptType": "Filecache_Cacher",
-        "usedStructName": "filecache.Cacher",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "logger",
-        "jsonName": "logger",
-        "goType": "zerolog.Logger",
-        "typescriptType": "Logger",
-        "usedTypescriptType": "Logger",
-        "usedStructName": "zerolog.Logger",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "provider",
-        "jsonName": "provider",
-        "goType": "ProviderImpl",
-        "typescriptType": "ProviderImpl",
-        "usedTypescriptType": "ProviderImpl",
-        "usedStructName": "metadata_provider.ProviderImpl",
         "required": false,
         "public": false,
         "comments": []
@@ -3301,58 +3257,6 @@
     "comments": [
       " FindResponse is the response from TMDb's /find endpoint."
     ]
-  },
-  {
-    "filepath": "../internal/cache/settings.go",
-    "filename": "settings.go",
-    "name": "SettingsCache",
-    "formattedName": "SettingsCache",
-    "package": "cache",
-    "fields": [
-      {
-        "name": "settingsMutex",
-        "jsonName": "settingsMutex",
-        "goType": "sync.RWMutex",
-        "typescriptType": "RWMutex",
-        "usedTypescriptType": "RWMutex",
-        "usedStructName": "sync.RWMutex",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "settings",
-        "jsonName": "settings",
-        "goType": "models.Settings",
-        "typescriptType": "Models_Settings",
-        "usedTypescriptType": "Models_Settings",
-        "usedStructName": "models.Settings",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "settingsTime",
-        "jsonName": "settingsTime",
-        "goType": "time.Time",
-        "typescriptType": "string",
-        "usedStructName": "time.Time",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "ttl",
-        "jsonName": "ttl",
-        "goType": "time.Duration",
-        "typescriptType": "number",
-        "usedStructName": "time.Duration",
-        "required": false,
-        "public": false,
-        "comments": []
-      }
-    ],
-    "comments": []
   },
   {
     "filepath": "..\\internal\\continuity\\history.go",
@@ -11178,79 +11082,6 @@
   {
     "filepath": "../internal/database/models/models.go",
     "filename": "models.go",
-    "name": "MediaCollection",
-    "formattedName": "Models_MediaCollection",
-    "package": "models",
-    "fields": [
-      {
-        "name": "TMDBCollectionID",
-        "jsonName": "tmdbCollectionId",
-        "goType": "int",
-        "typescriptType": "number",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "Name",
-        "jsonName": "name",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "Overview",
-        "jsonName": "overview",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "PosterPath",
-        "jsonName": "posterPath",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "BackdropPath",
-        "jsonName": "backdropPath",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "MemberIDs",
-        "jsonName": "memberIds",
-        "goType": "IntSlice",
-        "typescriptType": "Models_IntSlice",
-        "usedTypescriptType": "Models_IntSlice",
-        "usedStructName": "models.IntSlice",
-        "required": true,
-        "public": true,
-        "comments": []
-      }
-    ],
-    "comments": [
-      " MediaCollection groups movies or shows that belong to the same TMDB franchise/saga.",
-      " It is populated automatically when a scanned movie has a non-nil BelongsToCollection",
-      " field in its TMDB metadata."
-    ],
-    "embeddedStructNames": [
-      "models.BaseModel"
-    ]
-  },
-  {
-    "filepath": "../internal/database/models/models.go",
-    "filename": "models.go",
     "name": "MetadataCache",
     "formattedName": "Models_MetadataCache",
     "package": "models",
@@ -11922,6 +11753,178 @@
         "jsonName": "payload",
         "goType": "",
         "typescriptType": "any",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/admin.go",
+    "filename": "admin.go",
+    "name": "AdminTranscodeStatsResponse",
+    "formattedName": "AdminTranscodeStatsResponse",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "TranscoderInitialized",
+        "jsonName": "transcoderInitialized",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Governor",
+        "jsonName": "governor",
+        "goType": "cassette.GovernorStats",
+        "typescriptType": "GovernorStats",
+        "usedTypescriptType": "GovernorStats",
+        "usedStructName": "cassette.GovernorStats",
+        "required": false,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "PreTranscodeQueue",
+        "jsonName": "preTranscodeQueue",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "System",
+        "jsonName": "system",
+        "goType": "SystemStats",
+        "typescriptType": "SystemStats",
+        "usedTypescriptType": "SystemStats",
+        "usedStructName": "handlers.SystemStats",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "GPU",
+        "jsonName": "gpu",
+        "goType": "GPUStats",
+        "typescriptType": "GPUStats",
+        "usedTypescriptType": "GPUStats",
+        "usedStructName": "handlers.GPUStats",
+        "required": false,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/admin.go",
+    "filename": "admin.go",
+    "name": "SystemStats",
+    "formattedName": "SystemStats",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "CPUPercent",
+        "jsonName": "cpuPercent",
+        "goType": "float64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "MemoryUsed",
+        "jsonName": "memoryUsed",
+        "goType": "uint64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "MemoryTotal",
+        "jsonName": "memoryTotal",
+        "goType": "uint64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/admin.go",
+    "filename": "admin.go",
+    "name": "GPUStats",
+    "formattedName": "GPUStats",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "Utilization",
+        "jsonName": "utilization",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "Encoder",
+        "jsonName": "encoder",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "MemoryUsed",
+        "jsonName": "memoryUsed",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "MemoryTotal",
+        "jsonName": "memoryTotal",
+        "goType": "int",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      }
+    ],
+    "comments": []
+  },
+  {
+    "filepath": "../internal/handlers/admin.go",
+    "filename": "admin.go",
+    "name": "AdminLibraryStatsResponse",
+    "formattedName": "AdminLibraryStatsResponse",
+    "package": "handlers",
+    "fields": [
+      {
+        "name": "TotalLocalFiles",
+        "jsonName": "totalLocalFiles",
+        "goType": "int64",
+        "typescriptType": "number",
+        "required": true,
+        "public": true,
+        "comments": []
+      },
+      {
+        "name": "TotalMedia",
+        "jsonName": "totalMedia",
+        "goType": "int64",
+        "typescriptType": "number",
         "required": true,
         "public": true,
         "comments": []
@@ -19130,84 +19133,6 @@
     "comments": []
   },
   {
-    "filepath": "../internal/library/scanner/metadata_cache/cache.go",
-    "filename": "cache.go",
-    "name": "CachedResponse",
-    "formattedName": "CachedResponse",
-    "package": "metadata_cache",
-    "fields": [
-      {
-        "name": "Provider",
-        "jsonName": "Provider",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "Query",
-        "jsonName": "Query",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": true,
-        "comments": []
-      },
-      {
-        "name": "Data",
-        "jsonName": "Data",
-        "goType": "any",
-        "typescriptType": "any",
-        "usedStructName": "metadata_cache.any",
-        "required": true,
-        "public": true,
-        "comments": []
-      }
-    ],
-    "comments": []
-  },
-  {
-    "filepath": "../internal/library/scanner/metadata_cache/cache.go",
-    "filename": "cache.go",
-    "name": "MetadataCache",
-    "formattedName": "MetadataCache",
-    "package": "metadata_cache",
-    "fields": [
-      {
-        "name": "mu",
-        "jsonName": "mu",
-        "goType": "sync.RWMutex",
-        "typescriptType": "RWMutex",
-        "usedTypescriptType": "RWMutex",
-        "usedStructName": "sync.RWMutex",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "provider",
-        "jsonName": "provider",
-        "goType": "map[string]",
-        "typescriptType": "Record\u003cstring, any\u003e",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "ttl",
-        "jsonName": "ttl",
-        "goType": "time.Duration",
-        "typescriptType": "number",
-        "usedStructName": "time.Duration",
-        "required": false,
-        "public": false,
-        "comments": []
-      }
-    ],
-    "comments": []
-  },
-  {
     "filepath": "../internal/library/scanner/nfo.go",
     "filename": "nfo.go",
     "name": "NfoUniqueID",
@@ -26126,15 +26051,6 @@
     "package": "videofile",
     "fields": [
       {
-        "name": "ready",
-        "jsonName": "ready",
-        "goType": "",
-        "typescriptType": "any",
-        "required": true,
-        "public": false,
-        "comments": []
-      },
-      {
         "name": "Sha",
         "jsonName": "sha",
         "goType": "string",
@@ -29769,36 +29685,6 @@
     "comments": []
   },
   {
-    "filepath": "../internal/platforms/tmdb_platform/platform.go",
-    "filename": "platform.go",
-    "name": "Platform",
-    "formattedName": "Platform",
-    "package": "tmdb_platform",
-    "fields": [
-      {
-        "name": "tmdbClient",
-        "jsonName": "tmdbClient",
-        "goType": "tmdb.Client",
-        "typescriptType": "Client",
-        "usedTypescriptType": "Client",
-        "usedStructName": "tmdb.Client",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "username",
-        "jsonName": "username",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": false,
-        "comments": []
-      }
-    ],
-    "comments": []
-  },
-  {
     "filepath": "../internal/skipdetect/compare.go",
     "filename": "compare.go",
     "name": "MatchWindow",
@@ -29944,6 +29830,28 @@
         "required": false,
         "public": false,
         "comments": []
+      },
+      {
+        "name": "batchMu",
+        "jsonName": "batchMu",
+        "goType": "sync.Mutex",
+        "typescriptType": "Mutex",
+        "usedTypescriptType": "Mutex",
+        "usedStructName": "sync.Mutex",
+        "required": false,
+        "public": false,
+        "comments": []
+      },
+      {
+        "name": "batchRunning",
+        "jsonName": "batchRunning",
+        "goType": "bool",
+        "typescriptType": "boolean",
+        "required": true,
+        "public": false,
+        "comments": [
+          " scan de biblioteca completa en curso (uno a la vez)"
+        ]
       },
       {
         "name": "attemptedMu",
@@ -30338,72 +30246,6 @@
     "comments": []
   },
   {
-    "filepath": "../internal/test_utils/mocks/registry.go",
-    "filename": "registry.go",
-    "name": "TestEnv",
-    "formattedName": "TestEnv",
-    "package": "mocks",
-    "fields": [
-      {
-        "name": "t",
-        "jsonName": "t",
-        "goType": "testing.T",
-        "typescriptType": "T",
-        "usedTypescriptType": "T",
-        "usedStructName": "testing.T",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "db",
-        "jsonName": "db",
-        "goType": "db.Database",
-        "typescriptType": "DB_Database",
-        "usedTypescriptType": "DB_Database",
-        "usedStructName": "db.Database",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "logger",
-        "jsonName": "logger",
-        "goType": "zerolog.Logger",
-        "typescriptType": "Logger",
-        "usedTypescriptType": "Logger",
-        "usedStructName": "zerolog.Logger",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "fileCacher",
-        "jsonName": "fileCacher",
-        "goType": "filecache.Cacher",
-        "typescriptType": "Filecache_Cacher",
-        "usedTypescriptType": "Filecache_Cacher",
-        "usedStructName": "filecache.Cacher",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "dataDir",
-        "jsonName": "dataDir",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": false,
-        "comments": []
-      }
-    ],
-    "comments": [
-      " TestEnv is a centralized test environment that shares database,",
-      " logger, and file cache across test packages."
-    ]
-  },
-  {
     "filepath": "../internal/user/user.go",
     "filename": "user.go",
     "name": "User",
@@ -30542,56 +30384,6 @@
     "comments": [
       " ThumbnailCache provides a concurrent-safe, memory-bounded LRU cache",
       " dedicated to avoiding disk I/O when serving grid images/thumbnails."
-    ]
-  },
-  {
-    "filepath": "../internal/util/cachedreadseeker.go",
-    "filename": "cachedreadseeker.go",
-    "name": "CachedReadSeeker",
-    "formattedName": "Util_CachedReadSeeker",
-    "package": "util",
-    "fields": [
-      {
-        "name": "src",
-        "jsonName": "src",
-        "goType": "io.ReadSeekCloser",
-        "typescriptType": "ReadSeekCloser",
-        "usedTypescriptType": "ReadSeekCloser",
-        "usedStructName": "io.ReadSeekCloser",
-        "required": false,
-        "public": false,
-        "comments": [
-          " underlying source"
-        ]
-      },
-      {
-        "name": "cache",
-        "jsonName": "cache",
-        "goType": "string",
-        "typescriptType": "Array\u003cstring\u003e",
-        "required": false,
-        "public": false,
-        "comments": [
-          " bytes read so far"
-        ]
-      },
-      {
-        "name": "pos",
-        "jsonName": "pos",
-        "goType": "int64",
-        "typescriptType": "number",
-        "required": true,
-        "public": false,
-        "comments": [
-          " current read position"
-        ]
-      }
-    ],
-    "comments": [
-      " CachedReadSeeker wraps an io.ReadSeekCloser and caches bytes as they are read.",
-      " It implements io.ReadSeeker, allowing seeking within the already-cached",
-      " range without hitting the underlying reader again.",
-      " Additional reads beyond the cache will append to the cache automatically."
     ]
   },
   {
@@ -30812,28 +30604,6 @@
         "typescriptType": "Mutex",
         "usedTypescriptType": "Mutex",
         "usedStructName": "sync.Mutex",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "ctx",
-        "jsonName": "ctx",
-        "goType": "context.Context",
-        "typescriptType": "Context",
-        "usedTypescriptType": "Context",
-        "usedStructName": "context.Context",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "cancelFunc",
-        "jsonName": "cancelFunc",
-        "goType": "context.CancelFunc",
-        "typescriptType": "CancelFunc",
-        "usedTypescriptType": "CancelFunc",
-        "usedStructName": "context.CancelFunc",
         "required": false,
         "public": false,
         "comments": []
@@ -31156,244 +30926,6 @@
       }
     ],
     "comments": []
-  },
-  {
-    "filepath": "../internal/util/http/filestream.go",
-    "filename": "filestream.go",
-    "name": "FileStream",
-    "formattedName": "FileStream",
-    "package": "httputil",
-    "fields": [
-      {
-        "name": "length",
-        "jsonName": "length",
-        "goType": "int64",
-        "typescriptType": "number",
-        "required": true,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "file",
-        "jsonName": "file",
-        "goType": "os.File",
-        "typescriptType": "File",
-        "usedTypescriptType": "File",
-        "usedStructName": "os.File",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "closed",
-        "jsonName": "closed",
-        "goType": "bool",
-        "typescriptType": "boolean",
-        "required": true,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "mu",
-        "jsonName": "mu",
-        "goType": "sync.Mutex",
-        "typescriptType": "Mutex",
-        "usedTypescriptType": "Mutex",
-        "usedStructName": "sync.Mutex",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "pieces",
-        "jsonName": "pieces",
-        "goType": "map[int64]piece",
-        "typescriptType": "Record\u003cnumber, piece\u003e",
-        "usedTypescriptType": "piece",
-        "usedStructName": "httputil.piece",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "readers",
-        "jsonName": "readers",
-        "goType": "[]FileStreamReader",
-        "typescriptType": "Array\u003cFileStreamReader\u003e",
-        "usedTypescriptType": "FileStreamReader",
-        "usedStructName": "httputil.FileStreamReader",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "readersMu",
-        "jsonName": "readersMu",
-        "goType": "sync.Mutex",
-        "typescriptType": "Mutex",
-        "usedTypescriptType": "Mutex",
-        "usedStructName": "sync.Mutex",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "ctx",
-        "jsonName": "ctx",
-        "goType": "context.Context",
-        "typescriptType": "Context",
-        "usedTypescriptType": "Context",
-        "usedStructName": "context.Context",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "cancel",
-        "jsonName": "cancel",
-        "goType": "context.CancelFunc",
-        "typescriptType": "CancelFunc",
-        "usedTypescriptType": "CancelFunc",
-        "usedStructName": "context.CancelFunc",
-        "required": false,
-        "public": false,
-        "comments": []
-      },
-      {
-        "name": "logger",
-        "jsonName": "logger",
-        "goType": "zerolog.Logger",
-        "typescriptType": "Logger",
-        "usedTypescriptType": "Logger",
-        "usedStructName": "zerolog.Logger",
-        "required": false,
-        "public": false,
-        "comments": []
-      }
-    ],
-    "comments": [
-      " FileStream saves a HTTP file being streamed to disk.",
-      " It allows multiple readers to read the file concurrently.",
-      " It works by being fed the stream from the HTTP response body. It will simultaneously write to disk and to the HTTP writer."
-    ]
-  },
-  {
-    "filepath": "../internal/util/http/httprs.go",
-    "filename": "httprs.go",
-    "name": "HttpReadSeeker",
-    "formattedName": "HttpReadSeeker",
-    "package": "httputil",
-    "fields": [
-      {
-        "name": "url",
-        "jsonName": "url",
-        "goType": "string",
-        "typescriptType": "string",
-        "required": true,
-        "public": false,
-        "comments": [
-          " The URL of the resource"
-        ]
-      },
-      {
-        "name": "client",
-        "jsonName": "client",
-        "goType": "http.Client",
-        "typescriptType": "Client",
-        "usedTypescriptType": "Client",
-        "usedStructName": "http.Client",
-        "required": false,
-        "public": false,
-        "comments": [
-          " HTTP client to use for requests"
-        ]
-      },
-      {
-        "name": "resp",
-        "jsonName": "resp",
-        "goType": "http.Response",
-        "typescriptType": "Response",
-        "usedTypescriptType": "Response",
-        "usedStructName": "http.Response",
-        "required": false,
-        "public": false,
-        "comments": [
-          " Current response"
-        ]
-      },
-      {
-        "name": "offset",
-        "jsonName": "offset",
-        "goType": "int64",
-        "typescriptType": "number",
-        "required": true,
-        "public": false,
-        "comments": [
-          " Current offset in the resource"
-        ]
-      },
-      {
-        "name": "size",
-        "jsonName": "size",
-        "goType": "int64",
-        "typescriptType": "number",
-        "required": true,
-        "public": false,
-        "comments": [
-          " Size of the resource, -1 if unknown"
-        ]
-      },
-      {
-        "name": "readBuf",
-        "jsonName": "readBuf",
-        "goType": "string",
-        "typescriptType": "Array\u003cstring\u003e",
-        "required": false,
-        "public": false,
-        "comments": [
-          " Buffer for reading"
-        ]
-      },
-      {
-        "name": "readOffset",
-        "jsonName": "readOffset",
-        "goType": "int",
-        "typescriptType": "number",
-        "required": true,
-        "public": false,
-        "comments": [
-          " Current offset in readBuf"
-        ]
-      },
-      {
-        "name": "mu",
-        "jsonName": "mu",
-        "goType": "sync.Mutex",
-        "typescriptType": "Mutex",
-        "usedTypescriptType": "Mutex",
-        "usedStructName": "sync.Mutex",
-        "required": false,
-        "public": false,
-        "comments": [
-          " Mutex for thread safety"
-        ]
-      },
-      {
-        "name": "rateLimiter",
-        "jsonName": "rateLimiter",
-        "goType": "limiter.Limiter",
-        "typescriptType": "Limiter",
-        "usedTypescriptType": "Limiter",
-        "usedStructName": "limiter.Limiter",
-        "required": false,
-        "public": false,
-        "comments": []
-      }
-    ],
-    "comments": [
-      " HttpReadSeeker implements io.ReadSeeker for HTTP responses",
-      " It allows seeking within an HTTP response by using HTTP Range requests"
-    ]
   },
   {
     "filepath": "../internal/util/image_downloader/image_downloader.go",

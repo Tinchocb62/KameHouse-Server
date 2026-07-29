@@ -13,7 +13,6 @@ const MENU_ITEMS = [
     { id: "home", label: "Inicio", icon: Icons.navigation.home, description: "Pantalla principal y descubrimientos" },
     { id: "series", label: "Series", icon: Icons.navigation.tv, description: "Explorador de series y sagas" },
     { id: "movies", label: "Películas", icon: Icons.navigation.film, description: "Películas y largometrajes" },
-    { id: "collections", label: "Colecciones", icon: Icons.navigation.layers, description: "Colecciones organizadas de franquicias" },
 ]
 
 export function NavigationTab({ control }: NavigationTabProps) {

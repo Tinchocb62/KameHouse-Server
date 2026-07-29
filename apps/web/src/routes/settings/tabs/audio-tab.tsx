@@ -15,7 +15,7 @@ interface AudioTabProps {
     control: Control<SettingsFormValues>
 }
 
-export function AudioTab({ control }: AudioTabProps) {
+export function AudioTab(_: AudioTabProps) {
     const {
         bgMusicEnabled,
         setBgMusicEnabled,
@@ -31,14 +31,6 @@ export function AudioTab({ control }: AudioTabProps) {
         setUiSoundsVolume,
     } = useAppStore()
 
-    // Interruptor maestro de audio: activo cuando la música o los efectos están
-    // sonando. Al encenderlo se habilitan ambos (cada uno con su volumen); al
-    // apagarlo se silencian los dos de una sola vez.
-    const audioMasterOn = bgMusicEnabled || uiSoundsEnabled
-    const setAudioMaster = (on: boolean) => {
-        setBgMusicEnabled(on)
-        setUiSoundsEnabled(on)
-    }
 
     const [musicDirInput, setMusicDirInput] = React.useState(bgMusicDir)
     const [isScanningMusic, setIsScanningMusic] = React.useState(false)

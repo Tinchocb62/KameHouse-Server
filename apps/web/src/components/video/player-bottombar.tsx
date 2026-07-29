@@ -215,6 +215,11 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
             {/* Background Layer to prevent backdrop-filter stacking context bugs with children */}
             <div className="absolute inset-0 -z-10 pointer-events-none bg-black/60 backdrop-blur-md will-change-[backdrop-filter] [transform:translateZ(0)] border border-white/10 rounded-full shadow-[var(--shadow-glass-liquid)]" />
 
+            {/* Foreground content wrapper — GSAP animates y/scale on this element only,
+                so the background blur div above never has a transformed ancestor and
+                backdrop-filter keeps working throughout the slide-in animation. */}
+            <div className="player-bar-fg relative flex flex-col w-full">
+
             <PlayerSeekPreview 
                 previewManager={previewManager || null} 
                 hoverTime={hoverTime} 
@@ -505,7 +510,8 @@ export const PlayerBottomBar = React.memo(function PlayerBottomBar({
                         {isFullscreen ? <Icons.media.minimize className="w-4 h-4 md:w-3.5 md:h-3.5" /> : <Icons.media.maximize className="w-4 h-4 md:w-3.5 md:h-3.5" />}
                     </button>
                 </div>
-            </div>
+            </div>{/* end Bottom Controls Row */}
+            </div>{/* end player-bar-fg */}
         </div>
     )
 })

@@ -24,7 +24,7 @@ function buildTrackUrl(dir: string, file: string): string {
 }
 
 export function BackgroundMusicPlayer() {
-    const { bgMusicEnabled, setBgMusicEnabled, uiSoundsEnabled, setUiSoundsEnabled, bgMusicVolume, bgMusicDir, bgMusicTracks, isVideoActive, sidebarOpen } = useAppStore(
+    const { bgMusicEnabled, setBgMusicEnabled, uiSoundsEnabled, setUiSoundsEnabled, bgMusicVolume, bgMusicDir, bgMusicTracks, isVideoActive, sidebarOpen, eraOpeningPlaying } = useAppStore(
         useShallow((state) => ({
             bgMusicEnabled: state.bgMusicEnabled,
             setBgMusicEnabled: state.setBgMusicEnabled,
@@ -35,6 +35,7 @@ export function BackgroundMusicPlayer() {
             bgMusicTracks: state.bgMusicTracks,
             isVideoActive: state.isVideoActive,
             sidebarOpen: state.sidebarOpen,
+            eraOpeningPlaying: state.eraOpeningPlaying,
         }))
     )
 
@@ -53,7 +54,7 @@ export function BackgroundMusicPlayer() {
     }, [bgMusicDir, bgMusicTracks])
 
     const audioRef = React.useRef<HTMLAudioElement | null>(null)
-    const [isPlaying, setIsPlaying] = React.useState(false)
+    const [, setIsPlaying] = React.useState(false)
     const [isAnyVideoPlaying, setIsAnyVideoPlaying] = React.useState(false)
     const [currentTrackIndex, setCurrentTrackIndex] = React.useState(() => {
         // Start with a random track
@@ -63,10 +64,32 @@ export function BackgroundMusicPlayer() {
     // Si la playlist cambia (el usuario re-escanea otra carpeta) y el índice
     // actual queda fuera de rango, lo reiniciamos a una pista aleatoria válida.
     React.useEffect(() => {
-        if (currentTrackIndex >= PLAYLIST.length) {
-            setCurrentTrackIndex(PLAYLIST.length > 0 ? Math.floor(Math.random() * PLAYLIST.length) : 0)
+        setCurrentTrackIndex((prev) => {
+            if (prev >= PLAYLIST.length) {
+                return PLAYLIST.length > 0 ? Math.floor(Math.random() * PLAYLIST.length) : 0
+            }
+            return prev
+        })
+    }, [PLAYLIST])
+
+    // Ciclo de vida del elemento <audio>: se crea UNA sola vez al montar y se
+    // destruye por completo al desmontar. Esto es crítico en dev: cada Fast
+    // Refresh de Vite remonta el componente, y si el Audio anterior no se libera
+    // del todo (pause + src="" + load + soltar el ref) queda una instancia
+    // huérfana sonando en paralelo — el origen del "audio doble" y del "sigue
+    // sonando aunque lo apague" (el toggle sólo controla el ref vivo, no la
+    // huérfana).
+    React.useEffect(() => {
+        const audio = new Audio()
+        audio.volume = Math.pow(useAppStore.getState().bgMusicVolume, 2)
+        audioRef.current = audio
+        return () => {
+            audio.pause()
+            audio.src = ""
+            audio.load() // aborta el buffering y libera el recurso de red
+            audioRef.current = null
         }
-    }, [PLAYLIST, currentTrackIndex])
+    }, [])
 
     // Sync volume when bgMusicVolume changes (using quadratic curve for natural logarithmic hearing)
     React.useEffect(() => {
@@ -77,53 +100,44 @@ export function BackgroundMusicPlayer() {
 
     // Sync audio state with store preferences, video active state, and current track
     React.useEffect(() => {
+        const audio = audioRef.current
+        if (!audio) return
+
         let playTimeout: NodeJS.Timeout
 
         const playAudio = () => {
-            if (audioRef.current) {
-                audioRef.current.play()
-                    .then(() => setIsPlaying(true))
-                    .catch((err) => {
-                        console.warn("Could not autoplay background music:", err)
-                        setIsPlaying(false)
-                    })
-            }
+            audio.play()
+                .then(() => setIsPlaying(true))
+                .catch((err) => {
+                    console.warn("Could not autoplay background music:", err)
+                    setIsPlaying(false)
+                })
         }
 
         const pauseAudio = () => {
-            if (audioRef.current) {
-                audioRef.current.pause()
-                setIsPlaying(false)
-            }
+            audio.pause()
+            setIsPlaying(false)
         }
 
-        // Initialize audio instance if it doesn't exist
-        if (!audioRef.current) {
-            audioRef.current = new Audio(PLAYLIST[currentTrackIndex])
-            audioRef.current.volume = Math.pow(bgMusicVolume, 2)
-        } else {
-            // Update source if track changed. Resolve both to absolute URLs so the
-            // comparison is uniform for relative default tracks and absolute
-            // server-streamed tracks (scanned folder).
-            const currentSrc = audioRef.current.src
-            const expectedSrc = PLAYLIST[currentTrackIndex]
-            const expectedAbsolute = new URL(expectedSrc, window.location.origin).href
-            if (currentSrc !== expectedAbsolute) {
-                audioRef.current.src = expectedSrc
-                audioRef.current.load()
-                audioRef.current.volume = Math.pow(bgMusicVolume, 2)
-            }
+        // Update source if track changed. Resolve both to absolute URLs so the
+        // comparison is uniform for relative default tracks and absolute
+        // server-streamed tracks (scanned folder).
+        const expectedSrc = PLAYLIST[currentTrackIndex]
+        const expectedAbsolute = new URL(expectedSrc, window.location.origin).href
+        if (audio.src !== expectedAbsolute) {
+            audio.src = expectedSrc
+            audio.load()
+            audio.volume = Math.pow(bgMusicVolume, 2)
         }
 
         // Loop handling
-        const audio = audioRef.current
         const handleEnded = () => {
             setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length)
         }
         audio.addEventListener("ended", handleEnded)
 
         // If enabled and no video is playing, start background music with a debounce to prevent pops during transitions
-        if (bgMusicEnabled && !isVideoActive && !isAnyVideoPlaying) {
+        if (bgMusicEnabled && !isVideoActive && !isAnyVideoPlaying && !eraOpeningPlaying) {
             playTimeout = setTimeout(() => {
                 playAudio()
             }, 1000)
@@ -131,13 +145,16 @@ export function BackgroundMusicPlayer() {
             pauseAudio()
         }
 
-        // Clean up on unmount or track change
+        // Clean up on effect re-run: cancelamos el arranque diferido y quitamos
+        // el listener. NO destruimos el Audio acá (eso lo hace el effect de
+        // ciclo de vida al desmontar); pausamos para no solapar pistas al
+        // cambiar de track.
         return () => {
             if (playTimeout) clearTimeout(playTimeout)
             audio.removeEventListener("ended", handleEnded)
             audio.pause()
         }
-    }, [bgMusicEnabled, isVideoActive, currentTrackIndex, isAnyVideoPlaying, bgMusicVolume, PLAYLIST])
+    }, [bgMusicEnabled, isVideoActive, currentTrackIndex, isAnyVideoPlaying, bgMusicVolume, PLAYLIST, eraOpeningPlaying])
 
     // Listen to any other video/audio playing on the page to automatically pause background music
     React.useEffect(() => {

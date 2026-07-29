@@ -87,8 +87,8 @@ export const MediaCard = React.memo(function MediaCard({
                 onClick={onClick}
                 className={cn(
                     "absolute top-0 left-0 overflow-hidden flex flex-col origin-top",
-                    "transition-all duration-base",
-                    "z-10 hover:z-20 hover:scale-[1.03] transform-gpu w-full h-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_10%,transparent)] border border-outline-variant/5 hover:border-brand-accent/30 hover:shadow-[0_0_20px_hsl(var(--brand-accent)/0.15)] shadow-elevation-2 group cursor-pointer",
+                    "transition-[transform,box-shadow,border-color,background-color] duration-base ease-out transform-gpu",
+                    "z-10 hover:z-20 hover:scale-[1.03] active:scale-[0.99] w-full h-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_10%,transparent)] border border-outline-variant/5 hover:border-brand-accent/40 hover:shadow-[0_0_24px_hsl(var(--brand-accent)/0.2)] shadow-elevation-2 group cursor-pointer",
                     isPoster ? "rounded-xl" : "rounded-container"
                 )}
                 style={{
@@ -101,7 +101,7 @@ export const MediaCard = React.memo(function MediaCard({
                     <DeferredImage
                         src={getMediumResImage(artwork)}
                         alt={title}
-                        className="h-full w-full object-cover transition-transform duration-slow [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] group-hover:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 transform-gpu"
                     />
 
                     {/* Shadow Gradient Overlay */}

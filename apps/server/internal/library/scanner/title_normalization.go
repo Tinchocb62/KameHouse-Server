@@ -51,34 +51,6 @@ var noiseWords = map[string]struct{}{
 	"y": {}, "o": {}, "que": {}, "su": {}, "sus": {},
 }
 
-var ordinalToNumber = map[string]int{
-	"first": 1, "1st": 1,
-	"second": 2, "2nd": 2,
-	"third": 3, "3rd": 3,
-	"fourth": 4, "4th": 4,
-	"fifth": 5, "5th": 5,
-	"sixth": 6, "6th": 6,
-	"seventh": 7, "7th": 7,
-	"eighth": 8, "8th": 8,
-	"ninth": 9, "9th": 9,
-	"tenth": 10, "10th": 10,
-}
-
-type fileFormatType int
-
-const (
-	fileFormatUnknown fileFormatType = iota
-	fileFormatOVA
-	fileFormatSpecial
-	fileFormatMovie
-	fileFormatNC
-)
-
-var fileOVARegex = regexp.MustCompile(`(?i)(?:\b|_|\d)(?:OVA|OAD|OAV)\s*\d*(?:\b|_)`)
-var fileSpecialRegex = regexp.MustCompile(`(?i)(?:\b|_)(?:SP|Specials?)\s*\d*(?:\b|_)`)
-var fileMovieRegex = regexp.MustCompile(`(?i)(?:\b|_)(?:Movie|Film|Gekijouban|Gekijō|Gekijyou)(?:\b|_)`)
-var extrasFolderRegex = regexp.MustCompile(`(?i)(?:^|[/\\])(Extras?|Specials?)(?:[/\\]|$)`)
-
 // Suffixes commonly found in file names that should be stripped for better matching
 var fileSuffixRegex = regexp.MustCompile(`(?i)\s*[\(\[](dub|dubbed|sub|subbed|bd|bluray|blu-ray|bdrip|dvd|dvdrip|web|web-dl|webrip|remux|dual[- ]?audio|multi[- ]?subs?|uncensored|censored|batch|complete|hevc|x264|x265|h\.?264|h\.?265|10bit|aac|flac|1080p|720p|480p|4k|2160p)[\)\]]`)
 
@@ -389,28 +361,6 @@ func tokenize(s string) []string {
 }
 
 // removeSeasonPartMarkers removes season/part indicators from a title
-func removeSeasonPartMarkers(title string) string {
-	s := title
-
-	// Remove explicit season markers
-	s = seasonPatternExplicit.ReplaceAllString(s, " ")
-	s = seasonPatternOrdinal.ReplaceAllString(s, " ")
-	s = seasonPatternSuffix.ReplaceAllString(s, " ")
-
-	// Remove part markers
-	s = partPatternExplicit.ReplaceAllString(s, " ")
-	s = partPatternOrdinal.ReplaceAllString(s, " ")
-	s = partPatternRoman.ReplaceAllString(s, " ")
-
-	// Remove year in parentheses
-	s = yearParenRegex.ReplaceAllString(s, " ")
-
-	// Clean up whitespace without allocating intermediate slice
-	s = collapseWhitespace(s)
-
-	return s
-}
-
 // ExtractPartNumber extracts the part number from a title string
 func ExtractPartNumber(val string) int {
 	val = strings.ToLower(val)
@@ -478,17 +428,6 @@ func GetSignificantTokens(tokens []string) []string {
 		}
 	}
 	return result
-}
-
-// getSignificantTokensInto filters tokens that are not noise words into the provided slice.
-// This avoids allocations when the caller can reuse a slice.
-func getSignificantTokensInto(tokens []string, dst []string) []string {
-	for _, token := range tokens {
-		if _, isNoise := noiseWords[token]; !isNoise && len(token) > 1 {
-			dst = append(dst, token)
-		}
-	}
-	return dst
 }
 
 func IsNoiseWord(word string) bool {
@@ -630,27 +569,3 @@ func HasStrongMatch(tokensA, tokensB []string) bool {
 	return false
 }
 
-// getFileFormatType detects the content format type from the filename and folder path.
-// Only the filename bc folder names are too unreliable
-func getFileFormatType(lf *dto.LocalFile) fileFormatType {
-	name := lf.Name
-	path := lf.Path
-
-	if comparison.ValueContainsNC(name) {
-		return fileFormatNC
-	}
-	if fileOVARegex.MatchString(name) {
-		return fileFormatOVA
-	}
-	if fileSpecialRegex.MatchString(name) {
-		return fileFormatSpecial
-	}
-	if fileMovieRegex.MatchString(name) {
-		return fileFormatMovie
-	}
-	if extrasFolderRegex.MatchString(path) {
-		return fileFormatSpecial
-	}
-
-	return fileFormatUnknown
-}

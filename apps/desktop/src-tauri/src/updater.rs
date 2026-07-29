@@ -38,11 +38,9 @@ impl UpdaterManager {
         // or configure Tauri's updater to work with the existing endpoints
 
         // Check GitHub status first (like Electron version)
-        if let Ok(status) = self.check_github_status().await {
-            if let Some(fallback) = status {
-                info!("[Updater] Changing update channel to fallback: {}", fallback);
-                // Could dynamically update the URL here
-            }
+        if let Ok(Some(fallback)) = self.check_github_status().await {
+            info!("[Updater] Changing update channel to fallback: {}", fallback);
+            // Could dynamically update the URL here
         }
 
         // Tauri updater is configured via tauri.conf.json

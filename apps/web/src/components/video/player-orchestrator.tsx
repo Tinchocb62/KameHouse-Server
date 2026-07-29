@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react"
-import { useRequestMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
+import { useRequestMediastreamMediaContainer, usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { usePlayerCore } from "./player-core"
 import { PlayerUI } from "./player-ui"
 import { useMpvPlayer } from "./use-mpv-player"
@@ -10,6 +10,7 @@ import type { Mediastream_StreamType, Audio, Subtitle } from "@/api/generated/ty
 import type { AudioTrack, SubtitleTrack } from "@/components/ui/track-types"
 import type { VideoPlayerProps } from "./player"
 import { useGetSettings } from "@/api/hooks/settings.hooks"
+import { useAppStore } from "@/lib/store"
 
 export interface Chapter {
     startTime: number
@@ -114,6 +115,24 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
     }, [data, props.streamUrl, clientId])
 
     const activeStreamType = (data?.streamType && ["local", "online", "direct", "transcode", "optimized"].includes(data.streamType) ? data.streamType : streamType || "direct") as "local" | "online" | "direct" | "transcode" | "optimized"
+
+    const { mutate: preloadTranscode } = usePreloadMediastreamMediaContainer()
+
+    // Pro-active warm-up: si arranca en direct play y hay múltiples audios, calentamos
+    // el transcoder en background para que el cambio de pista sea rápido.
+    useEffect(() => {
+        if (activeStreamType === "direct" && data?.mediaInfo?.audios && data.mediaInfo.audios.length > 1 && transcodeEnabled && isLocal) {
+            const timer = setTimeout(() => {
+                preloadTranscode({
+                    path: props.streamUrl || "",
+                    streamType: "transcode",
+                    audioStreamIndex: 0,
+                    preferredAudioLang: useAppStore.getState().preferredAudioLang || ""
+                })
+            }, 5000)
+            return () => clearTimeout(timer)
+        }
+    }, [activeStreamType, data?.mediaInfo?.audios, preloadTranscode, props.streamUrl, transcodeEnabled, isLocal])
 
     const handleDirectPlayFailed = useCallback(() => {
         if (transcodeEnabled) {

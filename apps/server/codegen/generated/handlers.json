@@ -1,5 +1,59 @@
 [
   {
+    "name": "HandleGetTranscodeStats",
+    "trimmedName": "GetTranscodeStats",
+    "comments": [
+      "HandleGetTranscodeStats returns realtime transcoder and system stats.",
+      "",
+      "\t@summary returns realtime transcoder and system stats.",
+      "\t@route /api/v1/admin/transcode-stats [GET]",
+      "\t@returns handlers.AdminTranscodeStatsResponse",
+      ""
+    ],
+    "filepath": "internal/handlers/admin.go",
+    "filename": "admin.go",
+    "api": {
+      "summary": "returns realtime transcoder and system stats.",
+      "descriptions": [],
+      "endpoint": "/api/v1/admin/transcode-stats",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "handlers.AdminTranscodeStatsResponse",
+      "returnGoType": "handlers.AdminTranscodeStatsResponse",
+      "returnTypescriptType": "AdminTranscodeStatsResponse"
+    }
+  },
+  {
+    "name": "HandleGetLibraryStats",
+    "trimmedName": "GetLibraryStats",
+    "comments": [
+      "HandleGetLibraryStats returns library counts.",
+      "",
+      "\t@summary returns library counts.",
+      "\t@route /api/v1/admin/library-stats [GET]",
+      "\t@returns handlers.AdminLibraryStatsResponse",
+      ""
+    ],
+    "filepath": "internal/handlers/admin.go",
+    "filename": "admin.go",
+    "api": {
+      "summary": "returns library counts.",
+      "descriptions": [],
+      "endpoint": "/api/v1/admin/library-stats",
+      "methods": [
+        "GET"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "handlers.AdminLibraryStatsResponse",
+      "returnGoType": "handlers.AdminLibraryStatsResponse",
+      "returnTypescriptType": "AdminLibraryStatsResponse"
+    }
+  },
+  {
     "name": "getTMDBEpisodeCollection",
     "trimmedName": "getTMDBEpisodeCollection",
     "comments": [
@@ -954,51 +1008,6 @@
       "returns": "handlers.CastPlayResponse",
       "returnGoType": "handlers.CastPlayResponse",
       "returnTypescriptType": "CastPlayResponse"
-    }
-  },
-  {
-    "name": "HandleGetCollection",
-    "trimmedName": "GetCollection",
-    "comments": [
-      "HandleGetCollection returns the TMDB collection by ID.",
-      "It fetches from the TMDB platform and returns a CollectionResponse that matches",
-      "the MediaCollectionData frontend interface. Collection-level metadata (poster,",
-      "backdrop, overview) is sourced from: DB cache â†’ TMDB live â†’ entry-level fallback.",
-      ""
-    ],
-    "filepath": "internal/handlers/collections.go",
-    "filename": "collections.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
-    }
-  },
-  {
-    "name": "HandleListCollections",
-    "trimmedName": "ListCollections",
-    "comments": [
-      "HandleListCollections returns all persisted franchise collections.",
-      ""
-    ],
-    "filepath": "internal/handlers/collections.go",
-    "filename": "collections.go",
-    "api": {
-      "summary": "",
-      "descriptions": [],
-      "endpoint": "",
-      "methods": null,
-      "params": [],
-      "bodyFields": [],
-      "returns": "bool",
-      "returnGoType": "bool",
-      "returnTypescriptType": "boolean"
     }
   },
   {
@@ -2940,6 +2949,35 @@
     }
   },
   {
+    "name": "HandleScanAllSkipTimes",
+    "trimmedName": "ScanAllSkipTimes",
+    "comments": [
+      "HandleScanAllSkipTimes triggers a library-wide background skip-times scan.",
+      "",
+      "\t@summary trigger library-wide skip times scan.",
+      "\t@desc Runs the skip-times detection chain (AnimeThemes → cross-episode fingerprint → ASS subtitles) for every series with local files, sequentially, in the background. Progress is emitted via SKIP_SCAN_STATUS events with mediaId -1.",
+      "\t@route /api/v1/mediastream/skip-times/scan-all [POST]",
+      ""
+    ],
+    "filepath": "internal/handlers/mediastream.go",
+    "filename": "mediastream.go",
+    "api": {
+      "summary": "trigger library-wide skip times scan.",
+      "descriptions": [
+        "Runs the skip-times detection chain (AnimeThemes → cross-episode fingerprint → ASS subtitles) for every series with local files, sequentially, in the background. Progress is emitted via SKIP_SCAN_STATUS events with mediaId -1."
+      ],
+      "endpoint": "/api/v1/mediastream/skip-times/scan-all",
+      "methods": [
+        "POST"
+      ],
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
     "name": "HandleResolveMAL",
     "trimmedName": "ResolveMAL",
     "comments": [
@@ -3909,6 +3947,27 @@
     "trimmedName": "RegisterIntelligenceRoutes",
     "comments": [
       "RegisterIntelligenceRoutes registra las rutas del motor de selección inteligente.",
+      ""
+    ],
+    "filepath": "internal/handlers/routes.go",
+    "filename": "routes.go",
+    "api": {
+      "summary": "",
+      "descriptions": [],
+      "endpoint": "",
+      "methods": null,
+      "params": [],
+      "bodyFields": [],
+      "returns": "bool",
+      "returnGoType": "bool",
+      "returnTypescriptType": "boolean"
+    }
+  },
+  {
+    "name": "RegisterAdminRoutes",
+    "trimmedName": "RegisterAdminRoutes",
+    "comments": [
+      "RegisterAdminRoutes registra las rutas de administración.",
       ""
     ],
     "filepath": "internal/handlers/routes.go",

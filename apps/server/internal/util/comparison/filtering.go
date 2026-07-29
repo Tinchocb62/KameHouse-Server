@@ -57,7 +57,7 @@ var (
 func ValueContainsSeason(val string) bool {
 	val = strings.ToLower(val)
 
-	if strings.IndexRune(val, '第') != -1 {
+	if strings.ContainsRune(val, '第') {
 		return false
 	}
 	if ValueContainsSpecial(val) {

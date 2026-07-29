@@ -284,38 +284,6 @@ func generateReason(winner *MediaCandidate, preferredLangs []string) string {
 	return strings.Join(parts, " | ")
 }
 
-// parseFilePathToCandidate analiza un nombre de archivo para extraer información del video.
-func parseFilePathToCandidate(path string, episodeNumber int) *MediaCandidate {
-	if path == "" {
-		return nil
-	}
-
-	candidate := &MediaCandidate{
-		FilePath: path,
-	}
-
-	// Extraer extensión
-	ext := strings.ToLower(filepath.Ext(path))
-	candidate.Container = strings.TrimPrefix(ext, ".")
-
-	// Extraer información del nombre de archivo
-	filename := strings.ToLower(filepath.Base(path))
-
-	// Resolución
-	candidate.Resolution = inferResolutionFromFilename(filename)
-
-	// Códec
-	candidate.Codec = inferCodecFromFilename(filename)
-
-	// Idioma de audio
-	candidate.AudioLangs = inferAudioLangsFromFilename(filename)
-
-	// Tamaño del archivo (si está disponible)
-	// Nota: Esto requeriría acceso al filesystem, que puede no estar disponible
-
-	return candidate
-}
-
 // inferResolutionFromFilename infiere la resolución del nombre de archivo.
 func inferResolutionFromFilename(filename string) int {
 	if strings.Contains(filename, "2160p") || strings.Contains(filename, "4k") || strings.Contains(filename, "uhd") {
@@ -375,24 +343,6 @@ func inferAudioLangsFromFilename(filename string) []string {
 }
 
 
-
-// inferResolutionFromHeight convierte altura en píxeles a resolución legible.
-func inferResolutionFromHeight(height int) string {
-	switch {
-	case height >= 2160:
-		return "4K"
-	case height >= 1440:
-		return "1440p"
-	case height >= 1080:
-		return "1080p"
-	case height >= 720:
-		return "720p"
-	case height >= 480:
-		return "480p"
-	default:
-		return fmt.Sprintf("%dp", height)
-	}
-}
 
 // ParseHeightFromResolution convierte una cadena de resolución a altura en píxeles.
 func ParseHeightFromResolution(res string) int {

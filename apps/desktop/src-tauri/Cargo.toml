@@ -31,13 +31,20 @@ tauri-plugin-opener = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-global-shortcut = "2"
-thiserror = "1.0"
 tokio = { version = "1.40", features = ["rt-multi-thread", "macros", "process", "io-util", "time", "net", "sync"] }
-directories = "5.0"
-once_cell = "1.19"
 dirs = "5.0"
 reqwest = { version = "0.12", features = ["json", "stream"] }
 
 [profile.dev]
 debug = 0
 split-debuginfo = "off"
+
+# Release optimizado para tamaño de binario (el lado Rust es IPC/ventanas, no
+# cómputo pesado, así que opt-level "s" no penaliza en la práctica).
+# Se omite panic = "abort" a propósito: mantiene el unwinding para que un panic
+# en un handler IPC no tumbe toda la app.
+[profile.release]
+codegen-units = 1   # mejor optimización entre unidades (compila más lento)
+lto = true          # link-time optimization: binario más chico y rápido
+opt-level = "s"     # optimizar para tamaño
+strip = true        # quitar símbolos de debug del binario final

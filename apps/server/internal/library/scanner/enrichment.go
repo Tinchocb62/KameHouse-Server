@@ -284,11 +284,3 @@ func (scn *Scanner) resolveSagasForMediaSync(ctx context.Context, tvID int) []sa
 	return sagas
 }
 
-func findSagaForEpisodeNumber(sagas []sagaResolution, episodeNumber int) (sagaName, sagaID string) {
-	for _, saga := range sagas {
-		if episodeNumber >= saga.startEp && episodeNumber <= saga.endEp {
-			return saga.name, saga.id
-		}
-	}
-	return "", ""
-}

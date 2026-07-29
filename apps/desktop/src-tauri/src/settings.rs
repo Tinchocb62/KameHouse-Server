@@ -81,7 +81,7 @@ impl SettingsManager {
                 Ok(content) => {
                     match serde_json::from_str::<DesktopSettings>(&content) {
                         Ok(loaded) => {
-                            *settings = { let mut merged = DesktopSettings::default(); merged.window_bounds = loaded.window_bounds.clone(); merged };
+                            *settings = DesktopSettings { window_bounds: loaded.window_bounds.clone(), ..Default::default() };
                             settings.minimize_to_tray = loaded.minimize_to_tray;
                             settings.open_in_background = loaded.open_in_background;
                             settings.open_at_launch = loaded.open_at_launch;

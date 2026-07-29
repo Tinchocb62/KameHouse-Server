@@ -1,10 +1,10 @@
 import React from "react"
-import { Section, Card, OsToggle } from "../components"
-import { type Control, Controller, useFormContext, useWatch } from "react-hook-form"
+import { Section } from "../components"
+import { type Control, useFormContext, useWatch } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
 import { useSound } from "@/hooks/use-sound"
 import { cn } from "@/components/ui/core/styling"
-import { resolveThemeMode, THEME_DEFAULT_VALUES, type ThemeMode } from "@/lib/theme/theme-hooks"
+import { resolveThemeMode, type ThemeMode } from "@/lib/theme/theme-hooks"
 
 interface ThemeTabProps {
     control: Control<SettingsFormValues>

@@ -2,27 +2,19 @@ package metadata_provider
 
 import (
 	"kamehouse/internal/api/metadata"
-	"kamehouse/internal/database/db"
 	"kamehouse/internal/platforms/platform"
 	"kamehouse/internal/util"
-	"kamehouse/internal/util/filecache"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/rs/zerolog"
 	"github.com/samber/mo"
 )
 
 type (
 	AnimeWrapperImpl struct {
-		metadata   mo.Option[*metadata.AnimeMetadata]
-		db         *db.Database
-		baseAnime  *platform.UnifiedMedia
-		fileCacher *filecache.Cacher
-		logger     *zerolog.Logger
-
-		provider *ProviderImpl
+		metadata  mo.Option[*metadata.AnimeMetadata]
+		baseAnime *platform.UnifiedMedia
 
 		parentEntry         *metadata.AnimeMetadata
 		parentSpecialOffset int

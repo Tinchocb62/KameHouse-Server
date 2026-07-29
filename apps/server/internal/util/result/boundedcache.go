@@ -104,11 +104,7 @@ func (c *BoundedCache[K, V]) Has(key K) bool {
 	}
 
 	item := elem.Value.(*boundedCacheItem[K, V])
-	if time.Now().After(item.expiration) {
-		return false
-	}
-
-	return true
+	return !time.Now().After(item.expiration)
 }
 
 // Delete removes an item from the cache

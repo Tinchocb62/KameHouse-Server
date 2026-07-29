@@ -18,8 +18,6 @@ import (
 )
 
 type MediaInfo struct {
-	// closed if the mediainfo is ready for read. open otherwise
-	ready <-chan struct{}
 	// The sha1 of the video file
 	Sha string `json:"sha"`
 	// The internal path of the video file

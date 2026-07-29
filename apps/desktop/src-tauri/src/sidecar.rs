@@ -209,7 +209,7 @@ impl SidecarManager {
             info!("[Sidecar] Skipping server launch due to -no-binary flag");
             self.set_status(ServerStatus::Running);
             self.startup_resolved.store(true, Ordering::SeqCst);
-            let _ = window_manager.finalize_startup(app_handle, "no-binary-flag");
+            window_manager.finalize_startup(app_handle, "no-binary-flag");
             return Ok(());
         }
 
@@ -328,7 +328,7 @@ impl SidecarManager {
                         if !startup_resolved.load(Ordering::SeqCst) {
                             startup_resolved.store(true, Ordering::SeqCst);
                             status.store(2, Ordering::SeqCst); // Running
-                            let _ = window_manager.finalize_startup(&app_handle, "websocket client connection");
+                            window_manager.finalize_startup(&app_handle, "websocket client connection");
                         }
                     }
                 }
@@ -395,15 +395,13 @@ impl SidecarManager {
 
                 // Check if server is reachable via HTTP
                 let url = format!("http://{}:{}/api/v1/status", DESKTOP_SERVER_HOST, dynamic_port.load(Ordering::SeqCst).max(if cfg!(debug_assertions) { DESKTOP_SERVER_DEV_PORT } else { DESKTOP_SERVER_DEFAULT_PORT }));
-                if let Ok(resp) = timeout(Duration::from_secs(1), client.get(&url).send()).await {
-                    if let Ok(resp) = resp {
-                        if resp.status().is_success() && !startup_resolved.load(Ordering::SeqCst) {
-                            info!("[Sidecar] Server ready via HTTP probe");
-                            startup_resolved.store(true, Ordering::SeqCst);
-                            status.store(2, Ordering::SeqCst); // Running
-                            let _ = window_manager.finalize_startup(&app_handle, "HTTP status probe");
-                            break;
-                        }
+                if let Ok(Ok(resp)) = timeout(Duration::from_secs(1), client.get(&url).send()).await {
+                    if resp.status().is_success() && !startup_resolved.load(Ordering::SeqCst) {
+                        info!("[Sidecar] Server ready via HTTP probe");
+                        startup_resolved.store(true, Ordering::SeqCst);
+                        status.store(2, Ordering::SeqCst); // Running
+                        window_manager.finalize_startup(&app_handle, "HTTP status probe");
+                        break;
                     }
                 }
 

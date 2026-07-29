@@ -217,14 +217,12 @@ export function ViewsTab({ control }: ViewsTabProps) {
                         render={({ field }) => (
                             <OsSelect
                                 label="Diseño de Layout de la Página"
-                                description="Estructura general de la pantalla de detalle."
+                                description="Estructura general del apartado de sagas y episodios en series."
                                 options={[
-                                    { value: "default", label: "Por Defecto" },
-                                    { value: "modern", label: "Moderno" },
-                                    { value: "compact", label: "Compacto" },
-                                    { value: "tv", label: "Interfaz de TV" },
+                                    { value: "side-by-side", label: "Lado a lado (Sagas al costado)" },
+                                    { value: "stacked", label: "Apilado (Sagas arriba)" },
                                 ]}
-                                value={field.value || "default"}
+                                value={field.value || "side-by-side"}
                                 onChange={field.onChange}
                             />
                         )}

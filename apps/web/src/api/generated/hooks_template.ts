@@ -1,4 +1,26 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// admin
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// export function useGetTranscodeStats() {
+//     return useServerQuery<AdminTranscodeStatsResponse>({
+//         endpoint: API_ENDPOINTS.ADMIN.GetTranscodeStats.endpoint,
+//         method: API_ENDPOINTS.ADMIN.GetTranscodeStats.methods[0],
+//         queryKey: [API_ENDPOINTS.ADMIN.GetTranscodeStats.key],
+//         enabled: true,
+//     })
+// }
+
+// export function useGetLibraryStats() {
+//     return useServerQuery<AdminLibraryStatsResponse>({
+//         endpoint: API_ENDPOINTS.ADMIN.GetLibraryStats.endpoint,
+//         method: API_ENDPOINTS.ADMIN.GetLibraryStats.methods[0],
+//         queryKey: [API_ENDPOINTS.ADMIN.GetLibraryStats.key],
+//         enabled: true,
+//     })
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // anime
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -682,6 +704,17 @@
 //         endpoint: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.endpoint,
 //         method: API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.methods[0],
 //         mutationKey: [API_ENDPOINTS.MEDIASTREAM.ScanEpisodeSkipTimes.key],
+//         onSuccess: async () => {
+// 
+//         },
+//     })
+// }
+
+// export function useScanAllSkipTimes() {
+//     return useServerMutation<boolean>({
+//         endpoint: API_ENDPOINTS.MEDIASTREAM.ScanAllSkipTimes.endpoint,
+//         method: API_ENDPOINTS.MEDIASTREAM.ScanAllSkipTimes.methods[0],
+//         mutationKey: [API_ENDPOINTS.MEDIASTREAM.ScanAllSkipTimes.key],
 //         onSuccess: async () => {
 // 
 //         },

@@ -111,9 +111,11 @@ export function normalizeInterval(
 ): AniSkipInterval {
     // Cannot normalize without valid durations
     if (!sourceLen || !localLen || sourceLen <= 0 || localLen <= 0) return interval
-    
-    // Ignore small discrepancies (< 2s) to prevent jitter
-    if (Math.abs(sourceLen - localLen) < 2) return interval
+
+    // Ignore sub-second discrepancies (metadata jitter). Anything above that is a
+    // real cut difference: an end-anchored ED off by 1-2s leaves the tail of the
+    // outro visible after a skip, so re-anchor instead of tolerating it.
+    if (Math.abs(sourceLen - localLen) < 0.5) return interval
 
     if (anchor === "end") {
         // Anchor to the END of the episode:

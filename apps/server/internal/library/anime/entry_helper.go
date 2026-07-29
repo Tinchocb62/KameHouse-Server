@@ -183,7 +183,7 @@ func (e *SimpleEntry) FindMainEpisodes() ([]*Episode, bool) {
 			eps = append(eps, ep)
 		}
 	}
-	return e.Episodes, true
+	return eps, true
 }
 
 func (e *SimpleEntry) FindNextEpisode() (*Episode, bool) {

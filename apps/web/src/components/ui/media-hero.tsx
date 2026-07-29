@@ -163,50 +163,31 @@ export function MediaHero({
             )}
 
             {/* High Res Parallax Backdrop */}
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 overflow-hidden">
                 {backdropUrl && backdropTreatment !== "hide" && (
-                    hasBannerImage ? (
-                        <div
-                            ref={backdropRef}
-                            onClick={onBackdropClick}
-                            className={cn(
-                                "absolute right-0 top-0 h-full w-full overflow-hidden z-0 will-change-transform group/backdrop",
-                                onBackdropClick && "cursor-pointer"
+                    <div
+                        ref={backdropRef}
+                        onClick={onBackdropClick}
+                        className={cn(
+                            "absolute inset-0 h-full w-full overflow-hidden z-0 will-change-transform group/backdrop",
+                            onBackdropClick && "cursor-pointer"
+                        )}
+                    >
+                        <DeferredImage
+                            src={backdropUrl}
+                            alt="Backdrop"
+                            priority={true}
+                            className="w-full h-full"
+                            imgClassName={cn(
+                                "w-full h-full transition-all duration-700",
+                                hasBannerImage
+                                    ? "object-cover object-[center_20%] animate-ken-burns"
+                                    : "object-cover object-center blur-2xl scale-125",
+                                backdropTreatment === "dim" ? "opacity-35" : hasBannerImage ? "opacity-85" : "opacity-45",
+                                backdropTreatment === "blur" && "blur-[var(--filter-blur-hero)] scale-110"
                             )}
-                        >
-                            <DeferredImage
-                                src={backdropUrl}
-                                alt="Backdrop"
-                                priority={true}
-                                className={cn(
-                                    "w-full h-full object-cover object-[center_20%] animate-ken-burns",
-                                    backdropTreatment === "dim" ? "opacity-40" : "opacity-85",
-                                    backdropTreatment === "blur" && "blur-[var(--filter-blur-hero)] scale-110"
-                                )}
-                            />
-                        </div>
-                    ) : (
-                        <div
-                            ref={backdropRef}
-                            onClick={onBackdropClick}
-                            className={cn(
-                                "absolute right-0 top-0 h-full w-auto overflow-hidden z-0 will-change-transform group/backdrop",
-                                onBackdropClick && "cursor-pointer"
-                            )}
-                        >
-                            <DeferredImage
-                                src={backdropUrl}
-                                alt="Backdrop"
-                                priority={true}
-                                className={cn(
-                                    "h-full w-auto animate-ken-burns",
-                                    backdropTreatment === "dim" ? "opacity-30" : "opacity-[0.65]",
-                                    backdropTreatment === "blur" && "blur-[var(--filter-blur-hero)] scale-110"
-                                )}
-                                imgClassName="!w-auto !h-full !object-contain !object-right-top"
-                            />
-                        </div>
-                    )
+                        />
+                    </div>
                 )}
             </div>
 

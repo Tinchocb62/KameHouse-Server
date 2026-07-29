@@ -10,13 +10,15 @@ import { SAGA_LORE_MAPPING, getSagaCharacters, type SagaCharacterEdge } from "@/
 import type { MediaForSagaResolution } from "@/lib/config/dragonball.config";
 import { EpisodeBadge, canonStatusToVariant } from "@/components/ui/episode-badge";
 import { CharacterAvatar } from "./character-avatar";
+import { EraOpeningPlayer } from "./era-opening-player";
 
 export interface SagaLoreHeaderProps {
     saga: SagaDTO | undefined
     subSaga?: { id?: string; title?: string; description?: string; image?: string } | null
-    media: (MediaForSagaResolution & { characters?: { edges?: SagaCharacterEdge[] } }) | null | undefined
+    media: (MediaForSagaResolution & { id?: number; characters?: { edges?: SagaCharacterEdge[] } }) | null | undefined
     onSelectCharacter?: (name: string) => void
     onSelectEpisode?: (episodeNumber: number) => void
+    onUpdateProgress?: (mediaId: number, progress: number) => void
     progress?: { watched: number; total: number; percent: number }
     fillerStats?: { filler: number; total: number; percent: number }
 }
@@ -25,8 +27,9 @@ export function SagaLoreHeader({
     saga, 
     subSaga, 
     media, 
-    onSelectCharacter, 
+    onSelectCharacter,
     onSelectEpisode,
+    onUpdateProgress,
     progress,
     fillerStats
 }: SagaLoreHeaderProps) {
@@ -136,6 +139,7 @@ export function SagaLoreHeader({
                                 <span className="line-clamp-1">{suggestedSwimlane}</span>
                             </span>
                         )}
+                        <EraOpeningPlayer sagaId={saga.id} />
                     </div>
                     {progress && progress.total > 0 && (
                         <div className="mt-5 w-full max-w-md flex flex-col gap-2 relative z-25" onClick={(e) => e.stopPropagation()}>
@@ -149,11 +153,45 @@ export function SagaLoreHeader({
                                     style={{ width: `${progress.percent}%` }}
                                 />
                             </div>
-                            {fillerStats && fillerStats.filler > 0 && (
-                                <div className="text-label-sm font-bold text-brand-destructive/80 uppercase tracking-widest mt-0.5">
-                                    Contiene {fillerStats.filler} episodios de relleno ({fillerStats.percent}%)
-                                </div>
-                            )}
+                            <div className="flex flex-wrap justify-between items-center mt-0.5 gap-2">
+                                {fillerStats && fillerStats.filler > 0 ? (
+                                    <div className="text-label-sm font-bold text-brand-destructive/80 uppercase tracking-widest">
+                                        Contiene {fillerStats.filler} episodios de relleno ({fillerStats.percent}%)
+                                    </div>
+                                ) : <div />}
+
+                                {saga.endEp && media?.id != null && onUpdateProgress && (
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (media?.id != null) onUpdateProgress(media.id, saga.endEp!)
+                                            }}
+                                            disabled={progress.watched >= progress.total}
+                                            className={cn(
+                                                "text-label-sm font-bold uppercase tracking-widest transition-colors select-none",
+                                                progress.watched >= progress.total
+                                                    ? "text-on-surface-variant/50 cursor-not-allowed"
+                                                    : "text-brand-success hover:text-brand-success-light cursor-pointer"
+                                            )}
+                                        >
+                                            Marcar vistos 1-{saga.endEp}
+                                        </button>
+                                        {saga.startEp != null && progress.watched > 0 && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (media?.id != null) onUpdateProgress(media.id, Math.max(0, saga.startEp! - 1))
+                                                }}
+                                                title={`Vuelve el progreso al episodio ${Math.max(0, saga.startEp! - 1)}`}
+                                                className="text-label-sm font-bold uppercase tracking-widest transition-colors select-none text-on-surface-variant hover:text-brand-destructive cursor-pointer"
+                                            >
+                                                Reiniciar progreso
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

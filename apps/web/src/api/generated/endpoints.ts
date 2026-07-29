@@ -7,6 +7,18 @@ export type ApiEndpoints = Record<string, Record<string, {
 }>>
 
 export const API_ENDPOINTS = {
+    ADMIN: {
+        GetTranscodeStats: {
+            key: "ADMIN-get-transcode-stats",
+            methods: ["GET"],
+            endpoint: "/api/v1/admin/transcode-stats",
+        },
+        GetLibraryStats: {
+            key: "ADMIN-get-library-stats",
+            methods: ["GET"],
+            endpoint: "/api/v1/admin/library-stats",
+        },
+    },
     ANIME: {
         /**
          *  @description
@@ -593,6 +605,16 @@ export const API_ENDPOINTS = {
             key: "MEDIASTREAM-scan-episode-skip-times",
             methods: ["POST"],
             endpoint: "/api/v1/mediastream/skip-times/scan",
+        },
+        /**
+         *  @description
+         *  Route trigger library-wide skip times scan.
+         *  Runs the skip-times detection chain (AnimeThemes → cross-episode fingerprint → ASS subtitles) for every series with local files, sequentially, in the background. Progress is emitted via SKIP_SCAN_STATUS events with mediaId -1.
+         */
+        ScanAllSkipTimes: {
+            key: "MEDIASTREAM-scan-all-skip-times",
+            methods: ["POST"],
+            endpoint: "/api/v1/mediastream/skip-times/scan-all",
         },
         /**
          *  @description

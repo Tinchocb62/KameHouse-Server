@@ -414,15 +414,23 @@ export function PlayerUI(props: PlayerUIProps) {
     const insights = insightsData || []
 
     // Cinematic Controls Animation Layer
+    // Bug 3 fix: split the bottom-bar animation into two targets:
+    //   .player-bottom-bar  → fade only (autoAlpha), NO transform — the frosted-glass
+    //                         background div lives here and a CSS transform on an ancestor
+    //                         isolates its backdrop context, breaking backdrop-blur.
+    //   .player-bar-fg      → y/scale slide (the cinematic entrance). No backdrop-filter
+    //                         of its own, so having a transform is safe.
     useGSAP(() => {
         if (controlsVisible) {
-            // Clear the transform once settled: a lingering CSS transform on the bar
-            // isolates the backdrop and disables the bars' frosted-glass backdrop-filter.
             gsap.to(".player-top-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out", onComplete: () => gsap.set(".player-top-bar", { clearProps: "transform" }) })
-            gsap.to(".player-bottom-bar", { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "power4.out", onComplete: () => gsap.set(".player-bottom-bar", { clearProps: "transform" }) })
+            // Fade the whole wrapper (visibility/opacity only, no movement)
+            gsap.to(".player-bottom-bar", { autoAlpha: 1, duration: 0.55, ease: "power4.out" })
+            // Slide the foreground content layer
+            gsap.to(".player-bar-fg", { y: 0, scale: 1, duration: 0.55, ease: "power4.out", onComplete: () => gsap.set(".player-bar-fg", { clearProps: "transform" }) })
         } else {
             gsap.to(".player-top-bar", { y: -15, scale: 0.97, autoAlpha: 0, duration: 0.35, ease: "power2.inOut" })
-            gsap.to(".player-bottom-bar", { y: 15, scale: 0.97, autoAlpha: 0, duration: 0.35, ease: "power2.inOut" })
+            gsap.to(".player-bottom-bar", { autoAlpha: 0, duration: 0.35, ease: "power2.inOut" })
+            gsap.to(".player-bar-fg", { y: 15, scale: 0.97, duration: 0.35, ease: "power2.inOut" })
         }
     }, { dependencies: [controlsVisible], scope: domElements.containerElement })
 
@@ -433,8 +441,13 @@ export function PlayerUI(props: PlayerUIProps) {
             ref={domElements.containerElement}
             onMouseMove={actions.triggerControlsVisibility}
             onMouseLeave={() => {
-                actions.setControlsVisible(false)
-                actions.setIsSettingsOpen(false)
+                // Bug 2 fix: do not close the settings panel on mouse leave.
+                // The panel renders inside .player-bottom-bar; closing it here
+                // would dismiss settings whenever the cursor briefly leaves the
+                // player container (e.g. moving to a sub-menu item).
+                if (!state.isSettingsOpen) {
+                    actions.setControlsVisible(false)
+                }
             }}
             className={cn(
                 "fixed inset-0 z-[10000] w-screen h-screen bg-black flex flex-col items-center justify-center overflow-hidden font-sans",

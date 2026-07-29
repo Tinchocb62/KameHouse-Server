@@ -59,7 +59,4 @@ func (h *Handler) RegisterLibraryRoutes(v1 *echo.Group) {
 
 	// Anime
 	v1.GET("/anime/episode-collection/:id", h.HandleGetAnimeEpisodeCollection)
-	// Collections
-	v1.GET("/collections", h.HandleListCollections)
-	v1.GET("/collections/:id", h.HandleGetCollection)
 }

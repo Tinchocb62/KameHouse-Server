@@ -19,7 +19,6 @@ const mappingTimeout = 10 * time.Second
 
 var (
 	animapBaseURL = constants.InternalMetadataURL
-	anizipBaseURL = "https://api.ani.zip"
 )
 
 func mapTMDBIDFromAniDB(ctx context.Context, anidbID int) (int, error) {

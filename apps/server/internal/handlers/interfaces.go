@@ -58,7 +58,6 @@ type PlatformProvider interface {
 	GetAnimeCollection(ctx context.Context, bypassCache bool) (interface{}, error)
 	GetAnimeAiringSchedule(ctx context.Context) (interface{}, error)
 	AddMediaToCollection(ctx context.Context, mIds []int) error
-	GetMediaCollection(ctx context.Context, collectionID int) (*platform.UnifiedCollection, error)
 	UpdateEntryProgress(ctx context.Context, mediaID int, progress int, totalEpisodes *int) error
 	UpdateEntryRepeat(ctx context.Context, mediaID int, repeat int) error
 	DeleteEntry(ctx context.Context, mediaID int, entryID int) error
@@ -84,7 +83,6 @@ type FanArtEnricher interface {
 }
 
 type OMDbEnricher interface{}
-
 
 type AnimeCollectionProvider interface {
 	GetAnimeCollection(bypassCache bool) (*platform.UnifiedCollection, error)

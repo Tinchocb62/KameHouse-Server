@@ -7,10 +7,18 @@ describe("normalizeInterval", () => {
         expect(result).toEqual(interval)
     })
 
-    it("should not normalize if duration difference is less than 2s", () => {
+    it("should not normalize sub-second duration differences (metadata jitter)", () => {
+        const interval = { startTime: 1300, endTime: 1390 }
+        const result = normalizeInterval(interval, 1400, 1400.4, "end")
+        expect(result).toEqual(interval)
+    })
+
+    it("should re-anchor ED for a 1s duration difference", () => {
+        // A 1-2s cut difference used to be tolerated and left the tail of the
+        // outro visible after a skip; now anything >= 0.5s re-anchors to the end.
         const interval = { startTime: 1300, endTime: 1390 }
         const result = normalizeInterval(interval, 1400, 1401, "end")
-        expect(result).toEqual(interval)
+        expect(result).toEqual({ startTime: 1301, endTime: 1391 })
     })
 
     it("should adjust ED correctly when local file is longer", () => {

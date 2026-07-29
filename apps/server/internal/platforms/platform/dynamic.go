@@ -76,10 +76,6 @@ func (p *DynamicPlatform) SearchMedia(ctx context.Context, query string, page *i
 	return p.GetPlatform().SearchMedia(ctx, query, page)
 }
 
-func (p *DynamicPlatform) GetMediaCollection(ctx context.Context, collectionID int) (*UnifiedCollection, error) {
-	return p.GetPlatform().GetMediaCollection(ctx, collectionID)
-}
-
 func (p *DynamicPlatform) GetAnimeCollection(ctx context.Context, bypassCache bool) (interface{}, error) {
 	return p.GetPlatform().GetAnimeCollection(ctx, bypassCache)
 }

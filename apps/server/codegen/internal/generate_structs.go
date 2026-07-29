@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"unicode"
 )
 
 type GoStruct struct {
@@ -222,7 +221,7 @@ func getGoStructsFromFile(path string, info os.FileInfo) (structs []*GoStruct, e
 
 				subStructs := make([]*GoStruct, 0)
 				for _, field := range structType.Fields.List {
-					if field.Names != nil && len(field.Names) > 0 {
+					if len(field.Names) > 0 {
 
 						subStructType, ok := field.Type.(*ast.StructType)
 						if ok {
@@ -337,7 +336,7 @@ func goStructFromStruct(path string, info os.FileInfo, genDecl *ast.GenDecl, nam
 
 	// Get fields
 	for _, field := range structType.Fields.List {
-		if field.Names == nil || len(field.Names) == 0 {
+		if len(field.Names) == 0 {
 			if len(field.Names) == 0 {
 				switch field.Type.(type) {
 				case *ast.Ident, *ast.StarExpr, *ast.SelectorExpr:
@@ -716,47 +715,6 @@ func jsonFieldOmitEmpty(field *ast.Field) bool {
 	return false
 }
 
-func isCustomStruct(goType string) bool {
-	return goTypeToTypescriptType(goType) == "unknown"
-}
-
-var nameExceptions = map[string]string{"OAuth2": "oauth2"}
-
-func convertGoToJSName(name string) string {
-	if v, ok := nameExceptions[name]; ok {
-		return v
-	}
-
-	startUppercase := make([]rune, 0, len(name))
-
-	for _, c := range name {
-		if c != '_' && !unicode.IsUpper(c) && !unicode.IsDigit(c) {
-			break
-		}
-
-		startUppercase = append(startUppercase, c)
-	}
-
-	totalStartUppercase := len(startUppercase)
-
-	// all uppercase eg. "JSON" -> "json"
-	if len(name) == totalStartUppercase {
-		return strings.ToLower(name)
-	}
-
-	// eg. "JSONField" -> "jsonField"
-	if totalStartUppercase > 1 {
-		return strings.ToLower(name[0:totalStartUppercase-1]) + name[totalStartUppercase-1:]
-	}
-
-	// eg. "GetField" -> "getField"
-	if totalStartUppercase == 1 {
-		return strings.ToLower(name[0:1]) + name[1:]
-	}
-
-	return name
-}
-
 // fieldTypeToUsedTypescriptType extracts the core TypeScript type from complex type expressions
 // For example, if the type is Array<Models_User>, it returns Models_User
 // If the type is Record<string, Models_User>, it returns Models_User
@@ -809,7 +767,7 @@ func formatInlineStruct(structType *ast.StructType) string {
 			result += "\n"
 		}
 
-		if field.Names != nil && len(field.Names) > 0 {
+		if len(field.Names) > 0 {
 			result += field.Names[0].Name + " " + fieldTypeString(field.Type)
 
 			if field.Tag != nil {

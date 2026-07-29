@@ -142,7 +142,11 @@ function ToggleRow({ label, enabled, onChange, disabled = false, subtext }: { la
     )
 }
 
+const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const
+
 export function PlaybackSettings({
+    playbackRate = 1,
+    onPlaybackRateChange = () => {},
     autoSkipIntro,
     onAutoSkipIntroChange,
     autoSkipOutro,
@@ -151,6 +155,10 @@ export function PlaybackSettings({
     onSkipStepSecondsChange,
     showHeatmap,
     onShowHeatmapChange,
+    loopEnabled = false,
+    onLoopEnabledChange = () => {},
+    autoDisableSubtitlesWhenDubbed = true,
+    onAutoDisableSubtitlesWhenDubbedChange = () => {},
     ambientModeEnabled = true,
     onAmbientModeEnabledChange = () => {},
     showSeparator = true,
@@ -163,6 +171,34 @@ export function PlaybackSettings({
     return (
         <div className="py-4">
             {showSeparator && <div className="mx-6 h-px bg-white/10 mb-4" />}
+
+            {/* Velocidad de reproducción */}
+            <div className="px-6 py-3">
+                <div className="text-label-sm font-black text-zinc-500 uppercase tracking-widest mb-3">Velocidad</div>
+                <div className="flex flex-wrap gap-1.5">
+                    {PLAYBACK_RATES.map((rate) => {
+                        const isActive = Math.abs(playbackRate - rate) < 0.001
+                        return (
+                            <button
+                                key={rate}
+                                onClick={() => onPlaybackRateChange(rate)}
+                                className={cn(
+                                    "px-2.5 py-1.5 rounded-full text-label-sm font-black tabular-nums tracking-widest transition-all duration-base active:scale-95",
+                                    "focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
+                                    isActive
+                                        ? "bg-brand-accent text-on-primary shadow-[0_0_12px_hsl(var(--brand-accent)/0.45)]"
+                                        : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white"
+                                )}
+                            >
+                                {rate}x
+                            </button>
+                        )
+                    })}
+                </div>
+            </div>
+
+            <ToggleRow label="Repetir (loop)" enabled={loopEnabled} onChange={onLoopEnabledChange} />
+            <ToggleRow label="Ocultar subtítulos si está doblado" enabled={autoDisableSubtitlesWhenDubbed} onChange={onAutoDisableSubtitlesWhenDubbedChange} />
             <ToggleRow label="Modo Ambiente (efecto de luz)" enabled={ambientModeEnabled} onChange={onAmbientModeEnabledChange} />
             <ToggleRow label="Mapa de Calor (timeline)" enabled={showHeatmap} onChange={onShowHeatmapChange} />
             {!isMovie && <ToggleRow label="Omitir Intro (automático)" enabled={marathonMode ? true : autoSkipIntro} onChange={onAutoSkipIntroChange} disabled={marathonMode} subtext={marathonMode ? "(controlado por Maratón)" : undefined} />}

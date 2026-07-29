@@ -35,7 +35,7 @@ interface PremiumEpisodeListProps {
   onPreload?: (filePath: string) => void
 }
 
-export function PremiumEpisodeList({
+export const PremiumEpisodeList = React.memo(function PremiumEpisodeList({
   episodes,
   activeSagaId,
   activeSubSagaStart,
@@ -46,6 +46,7 @@ export function PremiumEpisodeList({
   onPreload
 }: PremiumEpisodeListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [typeFilter, setTypeFilter] = React.useState<"all" | "canon" | "filler" | "unwatched">("all")
   const ts = useThemeSettings()
 
   const { onMouseEnter, onMouseLeave } = useHoverPreload({
@@ -57,40 +58,71 @@ export function PremiumEpisodeList({
   })
 
   const filteredEpisodes = React.useMemo(() => {
-    if (!searchQuery.trim()) return episodes
+    let result = episodes
+    if (typeFilter === "canon") result = result.filter(ep => ep.episodeType !== "Filler")
+    if (typeFilter === "filler") result = result.filter(ep => ep.episodeType === "Filler")
+    if (typeFilter === "unwatched") result = result.filter(ep => !ep.isWatched)
+
+    if (!searchQuery.trim()) return result
     const query = searchQuery.toLowerCase().trim()
-    return episodes.filter(ep => {
+    return result.filter(ep => {
       const matchesNumber = ep.number.toString().includes(query)
       const matchesTitle = ep.title.toLowerCase().includes(query)
       return matchesNumber || matchesTitle
     })
-  }, [episodes, searchQuery])
+  }, [episodes, searchQuery, typeFilter])
 
   return (
     <div className="flex flex-col gap-4 mt-6">
-      {/* Search Input */}
-      <div className="relative">
-        <Icons.navigation.search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
-        <input
-          type="text"
-          placeholder="Buscar episodio..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={cn(
-            "w-full pl-10 pr-10 py-2.5 rounded-full text-sm",
-            "bg-white/[0.05] border border-white/10 backdrop-blur-[var(--blur-overlay-sm)] text-on-surface placeholder-on-surface-variant/60",
-            "focus:outline-none focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent/30",
-            "transition-all duration-base ease-smooth-out"
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <Icons.navigation.search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" />
+          <input
+            type="text"
+            placeholder="Buscar episodio..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={cn(
+              "w-full pl-10 pr-10 py-2.5 rounded-full text-sm",
+              "bg-white/[0.05] border border-white/10 backdrop-blur-[var(--blur-overlay-sm)] text-on-surface placeholder-on-surface-variant/60",
+              "focus:outline-none focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent/30",
+              "transition-all duration-base ease-smooth-out"
+            )}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <Icons.ui.close className="w-4 h-4" />
+            </button>
           )}
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
-          >
-            <Icons.ui.close className="w-4 h-4" />
-          </button>
-        )}
+        </div>
+
+        {/* Type Filter */}
+        <div className="flex bg-white/[0.05] border border-white/10 rounded-full p-1 backdrop-blur-[var(--blur-overlay-sm)] overflow-x-auto hide-scrollbar shrink-0">
+          {[
+            { id: "all", label: "Todos" },
+            { id: "canon", label: "Canon" },
+            { id: "filler", label: "Relleno" },
+            { id: "unwatched", label: "No vistos" }
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setTypeFilter(f.id as any)}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-full transition-all whitespace-nowrap",
+                typeFilter === f.id
+                  ? "bg-brand-accent/20 text-brand-accent-light"
+                  : "text-on-surface-variant hover:text-on-surface hover:bg-white/[0.05]"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Results count */}
@@ -125,6 +157,9 @@ export function PremiumEpisodeList({
     </div>
   )
 }
+)
+
+PremiumEpisodeList.displayName = "PremiumEpisodeList"
 
 function EpisodeVirtualList({
     filteredEpisodes, activeSagaId, activeSubSagaStart, activeSubSagaEnd, scrollToEp, searchActive, ts, onPlay, onCast, onMouseEnter, onMouseLeave
@@ -347,17 +382,7 @@ function EpisodeVirtualList({
 
                                 {/* Technical Pills & Status */}
                                 {!ts.themeUseLegacyEpisodeCard && (
-                                <div className="flex items-center justify-between mt-auto">
-                                    {ts.themeShowEpisodeCardAnimeInfo && (
-                                    <div className="flex items-center gap-1.5">
-                                        {[ep.resolution, ep.videoCodec, ep.audioCodec].filter(Boolean).map((spec) => (
-                                        <span key={spec as string} className="text-label-sm font-mono font-medium bg-white/[0.06] border border-white/[0.06] text-on-surface-variant px-2 py-0.5 rounded-md uppercase">
-                                            {spec}
-                                        </span>
-                                        ))}
-                                    </div>
-                                    )}
-
+                                <div className="flex items-center justify-end mt-auto">
                                     <div className="flex items-center justify-center w-6 h-6 rounded-full border border-outline-variant group-hover:border-outline-variant/70 transition-colors ml-auto">
                                     {ep.isWatched && <Icons.ui.check className="w-3.5 h-3.5 text-brand-success" strokeWidth={3} />}
                                     </div>

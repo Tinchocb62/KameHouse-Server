@@ -374,6 +374,27 @@ export type Anime_UpcomingEpisodes = {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Cassette
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * - Filepath: internal/mediastream/cassette/governor.go
+ * - Filename: governor.go
+ * - Package: cassette
+ * @description
+ *  GovernorStats contains runtime metrics
+ */
+export type GovernorStats = {
+    activeProcesses: number
+    maxConcurrency: number
+    activeNvenc: number
+    nvencCap: number
+    totalLaunched: number
+    totalCompleted: number
+    totalWaitTime?: number
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Continuity
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -855,6 +876,29 @@ export type VideoStreamInfo = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * - Filepath: internal/handlers/admin.go
+ * - Filename: admin.go
+ * - Package: handlers
+ */
+export type AdminLibraryStatsResponse = {
+    totalLocalFiles: number
+    totalMedia: number
+}
+
+/**
+ * - Filepath: internal/handlers/admin.go
+ * - Filename: admin.go
+ * - Package: handlers
+ */
+export type AdminTranscodeStatsResponse = {
+    transcoderInitialized: boolean
+    governor?: GovernorStats
+    preTranscodeQueue: number
+    system: SystemStats
+    gpu?: GPUStats
+}
+
+/**
  * - Filepath: internal/handlers/music.go
  * - Filename: music.go
  * - Package: handlers
@@ -923,6 +967,18 @@ export type DirectorySelectorResponse = {
     basePath: string
     suggestions?: Array<DirectoryInfo>
     Directories?: Array<DirectoryInfo>
+}
+
+/**
+ * - Filepath: internal/handlers/admin.go
+ * - Filename: admin.go
+ * - Package: handlers
+ */
+export type GPUStats = {
+    utilization: number
+    encoder: number
+    memoryUsed: number
+    memoryTotal: number
 }
 
 /**
@@ -996,6 +1052,17 @@ export type Status = {
      * OS process id of the server; used by the desktop sidecar to reap orphans
      */
     pid: number
+}
+
+/**
+ * - Filepath: internal/handlers/admin.go
+ * - Filename: admin.go
+ * - Package: handlers
+ */
+export type SystemStats = {
+    cpuPercent: number
+    memoryUsed: number
+    memoryTotal: number
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

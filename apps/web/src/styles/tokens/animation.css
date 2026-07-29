@@ -103,6 +103,12 @@
   to   { background-position: -200% center; }
 }
 
+/* Music Bars: barras de equalizer que oscilan mientras suena audio */
+@keyframes music-bars {
+  0%, 100% { transform: scaleY(0.35); }
+  50%      { transform: scaleY(1); }
+}
+
 /* ─── Clases de Animación ──────────────────────────────────────────── */
 .animate-fade-in       { animation: fade-in var(--duration-base) var(--ease-out) both; }
 .animate-fade-out      { animation: fade-out var(--duration-fast) var(--ease-in) both; }
@@ -127,6 +133,7 @@
 .animate-float-blur-reverse { animation: float-blur-reverse 25s ease-in-out infinite; }
 .animate-ken-burns     { animation: ken-burns 30s ease-in-out infinite alternate; will-change: transform; }
 .animate-ki-shimmer    { background-size: 200% auto; animation: ki-shimmer 4s linear infinite; }
+.animate-music-bars    { animation: music-bars 0.9s ease-in-out infinite; transform-origin: bottom; }
 
 /* Stagger delays */
 .delay-50   { animation-delay: 50ms; }
@@ -147,9 +154,18 @@
   box-shadow: var(--shadow-elevated);
 }
 
-/* ─── Tap Scale (feedback táctil) ───────────────────────────────────── */
+/* ─── Tap Scale & Micro-interactions (feedback táctil) ────────────────── */
+.tap-scale {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
 .tap-scale:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 /* ─── Accesibilidad: Reducción de movimiento ──────────────────────────── */

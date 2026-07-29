@@ -52,10 +52,3 @@ export function getNextInTimeline(tmdbId: number | undefined | null): TimelineEn
     if (!loc) return null
     return loc.timeline[loc.index + 1] ?? null
 }
-
-/** Entrega anterior en la línea temporal, o null si es la primera. */
-export function getPrevInTimeline(tmdbId: number | undefined | null): TimelineEntry | null {
-    const loc = locateInTimeline(tmdbId)
-    if (!loc || loc.index === 0) return null
-    return loc.timeline[loc.index - 1] ?? null
-}

@@ -52,7 +52,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(move |app, _args, _cwd| {
-            let _ = single_instance_window_manager.show_main_window(app);
+            single_instance_window_manager.show_main_window(app);
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(sidecar_manager.clone())
@@ -166,13 +166,13 @@ pub fn run() {
             match event {
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     if label == "main" {
-                        let settings = settings_manager.load(&window.app_handle());
+                        let settings = settings_manager.load(window.app_handle());
                         if settings.minimize_to_tray && !sidecar_manager.is_shutdown() {
                             api.prevent_close();
                             let _ = window.hide();
                         } else {
                             // Persist final window bounds synchronously before we tear down.
-                            let _ = window_manager.save_window_state(&window);
+                            let _ = window_manager.save_window_state(window);
                             // Block so the server process is actually killed before the app exits;
                             // `shutdown()` is async and would otherwise be dropped without running.
                             tauri::async_runtime::block_on(sidecar_manager.shutdown());
@@ -184,13 +184,12 @@ pub fn run() {
                         window_manager.set_startup_ready(true);
                     }
                 }
-                tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Moved(_) => {
-                    if label == "main" {
+                tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Moved(_)
+                    if label == "main" => {
                         // Debounced: coalesces the burst of events during a drag/resize
                         // into a single disk write once movement settles (no per-event I/O).
-                        window_manager.queue_save_window_state(&window);
+                        window_manager.queue_save_window_state(window);
                     }
-                }
                 _ => {}
             }
         })

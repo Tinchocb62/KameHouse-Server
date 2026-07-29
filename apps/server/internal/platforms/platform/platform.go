@@ -24,8 +24,6 @@ type Platform interface {
 	GetMovie(context context.Context, mediaID int) (interface{}, error)
 	// SearchMedia performs a unified search across TV shows and movies
 	SearchMedia(context context.Context, query string, page *int) (*UnifiedMediaList, error)
-	// GetMediaCollection fetches all movies/shows belonging to a TMDB franchise collection
-	GetMediaCollection(context context.Context, collectionID int) (*UnifiedCollection, error)
 
 	// GetAnimeCollection gets the anime collection without custom lists
 	GetAnimeCollection(context context.Context, bypassCache bool) (interface{}, error)

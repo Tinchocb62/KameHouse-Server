@@ -55,9 +55,7 @@ func GenerateTypescriptFile(docsFilePath string, publicStructsFilePath string, o
 		for _, embeddedStructType := range goStruct.EmbeddedStructTypes {
 			if embeddedStructType != "" {
 				if usedStruct, ok := goStructsMap[embeddedStructType]; ok {
-					for _, usedField := range usedStruct.Fields {
-						goStruct.Fields = append(goStruct.Fields, usedField)
-					}
+					goStruct.Fields = append(goStruct.Fields, usedStruct.Fields...)
 				}
 			}
 		}
@@ -78,11 +76,7 @@ func GenerateTypescriptFile(docsFilePath string, publicStructsFilePath string, o
 	// e.g. @returns models.User
 	structStrMap := make(map[string]int)
 	for _, str := range goStructStrs {
-		if _, ok := structStrMap[str]; ok {
-			structStrMap[str]++
-		} else {
-			structStrMap[str] = 1
-		}
+		structStrMap[str]++
 	}
 	for _, handler := range handlers {
 		if handler.Api != nil {
@@ -91,11 +85,7 @@ func GenerateTypescriptFile(docsFilePath string, publicStructsFilePath string, o
 				continue
 			}
 
-			if _, ok := structStrMap[handler.Api.ReturnGoType]; ok {
-				structStrMap[handler.Api.ReturnGoType]++
-			} else {
-				structStrMap[handler.Api.ReturnGoType] = 1
-			}
+			structStrMap[handler.Api.ReturnGoType]++
 		}
 	}
 
@@ -267,7 +257,7 @@ func writeTypescriptType(f *os.File, goStruct *GoStruct, writtenTypes map[string
 	f.WriteString(fmt.Sprintf(" * - Filename: %s\n", goStruct.Filename))
 	f.WriteString(fmt.Sprintf(" * - Package: %s\n", goStruct.Package))
 	if len(goStruct.Comments) > 0 {
-		f.WriteString(fmt.Sprintf(" * @description\n"))
+		f.WriteString(" * @description\n")
 		for _, cmt := range goStruct.Comments {
 			f.WriteString(fmt.Sprintf(" *  %s\n", strings.TrimSpace(cmt)))
 		}
@@ -294,11 +284,11 @@ func writeTypescriptType(f *os.File, goStruct *GoStruct, writtenTypes map[string
 				}
 
 				if len(field.Comments) > 0 {
-					f.WriteString(fmt.Sprintf("    /**\n"))
+					f.WriteString("    /**\n")
 					for _, cmt := range field.Comments {
 						f.WriteString(fmt.Sprintf("     * %s\n", strings.TrimSpace(cmt)))
 					}
-					f.WriteString(fmt.Sprintf("     */\n"))
+					f.WriteString("     */\n")
 				}
 
 				typeText := field.TypescriptType
@@ -315,7 +305,7 @@ func writeTypescriptType(f *os.File, goStruct *GoStruct, writtenTypes map[string
 	}
 
 	if goStruct.AliasOf != nil {
-		if goStruct.AliasOf.DeclaredValues != nil && len(goStruct.AliasOf.DeclaredValues) > 0 {
+		if len(goStruct.AliasOf.DeclaredValues) > 0 {
 			union := ""
 			if len(goStruct.AliasOf.DeclaredValues) > 5 {
 				union = strings.Join(goStruct.AliasOf.DeclaredValues, " |\n    ")

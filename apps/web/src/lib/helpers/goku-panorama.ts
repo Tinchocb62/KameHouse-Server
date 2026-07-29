@@ -12,18 +12,18 @@ export interface SpineTheme {
 
 const spineThemes: Record<string, SpineTheme> = {
     "dragon_ball": {
-        bg: "linear-gradient(to bottom, #42a5f5 0%, #1565c0 50%, #0d47a1 100%)",
+        bg: "linear-gradient(to bottom, #2b74d9 0%, #1557ad 55%, #0a3066 100%)",
         text: "#ffffff",
         accent: "#ffd54f",
         vol: "1",
-        subtitle: "DB ORIGINAL",
+        subtitle: "DRAGON BALL",
         borderColor: "#0d47a1",
         colIndex: 0,
         rawImg: "/icons/series-icons/goku-raw-db.webp",
-        colors: ["#42a5f5", "#1565c0", "#0d47a1"]
+        colors: ["#2b74d9", "#1557ad", "#0a3066"]
     },
     "dragon_ball_z": {
-        bg: "linear-gradient(to bottom, #ff7043 0%, #d84315 50%, #b71c1c 100%)",
+        bg: "linear-gradient(to bottom, #f57c00 0%, #d84315 55%, #900c0c 100%)",
         text: "#ffffff",
         accent: "#ffd54f",
         vol: "2",
@@ -31,40 +31,40 @@ const spineThemes: Record<string, SpineTheme> = {
         borderColor: "#b71c1c",
         colIndex: 1,
         rawImg: "/icons/series-icons/goku-raw-dbz.webp",
-        colors: ["#ff7043", "#d84315", "#b71c1c"]
+        colors: ["#f57c00", "#d84315", "#900c0c"]
     },
     "dragon_ball_gt": {
-        bg: "linear-gradient(to bottom, #7e57c2 0%, #4a148c 50%, #1a237e 100%)",
+        bg: "linear-gradient(to bottom, #c62828 0%, #8e24aa 55%, #2a0845 100%)",
         text: "#ffffff",
         accent: "#ffb74d",
         vol: "3",
-        subtitle: "SAGA GT",
+        subtitle: "DRAGON BALL GT",
         borderColor: "#1a237e",
         colIndex: 2,
         rawImg: "/icons/series-icons/goku-raw-dbgt.webp",
-        colors: ["#7e57c2", "#4a148c", "#1a237e"]
+        colors: ["#c62828", "#8e24aa", "#2a0845"]
     },
     "dragon_ball_super": {
-        bg: "linear-gradient(to bottom, #26c6da 0%, #00838f 50%, #004d40 100%)",
+        bg: "linear-gradient(to bottom, #00b4d8 0%, #0077b6 55%, #03045e 100%)",
         text: "#ffffff",
         accent: "#ffd54f",
         vol: "4",
-        subtitle: "SUPER",
+        subtitle: "DB SUPER",
         borderColor: "#004d40",
         colIndex: 3,
         rawImg: "/icons/series-icons/goku-raw-dbs.webp",
-        colors: ["#26c6da", "#00838f", "#004d40"]
+        colors: ["#00b4d8", "#0077b6", "#03045e"]
     },
     "dragon_ball_daima": {
-        bg: "linear-gradient(to bottom, #ffca28 0%, #f57f17 50%, #e65100 100%)",
+        bg: "linear-gradient(to bottom, #ffb703 0%, #fb8500 55%, #d84315 100%)",
         text: "#ffffff",
         accent: "#ffffff",
         vol: "5",
-        subtitle: "DAIMA",
+        subtitle: "DB DAIMA",
         borderColor: "#e65100",
         colIndex: 4,
         rawImg: "/icons/series-icons/goku-raw-daima.webp",
-        colors: ["#ffca28", "#f57f17", "#e65100"]
+        colors: ["#ffb703", "#fb8500", "#d84315"]
     }
 };
 

@@ -85,11 +85,14 @@ export function DeferredImage(props: DeferredImageProps) {
         setHasError(false);
         setIsIntersecting(priority);
         setShowLqip(true);
+    }
+
+    useEffect(() => {
         if (timerRef.current) {
             clearTimeout(timerRef.current);
             timerRef.current = null;
         }
-    }
+    }, [src, priority]);
 
     const lqipSrc = lowResSrc || getTinyResImage(src);
 

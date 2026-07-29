@@ -71,9 +71,11 @@ function resolveActiveOp(skipTimesOp: SkipWindow | undefined, total: number, med
 }
 
 /** Returns the effective ED/outro window: explicit AniSkip data → chapter → heuristic.
- * Always caps endTime at `total - 5` to leave a buffer for post-ED content
- * (previews, after-credits scenes), regardless of whether the window came from
- * AniSkip, chapters, or the series cache. */
+ * A real end mark that lands before the end of the file is trusted as-is: capping
+ * it at `total - 5` made every skip land up to 5s short and the user watched the
+ * tail of the outro. The 5s buffer only applies to placeholder/malformed ends
+ * ("runs to the end of the file"), where we can't tell the outro's real end and
+ * skipping to `total` would end the video. */
 function resolveActiveEd(skipTimesEd: SkipWindow | undefined, total: number, mediaFormat?: string | null): SkipWindow | undefined {
     const getHeuristicEd = (): SkipWindow | undefined => {
         if (mediaFormat?.toUpperCase() === "MOVIE") return undefined
@@ -88,16 +90,18 @@ function resolveActiveEd(skipTimesEd: SkipWindow | undefined, total: number, med
         const start = skipTimesEd.startTime
         // Outro starting at/after the end of the video is unusable — fallback to heuristic.
         if (total > 0 && start >= total) return getHeuristicEd()
-        
+
         let parsedEndTime = skipTimesEd.endTime
         // Many AniSkip entries have malformed ed.endTime (e.g., equal to startTime or just 1s later)
         if (parsedEndTime <= start + 10) {
             parsedEndTime = total - 5
         }
-        
-        // Guarantee a non-zero window even with malformed data or when the outro sits within the 5s end-buffer:
-        // cap near the end. This ensures the button/auto-skip actually fire.
-        const cap = Math.max(start + 1, total - 5)
+
+        // Placeholder end (>= total - 0.5): the mark says "until the end of the
+        // file", which is indistinguishable from "unknown". Keep the 5s buffer so
+        // the skip doesn't end the video. A measured end below that is exact —
+        // land on it, clamped to the file duration.
+        const cap = parsedEndTime >= total - 0.5 ? Math.max(start + 1, total - 5) : total
         const endTime = Math.min(Math.max(parsedEndTime, start + 1), cap)
         return { startTime: start, endTime, source: skipTimesEd.source }
     }
@@ -529,23 +533,26 @@ export function usePlayerSkip({
             return
         }
         
-        // 2. Check outro
+        // 2. En el outro o muy cerca del final: en maratón se avanza directo al
+        //    siguiente episodio (mismo criterio que la sección 6 de
+        //    processTimeUpdates). Si es el último episodio, se salta el outro.
         const activeEd = resolveActiveEd(skipTimesEd, total, mediaFormat)
-        if (activeEd && curr >= activeEd.startTime && curr < activeEd.endTime) {
+        const inEd = !!activeEd && curr >= activeEd.startTime && curr < activeEd.endTime
+        const nearEnd = total > 0 && total - curr <= 3
+        const canAdvance = hasNextEpisode && !!onNextEpisode && mediaFormat?.toUpperCase() !== "MOVIE"
+        if ((inEd || nearEnd) && canAdvance) {
+            if (!hasTriggeredNextEpisodeRef.current) {
+                hasTriggeredNextEpisodeRef.current = true
+                video.pause()
+                onNextEpisode!()
+            }
+            return
+        }
+        if (inEd && activeEd) {
             video.currentTime = activeEd.endTime
             lastManualSeekTimestampRef.current = Date.now()
             video.play().catch(() => {})
             setSkipMode(null)
-            return
-        }
-        
-        // 3. Check near end (jump to next episode if within 3s)
-        if (hasNextEpisode && onNextEpisode && mediaFormat?.toUpperCase() !== "MOVIE" && (total > 0 && total - curr <= 3)) {
-            if (!hasTriggeredNextEpisodeRef.current) {
-                hasTriggeredNextEpisodeRef.current = true
-                video.pause()
-                onNextEpisode()
-            }
         }
     }, [videoRef, skipTimesOp, skipTimesEd, mediaFormat, hasNextEpisode, onNextEpisode, setSkipMode, getEffectiveTotal])
 
@@ -704,13 +711,27 @@ export function usePlayerSkip({
             const inWindow = curr >= startTime && curr < endTime
             
             if (cfg.autoSkipOutroPref && inWindow && !hasAutoSkippedOutroRef.current && shouldAutoSkipOutro(source)) {
+                // En maratón no tiene sentido saltar el outro para seguir viendo el
+                // buffer post-ED: se avanza directo al siguiente episodio, sin el
+                // residuo de ~2s que dejaba el salto a `endTime` (= total-5) hasta
+                // que la sección 9 disparaba a total-3. Si es el último episodio
+                // (no hay siguiente), cae al salto de outro normal de abajo.
+                if (cfg.marathonMode && cfg.hasNextEpisode && cfg.onNextEpisode && cfg.mediaFormat?.toUpperCase() !== "MOVIE") {
+                    if (!hasTriggeredNextEpisodeRef.current) {
+                        hasTriggeredNextEpisodeRef.current = true
+                        video.pause()
+                        cfg.onNextEpisode()
+                    }
+                    return
+                }
+
                 hasAutoSkippedOutroRef.current = true
                 preSkipPositionRef.current = curr
-                
+
                 video.currentTime = endTime
                 lastManualSeekTimestampRef.current = Date.now()
                 video.play().catch(() => {})
-                
+
                 setSkipMode(null)
                 triggerToast("outro")
                 return

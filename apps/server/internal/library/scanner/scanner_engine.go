@@ -68,12 +68,12 @@ type Scanner struct {
 	TMDBClient      *tmdb.Client
 
 	// Optional enrichers
-	FanArtEnricher *librarymetadata.FanArtEnricher
-	OMDbEnricher   *librarymetadata.OMDbEnricher
-	ScanMode         string
-	TargetPaths      []string
-	FFprobePath      string
-	BackgroundQueue  *BackgroundQueue
+	FanArtEnricher  *librarymetadata.FanArtEnricher
+	OMDbEnricher    *librarymetadata.OMDbEnricher
+	ScanMode        string
+	TargetPaths     []string
+	FFprobePath     string
+	BackgroundQueue *BackgroundQueue
 }
 
 // ScannerOptions mirrors all public fields of Scanner and is the canonical
@@ -109,9 +109,9 @@ type ScannerOptions struct {
 	UseTMDB                    bool
 	EventDispatcher            events.Dispatcher
 	TMDBClient                 *tmdb.Client
-	FanArtEnricher *librarymetadata.FanArtEnricher
-	OMDbEnricher   *librarymetadata.OMDbEnricher
-	ScanMode       string
+	FanArtEnricher             *librarymetadata.FanArtEnricher
+	OMDbEnricher               *librarymetadata.OMDbEnricher
+	ScanMode                   string
 	TargetPaths                []string
 	FFprobePath                string
 	BackgroundQueue            *BackgroundQueue
@@ -150,9 +150,9 @@ func NewScanner(opts *ScannerOptions) *Scanner {
 		UseTMDB:                    opts.UseTMDB,
 		EventDispatcher:            opts.EventDispatcher,
 		TMDBClient:                 opts.TMDBClient,
-		FanArtEnricher: opts.FanArtEnricher,
-		OMDbEnricher:   opts.OMDbEnricher,
-		ScanMode:       opts.ScanMode,
+		FanArtEnricher:             opts.FanArtEnricher,
+		OMDbEnricher:               opts.OMDbEnricher,
+		ScanMode:                   opts.ScanMode,
 		TargetPaths:                opts.TargetPaths,
 		FFprobePath:                opts.FFprobePath,
 		BackgroundQueue:            opts.BackgroundQueue,
@@ -661,7 +661,7 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 						Uint("libraryMediaId", saved.ID).
 						Msg("scanner: Created LibraryMedia via local NFO (local-only)")
 				}
-			}			// 3. Propagate folder-level IDs to all local files in the same folder.
+			} // 3. Propagate folder-level IDs to all local files in the same folder.
 			// Workers only tagged the "owning" file per folder; siblings need the same ID.
 			for _, lf := range localFiles {
 				if lf == nil || lf.LibraryMediaId != 0 {
@@ -949,9 +949,6 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 			}
 		}
 	}
-
-	// ── Persist franchise/saga collections ─────────────────────────────────
-	scn.scanFranchisePhase(ctx, movieIds)
 
 	localFiles = scn.scanFinalizePhase(localFiles, skippedLfs, sortedLibraryPaths, mc, mf)
 

@@ -263,7 +263,6 @@ func migrateSchema(ctx context.Context, db *gorm.DB) error {
 		&models.WatchHistory{},
 		&models.UserMediaProgress{},
 
-		&models.MediaCollection{},
 		&models.MetadataCache{},
 		&models.EpisodeSkipTime{},
 		&models.MediaIDMapping{},

@@ -23,6 +23,7 @@ const PerformanceMonitor = React.lazy(() =>
     import("@/components/shared/performance-monitor").then((m) => ({ default: m.PerformanceMonitor }))
 )
 import { useRouterState } from "@tanstack/react-router"
+import { AnimatePresence } from "framer-motion"
 import { PageTransition } from "@/components/shared/page-transition"
 
 import { useAppStore } from "@/lib/store"
@@ -101,9 +102,11 @@ function RootComponent() {
             >
                 {!tvMode && <AppTopNav />}
 
-                <PageTransition key={routerState.location.pathname} transitionKey={routerState.location.pathname} className="flex-1 w-full">
-                    <Outlet />
-                </PageTransition>
+                <AnimatePresence mode="wait" initial={false}>
+                    <PageTransition key={routerState.location.pathname} transitionKey={routerState.location.pathname} className="flex-1 w-full">
+                        <Outlet />
+                    </PageTransition>
+                </AnimatePresence>
             </AppLayoutContent>
             {tvMode ? <TvNavBar /> : <AppBottomNav />}
 

@@ -103,23 +103,40 @@ func (p *Platform) GetAnime(ctx context.Context, mediaID int) (interface{}, erro
 	return m, nil
 }
 
-func (p *Platform) GetAnimeWithRelations(ctx context.Context, mediaID int) (interface{}, error) { return p.GetAnime(ctx, mediaID) }
-func (p *Platform) GetAnimeDetails(ctx context.Context, mediaID int) (interface{}, error) { return p.GetAnime(ctx, mediaID) }
-func (p *Platform) GetMovie(ctx context.Context, mediaID int) (interface{}, error) { return p.GetAnime(ctx, mediaID) }
+func (p *Platform) GetAnimeWithRelations(ctx context.Context, mediaID int) (interface{}, error) {
+	return p.GetAnime(ctx, mediaID)
+}
+func (p *Platform) GetAnimeDetails(ctx context.Context, mediaID int) (interface{}, error) {
+	return p.GetAnime(ctx, mediaID)
+}
+func (p *Platform) GetMovie(ctx context.Context, mediaID int) (interface{}, error) {
+	return p.GetAnime(ctx, mediaID)
+}
 
 // NOT IMPLEMENTED METHODS
-func (p *Platform) UpdateEntry(ctx context.Context, mediaID int, status interface{}, scoreRaw *int, progress *int, startedAt interface{}, completedAt interface{}) error { return nil }
-func (p *Platform) UpdateEntryProgress(ctx context.Context, mediaID int, progress int, totalEpisodes *int) error { return nil }
+func (p *Platform) UpdateEntry(ctx context.Context, mediaID int, status interface{}, scoreRaw *int, progress *int, startedAt interface{}, completedAt interface{}) error {
+	return nil
+}
+func (p *Platform) UpdateEntryProgress(ctx context.Context, mediaID int, progress int, totalEpisodes *int) error {
+	return nil
+}
 func (p *Platform) UpdateEntryRepeat(ctx context.Context, mediaID int, repeat int) error { return nil }
-func (p *Platform) DeleteEntry(ctx context.Context, mediaID int, entryID int) error { return nil }
-func (p *Platform) GetMediaCollection(ctx context.Context, collectionID int) (*platform.UnifiedCollection, error) { return &platform.UnifiedCollection{}, nil }
-func (p *Platform) GetAnimeCollection(ctx context.Context, bypassCache bool) (interface{}, error) { return &platform.UnifiedCollection{}, nil }
-func (p *Platform) GetRawAnimeCollection(ctx context.Context, bypassCache bool) (interface{}, error) { return &platform.UnifiedCollection{}, nil }
-func (p *Platform) GetAnimeCollectionWithRelations(ctx context.Context) (interface{}, error) { return &platform.UnifiedCollection{}, nil }
+func (p *Platform) DeleteEntry(ctx context.Context, mediaID int, entryID int) error      { return nil }
+func (p *Platform) GetAnimeCollection(ctx context.Context, bypassCache bool) (interface{}, error) {
+	return &platform.UnifiedCollection{}, nil
+}
+func (p *Platform) GetRawAnimeCollection(ctx context.Context, bypassCache bool) (interface{}, error) {
+	return &platform.UnifiedCollection{}, nil
+}
+func (p *Platform) GetAnimeCollectionWithRelations(ctx context.Context) (interface{}, error) {
+	return &platform.UnifiedCollection{}, nil
+}
 func (p *Platform) AddMediaToCollection(ctx context.Context, mIds []int) error { return nil }
-func (p *Platform) GetStudioDetails(ctx context.Context, studioID int) (interface{}, error) { return nil, nil }
+func (p *Platform) GetStudioDetails(ctx context.Context, studioID int) (interface{}, error) {
+	return nil, nil
+}
 func (p *Platform) RefreshAnimeCollection(ctx context.Context) (interface{}, error) { return nil, nil }
-func (p *Platform) GetViewerStats(ctx context.Context) (interface{}, error) { return nil, nil }
+func (p *Platform) GetViewerStats(ctx context.Context) (interface{}, error)         { return nil, nil }
 func (p *Platform) GetAnimeAiringSchedule(ctx context.Context) (interface{}, error) { return nil, nil }
 func (p *Platform) ListAnime(ctx context.Context, page *int, search *string, perPage *int, sort []platform.MediaSort, status []platform.MediaStatus, genres []string, averageScoreGreater *int, season *platform.MediaSeason, seasonYear *int, format *platform.MediaFormat, isAdult *bool) (interface{}, error) {
 	// Fallback to basic search if search is present, else return empty
@@ -128,8 +145,10 @@ func (p *Platform) ListAnime(ctx context.Context, page *int, search *string, per
 	}
 	return &platform.UnifiedMediaList{}, nil
 }
-func (p *Platform) ListRecentAnime(ctx context.Context, page *int, perPage *int, airingAtGreater *int, airingAtLesser *int, notYetAired *bool) (interface{}, error) { return &platform.UnifiedMediaList{}, nil }
+func (p *Platform) ListRecentAnime(ctx context.Context, page *int, perPage *int, airingAtGreater *int, airingAtLesser *int, notYetAired *bool) (interface{}, error) {
+	return &platform.UnifiedMediaList{}, nil
+}
 func (p *Platform) ClearCache() {}
-func (p *Platform) Close() {}
+func (p *Platform) Close()      {}
 
 var _ platform.Platform = (*Platform)(nil)

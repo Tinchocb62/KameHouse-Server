@@ -199,7 +199,7 @@ export function SkipIntroOverlay({
                     onSkip()
                 }}
                 className={cn(
-                    "relative flex items-center px-6 py-3 overflow-hidden text-white backdrop-blur-[var(--blur-overlay-lg)]",
+                    "relative flex items-center px-4 py-2 overflow-hidden text-white backdrop-blur-[var(--blur-overlay-lg)]",
                     "bg-black/60 border border-[var(--glass-strong)] rounded-modal shadow-[var(--shadow-modal)]",
                     isOutro
                         ? "border-brand-secondary/30 hover:border-brand-secondary/60 hover:bg-brand-secondary/15"
@@ -208,7 +208,7 @@ export function SkipIntroOverlay({
                     "transition-all duration-base",
                     "active:scale-95",
                     "group",
-                    "[&>*:not(:first-child)]:ml-3",
+                    "[&>*:not(:first-child)]:ml-2",
                     "focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 )}
             >
@@ -223,7 +223,7 @@ export function SkipIntroOverlay({
 
                 {/* Skip icon */}
                 <svg viewBox="0 0 24 24" fill="currentColor" className={cn(
-                    "w-4 h-4 transition-colors shrink-0",
+                    "w-3.5 h-3.5 transition-colors shrink-0",
                     isOutro ? "text-brand-secondary group-hover:brightness-110" : "text-brand-accent group-hover:brightness-110"
                 )}>
                     <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z" />

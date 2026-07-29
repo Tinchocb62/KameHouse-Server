@@ -72,19 +72,6 @@ func (st *SegmentTable) IsReady(seg int32) bool {
 	}
 }
 
-// isReadyLocked is like IsReady but expects at least an RLock to be held.
-func (st *SegmentTable) isReadyLocked(seg int32) bool {
-	if seg < 0 || int(seg) >= len(st.segments) {
-		return false
-	}
-	select {
-	case <-st.segments[seg].ch:
-		return true
-	default:
-		return false
-	}
-}
-
 // MarkReady marks a segment as ready
 func (st *SegmentTable) MarkReady(seg int32, encoderID int) {
 	st.mu.Lock()

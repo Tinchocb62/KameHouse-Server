@@ -1,0 +1,4 @@
+# Normalizar finales de línea. El codebase Go usa LF (estándar de gofmt);
+# sin esto, con core.autocrlf=false, se colaban archivos con CRLF y quedaban
+# finales de línea mezclados en el repo.
+*.go text eol=lf

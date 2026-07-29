@@ -291,6 +291,7 @@ function SettingsPage() {
                 <div className="relative z-10 flex-1 px-4 py-5 flex flex-col space-y-3 w-full">
                     {NAV_GROUPS.map((group, groupIdx) => {
                         const isExpanded = expandedGroups[groupIdx]
+                        const hasActiveItem = group.items.some(item => item.id === activeTab)
                         return (
                             <div key={groupIdx} className="flex flex-col space-y-1">
                                 {/* Group Header */}
@@ -298,19 +299,20 @@ function SettingsPage() {
                                     type="button"
                                     onClick={() => toggleGroup(groupIdx)}
                                     className={cn(
-                                        "w-full flex items-center justify-between px-5 py-3.5 my-0.5 cursor-pointer rounded-full backdrop-blur-md transition-all duration-base group/header border select-none relative overflow-hidden",
-                                        isExpanded
-                                            ? "bg-white/[0.08] border-brand-accent/40 text-on-surface shadow-[0_4px_20px_rgba(0,0,0,0.25),0_0_15px_hsl(var(--brand-accent)/0.2)]"
-                                            : "bg-white/[0.03] hover:bg-white/[0.07] border-white/10 text-on-surface-variant hover:text-on-surface hover:border-white/20"
+                                        "w-full flex items-center justify-between px-5 py-3.5 my-0.5 cursor-pointer rounded-2xl backdrop-blur-md transition-all duration-base group/header border select-none relative overflow-hidden",
+                                        isExpanded ? "bg-white/[0.08]" : "bg-white/[0.03] hover:bg-white/[0.07]",
+                                        hasActiveItem
+                                            ? "border-brand-accent/40 text-on-surface shadow-[0_4px_20px_rgba(0,0,0,0.25),0_0_15px_hsl(var(--brand-accent)/0.2)]"
+                                            : "border-white/10 text-on-surface-variant hover:text-on-surface hover:border-white/20"
                                     )}
                                 >
-                                    {isExpanded && (
+                                    {hasActiveItem && (
                                         <div className="absolute inset-0 bg-gradient-to-r from-brand-accent/15 via-transparent to-transparent pointer-events-none" />
                                     )}
                                     <div className="flex items-center gap-3 relative z-10">
                                         <span className={cn(
                                             "w-2.5 h-2.5 rounded-full transition-all duration-base shrink-0",
-                                            isExpanded 
+                                            hasActiveItem 
                                                 ? "bg-brand-accent shadow-[0_0_10px_hsl(var(--brand-accent)/0.9)] scale-110" 
                                                 : "bg-white/20 group-hover/header:bg-white/50"
                                         )} />
@@ -318,7 +320,7 @@ function SettingsPage() {
                                     </div>
                                     <div className={cn(
                                         "w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-base shrink-0 relative z-10 border",
-                                        isExpanded 
+                                        hasActiveItem 
                                             ? "bg-brand-accent/20 border-brand-accent/30 text-brand-accent shadow-[0_0_8px_hsl(var(--brand-accent)/0.4)]" 
                                             : "bg-white/5 border-white/10 text-on-surface-variant/60 group-hover/header:bg-white/10 group-hover/header:text-on-surface"
                                     )}>
@@ -346,7 +348,7 @@ function SettingsPage() {
                                                         whileTap={{ scale: 0.98 }}
                                                         onClick={() => setActiveTab(item.id)}
                                                         className={cn(
-                                                            "w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-left transition-all duration-base group relative shrink-0 overflow-hidden backdrop-blur-sm",
+                                                            "w-full flex items-center gap-4 px-5 py-3.5 rounded-lg text-left transition-all duration-base group relative shrink-0 overflow-hidden backdrop-blur-sm",
                                                             isActive
                                                                 ? "bg-brand-accent/15 border border-brand-accent/40 text-on-surface shadow-[0_2px_14px_hsl(var(--brand-accent)/0.2)]"
                                                                 : "bg-white/[0.02] border border-white/5 text-on-surface-variant hover:text-on-surface hover:bg-white/[0.06] hover:border-white/15"

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"kamehouse/internal/api/dragonball"
 	"kamehouse/internal/core"
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/intelligence"
@@ -50,6 +51,8 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 
 	e.HTTPErrorHandler = CustomHTTPErrorHandler
 
+	e.Use(TraceMiddleware(app.Logger))
+
 	lechoLogger := lecho.From(*app.Logger)
 
 	urisToSkip := []string{
@@ -63,6 +66,13 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 
 	e.Use(lecho.Middleware(lecho.Config{
 		Logger: lechoLogger,
+		Enricher: func(c echo.Context, logger zerolog.Context) zerolog.Context {
+			logger = logger.Str("file", c.Path())
+			if traceID := GetTraceID(c.Request().Context()); traceID != "" {
+				logger = logger.Str("trace_id", traceID)
+			}
+			return logger
+		},
 		Skipper: func(c echo.Context) bool {
 			path := c.Request().URL.RequestURI()
 			if filepath.Ext(c.Request().URL.Path) == ".txt" ||
@@ -76,9 +86,6 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 				}
 			}
 			return false
-		},
-		Enricher: func(c echo.Context, logger zerolog.Context) zerolog.Context {
-			return logger.Str("file", c.Path())
 		},
 	}))
 
@@ -180,6 +187,10 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	h.RegisterSettingsRoutes(v1)
 	h.RegisterLocalRoutes(v1)
 	h.RegisterIntelligenceRoutes(v1)
+	h.RegisterAdminRoutes(v1)
+
+	// Enciclopedia de Dragon Ball (arquitectura limpia en internal/api/dragonball).
+	dragonball.Register(v1)
 }
 
 // RegisterIntelligenceRoutes registra las rutas del motor de selección inteligente.
@@ -187,6 +198,13 @@ func (h *Handler) RegisterIntelligenceRoutes(v1 *echo.Group) {
 	intelligence := v1.Group("/intelligence")
 	intelligence.GET("/best-source", h.HandleGetBestSource)
 	intelligence.GET("/stats", h.HandleGetIntelligenceStats)
+}
+
+// RegisterAdminRoutes registra las rutas de administración.
+func (h *Handler) RegisterAdminRoutes(v1 *echo.Group) {
+	admin := v1.Group("/admin")
+	admin.GET("/transcode-stats", h.HandleGetTranscodeStats)
+	admin.GET("/library-stats", h.HandleGetLibraryStats)
 }
 
 func (h *Handler) JSON(c echo.Context, code int, i interface{}) error {
@@ -203,24 +221,6 @@ func (h *Handler) RespondWithError(c echo.Context, err error) error {
 
 func (h *Handler) RespondWithCodeError(c echo.Context, code int, err error) error {
 	return c.JSON(code, NewErrorResponse(err))
-}
-
-func (h *Handler) getCachedSettings() *models.Settings {
-	h.settingsMu.RLock()
-	if h.settings != nil {
-		s := h.settings
-		h.settingsMu.RUnlock()
-		return s
-	}
-	h.settingsMu.RUnlock()
-
-	h.settingsMu.Lock()
-	defer h.settingsMu.Unlock()
-	settings, err := h.App.Database.GetSettings()
-	if err == nil && settings != nil {
-		h.settings = settings
-	}
-	return h.settings
 }
 
 func (h *Handler) invalidateSettingsCache() {
