@@ -11,13 +11,13 @@ var (
 	seasonOrdinalRegex = regexp.MustCompile(`\d(st|nd|rd|th) [Ss].*`)
 
 	// ExtractSeasonNumber regexes
-	seasonExplicitRegex   = regexp.MustCompile(`season\s*(\d+)`)
-	seasonFormatRegex     = regexp.MustCompile(`\bs0?(\d{1,2})(?:e\d|$|\s|\.)`)
+	seasonExplicitRegex   = regexp.MustCompile(`(?i)(?:season|temporada|temp)\s*0*(\d+)`)
+	seasonFormatRegex     = regexp.MustCompile(`(?i)\b[st]0?(\d{1,2})(?:e\d|$|\s|\.)`)
 	seasonOrdinalNumRegex = regexp.MustCompile(`(\d+)(?:st|nd|rd|th)\s+season`)
 	romanPattern1Regex    = regexp.MustCompile(`[\s.](i{1,3}|iv|vi?i?i?|ix|x)(?:\s|$|[:,.]|['\'])`)
 	romanPattern2Regex    = regexp.MustCompile(`[\s.](i{1,3}|iv|vi?i?i?|ix|x)[.\s]*(?:s\d|e\d|part)`)
 	seasonTrailingNumRe   = regexp.MustCompile(`(?:^|\s)(\d{1,2})\s*$`)
-	seasonPartCourRegex   = regexp.MustCompile(`(?i)(?:part|cour|specials?|sp|movie|ova|ona|oad|pelicula)\s*\d{1,2}\s*$`)
+	seasonPartCourRegex   = regexp.MustCompile(`(?i)(?:part|cour|specials?|sp|movie|ova|ona|oad|pelicula|película)\s*\d{1,2}\s*$`)
 	seasonJapaneseRegex   = regexp.MustCompile(`(?:第)?(\d+)\s*期`)
 
 	// ValueContainsSpecial regexes
@@ -27,10 +27,10 @@ var (
 	specialRegex4 = regexp.MustCompile(`[-._({[ ]?(OVA|ONA|OAV|OAD)[])}\-._ ]?`)
 
 	// ValueContainsIgnoredKeywords regex
-	ignoredKeywordsRegex = regexp.MustCompile(`(?i)^\s?[({\[]?\s?(EXTRAS?|OVAS?|OTHERS?|SPECIALS|MOVIES|SEASONS|NC|PELICULAS?)\s?[])}]?\s?$`)
+	ignoredKeywordsRegex = regexp.MustCompile(`(?i)^\s?[({\[]?\s?(EXTRAS?|OVAS?|OTHERS?|SPECIALS|MOVIES|SEASONS|NC|PELICULAS?|PELÍCULAS?|TEMPORADAS?|CAPITULOS?|CAPÍTULOS?|EPISODIOS?|DESCARGAS?|NUEVOS?|CORTOS?)\s?[])}]?\s?$`)
 
 	// ValueContainsBatchKeywords regex
-	batchKeywordsRegex = regexp.MustCompile(`(?i)[({\[]?\s?(EXTRAS|OVAS|OTHERS|SPECIALS|MOVIES|SEASONS|BATCH|COMPLETE|COMPLETE SERIES|PELICULAS?)\s?[])}]?\s?`)
+	batchKeywordsRegex = regexp.MustCompile(`(?i)[({\[]?\s?(EXTRAS|OVAS|OTHERS|SPECIALS|MOVIES|SEASONS|BATCH|COMPLETE|COMPLETE SERIES|PELICULAS?|PELÍCULAS?|TEMPORADAS?)\s?[])}]?\s?`)
 
 	// ValueContainsNC regexes
 	ncRegex1 = regexp.MustCompile(`(?i)(^|(?P<show>.*?)[ _.\-(]+)\b(OP|NCOP|OPED)\b ?(?P<ep>\d{1,2}[a-z]?)? ?([ _.\-)]+(?P<title>.*))?`)
@@ -50,7 +50,8 @@ var (
 	IgnoredFilenames = map[string]struct{}{
 		"extra": {}, "extras": {}, "ova": {}, "ovas": {}, "ona": {}, "onas": {}, "oad": {}, "oads": {}, "other": {}, "others": {}, "special": {}, "specials": {}, "movie": {}, "movies": {}, "season": {}, "seasons": {}, "batch": {},
 		"complete": {}, "complete series": {}, "nc": {}, "music": {}, "mv": {}, "trailer": {}, "promo": {}, "pv": {}, "commercial": {}, "ad": {}, "opening": {}, "ending": {},
-		"op": {}, "ed": {}, "ncop": {}, "nced": {}, "creditless": {}, "pelicula": {}, "peliculas": {},
+		"op": {}, "ed": {}, "ncop": {}, "nced": {}, "creditless": {}, "pelicula": {}, "peliculas": {}, "película": {}, "películas": {},
+		"temporada": {}, "temporadas": {}, "capitulo": {}, "capitulos": {}, "capítulo": {}, "capítulos": {}, "episodio": {}, "episodios": {}, "descargas": {}, "nuevos": {}, "cortos": {},
 	}
 )
 
@@ -64,7 +65,7 @@ func ValueContainsSeason(val string) bool {
 		return false
 	}
 
-	if strings.Contains(val, "season") {
+	if strings.Contains(val, "season") || strings.Contains(val, "temporada") {
 		return true
 	}
 
@@ -78,7 +79,7 @@ func ValueContainsSeason(val string) bool {
 func ExtractSeasonNumber(val string) int {
 	val = strings.ToLower(val)
 
-	// "season X" pattern
+	// "season X" / "temporada X" pattern
 	matches := seasonExplicitRegex.FindStringSubmatch(val)
 	if len(matches) > 1 {
 		season, err := strconv.Atoi(matches[1])
@@ -87,11 +88,11 @@ func ExtractSeasonNumber(val string) int {
 		}
 	}
 
-	// "SXX" or "S0X" format
+	// "SXX", "S0X", "TXX", "T0X" format
 	matches = seasonFormatRegex.FindStringSubmatch(val)
 	if len(matches) > 1 {
 		season, err := strconv.Atoi(matches[1])
-		if err == nil && season > 0 && season < 20 {
+		if err == nil && season > 0 && season < 50 {
 			return season
 		}
 	}
@@ -117,14 +118,13 @@ func ExtractSeasonNumber(val string) int {
 		}
 	}
 
-	// Number at the end of title (e.g., "Konosuba 2", only 2-10 range)
+	// Number at the end of title
 	// Exclude numbers preceded by "part" or "cour" as those indicate parts, not seasons
 	matches = seasonTrailingNumRe.FindStringSubmatch(val)
 	if len(matches) > 1 {
-		// check if preceded by "part" or "cour"
 		if !seasonPartCourRegex.MatchString(val) {
 			season, err := strconv.Atoi(matches[1])
-			if err == nil && season >= 2 && season <= 10 {
+			if err == nil && season >= 1 && season <= 50 {
 				return season
 			}
 		}
@@ -190,7 +190,6 @@ func ValueContainsNC(val string) bool {
 // ExtractNCType parses a filename to determine the NC (non-content) type and returns the AniDB episode prefix.
 // Returns the prefix (e.g. "OP", "ED") and true if found
 func ExtractNCType(val string) (string, bool) {
-	// OP-type regexes OP|NCOP|OPED, CREDITLESS|NCOP|NCED|OP|ED
 	for _, re := range []*regexp.Regexp{ncRegex1, ncRegex6} {
 		matches := re.FindStringSubmatch(val)
 		if len(matches) > 0 {
@@ -198,7 +197,6 @@ func ExtractNCType(val string) (string, bool) {
 			switch keyword {
 			case "OP", "NCOP", "OPED", "CREDITLESS":
 				if keyword == "CREDITLESS" {
-					// can't determine OP vs ED from "CREDITLESS" alone, skip
 					continue
 				}
 				return "OP", true
@@ -208,7 +206,6 @@ func ExtractNCType(val string) (string, bool) {
 		}
 	}
 
-	// ED|NCED
 	if ncRegex2.MatchString(val) {
 		return "ED", true
 	}

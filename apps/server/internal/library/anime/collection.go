@@ -193,6 +193,12 @@ func (lc *LibraryCollection) hydrateCollectionLists(
 			if err == nil && m != nil {
 				media = m
 				lookupId = m.ID
+			} else {
+				m, err = db.GetLibraryMediaByTmdbIdAndType(dbInfo, id-1_000_000, "SHOW")
+				if err == nil && m != nil {
+					media = m
+					lookupId = m.ID
+				}
 			}
 		} else if id > 0 {
 			// Try as a direct primary key (common for AniList or existing entries)
@@ -215,13 +221,19 @@ func (lc *LibraryCollection) hydrateCollectionLists(
 			}
 		}
 
-		// 3. Fallback: If it's a positive ID but not >= 1M, it might STILL be a TMDB TV show ID
+		// 3. Fallback: If it's a positive ID but not >= 1M, it might STILL be a TMDB ID
 		// stored in the tmdb_id column instead of being the primary key.
 		if media == nil && id > 0 && id < 1_000_000 {
 			m, err := db.GetLibraryMediaByTmdbIdAndType(dbInfo, id, "SHOW")
 			if err == nil && m != nil {
 				media = m
 				lookupId = m.ID
+			} else {
+				m, err = db.GetLibraryMediaByTmdbIdAndType(dbInfo, id, "MOVIE")
+				if err == nil && m != nil {
+					media = m
+					lookupId = m.ID
+				}
 			}
 		}
 

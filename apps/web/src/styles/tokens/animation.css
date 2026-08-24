@@ -135,6 +135,14 @@
 .animate-ki-shimmer    { background-size: 200% auto; animation: ki-shimmer 4s linear infinite; }
 .animate-music-bars    { animation: music-bars 0.9s ease-in-out infinite; transform-origin: bottom; }
 
+@keyframes vhs-card-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.vhs-shelf > article {
+  animation: vhs-card-enter 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Stagger delays */
 .delay-50   { animation-delay: 50ms; }
 .delay-100  { animation-delay: 100ms; }

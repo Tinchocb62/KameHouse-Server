@@ -10,6 +10,7 @@ import (
 	"kamehouse/internal/library/anime"
 	"kamehouse/internal/library/scanner"
 	"kamehouse/internal/library/summary"
+	"kamehouse/internal/util/ffmpegutil"
 
 	"github.com/labstack/echo/v4"
 )
@@ -83,10 +84,11 @@ func (h *Handler) HandleScanLocalFiles(c echo.Context) error {
 	}
 
 	mSettings, ok := h.App.Database.GetMediastreamSettings()
-	ffprobePath := "ffprobe"
-	if ok && mSettings.FfprobePath != "" {
-		ffprobePath = mSettings.FfprobePath
+	var customFfprobe string
+	if ok {
+		customFfprobe = mSettings.FfprobePath
 	}
+	ffprobePath := ffmpegutil.ResolveFFprobePath(h.App.Config.Cache.Dir, customFfprobe)
 
 	// +---------------------+
 	// |   Concurrent Lock   |
@@ -132,18 +134,14 @@ func (h *Handler) HandleScanLocalFiles(c echo.Context) error {
 		ScanLogger:                 scanLogger,
 		Database:                   h.App.Database,
 		MetadataProviderRef:        h.App.Metadata.Provider,
-		MatchingAlgorithm:          h.App.Settings.GetLibrary().ScannerMatchingAlgorithm,
 		MatchingThreshold:          h.App.Settings.GetLibrary().ScannerMatchingThreshold,
 		UseLegacyMatching:          h.App.Settings.GetLibrary().ScannerUseLegacyMatching,
 		StrictStructure:            h.App.Settings.GetLibrary().ScannerStrictStructure,
 		WithShelving:               true,
 		ExistingShelvedFiles:       existingShelvedLfs,
-		ConfigAsString:             h.App.Settings.GetLibrary().ScannerConfig,
 		AnimeCollection:            ac,
 		UseTMDB:                    h.App.Settings.GetLibrary().ScannerProvider == "tmdb",
 		TMDBClient:                 h.App.Metadata.TMDBClient,
-		FanArtEnricher:             h.App.Metadata.FanArt,
-		OMDbEnricher:               h.App.Metadata.OMDb,
 		FFprobePath:                ffprobePath,
 		BackgroundQueue:            h.App.BackgroundQueue,
 	})

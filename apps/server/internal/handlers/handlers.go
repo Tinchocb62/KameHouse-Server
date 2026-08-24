@@ -20,8 +20,6 @@ type LibraryHandler struct {
 	Platform            PlatformProvider
 	MetadataProvider    MetadataProvider
 	TMDBClient          TMDBClient
-	FanArt              FanArtEnricher
-	OMDb                OMDbEnricher
 	AnimeCollection     AnimeCollectionProvider
 	FillerManager       FillerManagerProvider
 	IntelligenceService *anime.IntelligenceService
@@ -42,8 +40,6 @@ func NewLibraryHandler(deps LibraryHandlerDeps) *LibraryHandler {
 		Platform:            deps.Platform,
 		MetadataProvider:    deps.MetadataProvider,
 		TMDBClient:          deps.TMDBClient,
-		FanArt:              deps.FanArt,
-		OMDb:                deps.OMDb,
 		AnimeCollection:     deps.AnimeCollection,
 		FillerManager:       deps.FillerManager,
 		IntelligenceService: deps.IntelligenceService,
@@ -63,8 +59,6 @@ type LibraryHandlerDeps struct {
 	Platform            PlatformProvider
 	MetadataProvider    MetadataProvider
 	TMDBClient          TMDBClient
-	FanArt              FanArtEnricher
-	OMDb                OMDbEnricher
 	AnimeCollection     AnimeCollectionProvider
 	FillerManager       FillerManagerProvider
 	IntelligenceService *anime.IntelligenceService

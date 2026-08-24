@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Icons } from "@/components/ui/icons"
 import { useRouterState } from "@tanstack/react-router"
+import { usePerformanceStore } from "@/lib/hardware/performance-store"
 
 // Custom global event to toggle performance monitor from sidebar/settings
 export const TOGGLE_PERF_MONITOR_EVENT = "kamehouse:toggle-perf-monitor"
@@ -15,13 +16,19 @@ export function PerformanceMonitor() {
     const [memory, setMemory] = useState<{ used: number; total: number } | null>(null)
     const [routeLatency, setRouteLatency] = useState<number | null>(null)
 
-    const routerState = useRouterState()
+    const currentPath = useRouterState({ select: s => s.location.pathname })
     const rafIdRef = useRef<number | null>(null)
     const lastFrameTimeRef = useRef<number>(0)
     const fpsTicksRef = useRef<number[]>([])
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
     const fpsHistoryRef = useRef<number[]>([])
     const routeStartTimeRef = useRef<number>(0)
+
+    const hardwareSpecs = usePerformanceStore(s => s.hardwareSpecs)
+    const autoGovernorEnabled = usePerformanceStore(s => s.autoGovernorEnabled)
+    const autoThrottleActive = usePerformanceStore(s => s.autoThrottleActive)
+    const setAutoThrottleActive = usePerformanceStore(s => s.setAutoThrottleActive)
+    const getEffectiveTier = usePerformanceStore(s => s.getEffectiveTier)
 
     // Accumulators in refs to avoid React re-renders on every frame tick
     const totalFramesRef = useRef(0)
@@ -65,7 +72,7 @@ export function PerformanceMonitor() {
         })
 
         return () => cancelAnimationFrame(timer)
-    }, [routerState.location.pathname])
+    }, [currentPath])
 
     // Performance loop (RAF)
     useEffect(() => {
@@ -79,42 +86,79 @@ export function PerformanceMonitor() {
 
         lastFrameTimeRef.current = performance.now()
         lastUpdateRef.current = performance.now()
+        const monitorStartTime = performance.now()
+        const recentDeltas: number[] = []
+        let lowFpsStreak = 0
         
         const loop = (now: number) => {
             const delta = now - lastFrameTimeRef.current
             lastFrameTimeRef.current = now
 
-            totalFramesRef.current += 1
+            // Ignore background / tab switch spikes (> 200ms)
+            if (delta > 0 && delta < 200) {
+                recentDeltas.push(delta)
+                if (recentDeltas.length > 120) {
+                    recentDeltas.shift()
+                }
 
-            // Detect dropped frame (if frame took longer than 24ms, which drops a frame on 60Hz)
-            if (delta > 24) {
-                droppedFramesRef.current += 1
-            } else {
-                smoothFramesRef.current += 1
+                totalFramesRef.current += 1
+
+                const targetHz = hardwareSpecs?.screenRefreshRate || 60
+                const expectedDelta = 1000 / targetHz
+                // A true frame drop happens when a frame takes more than 2x expected frame duration
+                const dropThreshold = Math.max(28, expectedDelta * 2.2)
+
+                if (delta > dropThreshold) {
+                    droppedFramesRef.current += 1
+                } else {
+                    smoothFramesRef.current += 1
+                }
             }
 
-            // Calculate FPS
+            // Calculate FPS (rolling 1 second)
             fpsTicksRef.current.push(now)
             const oneSecondAgo = now - 1000
             fpsTicksRef.current = fpsTicksRef.current.filter(t => t > oneSecondAgo)
             
             const currentFps = fpsTicksRef.current.length
 
-            // Throttle React state updates to 500ms to avoid 60fps Virtual DOM overhead
-            if (now - lastUpdateRef.current >= 500) {
+            // Target baseline FPS threshold for Auto-Governor
+            const targetHz = hardwareSpecs?.screenRefreshRate || 60
+            const minHealthyFps = targetHz >= 120 ? 45 : 30
+            const recoveryFps = targetHz >= 120 ? 70 : 45
+
+            // Only evaluate Auto-Governor after 2 seconds warmup to allow the rolling buffer to fill
+            const isWarmedUp = now - monitorStartTime > 2000
+
+            if (isWarmedUp && autoGovernorEnabled) {
+                if (currentFps < minHealthyFps) {
+                    lowFpsStreak++
+                    if (lowFpsStreak >= 3 && !autoThrottleActive) {
+                        setAutoThrottleActive(true)
+                    }
+                } else {
+                    lowFpsStreak = 0
+                    if (autoThrottleActive && currentFps >= recoveryFps) {
+                        setAutoThrottleActive(false)
+                    }
+                }
+            }
+
+            // Throttle React state updates to 400ms to avoid Virtual DOM overhead
+            if (now - lastUpdateRef.current >= 400) {
                 lastUpdateRef.current = now
                 setFps(currentFps)
                 setDroppedFrames(droppedFramesRef.current)
                 setTotalFrames(totalFramesRef.current)
                 setSmoothFrames(smoothFramesRef.current)
 
-                // Update memory info (Chromium only)
-                const perfMemory = (performance as Performance & { memory?: { usedJSHeapSize: number; jsHeapLimit: number } }).memory
+                // Update memory info (Chromium / WebView2)
+                const perfMemory = (performance as unknown as { memory?: { usedJSHeapSize: number; jsHeapSizeLimit?: number; totalJSHeapSize?: number } }).memory
                 if (perfMemory) {
-                    setMemory({
-                        used: Math.round(perfMemory.usedJSHeapSize / (1024 * 1024)),
-                        total: Math.round(perfMemory.jsHeapLimit / (1024 * 1024))
-                    })
+                    const used = Math.round((perfMemory.usedJSHeapSize || 0) / (1024 * 1024))
+                    const limit = perfMemory.jsHeapSizeLimit || perfMemory.totalJSHeapSize || 0
+                    const total = limit > 0 ? Math.round(limit / (1024 * 1024)) : 2048
+                    setMemory({ used, total })
                 }
             }
 
@@ -129,31 +173,40 @@ export function PerformanceMonitor() {
 
                     const width = canvasRef.current.width
                     const height = canvasRef.current.height
+                    const maxScale = Math.max(75, Math.ceil((hardwareSpecs?.screenRefreshRate || 60) * 1.15))
 
                     ctx.clearRect(0, 0, width, height)
 
-                    // Draw grid lines
-                    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)"
+                    // Draw grid lines (60fps and 120fps if available)
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.07)"
                     ctx.lineWidth = 1
+                    
                     // 60fps line
+                    const y60 = height - (60 / maxScale) * height
                     ctx.beginPath()
-                    ctx.moveTo(0, height - (60 / 75) * height)
-                    ctx.lineTo(width, height - (60 / 75) * height)
-                    ctx.stroke()
-                    // 30fps line
-                    ctx.beginPath()
-                    ctx.moveTo(0, height - (30 / 75) * height)
-                    ctx.lineTo(width, height - (30 / 75) * height)
+                    ctx.moveTo(0, y60)
+                    ctx.lineTo(width, y60)
                     ctx.stroke()
 
+                    // 120fps line if monitor is >= 120Hz
+                    if (maxScale >= 120) {
+                        const y120 = height - (120 / maxScale) * height
+                        ctx.beginPath()
+                        ctx.moveTo(0, y120)
+                        ctx.lineTo(width, y120)
+                        ctx.stroke()
+                    }
+
                     // Draw FPS path
-                    ctx.strokeStyle = currentFps >= 50 ? "#10b981" : currentFps >= 35 ? "#f59e0b" : "#ef4444"
+                    const healthyThreshold = targetHz >= 120 ? 80 : 50
+                    const warnThreshold = targetHz >= 120 ? 55 : 35
+                    ctx.strokeStyle = currentFps >= healthyThreshold ? "#10b981" : currentFps >= warnThreshold ? "#f59e0b" : "#ef4444"
                     ctx.lineWidth = 1.5
                     ctx.beginPath()
                     
                     fpsHistoryRef.current.forEach((val, index) => {
                         const x = (index / 100) * width
-                        const y = height - (Math.min(75, val) / 75) * height
+                        const y = height - (Math.min(maxScale, val) / maxScale) * height
                         if (index === 0) {
                             ctx.moveTo(x, y)
                         } else {
@@ -163,16 +216,16 @@ export function PerformanceMonitor() {
                     ctx.stroke()
 
                     // Fill gradient area below path
-                    ctx.fillStyle = currentFps >= 50 
-                        ? "rgba(16, 185, 129, 0.05)" 
-                        : currentFps >= 35 
-                            ? "rgba(245, 158, 11, 0.05)" 
-                            : "rgba(239, 68, 68, 0.05)"
+                    ctx.fillStyle = currentFps >= healthyThreshold 
+                        ? "rgba(16, 185, 129, 0.08)" 
+                        : currentFps >= warnThreshold 
+                            ? "rgba(245, 158, 11, 0.08)" 
+                            : "rgba(239, 68, 68, 0.08)"
                     ctx.beginPath()
                     ctx.moveTo(0, height)
                     fpsHistoryRef.current.forEach((val, index) => {
                         const x = (index / 100) * width
-                        const y = height - (Math.min(75, val) / 75) * height
+                        const y = height - (Math.min(maxScale, val) / maxScale) * height
                         ctx.lineTo(x, y)
                     })
                     ctx.lineTo(width, height)
@@ -192,7 +245,7 @@ export function PerformanceMonitor() {
                 rafIdRef.current = null
             }
         }
-    }, [isOpen])
+    }, [isOpen, autoGovernorEnabled, autoThrottleActive, hardwareSpecs, setAutoThrottleActive])
 
     const handleClearStats = () => {
         totalFramesRef.current = 0
@@ -202,15 +255,20 @@ export function PerformanceMonitor() {
         setTotalFrames(0)
         setSmoothFrames(0)
         fpsHistoryRef.current = []
+        setAutoThrottleActive(false)
     }
 
     const smoothnessIndex = totalFrames > 0 
-        ? Math.round((smoothFrames / totalFrames) * 100) 
+        ? Math.max(0, Math.min(100, Math.round((smoothFrames / totalFrames) * 100))) 
         : 100
 
+    const targetHz = hardwareSpecs?.screenRefreshRate || 60
+    const healthyFpsThreshold = targetHz >= 120 ? 80 : 50
+    const warnFpsThreshold = targetHz >= 120 ? 55 : 35
+
     const getFpsColor = (val: number) => {
-        if (val >= 50) return "text-status-success"
-        if (val >= 35) return "text-status-warning"
+        if (val >= healthyFpsThreshold) return "text-status-success"
+        if (val >= warnFpsThreshold) return "text-status-warning"
         return "text-status-error"
     }
 
@@ -224,15 +282,15 @@ export function PerformanceMonitor() {
     const optimizationTips = React.useMemo(() => {
         const tips: { id: string; text: string; level: "info" | "warning" }[] = []
 
-        if (fps < 45) {
+        if (fps < warnFpsThreshold && fps > 0) {
             tips.push({
                 id: "fps-low",
-                text: "Rendimiento bajo: Tu máquina está luchando por renderizar a 60 FPS. Se recomienda desactivar efectos en segundo plano.",
+                text: `Rendimiento bajo: La tasa de cuadros actual (${fps} FPS) está por debajo de lo esperado (${targetHz} Hz). Se recomienda el perfil Ahorro / PC Modesta.`,
                 level: "warning"
             })
         }
 
-        if (droppedFrames > 20 && smoothnessIndex < 85) {
+        if (droppedFrames > 40 && smoothnessIndex < 75) {
             tips.push({
                 id: "stuttering",
                 text: "Micro-tirones detectados: El movimiento del ratón en fondos difuminados dinámicos (DynamicBackdrop) puede estar sobrecargando la GPU.",
@@ -240,7 +298,7 @@ export function PerformanceMonitor() {
             })
         }
 
-        if (memory && memory.used > 450) {
+        if (memory && memory.used > 600) {
             tips.push({
                 id: "memory-high",
                 text: "Consumo de memoria elevado: Considera recargar la aplicación para limpiar la caché de imágenes.",
@@ -256,7 +314,7 @@ export function PerformanceMonitor() {
         })
 
         return tips
-    }, [fps, droppedFrames, smoothnessIndex, memory])
+    }, [fps, droppedFrames, smoothnessIndex, memory, targetHz, warnFpsThreshold])
 
     return (
         <AnimatePresence>
@@ -266,7 +324,7 @@ export function PerformanceMonitor() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ type: "spring", stiffness: 380, damping: 26 }}
-                    className="fixed top-6 right-6 z-[9999] w-[350px] backdrop-blur-overlay-xl border border-outline-variant rounded-corner-lg shadow-elevation-4 p-5 select-none font-sans text-on-surface"
+                    className="fixed top-6 right-4 sm:right-6 z-[9999] w-[calc(100vw-2rem)] sm:w-[350px] max-w-sm backdrop-blur-overlay-xl border border-outline-variant rounded-corner-lg shadow-elevation-4 p-5 select-none font-sans text-on-surface"
                     style={{ background: "color-mix(in srgb, var(--md-sys-color-surface-container) 90%, transparent)" }}
                 >
                     {/* Header */}
@@ -291,6 +349,26 @@ export function PerformanceMonitor() {
                             >
                                 <Icons.ui.close size={14} />
                             </button>
+                        </div>
+                    </div>
+
+                    {/* Hardware Tier Badge */}
+                    <div className="mt-3 p-2 bg-surface-container-low border border-outline-variant/30 rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Icons.status.zap size={13} className="text-brand-accent shrink-0" />
+                            <span className="text-caption font-bold text-on-surface-variant truncate" title={hardwareSpecs?.gpuRenderer || "Detectando GPU..."}>
+                                {hardwareSpecs ? `${hardwareSpecs.isDedicatedGpu ? "GPU Dedicada" : "GPU"} · ${hardwareSpecs.cpuCores}c` : "Detectando hardware..."}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {autoThrottleActive && (
+                                <span className="text-caption font-black px-1.5 py-0.5 rounded bg-status-warning/20 text-status-warning border border-status-warning/30">
+                                    THROTTLED
+                                </span>
+                            )}
+                            <span className="text-caption font-black uppercase px-2 py-0.5 rounded bg-surface-container-high text-brand-accent border border-outline-variant/40">
+                                {getEffectiveTier() === "high" ? "TIER 1 (ULTRA)" : getEffectiveTier() === "balanced" ? "TIER 2 (BALANCED)" : "TIER 3 (ECO)"}
+                            </span>
                         </div>
                     </div>
 

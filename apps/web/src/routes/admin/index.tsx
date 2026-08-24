@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { motion } from "framer-motion"
 import * as React from "react"
 import { cn } from "@/components/ui/core/styling"
 import { Icons } from "@/components/ui/icons"
 import { useScanLocalFiles } from "@/api/hooks/scan.hooks"
 import { useGetLibraryStats, useGetTranscodeStats } from "@/api/hooks/admin.hooks"
+import { useBackupDatabase } from "@/api/hooks/system.hooks"
+import { toast } from "sonner"
 
 export const Route = createFileRoute("/admin/")({
     component: AdminPage,
@@ -48,6 +50,19 @@ function AdminPage() {
 }
 
 function AdminHeader() {
+    const { mutate: backupDb, isPending: isBackingUp } = useBackupDatabase()
+
+    const handleBackup = () => {
+        backupDb(undefined, {
+            onSuccess: () => {
+                toast.success("Respaldo de base de datos generado con éxito")
+            },
+            onError: () => {
+                toast.error("Error al generar el respaldo")
+            }
+        })
+    }
+
     return (
         <header className="relative z-10">
             <div className="max-w-6xl mx-auto">
@@ -57,13 +72,13 @@ function AdminHeader() {
                         <p className="text-body-md text-on-surface-variant/70 mt-2">Gestiona y monitorea tu instancia de KameHouse</p>
                     </div>
                     <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto flex-wrap">
-                        <button className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-10 border border-outline-variant text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:border-brand-accent hover:bg-brand-accent/10 active:scale-[0.97]">
+                        <button
+                            onClick={handleBackup}
+                            disabled={isBackingUp}
+                            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-10 border border-outline-variant text-on-surface-variant font-semibold text-sm rounded-button transition-all duration-fast hover:border-brand-accent hover:bg-brand-accent/10 active:scale-[0.97] disabled:opacity-50"
+                        >
                             <Icons.ui.download size={16} strokeWidth={2.5} />
-                            Backup
-                        </button>
-                        <button className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-10 bg-brand-accent text-on-primary font-semibold text-sm rounded-button transition-all duration-fast active:scale-[0.97]">
-                            <Icons.ui.refresh size={16} strokeWidth={2.5} />
-                            Reiniciar Servicios
+                            {isBackingUp ? "Creando..." : "Backup"}
                         </button>
                     </div>
                 </div>
@@ -131,15 +146,16 @@ function AdminSection({ title, subtitle, children }: { title: string; subtitle?:
 }
 
 function AdminActionsGrid() {
+    const navigate = useNavigate()
     const { mutate: scanLibrary } = useScanLocalFiles()
 
     const actions = [
         { label: "Escanear Biblioteca", desc: "Detectar nuevos archivos", icon: Icons.navigation.search, variant: "primary" as const, action: () => scanLibrary({ mode: "fast", skipLockedFiles: false, skipIgnoredFiles: false }) },
         { label: "Re-Scan Forzado", desc: "Ignorar cache y re-escanear todo", icon: Icons.ui.refresh, variant: "secondary" as const, action: () => scanLibrary({ mode: "deep", skipLockedFiles: false, skipIgnoredFiles: false }) },
-        { label: "Match Manual", desc: "Resolver archivos no vinculados", icon: Icons.ui.link, variant: "outline" as const, action: () => {} },
-        { label: "Limpiar Huérfanos", desc: "Eliminar entradas sin archivo", icon: Icons.ui.delete, variant: "destructive" as const, action: () => {} },
-        { label: "Actualizar Metadatos", desc: "Refrescar info de TMDB/AniList", icon: Icons.status.database, variant: "outline" as const, action: () => {} },
-        { label: "Generar Thumbnails", desc: "Crear previews de video", icon: Icons.status.image, variant: "outline" as const, action: () => {} },
+        { label: "Match Manual", desc: "Resolver archivos no vinculados", icon: Icons.ui.link, variant: "outline" as const, action: () => navigate({ to: "/settings", search: { tab: "library" } }) },
+        { label: "Limpiar Huérfanos", desc: "Eliminar entradas sin archivo", icon: Icons.ui.delete, variant: "destructive" as const, action: () => navigate({ to: "/settings", search: { tab: "library" } }) },
+        { label: "Actualizar Metadatos", desc: "Refrescar info de TMDB/AniList", icon: Icons.status.database, variant: "outline" as const, action: () => navigate({ to: "/settings", search: { tab: "library" } }) },
+        { label: "Configurar Pre-Transcode", desc: "Gestionar caché y perfiles", icon: Icons.status.image, variant: "outline" as const, action: () => navigate({ to: "/settings", search: { tab: "performance" } }) },
     ]
 
     return (
@@ -343,12 +359,14 @@ function AdminTranscodePanel() {
 }
 
 function AdminSystemGrid() {
+    const navigate = useNavigate()
+
     const items = [
-        { label: "Logs del Sistema", desc: "Ver eventos y errores recientes", icon: Icons.status.file, action: () => {} },
-        { label: "Configuración Avanzada", desc: "Variables de entorno y features", icon: Icons.ui.sliders, action: () => {} },
-        { label: "Usuarios y Permisos", desc: "Gestionar accesos", icon: Icons.navigation.users, action: () => {} },
-        { label: "Backup y Restore", desc: "Respaldos automáticos y manuales", icon: Icons.status.hdd, action: () => {} },
-        { label: "Actualizaciones", desc: "Versión actual y disponible", icon: Icons.ui.refresh, action: () => {} },
+        { label: "Logs y Diagnóstico", desc: "Ver reportes y eventos del sistema", icon: Icons.status.file, action: () => navigate({ to: "/settings", search: { tab: "system" } }) },
+        { label: "Configuración Avanzada", desc: "Ajustes de rendimiento y hardware", icon: Icons.ui.sliders, action: () => navigate({ to: "/settings", search: { tab: "performance" } }) },
+        { label: "Rutas de Biblioteca", desc: "Gestionar carpetas de series y películas", icon: Icons.navigation.users, action: () => navigate({ to: "/settings", search: { tab: "library" } }) },
+        { label: "Backup y Base de Datos", desc: "Respaldos y mantenimiento de SQLite", icon: Icons.status.hdd, action: () => navigate({ to: "/settings", search: { tab: "system" } }) },
+        { label: "Apariencia y Temas", desc: "Personalización visual y eras", icon: Icons.ui.refresh, action: () => navigate({ to: "/settings", search: { tab: "appearance" } }) },
     ]
 
     return (
@@ -395,7 +413,7 @@ function AdminRecentActivity() {
                 <div className="space-y-4">
                     {activities.map((activity, i) => (
                         <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-surface-container border border-outline-variant hover:border-surface-container-high transition-colors">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `hsl(${activity.color} / 0.12)`, color: `hsl(${activity.color})` }}>
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `color-mix(in srgb, ${activity.color} 12%, transparent)`, color: activity.color }}>
                                 <activity.icon size={20} strokeWidth={2.5} />
                             </div>
                             <div className="flex-1 min-w-0">

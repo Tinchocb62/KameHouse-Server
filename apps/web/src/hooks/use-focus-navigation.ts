@@ -110,37 +110,43 @@ export function useFocusNavigation({
 }: UseFocusNavigationOptions) {
     const focusedElementRef = useRef<HTMLElement | null>(null)
 
-    const getFocusableElements = useCallback(() => {
+    const getFocusableSpatialNodes = useCallback((): SpatialNode[] => {
         if (!containerRef.current) return []
         const elements = Array.from(
             containerRef.current.querySelectorAll<HTMLElement>(focusableSelector)
         )
-        // Filter out hidden elements
-        return elements.filter((el) => {
-            if (el.offsetParent === null) return false
+        const nodes: SpatialNode[] = []
+        for (const el of elements) {
+            if (el.offsetParent === null && el.offsetWidth === 0) continue
             const rect = el.getBoundingClientRect()
-            return rect.width > 0 && rect.height > 0
-        })
+            if (rect.width > 0 && rect.height > 0) {
+                nodes.push({
+                    element: el,
+                    rect,
+                    centerX: rect.left + rect.width / 2,
+                    centerY: rect.top + rect.height / 2,
+                })
+            }
+        }
+        return nodes
     }, [containerRef, focusableSelector])
 
     const findBestCandidate = useCallback(
         (
             current: SpatialNode,
-            elements: HTMLElement[],
+            nodes: SpatialNode[],
             arrowDirection: "left" | "right" | "up" | "down"
         ): HTMLElement | null => {
             let bestCandidate: HTMLElement | null = null
             let bestScore = Infinity
 
-            for (const el of elements) {
-                if (el === current.element) continue
+            for (const candidateNode of nodes) {
+                if (candidateNode.element === current.element) continue
 
-                const candidateNode = getSpatialNode(el)
                 const score = calculateScore(current, candidateNode, arrowDirection)
-
                 if (score < bestScore) {
                     bestScore = score
-                    bestCandidate = el
+                    bestCandidate = candidateNode.element
                 }
             }
 
@@ -163,32 +169,30 @@ export function useFocusNavigation({
         (e: KeyboardEvent) => {
             if (!enabled) return
 
-            const elements = getFocusableElements()
-            if (elements.length === 0) return
+            const nodes = getFocusableSpatialNodes()
+            if (nodes.length === 0) return
 
             const currentElement = focusedElementRef.current || document.activeElement as HTMLElement
+            const currentNode = nodes.find(n => n.element === currentElement) || nodes[0]
 
             // Si no hay elemento focalizado, enfocar el primero
-            if (!currentElement || !elements.includes(currentElement)) {
-                if (elements.length > 0) {
-                    focusElement(elements[0])
+            if (!currentElement || !nodes.some(n => n.element === currentElement)) {
+                if (nodes.length > 0) {
+                    focusElement(nodes[0].element)
                 }
                 return
             }
-
-            const currentNode = getSpatialNode(currentElement)
 
             switch (e.key) {
                 case "ArrowRight": {
                     e.preventDefault()
                     if (direction === "two-way") {
-                        // En modo dos vías, solo navegar horizontalmente
-                        const idx = elements.indexOf(currentElement)
-                        if (idx < elements.length - 1) {
-                            focusElement(elements[idx + 1])
+                        const idx = nodes.findIndex(n => n.element === currentElement)
+                        if (idx >= 0 && idx < nodes.length - 1) {
+                            focusElement(nodes[idx + 1].element)
                         }
                     } else {
-                        const best = findBestCandidate(currentNode, elements, "right")
+                        const best = findBestCandidate(currentNode, nodes, "right")
                         if (best) focusElement(best)
                     }
                     break
@@ -197,12 +201,12 @@ export function useFocusNavigation({
                 case "ArrowLeft": {
                     e.preventDefault()
                     if (direction === "two-way") {
-                        const idx = elements.indexOf(currentElement)
+                        const idx = nodes.findIndex(n => n.element === currentElement)
                         if (idx > 0) {
-                            focusElement(elements[idx - 1])
+                            focusElement(nodes[idx - 1].element)
                         }
                     } else {
-                        const best = findBestCandidate(currentNode, elements, "left")
+                        const best = findBestCandidate(currentNode, nodes, "left")
                         if (best) focusElement(best)
                     }
                     break
@@ -210,21 +214,16 @@ export function useFocusNavigation({
 
                 case "ArrowDown": {
                     e.preventDefault()
-                    if (direction === "two-way") {
-                        // En modo dos vías, las flechas arriba/abajo no hacen nada
-                        return
-                    }
-                    const best = findBestCandidate(currentNode, elements, "down")
+                    if (direction === "two-way") return
+                    const best = findBestCandidate(currentNode, nodes, "down")
                     if (best) focusElement(best)
                     break
                 }
 
                 case "ArrowUp": {
                     e.preventDefault()
-                    if (direction === "two-way") {
-                        return
-                    }
-                    const best = findBestCandidate(currentNode, elements, "up")
+                    if (direction === "two-way") return
+                    const best = findBestCandidate(currentNode, nodes, "up")
                     if (best) focusElement(best)
                     break
                 }
@@ -248,7 +247,7 @@ export function useFocusNavigation({
                     break
             }
         },
-        [enabled, getFocusableElements, findBestCandidate, focusElement, onEnter, onEscape, direction]
+        [enabled, getFocusableSpatialNodes, findBestCandidate, focusElement, onEnter, onEscape, direction]
     )
 
     useEffect(() => {

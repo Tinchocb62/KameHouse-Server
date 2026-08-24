@@ -57,10 +57,9 @@ type Config struct {
 		Dir string `mapstructure:"dir"`
 	} `mapstructure:"extensions"`
 	Metadata struct {
+		Provider     string `mapstructure:"provider"` // "jikan" (default) or "tmdb"
 		TMDBApiKey   string `mapstructure:"tmdbApiKey"`
 		TMDBLanguage string `mapstructure:"tmdbLanguage"`
-		FanArtAPIKey string `mapstructure:"fanartApiKey"` // FanArt.tv — logos, clearart, thumbs (free key from fanart.tv/get-an-api-key)
-		OMDbAPIKey   string `mapstructure:"omdbApiKey"`   // OMDb — ratings, runtime, director (free key, 1k req/day)
 	} `mapstructure:"metadata"`
 }
 
@@ -185,10 +184,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("offline.dir", "$KAMEHOUSE_DATA_DIR/offline")
 	v.SetDefault("offline.assetDir", "$KAMEHOUSE_DATA_DIR/offline/assets")
 	v.SetDefault("extensions.dir", "$KAMEHOUSE_DATA_DIR/extensions")
+	v.SetDefault("metadata.provider", "jikan")
 	v.SetDefault("metadata.tmdbApiKey", "")
 	v.SetDefault("metadata.tmdbLanguage", "es-MX")
-	v.SetDefault("metadata.fanartApiKey", "")
-	v.SetDefault("metadata.omdbApiKey", "")
 
 }
 
@@ -369,10 +367,9 @@ assetDir = "$KAMEHOUSE_DATA_DIR/offline/assets"
 dir = "$KAMEHOUSE_DATA_DIR/extensions"
 
 [metadata]
+provider = "jikan"
 tmdbApiKey = ""
 tmdbLanguage = "es-MX"
-fanartApiKey = ""
-omdbApiKey = ""
 `
 
 // resolveCorsOrigins resuelve los orígenes CORS permitidos desde variables de

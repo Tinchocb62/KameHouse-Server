@@ -31,8 +31,9 @@ export function EraOpeningPlayer({ sagaId, className }: EraOpeningPlayerProps) {
 
     // Detener y liberar el audio si cambiamos de saga o se desmonta
     React.useEffect(() => {
-        setUnavailable(false)
+        const timer = setTimeout(() => setUnavailable(false), 0)
         return () => {
+            clearTimeout(timer)
             const audio = audioRef.current
             if (audio) {
                 audio.pause()

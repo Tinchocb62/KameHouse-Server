@@ -1,6 +1,4 @@
 import React from "react"
-import { motion } from "framer-motion"
-import { staggerList, staggerItem } from "@/components/ui/core/motion"
 import { EpisodeBadge } from "@/components/ui/episode-badge"
 import { Icons } from "@/components/ui/icons"
 import type { PremiumEpisode } from "@/api/types/series.types"
@@ -8,18 +6,17 @@ import { cn } from "@/components/ui/core/styling"
 import { useHoverPreload } from "@/hooks/use-hover-preload"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
 import { useVirtualizer } from "@tanstack/react-virtual"
+import { DeferredImage } from "@/components/shared/deferred-image"
 
 // Alto del `pb-4` de cada fila, que estimateSize tiene que contar junto con la tarjeta.
 const ROW_GAP_PX = 16
 
-function findScrollParent(el: HTMLElement): HTMLElement | null {
-    let node = el.parentElement
-    while (node) {
-        const overflowY = getComputedStyle(node).overflowY
-        if (overflowY === "auto" || overflowY === "scroll") return node
-        node = node.parentElement
-    }
-    return null
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+    if (!el) return null
+    // Fast path: find scrollable container without reading scrollHeight/clientHeight to prevent forced layout reflow
+    const closest = el.closest<HTMLElement>(".overflow-y-auto, .overflow-auto")
+    if (closest) return closest
+    return document.documentElement
 }
 
 
@@ -104,14 +101,14 @@ export const PremiumEpisodeList = React.memo(function PremiumEpisodeList({
         {/* Type Filter */}
         <div className="flex bg-white/[0.05] border border-white/10 rounded-full p-1 backdrop-blur-[var(--blur-overlay-sm)] overflow-x-auto hide-scrollbar shrink-0">
           {[
-            { id: "all", label: "Todos" },
-            { id: "canon", label: "Canon" },
-            { id: "filler", label: "Relleno" },
-            { id: "unwatched", label: "No vistos" }
+            { id: "all" as const, label: "Todos" },
+            { id: "canon" as const, label: "Canon" },
+            { id: "filler" as const, label: "Relleno" },
+            { id: "unwatched" as const, label: "No vistos" }
           ].map(f => (
             <button
               key={f.id}
-              onClick={() => setTypeFilter(f.id as any)}
+              onClick={() => setTypeFilter(f.id)}
               className={cn(
                 "px-3 py-1.5 text-sm font-medium rounded-full transition-all whitespace-nowrap",
                 typeFilter === f.id
@@ -149,7 +146,7 @@ export const PremiumEpisodeList = React.memo(function PremiumEpisodeList({
             searchActive={!!searchQuery.trim()}
             ts={ts}
             onPlay={onPlay}
-            onCast={onCast}
+            _onCast={onCast}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         />
@@ -162,7 +159,7 @@ export const PremiumEpisodeList = React.memo(function PremiumEpisodeList({
 PremiumEpisodeList.displayName = "PremiumEpisodeList"
 
 function EpisodeVirtualList({
-    filteredEpisodes, activeSagaId, activeSubSagaStart, activeSubSagaEnd, scrollToEp, searchActive, ts, onPlay, onCast, onMouseEnter, onMouseLeave
+    filteredEpisodes, activeSagaId, activeSubSagaStart, activeSubSagaEnd, scrollToEp, searchActive, ts, onPlay, _onCast, onMouseEnter, onMouseLeave
 }: {
     filteredEpisodes: PremiumEpisode[]
     activeSagaId?: string
@@ -172,52 +169,72 @@ function EpisodeVirtualList({
     searchActive: boolean
     ts: ReturnType<typeof useThemeSettings>
     onPlay?: (episodeNumber: number) => void
-    onCast?: (episodeNumber: number) => void
+    _onCast?: (episodeNumber: number) => void
     onMouseEnter: (id: string) => void
     onMouseLeave: (id: string) => void
 }) {
     const listRef = React.useRef<HTMLDivElement>(null)
-    // El detalle de serie scrollea dentro de su propio contenedor, no con la ventana, así
-    // que hay que virtualizar contra ese elemento: window.scrollY nunca cambia.
-    const [scrollEl, setScrollEl] = React.useState<HTMLElement | null>(null)
-    const [scrollMargin, setScrollMargin] = React.useState(0)
+    const scrollerRef = React.useRef<HTMLElement | null>(null)
+    const [scrollMargin, setScrollMargin] = React.useState(() => {
+        if (typeof window === "undefined") return 0
+        return window.innerWidth < 768 ? 550 : 700
+    })
+
+    const getScrollElement = React.useCallback(() => {
+        if (!scrollerRef.current && listRef.current) {
+            scrollerRef.current = findScrollParent(listRef.current)
+        }
+        return scrollerRef.current
+    }, [])
 
     React.useLayoutEffect(() => {
         const el = listRef.current
         if (!el) return
 
         const scroller = findScrollParent(el)
-        setScrollEl(scroller)
+        scrollerRef.current = scroller
 
-        // Distancia entre el tope de la lista y el tope del contenido scrolleable.
+        // Distancia entre el tope de la lista y el tope del contenido scrolleable (sin forzar reflow).
         const updateOffset = () => {
             if (!listRef.current) return
-            const listTop = listRef.current.getBoundingClientRect().top
-            if (scroller) {
-                setScrollMargin(listTop - scroller.getBoundingClientRect().top + scroller.scrollTop)
-            } else {
-                setScrollMargin(listTop + window.scrollY)
+            let top = 0
+            let node: HTMLElement | null = listRef.current
+            const targetScroller = scrollerRef.current
+            while (node && node !== targetScroller && node !== document.body) {
+                top += node.offsetTop
+                node = node.offsetParent as HTMLElement | null
+            }
+            if (top > 0) {
+                setScrollMargin(prev => (Math.abs(prev - top) <= 1 ? prev : top))
             }
         }
         updateOffset()
 
-        // La altura de lo que está arriba (SagaLoreHeader, carrusel) cambia por saga y al
-        // cargar las imágenes.
-        const observer = new ResizeObserver(updateOffset)
-        observer.observe(scroller ?? document.body)
-        return () => observer.disconnect()
-    }, [filteredEpisodes.length])
+        window.addEventListener("resize", updateOffset, { passive: true })
+        return () => {
+            window.removeEventListener("resize", updateOffset)
+        }
+    }, [activeSagaId])
 
     const virtualizer = useVirtualizer({
         count: filteredEpisodes.length,
-        getScrollElement: () => scrollEl,
+        getScrollElement,
         estimateSize: () => {
-            if (ts.themeUseLegacyEpisodeCard) return 96 + ROW_GAP_PX;
-            const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
-            return (isSmallScreen ? 110 : 220) + ROW_GAP_PX;
+            if (ts.themeUseLegacyEpisodeCard) return 96 + ROW_GAP_PX
+            if (typeof window !== "undefined") {
+                if (window.innerWidth < 640) return 90 + ROW_GAP_PX
+                if (window.innerWidth < 768) return 134 + ROW_GAP_PX
+                return 164 + ROW_GAP_PX
+            }
+            return 164 + ROW_GAP_PX
         },
-        overscan: 5,
+        initialRect: {
+            width: typeof window !== "undefined" ? window.innerWidth : 1280,
+            height: typeof window !== "undefined" ? window.innerHeight : 800,
+        },
+        overscan: 2,
         scrollMargin,
+        useFlushSync: false,
     })
 
     // Al cambiar de saga o sub-saga, scrollear al primer episodio correspondiente.
@@ -229,7 +246,8 @@ function EpisodeVirtualList({
     // mientras hay una búsqueda activa.
     const didMountRef = React.useRef(false)
     React.useEffect(() => {
-        if (!scrollEl) return
+        const scroller = scrollerRef.current || (listRef.current ? findScrollParent(listRef.current) : null)
+        if (!scroller) return
         if (!didMountRef.current) {
             didMountRef.current = true
             return
@@ -246,16 +264,14 @@ function EpisodeVirtualList({
         }
 
         if (targetIndex >= 0) {
-            // rAF: dejar que el layoutEffect actualice scrollMargin (la altura del header
-            // de saga cambia por saga) antes de calcular el offset del scroll.
+            // rAF: dejar que el layoutEffect actualice scrollMargin (la altura del header)
             const raf = requestAnimationFrame(() => virtualizer.scrollToIndex(targetIndex, { align: "start" }))
             return () => cancelAnimationFrame(raf)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeSagaId, activeSubSagaStart, scrollToEp, scrollEl])
+    }, [activeSagaId, activeSubSagaStart, scrollToEp, virtualizer, filteredEpisodes, searchActive])
 
     return (
-        <motion.div ref={listRef} variants={staggerList} initial="hidden" animate="visible" className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+        <div ref={listRef} className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
             {virtualizer.getVirtualItems().map((virtualRow) => {
                 const ep = filteredEpisodes[virtualRow.index]
                 const isHighlighted = activeSubSagaStart != null &&
@@ -264,18 +280,15 @@ function EpisodeVirtualList({
                                     ep.number <= activeSubSagaEnd;
 
                 return (
-                    // El wrapper posicional tiene que ser un div plano: si fuera motion.div,
-                    // framer deja `transform: none` al terminar la animación y pisa el
-                    // translateY del virtualizer (todas las filas quedan superpuestas).
                     <div
                         key={ep.id}
                         className="absolute top-0 left-0 w-full pb-4"
                         style={{
-                            height: `${virtualRow.size}px`,
-                            transform: `translateY(${virtualRow.start - (virtualizer.options.scrollMargin || 0)}px)`,
+                            transform: `translate3d(0, ${virtualRow.start - (virtualizer.options.scrollMargin || 0)}px, 0)`,
+                            contain: "layout style paint",
                         }}
                     >
-                    <motion.div variants={staggerItem} className="h-full">
+                    <div className="h-full">
                         <div
                             id={`episode-${ep.number}`}
                             role="button"
@@ -291,72 +304,58 @@ function EpisodeVirtualList({
                             onMouseEnter={() => onMouseEnter(ep.id)}
                             onMouseLeave={() => onMouseLeave(ep.id)}
                             className={cn(
-                            "h-full group flex gap-2.5 sm:gap-4 rounded-xl cursor-pointer transition-all duration-base ease-smooth-out active:scale-[0.98]",
+                            "h-full group flex gap-2.5 sm:gap-4 rounded-xl cursor-pointer transition-[background-color,border-color,transform,box-shadow] duration-base ease-smooth-out active:scale-[0.98]",
                             ts.themeUseLegacyEpisodeCard ? "p-2 items-center" : "p-2.5 sm:p-3",
                             "border border-white/[0.06]",
                             !ts.themeUseLegacyEpisodeCard && "shadow-card hover:shadow-elevated hover:-translate-y-0.5",
                             "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70",
                             isHighlighted
                                 ? "bg-brand-accent/[0.08] border-l-[3px] border-l-brand-accent"
-                                : "bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/[0.12]"
+                                : "bg-surface-container-low hover:bg-surface-container",
                             )}
                         >
-                            {/* Thumbnail */}
-                            <div className={cn(
-                                "relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-surface-container",
-                                ts.themeUseLegacyEpisodeCard ? "w-24 sm:w-28" : "w-28 sm:w-36 md:w-52 lg:w-64 shadow-card"
-                            )}>
-                                <img
-                                src={ep.thumbnailUrl}
-                                alt={ep.title}
-                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-slow ease-smooth-out"
-                                />
-                                {/* Play Overlay */}
-                                {!ts.themeUseLegacyEpisodeCard && (
-                                <div className="absolute inset-0 bg-scrim/20 md:bg-scrim/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center justify-center transition-opacity duration-base cursor-pointer">
-                                    <div className="w-9 h-9 md:w-12 md:h-12 rounded-full glass-liquid flex items-center justify-center">
-                                    <Icons.media.play className="w-4 h-4 md:w-6 md:h-6 text-on-surface ml-0.5 md:ml-1" fill="currentColor" />
+                            {/* Left Thumbnail (Desktop) / Minimalist Icon (Mobile) */}
+                            <div className="relative aspect-[16/10] w-28 sm:w-44 md:w-56 shrink-0 rounded-lg overflow-hidden bg-surface-container-highest flex items-center justify-center">
+                                {ep.thumbnailUrl ? (
+                                    <DeferredImage
+                                        src={ep.thumbnailUrl}
+                                        alt={ep.title}
+                                        priority={true}
+                                        className="w-full h-full"
+                                        imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow ease-smooth-out"
+                                        showSkeleton={true}
+                                        fallback={
+                                            <div className="w-full h-full flex flex-col items-center justify-center bg-surface-container-highest text-on-surface-variant/40">
+                                                <Icons.status.imageOff className="w-6 h-6 mb-1 opacity-50" />
+                                                <span className="text-[10px] font-bold uppercase tracking-wider">EP {ep.number}</span>
+                                            </div>
+                                        }
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center bg-surface-container-highest text-on-surface-variant/40">
+                                        <Icons.status.imageOff className="w-6 h-6 mb-1 opacity-50" />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">EP {ep.number}</span>
                                     </div>
-                                </div>
                                 )}
 
-                                {/* Progress/Watched Indicator */}
-                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-container-high">
-                                {ep.isWatched && <motion.div variants={staggerItem} className="h-full bg-brand-success w-full" />}
+                                {/* Play Overlay */}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-base flex items-center justify-center backdrop-blur-xs pointer-events-none">
+                                    <div className="w-10 h-10 rounded-full bg-brand-accent text-on-accent flex items-center justify-center shadow-lg transform group-hover:scale-110 active:scale-95 transition-transform">
+                                        <Icons.media.play className="w-5 h-5 ml-0.5 fill-current" />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Details */}
-                            <div className="flex flex-col justify-center flex-grow min-w-0 py-0.5">
-                                <div className="flex justify-between items-start mb-0.5">
-                                <h4 className="text-base font-bold text-on-surface truncate">
-                                    <span className="text-on-surface-variant mr-1.5">{ep.number}.</span>
-                                    {ep.title}
-                                </h4>
-
-                                <div className="flex items-center gap-1.5 shrink-0">
-
-                                    {/* Enviar a TV */}
-                                    {onCast && (
-                                    <button
-                                        type="button"
-                                        title="Enviar a TV"
-                                        aria-label={`Enviar episodio ${ep.number} a la TV`}
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onCast(ep.number)
-                                        }}
-                                        className={cn(
-                                            "flex items-center justify-center w-7 h-7 rounded-full",
-                                            "border border-white/10 bg-white/5 hover:bg-surface-variant text-on-surface-variant hover:text-on-surface",
-                                            "transition-all duration-base ease-smooth-out",
-                                            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
-                                            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent/70 focus-visible:opacity-100"
-                                        )}
-                                    >
-                                        <Icons.media.cast className="w-3.5 h-3.5" />
-                                    </button>
-                                    )}
+                            {/* Episode Info */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-label-sm font-black text-brand-accent tracking-wider uppercase">
+                                        EP {ep.number}
+                                    </span>
+                                    <span className="text-on-surface-variant text-xs">•</span>
+                                    <span className="text-xs text-on-surface-variant font-medium">
+                                        {ep.duration ? `${ep.duration} min` : "24 min"}
+                                    </span>
 
                                     {/* Type Badge */}
                                     {ep.episodeType === 'Filler' && (
@@ -365,8 +364,21 @@ function EpisodeVirtualList({
                                     {ep.episodeType === 'Hyped' && (
                                     <EpisodeBadge variant="premium" className="shadow-brand-secondary">Premium</EpisodeBadge>
                                     )}
+
+                                    {ep.resolution && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/[0.06] text-on-surface-variant border border-white/5 uppercase">
+                                            {ep.resolution}
+                                        </span>
+                                    )}
+                                    {ep.videoCodec && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/[0.04] text-on-surface-variant/80 border border-white/5 uppercase">
+                                            {ep.videoCodec}
+                                        </span>
+                                    )}
                                 </div>
-                                </div>
+                                <h3 className="font-bold text-sm sm:text-base text-on-surface group-hover:text-brand-accent transition-colors truncate">
+                                    {ep.title}
+                                </h3>
 
                                 {!ts.themeUseLegacyEpisodeCard && !ts.themeHideEpisodeCardDescription && (
                                 <p className="text-sm text-on-surface-variant line-clamp-2 mb-2 leading-relaxed">
@@ -379,21 +391,12 @@ function EpisodeVirtualList({
                                     {ep.localFilePath.split(/[\\/]/).pop()}
                                 </p>
                                 )}
-
-                                {/* Technical Pills & Status */}
-                                {!ts.themeUseLegacyEpisodeCard && (
-                                <div className="flex items-center justify-end mt-auto">
-                                    <div className="flex items-center justify-center w-6 h-6 rounded-full border border-outline-variant group-hover:border-outline-variant/70 transition-colors ml-auto">
-                                    {ep.isWatched && <Icons.ui.check className="w-3.5 h-3.5 text-brand-success" strokeWidth={3} />}
-                                    </div>
-                                </div>
-                                )}
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                     </div>
                 )
             })}
-        </motion.div>
+        </div>
     )
 }

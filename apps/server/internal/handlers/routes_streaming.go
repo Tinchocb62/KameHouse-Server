@@ -12,6 +12,8 @@ func (h *Handler) RegisterStreamingRoutes(v1 *echo.Group) {
 	v1Mediastream := v1.Group("/mediastream")
 	v1Mediastream.GET("/settings", h.HandleGetMediastreamSettings)
 	v1Mediastream.PATCH("/settings", h.HandleSaveMediastreamSettings)
+	v1Mediastream.GET("/ffmpeg/status", h.HandleGetFFmpegStatus)
+	v1Mediastream.POST("/ffmpeg/install", h.HandleInstallFFmpeg)
 	v1Mediastream.POST("/request", h.HandleRequestMediastreamMediaContainer)
 	v1Mediastream.POST("/preload", h.HandlePreloadMediastreamMediaContainer)
 	v1Mediastream.POST("/shutdown-transcode", h.HandleMediastreamShutdownTranscodeStream)

@@ -86,6 +86,11 @@ export function usePlayerHls({
     const initialProgressRef = useRef(initialProgressSeconds)
     // Guard: solo disparar onDirectPlayFailed una sola vez por playableUrl.
     const directPlayFailedFiredRef = useRef(false)
+    const onDirectPlayFailedRef = useRef(onDirectPlayFailed)
+
+    useEffect(() => {
+        onDirectPlayFailedRef.current = onDirectPlayFailed
+    })
 
     useEffect(() => {
         backendTracksRef.current = backendTracks
@@ -193,10 +198,10 @@ export function usePlayerHls({
             // Si hay un callback de fallback y aún no lo hemos disparado, invocarlo
             // en vez de mostrar la pantalla de error directamente. Esto permite al
             // orchestrator intentar transcode antes de rendirse.
-            if (onDirectPlayFailed && !directPlayFailedFiredRef.current) {
+            if (onDirectPlayFailedRef.current && !directPlayFailedFiredRef.current) {
                 directPlayFailedFiredRef.current = true
                 console.warn("[player] Direct play native error — triggering onDirectPlayFailed fallback")
-                onDirectPlayFailed()
+                onDirectPlayFailedRef.current()
                 return
             }
             setStatus("error")
@@ -367,9 +372,8 @@ export function usePlayerHls({
                             hls.startLoad()
                         } else {
                             console.error("HLS: Network error is unrecoverable after 5 attempts")
-                            setStatus("error")
-                            setErrorMsg(`Error de red: ${data.details}`)
                             hls.destroy()
+                            setRefValue(hlsRef, null)
                         }
                     } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
                         mediaRecoveryAttempt++
@@ -388,12 +392,14 @@ export function usePlayerHls({
                             setStatus("error")
                             setErrorMsg(video.error?.message || `Error de decodificación: ${data.details}`)
                             hls.destroy()
+                            setRefValue(hlsRef, null)
                         }
                     } else {
                         // Error irrecuperable
                         setStatus("error")
                         setErrorMsg(`Error fatal de reproducción HLS: ${data.details}`)
                         hls.destroy()
+                        setRefValue(hlsRef, null)
                     }
                 } else {
                     // Errores no fatales de buffer: hls.js se recupera solo, pero con transcode forzamos
@@ -465,5 +471,6 @@ export function usePlayerHls({
         setSubtitleTracks,
         setActiveAudioIndex,
         setIsPlaying,
+        streamSwitchResumeRef,
     ])
 }

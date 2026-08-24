@@ -77,18 +77,21 @@
   --spotlight-db: var(--era-db-hex);
   --spotlight-dbz: var(--era-dbz-hex);
   --spotlight-dbgt: var(--era-dbgt-hex);
+  --spotlight-dbkai: var(--era-dbkai-hex);
   --spotlight-dbs: var(--era-dbs-hex);
   --spotlight-daima: var(--era-daima-hex);
 
   --spotlight-glow-db: color-mix(in srgb, var(--spotlight-db) 25%, transparent);
   --spotlight-glow-dbz: color-mix(in srgb, var(--spotlight-dbz) 25%, transparent);
   --spotlight-glow-dbgt: color-mix(in srgb, var(--spotlight-dbgt) 25%, transparent);
+  --spotlight-glow-dbkai: color-mix(in srgb, var(--spotlight-dbkai) 25%, transparent);
   --spotlight-glow-dbs: color-mix(in srgb, var(--spotlight-dbs) 25%, transparent);
   --spotlight-glow-daima: color-mix(in srgb, var(--spotlight-daima) 25%, transparent);
 
   --spotlight-border-db: color-mix(in srgb, var(--spotlight-db) 70%, transparent);
   --spotlight-border-dbz: color-mix(in srgb, var(--spotlight-dbz) 70%, transparent);
   --spotlight-border-dbgt: color-mix(in srgb, var(--spotlight-dbgt) 70%, transparent);
+  --spotlight-border-dbkai: color-mix(in srgb, var(--spotlight-dbkai) 70%, transparent);
   --spotlight-border-dbs: color-mix(in srgb, var(--spotlight-dbs) 70%, transparent);
   --spotlight-border-daima: color-mix(in srgb, var(--spotlight-daima) 70%, transparent);
 
@@ -98,6 +101,7 @@
   --spotlight-db-vivid: #ff6e3a;    --spotlight-db-vivid-2: #ff8c3a;
   --spotlight-dbz-vivid: #f59e0b;   --spotlight-dbz-vivid-2: #d97706;
   --spotlight-dbgt-vivid: #e11d48;  --spotlight-dbgt-vivid-2: #be123c;
+  --spotlight-dbkai-vivid: #0284c7; --spotlight-dbkai-vivid-2: #38bdf8;
   --spotlight-dbs-vivid: #0ea5e9;   --spotlight-dbs-vivid-2: #2563eb;
   --spotlight-daima-vivid: #22d3ee; --spotlight-daima-vivid-2: #059669;
 
@@ -105,12 +109,14 @@
   --era-db-hsl:       26 62.3% 50.0%; /* CF7430 - Naranja Terracota */
   --era-dbz-hsl:      17.5 88.3% 40.4%; /* C2410C - Usamos el Naranja Acción como principal UI */
   --era-dbgt-hsl:     185.0 81.1% 29.0%; /* 0E7C86 - Petróleo tech para UI */
+  --era-dbkai-hsl:    199.0 89.0% 48.0%; /* 0284C7 - Azul Eléctrico Kai */
   --era-dbs-hsl:      333.3 71.4% 50.6%; /* DB2777 - Magenta Rosé para UI */
   --era-daima-hsl:    142.1 76.2% 36.3%; /* 16A34A - Verde franco para UI */
 
   --era-db-hex:       #CF7430;
   --era-dbz-hex:      #C2410C;
   --era-dbgt-hex:     #0E7C86;
+  --era-dbkai-hex:    #0284C7;
   --era-dbs-hex:      #DB2777;
   --era-daima-hex:    #16A34A;
 
@@ -118,6 +124,7 @@
   --glow-db:       color-mix(in srgb, var(--era-db-hex) 40%, transparent);
   --glow-dbz:      color-mix(in srgb, var(--era-dbz-hex) 40%, transparent);
   --glow-dbgt:     color-mix(in srgb, var(--era-dbgt-hex) 40%, transparent);
+  --glow-dbkai:    color-mix(in srgb, var(--era-dbkai-hex) 40%, transparent);
   --glow-dbs:      color-mix(in srgb, var(--era-dbs-hex) 40%, transparent);
   --glow-daima:    color-mix(in srgb, var(--era-daima-hex) 40%, transparent);
 
@@ -363,6 +370,34 @@
   --era-shimmer-1:        #0E7C86;
   --era-shimmer-2:        #9CA3AF;
   --era-shimmer-3:        #7A1F1F; /* Rojo Black Star */
+}
+
+[data-theme="era-dbkai"] {
+  /* ─── Primario UI: Azul Eléctrico Kai ─── */
+  --brand-accent:       var(--era-dbkai-hsl);
+  --brand-accent-hex:   var(--era-dbkai-hex);
+  --brand-glow:         var(--glow-dbkai);
+  --primary-foreground: 0 0% 100%;
+  /* ─── Secundario UI: Dorado SSJ ─── */
+  --brand-secondary:      45.0 93.0% 47.0%;
+  --brand-secondary-hex:  #EAB308;
+  /* ─── Terciario UI: Cyan Kamehameha ─── */
+  --brand-tertiary:       189.0 94.0% 43.0%;
+  --brand-tertiary-hex:   #06B6D4;
+  /* ─── Fondos Temáticos de Era ─── */
+  --bg-primary:           #0B1320; /* Base: Azul oscuro HD */
+  --bg-secondary:         #0369A1; /* Primario real: Azul Kai */
+  --bg-tertiary:          #075985;
+  --bg-quaternary:        #0C4A6E;
+  /* ─── Botón ─── */
+  --era-btn-from:         #0284C7;
+  --era-btn-to:           #0EA5E9;
+  --era-btn-hover-from:   #0EA5E9;
+  --era-btn-hover-to:     #38BDF8;
+  /* ─── Shimmer ─── */
+  --era-shimmer-1:        #0284C7;
+  --era-shimmer-2:        #EAB308;
+  --era-shimmer-3:        #06B6D4;
 }
 
 [data-theme="era-dbs"] {

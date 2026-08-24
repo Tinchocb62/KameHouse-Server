@@ -144,6 +144,7 @@ export const Icons = {
     monitorSmartphone: Lucide.MonitorSmartphone,
     fileVideo: Lucide.FileVideo,
     radar: Lucide.Radar,
+    code: Lucide.Code,
   },
   time: {
     clock: Lucide.Clock,

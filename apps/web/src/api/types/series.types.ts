@@ -1,38 +1,20 @@
 import type { NormalizedMedia } from "./unified.types"
+import type {
+  CharacterDTO,
+  CharacterRole,
+  EpisodeType,
+  SagaDTO as BaseSagaDTO,
+  SubSagaDTO as BaseSubSagaDTO,
+} from "@/api/generated/types"
 
-export type CharacterRole = "Protagonist" | "Antagonist" | "Supporting" | "Background"
+export type { CharacterDTO, CharacterRole, EpisodeType }
 
-export type EpisodeType = "Canon" | "Filler" | "Hyped"
-
-export interface CharacterDTO {
-  name: string
-  roleTag: CharacterRole
-  avatarUrl: string
-}
-
-export interface SubSagaDTO {
-  id: string
-  name: string
-  episodeRange: string
-  startEp: number
-  endEp: number
+export interface SubSagaDTO extends BaseSubSagaDTO {
   image?: string
   description?: string
 }
 
-export interface SagaDTO {
-  id: string
-  name: string
-  episodeRange: string
-  startEp: number
-  endEp: number
-  description: string
-  isFiller: boolean
-  canonStatus: string
-  antagonists: string[]
-  keyEvents: string[]
-  newCharacters: string[]
-  keyCharacters: CharacterDTO[]
+export interface SagaDTO extends Omit<BaseSagaDTO, "subSagas"> {
   subSagas?: SubSagaDTO[]
 }
 
@@ -73,6 +55,7 @@ export interface PremiumEpisode {
   videoCodec?: string
   audioCodec?: string
   localFilePath?: string
+  duration?: number
   sagaId?: string
   sagaName?: string
 }

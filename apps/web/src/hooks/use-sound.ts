@@ -1,8 +1,6 @@
 import { useCallback } from "react";
 import { useAppStore } from "@/lib/store";
 
-// Static global pool to cache HTMLAudioElement instances and prevent GC thrashing
-const sfxPool: Record<string, HTMLAudioElement> = {};
 
 export type SfxType = 
     | "hover"    // /sounds/seleccion de hover.wav
@@ -19,14 +17,35 @@ const SFX_PATHS: Record<SfxType, string> = {
     category: "/sounds/cambiar categoria.wav"
 };
 
-// Helper function to manage cache without mutating global state inside render/callbacks of hook
-function getOrAddAudio(path: string): HTMLAudioElement {
-    let audio = sfxPool[path];
-    if (!audio) {
-        audio = new Audio(path);
-        sfxPool[path] = audio;
+// Static pool of audio elements to reuse instances and prevent GC / cloneNode() thread stalls
+const POOL_SIZE = 3;
+const sfxPool: Record<string, HTMLAudioElement[]> = {};
+const poolIndex: Record<string, number> = {};
+
+function getPooledAudio(path: string): HTMLAudioElement {
+    if (!sfxPool[path]) {
+        const a = new Audio(path);
+        a.preload = "auto";
+        sfxPool[path] = [a];
+        poolIndex[path] = 0;
     }
-    return audio;
+    const pool = sfxPool[path];
+    const idx = poolIndex[path];
+    const audio = pool[idx];
+    if (audio.paused || audio.ended) {
+        audio.currentTime = 0;
+        return audio;
+    }
+    if (pool.length < POOL_SIZE) {
+        const newAudio = new Audio(path);
+        newAudio.preload = "auto";
+        pool.push(newAudio);
+        return newAudio;
+    }
+    poolIndex[path] = (idx + 1) % pool.length;
+    const nextAudio = pool[poolIndex[path]];
+    nextAudio.currentTime = 0;
+    return nextAudio;
 }
 
 export function useSound() {
@@ -42,14 +61,8 @@ export function useSound() {
             const path = SFX_PATHS[type];
             if (!path) return;
 
-            const audio = getOrAddAudio(path);
-
-            // If already playing, rewind to the start
-            if (!audio.paused) {
-                audio.currentTime = 0;
-            }
-
-            audio.volume = volume * uiSoundsVolume;
+            const audio = getPooledAudio(path);
+            audio.volume = Math.min(1, Math.max(0, volume * uiSoundsVolume));
 
             // Play safely handling the promise returned by modern browsers
             audio.play().catch(() => {

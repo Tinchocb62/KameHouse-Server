@@ -31,6 +31,8 @@ export interface ResolvedStageSaga {
     endEp: number
     totalEps: number
     watchedEps: number
+    percent: number
+    isComplete: boolean
 }
 
 /** Indexa la colección por TMDB id (primera aparición gana). */
@@ -61,6 +63,8 @@ export function resolveSagaProgress(
         : 0
     const totalEps = saga.endEp - saga.startEp + 1
     const watchedEps = Math.min(totalEps, Math.max(0, progress - saga.startEp + 1))
+    const percent = totalEps > 0 ? Math.round((watchedEps / totalEps) * 100) : 0
+    const isComplete = watchedEps >= totalEps
     return {
         kind: "saga",
         saga,
@@ -70,5 +74,7 @@ export function resolveSagaProgress(
         endEp: saga.endEp,
         totalEps,
         watchedEps,
+        percent,
+        isComplete,
     }
 }

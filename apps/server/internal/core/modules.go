@@ -23,8 +23,8 @@ import (
 	"kamehouse/internal/platforms/jikan_platform"
 	"kamehouse/internal/skipdetect"
 	"kamehouse/internal/util"
+	"kamehouse/internal/util/ffmpegutil"
 
-	"github.com/cli/browser"
 	"github.com/rs/zerolog"
 )
 
@@ -35,10 +35,27 @@ func (a *App) initModulesOnce() {
 	// |  Background Queue   |
 	// +---------------------+
 	mSettings, ok := a.Database.GetMediastreamSettings()
-	ffprobePath := "ffprobe"
-	if ok && mSettings.FfprobePath != "" {
-		ffprobePath = mSettings.FfprobePath
+	var customFfprobe, customFfmpeg string
+	if ok {
+		customFfprobe = mSettings.FfprobePath
+		customFfmpeg = mSettings.FfmpegPath
 	}
+	ffprobePath := ffmpegutil.ResolveFFprobePath(a.Config.Cache.Dir, customFfprobe)
+	ffmpegPath := ffmpegutil.ResolveFFmpegPath(a.Config.Cache.Dir, customFfmpeg)
+
+	// Check if binaries exist; if not, trigger background auto-download
+	status := a.FFmpegManager.GetStatus(customFfmpeg, customFfprobe)
+	if !status.FFmpegAvailable || !status.FFprobeAvailable {
+		go func() {
+			a.Logger.Info().Msg("ffmpegutil: Binarios de FFmpeg/FFprobe no detectados, iniciando descarga automática en segundo plano...")
+			if err := a.FFmpegManager.EnsureBinaries(context.Background(), nil); err != nil {
+				a.Logger.Warn().Err(err).Msg("ffmpegutil: No se pudo auto-descargar FFmpeg en el arranque (se puede reintentar desde Ajustes)")
+			} else {
+				a.Logger.Info().Msg("ffmpegutil: FFmpeg y FFprobe descargados y listos")
+			}
+		}()
+	}
+
 	a.BackgroundQueue = scanner.NewBackgroundQueue(a.Database, a.WSEventManager, a.Logger, ffprobePath)
 	a.BackgroundQueue.Start(4)
 
@@ -75,10 +92,6 @@ func (a *App) initModulesOnce() {
 	// +---------------------+
 	// Detección automática de intros/outros (AnimeThemes → cross-episodio → ASS).
 	// El cliente de AnimeThemes se inyecta en Fase 3 (nil → arranca en Método B).
-	ffmpegPath := "ffmpeg"
-	if ok && mSettings.FfmpegPath != "" {
-		ffmpegPath = mSettings.FfmpegPath
-	}
 	athClient := animethemes.NewClient(a.Logger, a.Database)
 	a.SkipDetector = skipdetect.New(a.Database, a.Logger, a.WSEventManager, a.Config.Cache.Dir, ffmpegPath, ffprobePath, athClient, a.FileCacher)
 
@@ -290,15 +303,6 @@ func (a *App) performActionsOnce() {
 	go func() {
 		if a.Settings == nil {
 			return
-		}
-
-		if a.Settings.GetLibrary().OpenWebURLOnStart {
-			err := browser.OpenURL(a.Config.GetServerURI("127.0.0.1"))
-			if err != nil {
-				a.Logger.Warn().Err(err).Msg("app: Failed to open web URL, please open it manually in your browser")
-			} else {
-				a.Logger.Info().Msg("app: Opened web URL")
-			}
 		}
 
 		if a.Settings.GetLibrary().RefreshLibraryOnStart {

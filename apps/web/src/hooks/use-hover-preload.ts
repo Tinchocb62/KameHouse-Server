@@ -7,11 +7,14 @@ interface UseHoverPreloadOptions {
 
 export function useHoverPreload({ delay = 300, onPreload }: UseHoverPreloadOptions) {
     const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
+    const onPreloadRef = useRef(onPreload)
+    onPreloadRef.current = onPreload
 
     useEffect(() => {
+        const timeouts = timeoutsRef.current
         return () => {
-            timeoutsRef.current.forEach(t => clearTimeout(t))
-            timeoutsRef.current.clear()
+            timeouts.forEach(t => clearTimeout(t))
+            timeouts.clear()
         }
     }, [])
 
@@ -20,12 +23,12 @@ export function useHoverPreload({ delay = 300, onPreload }: UseHoverPreloadOptio
         if (existing) clearTimeout(existing)
 
         const timeout = setTimeout(() => {
-            onPreload(id)
+            onPreloadRef.current(id)
             timeoutsRef.current.delete(id)
         }, delay)
 
         timeoutsRef.current.set(id, timeout)
-    }, [delay, onPreload])
+    }, [delay])
 
     const onMouseLeave = useCallback((id: string) => {
         const existing = timeoutsRef.current.get(id)

@@ -1,32 +1,13 @@
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { useGlobalSearch } from "@/hooks/use-global-search"
+import { useGlobalSearch, type GlobalSearchResultItem } from "@/hooks/use-global-search"
 import { Link } from "@tanstack/react-router"
 import { Icons } from "@/components/ui/icons"
 import { useEffect, useState } from "react"
 import { VideoPlayer } from "@/components/video/player"
-import type { IntelligentEntry } from "@/api/types/intelligence.types"
-
-export interface SyntheticUnlinkedEntry {
-    mediaId: string
-    isUnlinked: true
-    path: string
-    media: {
-        titleRomaji: string
-        titleEnglish: string
-        titleOriginal: string
-        year: string | number
-        format: string
-        posterImage: string
-        score?: number
-    }
-    vibes?: string[]
-}
-
-type SearchResultItem = (IntelligentEntry & { isUnlinked?: false; path?: string }) | SyntheticUnlinkedEntry
 
 export function CommandPalette() {
     const [open, setOpen] = useState(false)
-    const { query, setQuery, results, isLoading, isSearchActive } = useGlobalSearch()
+    const { query, setQuery, results, isLoading, isSearchActive } = useGlobalSearch(open)
     const [playTarget, setPlayTarget] = useState<{ path: string; title: string } | null>(null)
 
     useEffect(() => {
@@ -87,7 +68,7 @@ heading={isSearchActive ? "RESULTADOS ENCONTRADOS" : "TENDENCIAS GLOBALES"}
                             >
                                 <div className="grid gap-3 mt-2">
                                     {results?.map((res) => {
-                                        const result = res as SearchResultItem
+                                        const result = res as GlobalSearchResultItem
                                         const media = result.media
                                         const title = media?.titleRomaji || media?.titleEnglish || `Desconocido (${result.mediaId})`
                                         
@@ -97,13 +78,13 @@ heading={isSearchActive ? "RESULTADOS ENCONTRADOS" : "TENDENCIAS GLOBALES"}
                                                 value={`${title}-${result.mediaId}`}
                                                 onSelect={() => {
                                                     setOpen(false)
-                                                    if (result.isUnlinked) {
+                                                    if ("isUnlinked" in result && result.isUnlinked) {
                                                         setPlayTarget({ path: result.path, title })
                                                     }
                                                 }}
                                                 className="rounded-container border border-outline-variant/50 bg-surface hover:border-outline hover:bg-surface-container transition-all duration-base p-0 overflow-hidden group"
                                             >
-                                                {result.isUnlinked ? (
+                                                {"isUnlinked" in result && result.isUnlinked ? (
                                                     <button 
                                                         type="button" 
                                                         onClick={() => {
@@ -130,8 +111,39 @@ heading={isSearchActive ? "RESULTADOS ENCONTRADOS" : "TENDENCIAS GLOBALES"}
                                                             </div>
                                                         </div>
                                                     </button>
-                                                ) : (() => {
-                                                        const isMovie = media?.format === "MOVIE" || media?.format === "SPECIAL" || media?.format === "OVA"
+                                                ) : "isSemantic" in result && result.isSemantic ? (() => {
+                                                    const sem = result.semanticData
+                                                    const isMovie = sem.mediaType === "MOVIE" || sem.mediaId >= 1000000
+                                                    const linkProps = isMovie
+                                                        ? { to: "/movies/$movieId" as const, params: { movieId: String(sem.mediaId) } }
+                                                        : { to: "/series/$seriesId" as const, params: { seriesId: String(sem.mediaId) } }
+
+                                                    return (
+                                                        <Link {...linkProps} className="flex w-full items-center gap-5 p-3" onClick={() => setOpen(false)}>
+                                                            <div className="h-20 w-14 flex-shrink-0 rounded-lg shadow-elevation-1 border border-amber-500/30 group-hover:scale-105 transition-transform duration-base bg-amber-500/10 flex items-center justify-center overflow-hidden relative">
+                                                                <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                <Icons.status.sparkles className="h-7 w-7 text-amber-400 group-hover:scale-110 transition-transform duration-base z-10" />
+                                                            </div>
+                                                            <div className="flex flex-col overflow-hidden text-left py-1 min-w-0">
+                                                                <span className="truncate text-lg font-bold text-on-surface group-hover:text-amber-400 transition-colors leading-tight" title={title}>
+                                                                    {title}
+                                                                </span>
+                                                                <p className="text-label-sm text-zinc-400 truncate mt-1">{sem.description}</p>
+                                                                <div className="flex items-center gap-2 mt-2">
+                                                                    <span className="text-label-sm font-black uppercase tracking-widest text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md">
+                                                                        {result.badgeLabel}
+                                                                    </span>
+                                                                    {sem.episodes && (
+                                                                        <span className="text-label-sm font-black uppercase tracking-widest text-zinc-500">
+                                                                            {sem.episodes}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </Link>
+                                                    )
+                                                })() : (() => {
+                                                        const isMovie = media?.format === "MOVIE" || media?.format === "SPECIAL" || media?.format === "OVA" || (Number(result.mediaId) >= 1000000)
                                                         const linkProps = isMovie 
                                                             ? { to: "/movies/$movieId" as const, params: { movieId: result?.mediaId?.toString() || "0" } }
                                                             : { to: "/series/$seriesId" as const, params: { seriesId: result?.mediaId?.toString() || "0" } }
@@ -157,7 +169,7 @@ heading={isSearchActive ? "RESULTADOS ENCONTRADOS" : "TENDENCIAS GLOBALES"}
                                                                         <span className="text-label-sm font-black uppercase tracking-widest text-on-surface-variant">
                                                                             {media?.format || "LOCAL"}
                                                                         </span>
-                                                                        {media && media.score !== undefined && media.score > 0 && (
+                                                                        {media && "score" in media && media.score !== undefined && media.score > 0 && (
                                                                             <>
                                                                                 <div className="w-1 h-1 rounded-full bg-outline-variant/50" />
                                                                                 <span className="text-label-sm font-black text-brand-accent tracking-wider">
@@ -165,7 +177,7 @@ heading={isSearchActive ? "RESULTADOS ENCONTRADOS" : "TENDENCIAS GLOBALES"}
                                                                                 </span>
                                                                             </>
                                                                         )}
-                                                                        {result.vibes?.map((vibe) => (
+                                                                        {"vibes" in result && result.vibes?.map((vibe) => (
                                                                             <span key={vibe} className="text-label-sm font-black tracking-widest uppercase px-1.5 py-0.5 rounded-md border border-outline-variant/50 bg-surface-variant text-on-surface-variant group-hover:text-on-surface transition-colors">
                                                                                 {vibe}
                                                                             </span>

@@ -11,38 +11,83 @@ export function PlayerAmbientBackdrop({ videoRef, enabled }: PlayerAmbientBackdr
     useEffect(() => {
         if (!enabled) return
 
-        let animationFrameId: number
+        let animationFrameId: number | null = null
         const canvas = canvasRef.current
         const ctx = canvas?.getContext("2d", { alpha: false, willReadFrequently: false })
 
         if (!canvas || !ctx) return
 
-        let lastDrawTime = 0
-        const fpsLimit = 24
-        const frameTime = 1000 / fpsLimit
+        if (canvas.width !== 32) {
+            canvas.width = 32
+            canvas.height = 18
+        }
 
-        const drawLoop = (time: number) => {
-            animationFrameId = requestAnimationFrame(drawLoop)
+        let lastDrawTime = 0
+        const fpsLimit = 15
+        const frameTime = 1000 / fpsLimit
+        let isRunning = false
+
+        const drawFrame = (time: number) => {
+            if (!isRunning) return
+            animationFrameId = requestAnimationFrame(drawFrame)
+
+            if (document.visibilityState === "hidden") return
 
             const video = videoRef.current
-            if (!video || video.paused || video.ended || video.readyState < 2) return
+            if (!video || video.paused || video.ended || video.readyState < 2) {
+                stopLoop()
+                return
+            }
 
             if (time - lastDrawTime >= frameTime) {
-                // Resolución ultra-baja: el browser promedía los píxeles (dominant color sampling)
-                // El upscale + blur CSS hace el resto, igual que YouTube
-                if (canvas.width !== 32) {
-                    canvas.width = 32
-                    canvas.height = 18
-                }
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+                ctx.drawImage(video, 0, 0, 32, 18)
                 lastDrawTime = time
             }
         }
 
-        animationFrameId = requestAnimationFrame(drawLoop)
+        const startLoop = () => {
+            if (isRunning) return
+            isRunning = true
+            animationFrameId = requestAnimationFrame(drawFrame)
+        }
+
+        const stopLoop = () => {
+            isRunning = false
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId)
+                animationFrameId = null
+            }
+        }
+
+        const video = videoRef.current
+        if (video) {
+            video.addEventListener("play", startLoop)
+            video.addEventListener("playing", startLoop)
+            video.addEventListener("pause", stopLoop)
+            video.addEventListener("ended", stopLoop)
+            if (!video.paused && video.readyState >= 2) {
+                startLoop()
+            }
+        }
+
+        const handleVisibility = () => {
+            if (document.visibilityState === "hidden") {
+                stopLoop()
+            } else if (video && !video.paused) {
+                startLoop()
+            }
+        }
+        document.addEventListener("visibilitychange", handleVisibility)
 
         return () => {
-            cancelAnimationFrame(animationFrameId)
+            stopLoop()
+            document.removeEventListener("visibilitychange", handleVisibility)
+            if (video) {
+                video.removeEventListener("play", startLoop)
+                video.removeEventListener("playing", startLoop)
+                video.removeEventListener("pause", stopLoop)
+                video.removeEventListener("ended", stopLoop)
+            }
         }
     }, [enabled, videoRef])
 
@@ -68,9 +113,9 @@ export function PlayerAmbientBackdrop({ videoRef, enabled }: PlayerAmbientBackdr
                     // overflow:hidden en el padre recorta lo que sobresale → sin bordes negros.
                     transform: "scale(2)",
                     transformOrigin: "center center",
-                    // Fuerte blur para difuminar los bloques de píxeles del canvas pequeño.
+                    // Blur moderado para difuminar los bloques de píxeles del canvas pequeño.
                     // saturate alto para que los colores sean vibrantes como en YouTube.
-                    filter: "blur(80px) saturate(200%) brightness(0.9)",
+                    filter: "blur(36px) saturate(180%) brightness(0.9)",
                     opacity: 0.85,
                     // Evitar que el canvas renderice bordes pixelados al escalar
                     imageRendering: "auto",

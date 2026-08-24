@@ -21,12 +21,12 @@ type FolderInfo struct {
 var (
 	// Matches "Show Name (2023)" or "Show Name (2023) [tags]"
 	reYearInFolder = regexp.MustCompile(`^(.+?)\s*\((\d{4})\)`)
-	// Matches "Season 01", "Season 1", "S01", "S1", "Temp 01"
-	reSeasonFolder = regexp.MustCompile(`(?i)^(?:season|s|temp|temporada)\s*(\d+)$`)
+	// Matches "Season 01", "Season 1", "S01", "S1", "Temp 01", "Temporada 1", "T01", "T1"
+	reSeasonFolder = regexp.MustCompile(`(?i)^(?:season|s|temp|temporada|t)\s*0*(\d+)$`)
 	// Matches Specials, Extras, OVA folders which resolve to Season 0
-	reSpecialsFolder = regexp.MustCompile(`(?i)^(?:season\s*0+|s0+|specials|extras|ovas?|nc|sp)$`)
-	// Matches saga/arc subfolders like "1 - Saga El Gran Viaje", "02 - Saga Baby"
-	reSagaFolder = regexp.MustCompile(`(?i)^\d+\s*[-–]\s*(?:saga|arco?|part)\s+`)
+	reSpecialsFolder = regexp.MustCompile(`(?i)^(?:season\s*0+|s0+|temp\s*0+|temporada\s*0+|specials|extras|ovas?|oads?|nc|sp|cortos)$`)
+	// Matches saga/arc subfolders like "1 - Saga El Gran Viaje", "02 - Saga Baby", "Saga Saiyajin", "Saga Freezer", "Saga Cell", "Saga Buu"
+	reSagaFolder = regexp.MustCompile(`(?i)^(?:(?:\d+\s*[-–]\s*)?(?:saga|arco?|arc|part|parte)\s+|saga\b)`)
 	// Extracts the leading number from saga folders
 	reSagaNumber = regexp.MustCompile(`^(\d+)\s*[-–]`)
 	// Matches movie filename like "Dragon Ball Z - La batalla (2013).mkv"
@@ -37,7 +37,44 @@ var (
 	reLeadingBracketTag  = regexp.MustCompile(`^\[[^\]]+\]\s*`)
 	reCodecQualityTag    = regexp.MustCompile(`\s*[\[\(][^\]\)]*(?:x264|x265|h264|h265|hevc|aac|flac|bluray|bdrip|webrip|dvdrip|1080p|720p|480p|960p|4k|2160p|\d+[-:]\d+)[^\]\)]*[\]\)]\s*`)
 	reTrailingResolution = regexp.MustCompile(`\s*\[\d+p\]\s*$`)
+
+	knownCategoryFolders = map[string]struct{}{
+		"anime": {}, "movies": {}, "peliculas": {}, "películas": {}, "films": {}, "series": {},
+		"tv": {}, "tv shows": {}, "descargas": {}, "downloads": {}, "torrents": {}, "nuevos": {},
+		"new": {}, "completos": {}, "complete": {}, "batch": {}, "otros": {}, "videos": {},
+	}
 )
+
+// IsSeasonFolder returns true if the folder name is a season indicator.
+func IsSeasonFolder(name string) bool {
+	clean := strings.TrimSpace(name)
+	return reSeasonFolder.MatchString(clean) || reSpecialsFolder.MatchString(clean)
+}
+
+// IsSagaFolder returns true if the folder name is a saga or arc indicator.
+func IsSagaFolder(name string) bool {
+	clean := strings.TrimSpace(name)
+	return reSagaFolder.MatchString(clean)
+}
+
+// IsCategoryFolder returns true if the folder name is a generic media category folder.
+func IsCategoryFolder(name string) bool {
+	clean := strings.ToLower(strings.TrimSpace(name))
+	if _, ok := knownCategoryFolders[clean]; ok {
+		return true
+	}
+	if clean == "movies" || clean == "peliculas" || clean == "películas" || clean == "films" ||
+		strings.Contains(clean, "movies") || strings.Contains(clean, "peliculas") || strings.Contains(clean, "películas") ||
+		strings.Contains(clean, "pelis") {
+		return true
+	}
+	return false
+}
+
+// IsSeasonOrSagaFolderName returns true if the folder represents a season, saga, special, or category.
+func IsSeasonOrSagaFolderName(name string) bool {
+	return IsSeasonFolder(name) || IsSagaFolder(name) || IsCategoryFolder(name)
+}
 
 // ParseFolderStructure extracts series name, year, and season from a file path
 // using Kodi/Standard folder conventions.
@@ -45,6 +82,7 @@ var (
 // Supported structures:
 //   - Library/Show Name (Year)/Season XX/episode.mkv
 //   - Library/Show Name/Season XX/episode.mkv
+//   - Library/Show Name/Saga XX/episode.mkv
 //   - Library/Show Name (Year)/episode.mkv
 //   - Library/Movies/Movie Name (Year)/movie.mkv
 func ParseFolderStructure(filePath string, libraryPaths []string) *FolderInfo {
@@ -106,8 +144,10 @@ func ParseFolderStructure(filePath string, libraryPaths []string) *FolderInfo {
 	// Detect movie based on folder name
 	isInMovieCategory := false
 	for _, part := range relParts {
-		lower := strings.ToLower(part)
-		if lower == "movies" || lower == "peliculas" || lower == "películas" || lower == "films" {
+		lower := strings.ToLower(strings.TrimSpace(part))
+		if lower == "movies" || lower == "peliculas" || lower == "películas" || lower == "films" ||
+			strings.Contains(lower, "movies") || strings.Contains(lower, "peliculas") || strings.Contains(lower, "películas") ||
+			strings.Contains(lower, "pelis") {
 			info.IsMovie = true
 			isInMovieCategory = true
 		}
@@ -116,9 +156,7 @@ func ParseFolderStructure(filePath string, libraryPaths []string) *FolderInfo {
 	// Count non-category folders to detect if file is directly in a category folder
 	nonCategoryParts := 0
 	for _, part := range relParts {
-		lower := strings.ToLower(part)
-		if lower != "anime" && lower != "movies" && lower != "peliculas" && lower != "películas" &&
-			lower != "films" && lower != "series" && lower != "tv" && lower != "tv shows" {
+		if !IsCategoryFolder(part) {
 			nonCategoryParts++
 		}
 	}
@@ -137,7 +175,6 @@ func ParseFolderStructure(filePath string, libraryPaths []string) *FolderInfo {
 	}
 
 	// Parse the relative path components
-	// Expected: [SeriesName (Year)] or [SeriesName (Year), Season XX]
 	for i, part := range relParts {
 		// Check if this is a season folder
 		if m := reSeasonFolder.FindStringSubmatch(part); m != nil {
@@ -151,7 +188,7 @@ func ParseFolderStructure(filePath string, libraryPaths []string) *FolderInfo {
 			continue
 		}
 
-		// Check if this is a saga/arc subfolder — extract leading number as season
+		// Check if this is a saga/arc subfolder
 		if reSagaFolder.MatchString(part) {
 			if sm := reSagaNumber.FindStringSubmatch(part); sm != nil {
 				if num, err := strconv.Atoi(sm[1]); err == nil {
@@ -172,9 +209,7 @@ func ParseFolderStructure(filePath string, libraryPaths []string) *FolderInfo {
 		}
 
 		// Skip known category folders
-		lower := strings.ToLower(part)
-		if lower == "anime" || lower == "movies" || lower == "peliculas" || lower == "películas" ||
-			lower == "films" || lower == "series" || lower == "tv" || lower == "tv shows" {
+		if IsCategoryFolder(part) {
 			continue
 		}
 
@@ -184,14 +219,19 @@ func ParseFolderStructure(filePath string, libraryPaths []string) *FolderInfo {
 		}
 	}
 
-	// Fallback: if no series name was found, use the immediate parent folder
+	// Fallback: if no series name was found, use the first non-category component
 	if info.SeriesName == "" && len(relParts) > 0 {
-		name := relParts[0]
-		if m := reYearInFolder.FindStringSubmatch(name); m != nil {
-			info.SeriesName = strings.TrimSpace(m[1])
-			info.Year, _ = strconv.Atoi(m[2])
-		} else {
-			info.SeriesName = strings.TrimSpace(name)
+		for _, name := range relParts {
+			if IsCategoryFolder(name) || IsSeasonFolder(name) {
+				continue
+			}
+			if m := reYearInFolder.FindStringSubmatch(name); m != nil {
+				info.SeriesName = strings.TrimSpace(m[1])
+				info.Year, _ = strconv.Atoi(m[2])
+			} else {
+				info.SeriesName = strings.TrimSpace(name)
+			}
+			break
 		}
 	}
 

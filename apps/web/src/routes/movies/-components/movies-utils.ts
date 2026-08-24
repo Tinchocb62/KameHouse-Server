@@ -12,21 +12,26 @@ export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 export const specialsTmdbIds = new Set([39323, 39324, 38594, 47734, 15461, 1259215, 109963])
 export const classicTmdbIds = new Set([39144, 33499, 39145, 116776, 33513, 39148])
-export const zTmdbIds = new Set([28609, 15448, 39100, 39101, 39102, 24752, 15452, 39103, 39104, 15454, 34433, 39105, 44251, 39106, 39107, 39108, 177572, 126963, 303857, 120475, 1120475])
+export const zTmdbIds = new Set([28609, 15448, 39100, 39101, 39102, 24752, 15452, 39103, 39104, 15454, 34433, 39105, 44251, 39106, 39107, 39108, 177572, 120475, 1120475])
 export const gtTmdbIds = new Set([18095, 39149])
-export const superTmdbIds = new Set([503314, 610150])
+export const superTmdbIds = new Set([126963, 303857, 503314, 610150])
 export const zKeywords = ["z ", " z:", "kai", "改", "freezer", "frieza", "cooler", "androide", "android", "bojack", "janemba", "tapion", "bardock", "trunks", "broly", "slug", "turles", "dead zone", "fusion", "bio-broly", "gohan", "vegeta"]
 
-export function getEntryEra(entry: { media?: Models_LibraryMedia | null }): EraTab {
+export function getEntryEra(entry: { media?: Models_LibraryMedia | null; mediaId?: number | null }): EraTab {
     const media = entry.media
+    const tmdbId = media?.tmdbId || (entry.mediaId && isTmdbId(entry.mediaId) ? entry.mediaId : 0) || 0
+    const rawTmdbId = tmdbId >= 1000000 ? tmdbId - 1000000 : tmdbId
+
+    if (rawTmdbId > 0) {
+        if (specialsTmdbIds.has(rawTmdbId)) return "Especiales y OVAs"
+        if (classicTmdbIds.has(rawTmdbId)) return "Dragon Ball"
+        if (zTmdbIds.has(rawTmdbId)) return "Dragon Ball Z"
+        if (gtTmdbIds.has(rawTmdbId)) return "Dragon Ball GT"
+        if (superTmdbIds.has(rawTmdbId)) return "Dragon Ball Super"
+    }
+
     if (!media) return "Especiales y OVAs"
-    const tmdbId = media.tmdbId || 0
-    if (specialsTmdbIds.has(tmdbId)) return "Especiales y OVAs"
-    if (classicTmdbIds.has(tmdbId)) return "Dragon Ball"
-    if (zTmdbIds.has(tmdbId)) return "Dragon Ball Z"
-    if (gtTmdbIds.has(tmdbId)) return "Dragon Ball GT"
-    if (superTmdbIds.has(tmdbId)) return "Dragon Ball Super"
-    if (isTmdbId(tmdbId)) return "Especiales y OVAs"
+
     const allTitles = [media.titleRomaji, media.titleEnglish, media.titleOriginal, media.titleSpanish]
         .filter(Boolean).join(" ").toLowerCase()
     if (!allTitles.includes("dragon ball")) return "Especiales y OVAs"
@@ -40,3 +45,20 @@ export function getEntryEra(entry: { media?: Models_LibraryMedia | null }): EraT
     if (zKeywords.some(k => allTitles.includes(k))) return "Dragon Ball Z"
     return "Dragon Ball"
 }
+
+export function getReleaseDateTimestamp(entry: { media?: Models_LibraryMedia | null; mediaId?: number | null }): number {
+    const media = entry.media
+    if (!media) return 0
+    if (media.startDate) {
+        const parsed = Date.parse(media.startDate)
+        if (!isNaN(parsed) && parsed > 0) {
+            return parsed
+        }
+    }
+    if (media.year) {
+        return new Date(media.year, 0, 1).getTime()
+    }
+    return 0
+}
+
+

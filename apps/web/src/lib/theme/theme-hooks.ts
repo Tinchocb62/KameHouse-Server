@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Models_Theme } from "@/api/generated/types"
 import { useGetSettings } from "@/api/hooks/settings.hooks"
 
@@ -149,51 +150,53 @@ export function useThemeSettings(): ThemeSettingsHook {
     const { data: serverSettings } = useGetSettings()
     const theme = serverSettings?.theme
 
-    const merged: ThemeSettings = theme
-        ? {
-            ...THEME_DEFAULT_VALUES,
-            ...theme,
-            backgroundColor: theme.backgroundColor || THEME_DEFAULT_VALUES.backgroundColor,
-            accentColor: theme.accentColor || THEME_DEFAULT_VALUES.accentColor,
-            themeLibraryScreenBannerType: theme.themeLibraryScreenBannerType || THEME_DEFAULT_VALUES.themeLibraryScreenBannerType,
-            themeLibraryScreenCustomBannerPosition: theme.themeLibraryScreenCustomBannerPosition || THEME_DEFAULT_VALUES.themeLibraryScreenCustomBannerPosition,
-            themeMediaPageBannerType: theme.themeMediaPageBannerType || THEME_DEFAULT_VALUES.themeMediaPageBannerType,
-            themeMediaPageBannerSize: theme.themeMediaPageBannerSize || THEME_DEFAULT_VALUES.themeMediaPageBannerSize,
-            // El backend arrastra un "default" legacy que no es ninguna de las dos
-            // opciones reales (fluid/boxed) — normalizarlo evita que el form guarde
-            // un valor que el selector no ofrece.
-            themeMediaPageBannerInfoBoxSize: normalizeInfoBoxSize(theme.themeMediaPageBannerInfoBoxSize),
-            themeAnimeEntryScreenLayout: theme.themeAnimeEntryScreenLayout || THEME_DEFAULT_VALUES.themeAnimeEntryScreenLayout,
-            themeAnimeLibraryCollectionDefaultSorting: theme.themeAnimeLibraryCollectionDefaultSorting || THEME_DEFAULT_VALUES.themeAnimeLibraryCollectionDefaultSorting,
+    return React.useMemo(() => {
+        const merged: ThemeSettings = theme
+            ? {
+                ...THEME_DEFAULT_VALUES,
+                ...theme,
+                backgroundColor: theme.backgroundColor || THEME_DEFAULT_VALUES.backgroundColor,
+                accentColor: theme.accentColor || THEME_DEFAULT_VALUES.accentColor,
+                themeLibraryScreenBannerType: theme.themeLibraryScreenBannerType || THEME_DEFAULT_VALUES.themeLibraryScreenBannerType,
+                themeLibraryScreenCustomBannerPosition: theme.themeLibraryScreenCustomBannerPosition || THEME_DEFAULT_VALUES.themeLibraryScreenCustomBannerPosition,
+                themeMediaPageBannerType: theme.themeMediaPageBannerType || THEME_DEFAULT_VALUES.themeMediaPageBannerType,
+                themeMediaPageBannerSize: theme.themeMediaPageBannerSize || THEME_DEFAULT_VALUES.themeMediaPageBannerSize,
+                // El backend arrastra un "default" legacy que no es ninguna de las dos
+                // opciones reales (fluid/boxed) — normalizarlo evita que el form guarde
+                // un valor que el selector no ofrece.
+                themeMediaPageBannerInfoBoxSize: normalizeInfoBoxSize(theme.themeMediaPageBannerInfoBoxSize),
+                themeAnimeEntryScreenLayout: theme.themeAnimeEntryScreenLayout || THEME_DEFAULT_VALUES.themeAnimeEntryScreenLayout,
+                themeAnimeLibraryCollectionDefaultSorting: theme.themeAnimeLibraryCollectionDefaultSorting || THEME_DEFAULT_VALUES.themeAnimeLibraryCollectionDefaultSorting,
+            }
+            : { ...THEME_DEFAULT_VALUES }
+
+        // Derived from raw (un-coalesced) persisted values — used to drive the
+        // three independent color toggles in Settings → Apariencia, since the
+        // backend model has no separate enableCustomBg/enableCustomAccent fields.
+        const rawBackgroundColor = theme?.backgroundColor ?? ""
+        const rawAccentColor = theme?.accentColor ?? ""
+
+        const effectiveMode = resolveThemeMode(merged)
+        
+        let effectiveEra = merged.themeEra
+        if (effectiveMode === "era" && (!effectiveEra || !effectiveEra.startsWith("era-"))) {
+            effectiveEra = "era-universe"
         }
-        : { ...THEME_DEFAULT_VALUES }
 
-    // Derived from raw (un-coalesced) persisted values — used to drive the
-    // three independent color toggles in Settings → Apariencia, since the
-    // backend model has no separate enableCustomBg/enableCustomAccent fields.
-    const rawBackgroundColor = theme?.backgroundColor ?? ""
-    const rawAccentColor = theme?.accentColor ?? ""
-
-    const effectiveMode = resolveThemeMode(merged)
-    
-    let effectiveEra = merged.themeEra
-    if (effectiveMode === "era" && (!effectiveEra || !effectiveEra.startsWith("era-"))) {
-        effectiveEra = "era-universe"
-    }
-
-    return {
-        ...merged,
-        themeEra: effectiveEra,
-        // Clásico (glass sutil) siempre tiene vidrio
-        // activo — la intensidad la modulan los tokens de [data-mode]. Solo en
-        // Por Era el toggle del usuario manda.
-        themeEnableBlurringEffects: effectiveMode === "era" ? merged.themeEnableBlurringEffects : true,
-        effectiveMode,
-        hasCustomBackgroundColor: merged.enableColorSettings && !!merged.backgroundColor,
-        hasEraTheme: effectiveEra !== "",
-        hasCustomBackground: rawBackgroundColor !== "",
-        hasCustomAccentColor: rawAccentColor !== "",
-    }
+        return {
+            ...merged,
+            themeEra: effectiveEra,
+            // Clásico (glass sutil) siempre tiene vidrio
+            // activo — la intensidad la modulan los tokens de [data-mode]. Solo en
+            // Por Era el toggle del usuario manda.
+            themeEnableBlurringEffects: effectiveMode === "era" ? merged.themeEnableBlurringEffects : true,
+            effectiveMode,
+            hasCustomBackgroundColor: merged.enableColorSettings && !!merged.backgroundColor,
+            hasEraTheme: effectiveEra !== "",
+            hasCustomBackground: rawBackgroundColor !== "",
+            hasCustomAccentColor: rawAccentColor !== "",
+        }
+    }, [theme])
 }
 
 

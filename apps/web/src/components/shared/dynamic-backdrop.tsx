@@ -3,13 +3,14 @@ import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 import { useLocation } from "@tanstack/react-router"
 import { useAppStore } from "@/lib/store"
 import { useThemeSettings } from "@/lib/theme/theme-hooks"
+import { usePerformanceStore, selectEffectiveTier } from "@/lib/hardware/performance-store"
 
 /**
  * DynamicBackdrop — Cinematic Minimalist backdrop for KameHouse v3
  * - Subtle gradient orbs animated via CSS keyframes (GPU-accelerated)
  * - Cross-fade between artwork images
  * - Film grain + vignette overlays
- * - Mouse parallax (optional, respects reduced motion)
+ * - Mouse parallax (optional, respects reduced motion and performance tier)
  */
 export function DynamicBackdrop() {
     const location = useLocation()
@@ -35,7 +36,11 @@ export function DynamicBackdrop() {
     
     const ts = useThemeSettings()
     const tvMode = useAppStore(state => state.tvMode)
-    const isFlat = !ts.themeEnableBlurringEffects || tvMode
+
+    const effectiveTier = usePerformanceStore(selectEffectiveTier)
+    const autoThrottleActive = usePerformanceStore(state => state.autoThrottleActive)
+    const isEcoMode = effectiveTier === "low_power" || autoThrottleActive
+    const isFlat = !ts.themeEnableBlurringEffects || tvMode || isEcoMode
     
     const baseOpacity = (isHomePage
         ? 0.65
@@ -54,9 +59,9 @@ export function DynamicBackdrop() {
     const containerRef = React.useRef<HTMLDivElement>(null)
     const backdropWrapperRef = React.useRef<HTMLDivElement>(null)
 
-    // Mouse parallax (GPU-accelerated)
+    // Mouse parallax (GPU-accelerated, disabled in TV or Eco mode)
     React.useEffect(() => {
-        if (!isEnabled || !isMotionEnabled || tvMode) return
+        if (!isEnabled || !isMotionEnabled || tvMode || isEcoMode) return
         let rafId: number | null = null
         let targetX = 0
         let targetY = 0
@@ -112,7 +117,7 @@ export function DynamicBackdrop() {
             document.removeEventListener("visibilitychange", handleVisibility)
             if (rafId) cancelAnimationFrame(rafId)
         }
-    }, [isEnabled, isMotionEnabled, tvMode])
+    }, [isEnabled, isMotionEnabled, tvMode, isEcoMode])
 
     // Cross-fade orchestration
     React.useEffect(() => {
@@ -120,32 +125,41 @@ export function DynamicBackdrop() {
         if (!activeBackdropUrl || activeBackdropUrl === displayedUrl) return
 
         if (!displayedUrl) {
-            setTimeout(() => setDisplayedUrl(activeBackdropUrl), 0)
-            return
+            const initialTimer = setTimeout(() => {
+                setDisplayedUrl(activeBackdropUrl)
+            }, 0)
+            return () => clearTimeout(initialTimer)
         }
 
-        setTimeout(() => {
+        const fadeTimer = setTimeout(() => {
             setNextUrl(activeBackdropUrl)
             setIsCrossFading(true)
         }, 0)
 
-        // 1020ms: just past the 1000ms opacity crossfade below, so the swap happens after it's fully faded in.
-        const timer = setTimeout(() => {
+        const finishTimer = setTimeout(() => {
             setDisplayedUrl(activeBackdropUrl)
             setNextUrl(null)
             setIsCrossFading(false)
-        }, 1020)
+        }, 1200)
 
-        return () => clearTimeout(timer)
+        return () => {
+            clearTimeout(fadeTimer)
+            clearTimeout(finishTimer)
+        }
     }, [activeBackdropUrl, displayedUrl, isEnabled])
 
-    const filterClass = isHomePage
-        ? "blur-[var(--filter-blur-ambient-xl)]"
-        : isListingPage || isDetailPage
-            ? "blur-[var(--filter-blur-ambient-lg)]"
-            : "blur-[var(--filter-blur-ambient-md)]"
+    const filterClass = (isFlat || isEcoMode)
+        ? ""
+        : isHomePage
+            ? "blur-[var(--filter-blur-ambient-xl)]"
+            : isListingPage || isDetailPage
+                ? "blur-[var(--filter-blur-ambient-lg)]"
+                : "blur-[var(--filter-blur-ambient-md)]"
 
     if (!isEnabled) return null
+
+    // Los orbes solo se renderizan en modo Era con tema activo; en Clásico el fondo es minimalista sin animaciones
+    const showAnimatedOrbs = !tvMode && !isEcoMode && ts.effectiveMode === "era" && ts.hasEraTheme
 
     return (
         <div
@@ -153,46 +167,27 @@ export function DynamicBackdrop() {
             aria-hidden="true"
             className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[var(--bg-primary)]"
         >
-            {/* Cinematic Gradient Orbs */}
-            {!tvMode && (
+            {/* Cinematic Gradient Orbs (Omitted in TV / Eco / Classic Mode) */}
+            {showAnimatedOrbs && (
                 <div className="absolute inset-0 overflow-hidden">
                     {/* Era Universe gradient layer */}
-                    <div className="era-universe-layer absolute inset-0 transition-opacity duration-slow mix-blend-plus-lighter opacity-0" />
-                    <div className="absolute top-[10%] left-[8%] w-[clamp(280px,52vw,980px)] h-[clamp(280px,52vw,980px)] rounded-full animate-float-blur mix-blend-plus-lighter"
+                    <div className="era-universe-layer absolute inset-0 transition-opacity duration-slow opacity-0" />
+                    <div className="absolute top-[10%] left-[8%] w-[clamp(220px,35vw,550px)] h-[clamp(220px,35vw,550px)] rounded-full animate-float-blur"
                         style={{
                             background: "radial-gradient(circle at 30% 30%, var(--glow-color-1) 0%, transparent 80%)",
-                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.75 : 0.4,
-                            willChange: "transform",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.60 : 0.35,
                         }}
                     />
-                    <div className="absolute bottom-[8%] right-[6%] w-[clamp(240px,44vw,860px)] h-[clamp(240px,44vw,860px)] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
+                    <div className="absolute bottom-[8%] right-[6%] w-[clamp(200px,30vw,500px)] h-[clamp(200px,30vw,500px)] rounded-full animate-float-blur-reverse"
                         style={{
                             background: "radial-gradient(circle at 70% 70%, var(--glow-color-2) 0%, transparent 80%)",
-                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.60 : 0.34,
-                            willChange: "transform",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.50 : 0.30,
                         }}
                     />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(300px,55vw,1040px)] h-[clamp(300px,55vw,1040px)] rounded-full animate-pulse-glow mix-blend-plus-lighter"
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[clamp(240px,38vw,580px)] h-[clamp(240px,38vw,580px)] rounded-full animate-pulse-glow"
                         style={{
                             background: "radial-gradient(circle at 50% 50%, var(--glow-color-3) 0%, transparent 70%)",
-                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.50 : 0.24,
-                            willChange: "opacity, transform",
-                        }}
-                    />
-                    <div className="absolute top-[20%] right-[15%] w-[clamp(220px,40vw,780px)] h-[clamp(220px,40vw,780px)] rounded-full animate-float-blur mix-blend-plus-lighter"
-                        style={{
-                            background: "radial-gradient(circle at 40% 40%, var(--glow-color-4) 0%, transparent 65%)",
-                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.65 : 0.35,
-                            willChange: "transform",
-                            animationDelay: "-2s",
-                        }}
-                    />
-                    <div className="absolute bottom-[20%] left-[10%] w-[clamp(230px,42vw,820px)] h-[clamp(230px,42vw,820px)] rounded-full animate-float-blur-reverse mix-blend-plus-lighter"
-                        style={{
-                            background: "radial-gradient(circle at 60% 60%, var(--glow-color-5) 0%, transparent 65%)",
-                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.55 : 0.30,
-                            willChange: "transform",
-                            animationDelay: "-4s",
+                            opacity: (isListingPage || isDetailPage) && !activeBackdropUrl ? 0.40 : 0.20,
                         }}
                     />
                 </div>
@@ -201,23 +196,21 @@ export function DynamicBackdrop() {
             {/* Wrapper for backdrop layers with mouse parallax */}
             <div
                 ref={backdropWrapperRef}
-                className="absolute inset-0"
+                className="absolute inset-0 transform-gpu"
                 style={{
                     transform: "translate3d(0px, 0px, 0px)",
-                    willChange: "transform",
                 }}
             >
                 {/* Current backdrop */}
                 {!isHomePage && displayedUrl && (
                     <div
                         ref={currentLayerRef}
-                        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${filterClass}`}
+                        className={`absolute inset-0 bg-cover bg-center bg-no-repeat transform-gpu ${filterClass}`}
                         style={{
                             backgroundImage: `url(${displayedUrl})`,
                             opacity: isCrossFading ? 0 : baseOpacity,
-                            transform: "scale(1.25)",
+                            transform: "scale(1.15)",
                             transition: "opacity 1000ms cubic-bezier(0.25, 0.8, 0.25, 1)",
-                            willChange: "opacity",
                         }}
                     />
                 )}
@@ -226,13 +219,12 @@ export function DynamicBackdrop() {
                 {!isHomePage && nextUrl && (
                     <div
                         ref={nextLayerRef}
-                        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${filterClass}`}
+                        className={`absolute inset-0 bg-cover bg-center bg-no-repeat transform-gpu ${filterClass}`}
                         style={{
                             backgroundImage: `url(${nextUrl})`,
                             opacity: isCrossFading ? baseOpacity : 0,
-                            transform: isCrossFading ? "scale(1)" : "scale(1.15)",
-                            transition: "opacity 1000ms cubic-bezier(0.25, 0.8, 0.25, 1), transform 1200ms cubic-bezier(0.25, 0.8, 0.25, 1)",
-                            willChange: "opacity, transform",
+                            transform: "scale(1.15)",
+                            transition: "opacity 1000ms cubic-bezier(0.25, 0.8, 0.25, 1)",
                         }}
                     />
                 )}

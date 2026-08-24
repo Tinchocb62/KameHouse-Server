@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"kamehouse/internal/constants"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/database/models/dto"
@@ -25,8 +26,8 @@ func (h *Handler) resolveLibraryMediaForSagas(mID int) (*models.LibraryMedia, er
 		return media, nil
 	}
 
-	if mID > 1_000_000 {
-		return db.GetLibraryMediaByTmdbIdAndType(h.App.Database, mID-1_000_000, "MOVIE")
+	if mID >= constants.MovieIDOffset {
+		return db.GetLibraryMediaByTmdbIdAndType(h.App.Database, mID-constants.MovieIDOffset, "MOVIE")
 	}
 	return db.GetLibraryMediaByTmdbIdAndType(h.App.Database, mID, "SHOW")
 }

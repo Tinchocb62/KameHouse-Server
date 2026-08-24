@@ -21,6 +21,9 @@ export interface UIState {
     dynamicBackdropEnabled: boolean
     dynamicBackdropMotionEnabled: boolean
     eraOpeningPlaying: boolean
+    showInitialSetup: boolean
+    activeSeriesContext: string | null
+    seriesSoundtrackMode: boolean
     setSidebarOpen: (open: boolean) => void
     setSearchQuery: (query: string) => void
     setVideoActive: (active: boolean) => void
@@ -34,6 +37,9 @@ export interface UIState {
     setDynamicBackdropEnabled: (enabled: boolean) => void
     setDynamicBackdropMotionEnabled: (enabled: boolean) => void
     setEraOpeningPlaying: (playing: boolean) => void
+    setShowInitialSetup: (show: boolean) => void
+    setActiveSeriesContext: (context: string | null) => void
+    setSeriesSoundtrackMode: (enabled: boolean) => void
 }
 
 import { type ScannerMessage } from "@/lib/server/ws-events"
@@ -80,7 +86,7 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     sidebarOpen: false,
     searchQuery: "",
     isVideoActive: false,
-    bgMusicEnabled: false,
+    bgMusicEnabled: true,
     bgMusicVolume: 0.25,
     bgMusicDir: "",
     bgMusicTracks: [],
@@ -90,11 +96,40 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     dynamicBackdropEnabled: true,
     dynamicBackdropMotionEnabled: true,
     eraOpeningPlaying: false,
+    showInitialSetup: false,
+    activeSeriesContext: null,
+    seriesSoundtrackMode: true,
     setSidebarOpen: (open) => set({ sidebarOpen: open }),
     setSearchQuery: (query) => set({ searchQuery: query }),
-    setVideoActive: (active) => set({ isVideoActive: active }),
-    setBgMusicEnabled: (enabled) => set({ bgMusicEnabled: enabled }),
-    setBgMusicVolume: (volume) => set({ bgMusicVolume: volume }),
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CRITICAL: Corte síncrono de audio en setters de Zustand.
+    // Al mutar el estado, pausamos directamente la instancia global de audio en window
+    // para garantizar una respuesta inmediata en 0ms sin depender del ciclo de React.
+    // ═══════════════════════════════════════════════════════════════════════════
+    setVideoActive: (active) => {
+        set({ isVideoActive: active })
+        if (active && typeof window !== "undefined" && (window as any).__kamehouse_bg_audio) {
+            try {
+                (window as any).__kamehouse_bg_audio.pause()
+            } catch {}
+        }
+    },
+    setBgMusicEnabled: (enabled) => {
+        set({ bgMusicEnabled: enabled })
+        if (!enabled && typeof window !== "undefined" && (window as any).__kamehouse_bg_audio) {
+            try {
+                (window as any).__kamehouse_bg_audio.pause()
+            } catch {}
+        }
+    },
+    setBgMusicVolume: (volume) => {
+        set({ bgMusicVolume: volume })
+        if (typeof window !== "undefined" && (window as any).__kamehouse_bg_audio) {
+            try {
+                (window as any).__kamehouse_bg_audio.volume = Math.pow(volume, 2)
+            } catch {}
+        }
+    },
     setBgMusicDir: (dir) => set({ bgMusicDir: dir }),
     setBgMusicTracks: (tracks) => set({ bgMusicTracks: tracks }),
     setUiSoundsEnabled: (enabled) => set({ uiSoundsEnabled: enabled }),
@@ -108,6 +143,20 @@ export const createUISlice: StateCreator<UIState & PlayerState, [], [], UIState>
     },
     setEraOpeningPlaying: (playing) => {
         set({ eraOpeningPlaying: playing })
+        if (playing && typeof window !== "undefined" && (window as any).__kamehouse_bg_audio) {
+            try {
+                (window as any).__kamehouse_bg_audio.pause()
+            } catch {}
+        }
+    },
+    setShowInitialSetup: (show) => {
+        set({ showInitialSetup: show })
+    },
+    setActiveSeriesContext: (context) => {
+        set({ activeSeriesContext: context })
+    },
+    setSeriesSoundtrackMode: (enabled) => {
+        set({ seriesSoundtrackMode: enabled })
     },
 })
 
@@ -137,6 +186,8 @@ export interface PlayerState {
     setSkipStepSeconds: (seconds: number) => void
     playbackRate: number
     setPlaybackRate: (rate: number) => void
+    preferredAudioProfile: "latino" | "castellano" | "japanese" | "english" | "auto"
+    setPreferredAudioProfile: (profile: "latino" | "castellano" | "japanese" | "english" | "auto") => void
     preferredAudioLang: string
     setPreferredAudioLang: (lang: string) => void
     preferredAudioTrackIndex: Record<number, number>
@@ -145,6 +196,10 @@ export interface PlayerState {
     setPreferredSubtitleLang: (lang: string) => void
     subtitlesEnabled: boolean
     setSubtitlesEnabled: (enabled: boolean) => void
+    filterFillers: boolean
+    setFilterFillers: (enabled: boolean) => void
+    autoSkipFiller: boolean
+    setAutoSkipFiller: (enabled: boolean) => void
     showHeatmap: boolean
     setShowHeatmap: (show: boolean) => void
     aspectRatio: "contain" | "fill" | "cover" | "16/9"
@@ -194,7 +249,9 @@ export const createPlayerSlice: StateCreator<UIState & PlayerState, [], [], Play
     setAutoSkipOutro: (autoSkipOutro) => set({ autoSkipOutro }),
     setSkipStepSeconds: (skipStepSeconds) => set({ skipStepSeconds }),
     setPlaybackRate: (playbackRate) => set({ playbackRate }),
-    preferredAudioLang: "jpn",
+    preferredAudioProfile: "latino",
+    setPreferredAudioProfile: (preferredAudioProfile) => set({ preferredAudioProfile }),
+    preferredAudioLang: "spa-lat",
     setPreferredAudioLang: (preferredAudioLang) => set({ preferredAudioLang }),
     preferredAudioTrackIndex: {},
     setPreferredAudioTrackIndex: (mediaId, index) => set((state) => ({ 
@@ -204,6 +261,10 @@ export const createPlayerSlice: StateCreator<UIState & PlayerState, [], [], Play
     setPreferredSubtitleLang: (preferredSubtitleLang) => set({ preferredSubtitleLang }),
     subtitlesEnabled: true,
     setSubtitlesEnabled: (subtitlesEnabled) => set({ subtitlesEnabled }),
+    filterFillers: false,
+    setFilterFillers: (filterFillers) => set({ filterFillers }),
+    autoSkipFiller: false,
+    setAutoSkipFiller: (autoSkipFiller) => set({ autoSkipFiller }),
     showHeatmap: true,
     setShowHeatmap: (showHeatmap) => set({ showHeatmap }),
     aspectRatio: "contain",

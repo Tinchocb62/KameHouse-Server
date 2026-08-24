@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"kamehouse/internal/util/ffmpegutil"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -45,12 +47,12 @@ func (h *Handler) HandleGetVideoThumbnail(c echo.Context) error {
 			if err != nil {
 				continue
 			}
-			// Clean paths to normalize separators and trailing slashes
-			cleanVideo := filepath.Clean(absVideoPath)
-			cleanLib := filepath.Clean(absLibPath)
+			// Clean paths to normalize separators and trailing slashes (case-insensitive for Windows)
+			cleanVideo := strings.ToLower(filepath.Clean(absVideoPath))
+			cleanLib := strings.ToLower(filepath.Clean(absLibPath))
 			
 			// Check if cleanVideo starts with cleanLib
-			if strings.HasPrefix(cleanVideo, cleanLib) {
+			if strings.HasPrefix(cleanVideo, cleanLib+string(os.PathSeparator)) || cleanVideo == cleanLib {
 				isPathAllowed = true
 				break
 			}
@@ -61,17 +63,13 @@ func (h *Handler) HandleGetVideoThumbnail(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, map[string]string{"error": "access denied to the requested file path"})
 	}
 
-	// Get ffmpeg and ffprobe paths from mediastream settings
-	ffmpegPath := "ffmpeg"
-	ffprobePath := "ffprobe"
+	var customFfmpeg, customFfprobe string
 	if h.App.SecondarySettings.Mediastream != nil {
-		if h.App.SecondarySettings.Mediastream.FfmpegPath != "" {
-			ffmpegPath = h.App.SecondarySettings.Mediastream.FfmpegPath
-		}
-		if h.App.SecondarySettings.Mediastream.FfprobePath != "" {
-			ffprobePath = h.App.SecondarySettings.Mediastream.FfprobePath
-		}
+		customFfmpeg = h.App.SecondarySettings.Mediastream.FfmpegPath
+		customFfprobe = h.App.SecondarySettings.Mediastream.FfprobePath
 	}
+	ffmpegPath := ffmpegutil.ResolveFFmpegPath(h.App.Config.Cache.Dir, customFfmpeg)
+	ffprobePath := ffmpegutil.ResolveFFprobePath(h.App.Config.Cache.Dir, customFfprobe)
 
 	// Create cache directory for thumbnails
 	cacheDir := filepath.Join(h.App.Config.Cache.Dir, "thumbnails")
@@ -124,7 +122,7 @@ func (h *Handler) HandleGetVideoThumbnail(c echo.Context) error {
 		"-i", videoPath,
 		"-vframes", "1",
 		"-q:v", "5",
-		"-vf", "scale=480:-1",
+		"-vf", "scale=480:-2",
 		"-y",
 		cacheFile,
 	)

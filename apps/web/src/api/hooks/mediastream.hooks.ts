@@ -6,6 +6,7 @@ import {
     SaveMediastreamSettings_Variables,
 } from "@/api/generated/endpoint.types"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
+import { EXTRA_ENDPOINTS } from "@/api/client/endpoints.extra"
 import { Mediastream_MediaContainer, Models_MediastreamSettings, PreTranscodeJob } from "@/api/generated/types"
 import { logger } from "@/lib/helpers/debug"
 import { useQueryClient } from "@tanstack/react-query"
@@ -28,6 +29,7 @@ export function useSaveMediastreamSettings() {
         mutationKey: [API_ENDPOINTS.MEDIASTREAM.SaveMediastreamSettings.key],
         onSuccess: async () => {
             await qc.invalidateQueries({ queryKey: [API_ENDPOINTS.MEDIASTREAM.GetMediastreamSettings.key] })
+            await qc.invalidateQueries({ queryKey: [API_ENDPOINTS.SETTINGS.GetSettings.key] })
             await qc.invalidateQueries({ queryKey: [API_ENDPOINTS.STATUS.GetStatus.key] })
             toast.success("Settings saved")
         },
@@ -120,3 +122,42 @@ export function useMediastreamShutdownTranscodeStream() {
         },
     })
 }
+
+export interface FFmpegStatus {
+    ffmpegAvailable: boolean
+    ffprobeAvailable: boolean
+    ffmpegPath: string
+    ffprobePath: string
+    ffmpegVersion: string
+    ffprobeVersion: string
+    isDownloading: boolean
+    downloadProgress: number
+    downloadStatus: string
+    lastError?: string
+}
+
+export function useGetFFmpegStatus() {
+    return useServerQuery<FFmpegStatus>({
+        endpoint: EXTRA_ENDPOINTS.MEDIASTREAM.FFmpegStatus.endpoint,
+        method: "GET",
+        queryKey: [EXTRA_ENDPOINTS.MEDIASTREAM.FFmpegStatus.key],
+        refetchInterval: (query) => {
+            const data = query.state.data
+            return data?.isDownloading ? 1000 : false
+        },
+    })
+}
+
+export function useInstallFFmpeg() {
+    const qc = useQueryClient()
+    return useServerMutation<{ started: boolean }, void>({
+        endpoint: EXTRA_ENDPOINTS.MEDIASTREAM.InstallFFmpeg.endpoint,
+        method: "POST",
+        mutationKey: [EXTRA_ENDPOINTS.MEDIASTREAM.InstallFFmpeg.key],
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: [EXTRA_ENDPOINTS.MEDIASTREAM.FFmpegStatus.key] })
+            toast.info("Iniciando descarga e instalación de FFmpeg...")
+        },
+    })
+}
+

@@ -20,7 +20,8 @@
   /* ─── Contraste y Textura para Liquid Glass ──────── */
   --glass-contrast:        1.06;
   --glass-contrast-subtle: 1.04;
-  --noise-texture:         url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  /* Patrón de ruido estático pre-rasterizado para evitar re-rasterización continua de Skia CPU */
+  --noise-texture:         url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAwSURBVHgB7c4BDQAACAMw9E/tYw2Gv4MCLcnNrr7V9wAAAAAAAAAAAAAAAAAAAAAA3g0X3QABmQ2qPgAAAABJRU5ErkJggg==");
 
   /* ─── DEPRECATED — Alias legacy (mantener por compatibilidad temporal) ─────
        Migrar a: elevation (shadows.css) + surface colors (colors.css)         */
@@ -40,15 +41,15 @@
   --blur-player:   var(--blur-overlay-xl);
 
   /* ─── Filter blur (para elementos decorativos, NO backdrop-filter) ─── */
-  --filter-blur-hero:    15px;   /* blur en backdrop de héroe */
-  --filter-blur-hero-bg: 70px;   /* blur fuerte en bg de héroe */
-  --filter-blur-orb:     160px;  /* blur en ambient orbs */
+  --filter-blur-hero:    12px;   /* blur en backdrop de héroe */
+  --filter-blur-hero-bg: 32px;   /* blur en bg de héroe */
+  --filter-blur-orb:     28px;   /* blur optimizado en ambient orbs */
 
   /* ─── Filter blur para DynamicBackdrop (imagen de fondo decorativa) ─── */
-  --filter-blur-ambient-sm: 30px;   /* sutil: listing + KameHouse recognoscible */
-  --filter-blur-ambient-md: 100px;  /* medio: detalle por defecto */
-  --filter-blur-ambient-lg: 110px;  /* fuerte: listing sin KameHouse */
-  --filter-blur-ambient-xl: 140px;  /* máximo: home hero */
+  --filter-blur-ambient-sm: 14px;   /* sutil */
+  --filter-blur-ambient-md: 22px;   /* medio: detalle por defecto */
+  --filter-blur-ambient-lg: 28px;   /* fuerte: listing */
+  --filter-blur-ambient-xl: 36px;   /* máximo: home hero */
 }
 
 /* ─── Clases Utilitarias (solo para overlays) ─────────────────────────────── */
@@ -177,32 +178,37 @@
 }
 
 
-/* ─── Efectos Liquid Glass Gated ─────────────────────────────────────────── */
+/* ─── Efectos Liquid Glass Gated (GPU-Accelerated Specular Lighting) ──────── */
 [data-liquid="true"] .glass-refract {
-  backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate-cinematic)) contrast(var(--glass-contrast)) url(#kh-liquid-refraction);
+  backdrop-filter: blur(var(--blur-overlay-md)) saturate(var(--glass-saturate-cinematic)) contrast(var(--glass-contrast));
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
+    var(--shadow-glass-liquid);
 }
 
 .grain-overlay {
   position: absolute;
   inset: 0;
   background-image: var(--noise-texture);
-  opacity: 0.04;
-  mix-blend-mode: overlay;
+  opacity: 0.025;
   pointer-events: none;
+  transform: translateZ(0);
 }
 
-[data-flat="true"] .grain-overlay {
-  display: none;
+[data-flat="true"] .grain-overlay,
+[data-flat="true"] html[data-grain="true"]::before {
+  display: none !important;
 }
 
-/* ─── Global Cinematic Grain ─────────────────────────────────────────────── */
+/* ─── Global Cinematic Grain (GPU Layer Promoted) ────────────────────────── */
 html[data-grain="true"]::before {
   content: "";
   position: fixed;
   inset: 0;
   background-image: var(--noise-texture);
-  opacity: 0.035;
-  mix-blend-mode: overlay;
+  opacity: 0.025;
   pointer-events: none;
   z-index: 9999;
+  transform: translateZ(0);
 }

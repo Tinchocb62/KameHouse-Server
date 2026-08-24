@@ -170,9 +170,14 @@ func (fh *FileHydrator) hydrateGroupMetadata(
 			lf.Metadata.Type = dto.LocalFileTypeMain
 
 			// Get episode number
-			if len(lf.ParsedData.Episode) > 0 {
+			if len(lf.Metadata.Episodes) > 0 && lf.Metadata.Episodes[0] > 0 {
+				episode = lf.Metadata.Episodes[0]
+			} else if len(lf.ParsedData.Episode) > 0 {
 				if ep, ok := util.StringToInt(lf.ParsedData.Episode); ok {
 					episode = ep
+					if len(lf.Metadata.Episodes) == 0 {
+						lf.Metadata.Episodes = []int{ep}
+					}
 				}
 			}
 

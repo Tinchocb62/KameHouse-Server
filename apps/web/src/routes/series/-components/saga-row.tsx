@@ -41,22 +41,13 @@ export function SagaRow({
         <div className="relative group">
             {/* Nodo de la línea de tiempo */}
             <div 
-                className="absolute top-6 w-3.5 h-3.5 rounded-full border-2 border-zinc-950 z-20 transition-all duration-300 ease-out shadow-[0_0_10px_currentColor]"
+                className="absolute top-6 w-3.5 h-3.5 rounded-full border-2 border-zinc-950 z-20 transition-all duration-300 ease-out shadow-[0_0_10px_currentColor] -left-[calc(1.5rem+7px)] md:-left-[calc(2.5rem+7px)]"
                 style={{ 
-                    left: "calc(-1.5rem - 7px)", // En mobile (pl-6 = 1.5rem). Centro de línea.
                     background: isComplete ? auraTo : auraFrom, 
                     color: auraFrom,
                     boxShadow: inLibrary ? `0 0 12px ${auraFrom}` : 'none'
                 }}
             />
-            {/* Ajuste de left para desktop (md:pl-10 = 2.5rem) */}
-            <style>{`
-                @media (min-width: 768px) {
-                    .group > div.rounded-full {
-                        left: calc(-2.5rem - 7px) !important;
-                    }
-                }
-            `}</style>
 
             <div
                 className={cn(
@@ -82,12 +73,12 @@ export function SagaRow({
                         alt=""
                         loading="lazy"
                         className={cn(
-                            "w-full h-full object-cover mix-blend-luminosity transition-all duration-700 ease-out",
+                            "w-full h-full object-cover grayscale contrast-125 transition-all duration-700 ease-out",
                             isExpanded ? "scale-110 opacity-70" : "scale-105 opacity-40 group-hover:scale-110 group-hover:opacity-60"
                         )}
                     />
                     <div 
-                        className="absolute inset-0 mix-blend-color opacity-30" 
+                        className="absolute inset-0 opacity-20" 
                         style={{ background: `linear-gradient(to right, ${auraFrom}, ${auraTo})` }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/60 to-transparent" />

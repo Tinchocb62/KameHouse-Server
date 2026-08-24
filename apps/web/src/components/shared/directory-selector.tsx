@@ -56,7 +56,7 @@ export const DirectorySelector = React.memo(React.forwardRef<HTMLInputElement, D
         if (value !== input) {
             setInput(value)
         }
-    }, [value])
+    }, [value, input, setInput])
 
     React.useEffect(() => {
         if (input === ".") {
@@ -87,53 +87,70 @@ export const DirectorySelector = React.memo(React.forwardRef<HTMLInputElement, D
 
     return (
         <>
-            <div className="space-y-1">
-                <div className="relative">
-                    <TextInput
-                        leftIcon={<Icons.status.folder />}
-                        {...rest}
-                        label={<div className="flex items-center gap-1">
-                            {label}
-                            {libraryProps?.showLibrarySelector && (
-                                <Popover
-                                    open={librarySelectionOpen}
-                                    onOpenChange={setLibrarySelectionOpen}
-                                    className="w-[min(400px,calc(100vw-2rem))] p-2 sm:ml-[30px]"
-                                    sideOffset={-4}
-                                    trigger={<Button size="sm" intent="gray-link" leftIcon={<Icons.ui.chevronsUpDown />} className="!text-[--muted]">
-                                        Change library
-                                    </Button>}
-                                >
-                                    <Select
-                                        value={libraryProps.selectedLibrary}
-                                        options={libraryProps.libraryOptions}
-                                        onValueChange={v => {
-                                            libraryProps.handleLibraryPathSelect(v)
-                                            setLibrarySelectionOpen(false)
-                                        }}
-                                    />
-                                </Popover>
-                            )}
-                        </div>}
-                        value={input}
-                        rightIcon={<div className="flex">
-                            {isLoading ? null : (data?.exists ?
-                                <Icons.ui.check className="text-status-success" /> : shouldExist ?
-                                    input.length > 0 ? <Icons.ui.close className="text-status-error" /> : null : <Icons.status.folderPlus />)}
-                        </div>}
-                        onChange={e => {
-                            setInput(e.target.value ?? "")
-                        }}
-                        ref={ref}
-                        onBlur={checkDirectoryExists}
-                    />
+            <div className="space-y-1.5">
+                {label && (
+                    <div className="flex items-center justify-between gap-1 text-xs font-semibold text-zinc-300">
+                        <span>{label}</span>
+                        {libraryProps?.showLibrarySelector && (
+                            <Popover
+                                open={librarySelectionOpen}
+                                onOpenChange={setLibrarySelectionOpen}
+                                className="w-[min(400px,calc(100vw-2rem))] p-2 sm:ml-[30px]"
+                                sideOffset={-4}
+                                trigger={
+                                    <Button size="sm" intent="gray-link" leftIcon={<Icons.ui.chevronsUpDown />} className="!text-[--muted] text-xs">
+                                        Cambiar biblioteca
+                                    </Button>
+                                }
+                            >
+                                <Select
+                                    value={libraryProps.selectedLibrary}
+                                    options={libraryProps.libraryOptions}
+                                    onValueChange={v => {
+                                        libraryProps.handleLibraryPathSelect(v)
+                                        setLibrarySelectionOpen(false)
+                                    }}
+                                />
+                            </Popover>
+                        )}
+                    </div>
+                )}
 
-                    <div className="absolute z-[1] top-0 right-0 flex items-center">
-                        <Icons.status.folderOpen
-                            className="text-2xl cursor-pointer"
-                            onClick={selectorState.on}
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                        <TextInput
+                            leftIcon={<Icons.status.folder className="text-zinc-400" />}
+                            {...rest}
+                            label={undefined}
+                            value={input}
+                            rightIcon={
+                                <div className="flex items-center pr-1">
+                                    {isLoading ? (
+                                        <Icons.ui.spinner className="w-4 h-4 animate-spin text-zinc-500" />
+                                    ) : data?.exists ? (
+                                        <Icons.ui.check className="w-4 h-4 text-emerald-400" />
+                                    ) : shouldExist && input.length > 0 ? (
+                                        <Icons.ui.close className="w-4 h-4 text-red-400" />
+                                    ) : null}
+                                </div>
+                            }
+                            onChange={e => {
+                                setInput(e.target.value ?? "")
+                            }}
+                            ref={ref}
+                            onBlur={checkDirectoryExists}
                         />
                     </div>
+
+                    <IconButton
+                        type="button"
+                        size="md"
+                        intent="gray-glass"
+                        icon={<Icons.status.folderOpen className="w-4 h-4 text-zinc-300" />}
+                        title="Explorar carpetas en el sistema"
+                        className="shrink-0 rounded-xl"
+                        onClick={selectorState.on}
+                    />
                 </div>
             </div>
             <Modal
@@ -144,7 +161,7 @@ export const DirectorySelector = React.memo(React.forwardRef<HTMLInputElement, D
                         checkDirectoryExists()
                     }
                 }}
-                title="Select a directory"
+                title="Seleccionar una carpeta"
                 contentClass="mt-4 space-y-2 max-w-4xl"
             >
                 <div className="flex gap-2 items-center">
@@ -175,7 +192,7 @@ export const DirectorySelector = React.memo(React.forwardRef<HTMLInputElement, D
                     <div
                         className="w-full flex flex-none flex-nowrap overflow-x-auto gap-2 items-center rounded-[--radius-md]"
                     >
-                        <div className="flex-none">Suggestions:</div>
+                        <div className="flex-none">Sugerencias:</div>
                         {data.suggestions.map(folder => (
                             <div
                                 key={folder.Path}

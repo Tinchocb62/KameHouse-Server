@@ -18,9 +18,13 @@ export function useTvDpad() {
 
     useEffect(() => {
         if (tvMode) {
-            document.documentElement.setAttribute("data-tv", "true")
+            if (document.documentElement.getAttribute("data-tv") !== "true") {
+                document.documentElement.setAttribute("data-tv", "true")
+            }
         } else {
-            document.documentElement.removeAttribute("data-tv")
+            if (document.documentElement.hasAttribute("data-tv")) {
+                document.documentElement.removeAttribute("data-tv")
+            }
         }
     }, [tvMode])
 
@@ -35,12 +39,27 @@ export function useTvDpad() {
         const SELECTOR =
             'a[href], button:not([disabled]), [role="button"], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+        function getActiveModalScope(): HTMLElement | null {
+            const scopes = Array.from(
+                document.querySelectorAll<HTMLElement>(
+                    '[role="dialog"], [aria-modal="true"], [data-modal-scope="true"], [cmdk-root]'
+                )
+            )
+            for (const scope of scopes) {
+                if (scope.offsetParent !== null || scope.offsetWidth > 0 || scope.offsetHeight > 0) {
+                    return scope
+                }
+            }
+            return null
+        }
+
         function refreshCache() {
-            const rawNodes = Array.from(document.querySelectorAll<HTMLElement>(SELECTOR))
+            const scope = getActiveModalScope() || document
+            const rawNodes = Array.from(scope.querySelectorAll<HTMLElement>(SELECTOR))
             const newCache: CachedNode[] = []
             
             for (const el of rawNodes) {
-                if (el.offsetParent === null) continue
+                if (el.offsetParent === null && el.offsetWidth === 0) continue
                 const rect = el.getBoundingClientRect()
                 if (rect.width > 0 && rect.height > 0) {
                     newCache.push({ el, rect })
@@ -131,11 +150,18 @@ export function useTvDpad() {
             const nodes = nodesCache.current.map(n => n.el)
 
             if (!active || !nodes.includes(active)) {
-                nodes[0]?.focus()
+                if (nodes.length > 0) {
+                    nodes[0].focus()
+                    nodes[0].scrollIntoView({ block: "nearest", inline: "nearest" })
+                }
                 return
             }
 
-            findBest(active, dir)?.focus()
+            const nextEl = findBest(active, dir)
+            if (nextEl) {
+                nextEl.focus()
+                nextEl.scrollIntoView({ block: "nearest", inline: "nearest" })
+            }
         }
 
         document.addEventListener("keydown", handleKeyDown)

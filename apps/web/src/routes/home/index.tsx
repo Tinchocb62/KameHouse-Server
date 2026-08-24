@@ -45,25 +45,37 @@ function HomeClient() {
         return collection.lists.flatMap(list => list.entries ?? [])
     }, [collection])
 
+    const allEntriesRef = React.useRef(allEntries)
+    allEntriesRef.current = allEntries
+
     const handleNavigate = React.useCallback(
         (mediaId: number) => {
-            const entry = allEntries.find(e => e.mediaId === mediaId)
-            const isMovie = entry?.media?.format === "MOVIE" || entry?.media?.format === "SPECIAL" || entry?.media?.format === "OVA" || isTmdbId(entry?.mediaId)
+            const entry = allEntriesRef.current.find(e =>
+                e.mediaId === mediaId ||
+                e.media?.id === mediaId ||
+                e.media?.tmdbId === mediaId
+            )
+            const resolvedId = entry?.mediaId || entry?.media?.tmdbId || entry?.media?.id || mediaId
+            const format = entry?.media?.format
+            const isMovie = format === "MOVIE" || format === "SPECIAL" || format === "OVA" || isTmdbId(resolvedId) || isTmdbId(entry?.mediaId)
             if (isMovie) {
-                navigate({ to: "/movies/$movieId", params: { movieId: String(mediaId) } })
+                navigate({ to: "/movies/$movieId", params: { movieId: String(resolvedId) } })
             } else {
-                navigate({ to: "/series/$seriesId", params: { seriesId: String(mediaId) } })
+                navigate({ to: "/series/$seriesId", params: { seriesId: String(resolvedId) } })
             }
         },
-        [navigate, allEntries],
+        [navigate],
     )
+
+    const handleNavigateRef = React.useRef(handleNavigate)
+    handleNavigateRef.current = handleNavigate
 
     const handleSpotlightNavigate = React.useCallback(
         (item: { id: string }) => {
             const numericId = Number(item.id.replace("media-", ""))
-            handleNavigate(numericId)
+            handleNavigateRef.current(numericId)
         },
-        [handleNavigate],
+        [],
     )
 
     const spotlightItems = React.useMemo(() => {
@@ -72,13 +84,14 @@ function HomeClient() {
         const seen = new Set<number>()
         const uniqueEntries = allEntries.filter(entry => {
             if (!entry || !entry.media) return false
-            if (seen.has(entry.media.id)) return false
-            seen.add(entry.media.id)
+            const resolvedId = entry.mediaId || entry.media.tmdbId || entry.media.id
+            if (!resolvedId || seen.has(resolvedId)) return false
+            seen.add(resolvedId)
             return true
         })
 
-        return uniqueEntries.map(entry => mapLibraryEntryToMediaCard(entry, handleNavigate))
-    }, [allEntries, handleNavigate])
+        return uniqueEntries.map(entry => mapLibraryEntryToMediaCard(entry, (id) => handleNavigateRef.current(id)))
+    }, [allEntries])
 
     // ── Render Helpers ─────────────────────────────────────────────────────────
 
@@ -112,44 +125,30 @@ function HomeClient() {
 }
 
 /**
- * Mirrors the MediaSpotlight layout: hero + details + era selector, then the movie poster grid.
+ * Mirrors the MediaSpotlight layout: artwork card + info column + era selector, then the movie poster grid.
  */
 function HomeSkeleton() {
     return (
-        <div className="min-h-[100dvh] bg-surface pt-20 md:pt-28 pb-16 overflow-hidden animate-pulse">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch page-px max-w-content mx-auto w-full">
-                {/* Hero + details */}
-                <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-                    <Skeleton className="md:col-span-7 w-full aspect-[4/3] md:aspect-[16/10] rounded-hero bg-surface-container border border-white/10" />
-                    <div className="md:col-span-5 flex flex-col justify-center space-y-4 px-1">
-                        <div className="flex gap-1.5">
-                            <Skeleton className="h-6 w-16 bg-surface-container rounded-sm" />
-                            <Skeleton className="h-6 w-14 bg-surface-container rounded-sm" />
-                        </div>
-                        <Skeleton className="h-12 w-3/4 bg-surface-container rounded-lg" />
-                        <Skeleton className="h-16 w-full max-w-sm bg-surface-container rounded-lg" />
-                        <div className="flex gap-3 mt-2">
-                            <Skeleton className="h-11 w-40 bg-surface-container rounded-xl" />
-                            <Skeleton className="h-11 w-32 bg-surface-container rounded-xl" />
-                        </div>
-                    </div>
+        <div className="min-h-[100dvh] bg-surface pt-4 pb-16 overflow-hidden animate-pulse px-4 sm:px-6 md:px-8 xl:px-10 max-w-[1800px] mx-auto space-y-6">
+            {/* Top Horizontal Era Bar Skeleton */}
+            <div className="flex items-center justify-between gap-3 bg-zinc-950/75 border border-white/10 rounded-2xl p-2.5">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <Skeleton key={i} className="h-10 w-28 sm:w-36 bg-surface-container rounded-xl shrink-0" />
+                    ))}
                 </div>
-                {/* Era selector panel */}
-                <div className="hidden lg:flex flex-col lg:col-span-3 justify-center">
-                    <div className="rounded-hero border border-white/10 p-5 xl:p-6 space-y-2" style={{ background: "var(--glass-panel-bg)" }}>
-                        <Skeleton className="h-3 w-24 bg-surface-container rounded mb-4" />
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <Skeleton key={i} className="h-14 w-full bg-surface-container rounded-xl" />
-                        ))}
-                    </div>
-                </div>
+                <Skeleton className="h-9 w-24 bg-surface-container rounded-xl shrink-0" />
             </div>
-            {/* Movie poster grid */}
-            <div className="mt-14 space-y-4 page-px max-w-content mx-auto w-full">
-                <Skeleton className="h-6 w-72 bg-surface-container rounded" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                        <Skeleton key={i} className="w-full aspect-[2/3] bg-surface-container rounded-xl" />
+
+            {/* Full-width Hero Banner Skeleton */}
+            <Skeleton className="w-full aspect-[16/9] max-h-[520px] rounded-3xl bg-surface-container border border-white/10" />
+
+            {/* Catalog Grid Skeleton */}
+            <div className="space-y-4 pt-2">
+                <Skeleton className="h-6 w-64 bg-surface-container rounded" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-1">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <Skeleton key={i} className="w-full aspect-[2/3] bg-surface-container rounded-2xl" />
                     ))}
                 </div>
             </div>

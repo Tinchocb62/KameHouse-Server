@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
-    <title>Antigravity Offline</title>
+    <title>KameHouse Offline</title>
     <style>
         body {
             margin: 0;
-            padding: 0;
+            padding: 1.5rem;
+            box-sizing: border-box;
             background-color: #000000;
             color: #ffffff;
             font-family: system-ui, -apple-system, sans-serif;
@@ -16,7 +17,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
+            overflow-y: auto;
             text-align: center;
         }
         h1 {
@@ -27,6 +29,8 @@
         p {
             color: #a1a1aa;
             margin-bottom: 2rem;
+            max-width: 480px;
+            line-height: 1.5;
         }
         .btn {
             background-color: #f97316;
@@ -37,12 +41,19 @@
             font-weight: bold;
             border: none;
             cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .btn:hover {
+            background-color: #ea580c;
+        }
+        .btn:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
 <body>
     <h1>Sin Conexión</h1>
-    <p>No se pudo conectar al servidor local de Antigravity.<br/>Verifica que estés en la red correcta.</p>
+    <p>No se pudo conectar al servidor local de KameHouse.<br/>Verifica que el servicio esté ejecutándose o que estés en la red correcta.</p>
     <button class="btn" onclick="window.location.reload()">Reintentar</button>
 </body>
 </html>

@@ -16,11 +16,12 @@ interface ResolveUnlinkedFileVariables {
     targetMediaId: number
 }
 
-export function useGetUnlinkedFiles() {
+export function useGetUnlinkedFiles({ enabled = true }: { enabled?: boolean } = {}) {
     return useServerQuery<UnlinkedFile[], void, UnlinkedFile[]>({
         endpoint: API_ENDPOINTS.SCAN.GetUnlinkedFiles.endpoint,
         method: API_ENDPOINTS.SCAN.GetUnlinkedFiles.methods[0],
         queryKey: [API_ENDPOINTS.SCAN.GetUnlinkedFiles.key],
+        enabled,
         refetchOnWindowFocus: false,
     })
 }

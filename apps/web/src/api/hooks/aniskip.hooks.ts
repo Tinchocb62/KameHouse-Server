@@ -10,6 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { buildSeaQuery } from "@/api/client/requests"
+import { EXTRA_ENDPOINTS } from "@/api/client/endpoints.extra"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -161,7 +162,7 @@ export async function getAniSkipTimes({
     // 1. Try local KameHouse server database first
     try {
         const localData = await buildSeaQuery<LocalSkipTimeResponse, { mediaId?: number; malId?: number; episodeNumber: number }>({
-            endpoint: "/api/v1/mediastream/skip-times",
+            endpoint: EXTRA_ENDPOINTS.MEDIASTREAM.SkipTimes.endpoint,
             method: "GET",
             params: {
                 mediaId: mediaId || undefined,
@@ -212,9 +213,10 @@ export async function getAniSkipTimes({
 
     if (!activeMalId && mediaId) {
         try {
-            const res = await buildSeaQuery<{ malId?: number }>({
-                endpoint: `/api/v1/mediastream/skip-times/resolve-mal?mediaId=${mediaId}`,
+            const res = await buildSeaQuery<{ malId?: number }, { mediaId: number }>({
+                endpoint: EXTRA_ENDPOINTS.MEDIASTREAM.ResolveMal.endpoint,
                 method: "GET",
+                params: { mediaId: mediaId },
             })
             if (res?.malId) {
                 activeMalId = res.malId
@@ -280,7 +282,7 @@ export async function getAniSkipTimes({
             source: string
             confidence: number
         }>({
-            endpoint: "/api/v1/mediastream/skip-times",
+            endpoint: EXTRA_ENDPOINTS.MEDIASTREAM.SkipTimes.endpoint,
             method: "POST",
             data: {
                 mediaId: mediaId || undefined,

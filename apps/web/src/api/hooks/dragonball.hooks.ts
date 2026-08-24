@@ -1,4 +1,5 @@
 import { useServerQuery } from "@/api/client/requests"
+import { EXTRA_ENDPOINTS } from "@/api/client/endpoints.extra"
 import type {
     DbApiEpisodeList,
     DbApiMilestone,
@@ -9,16 +10,10 @@ import type {
 /**
  * Hooks de la enciclopedia de Dragon Ball (`/api/v1/dragonball/*`).
  *
- * Escritos a mano porque el codegen no cubre este módulo (ver
- * `api/types/dragonball.types.ts` para el porqué), siguiendo el mismo patrón que
- * `api/generated/library_explorer.hooks.ts`.
- *
  * El backend sirve un seed estático en memoria: los datos no cambian en runtime,
  * así que todo se cachea de forma indefinida y la sección entera se resuelve con
  * cuatro requests que nunca se repiten dentro de la sesión.
  */
-
-const DRAGONBALL_BASE = "/api/v1/dragonball"
 
 /** Cachea para siempre: el catálogo es un seed inmutable del servidor. */
 const IMMUTABLE = {
@@ -38,9 +33,9 @@ const GUIDE_LIMIT = 1000
 /** Las cinco series con su `tmdb_id`, necesario para cruzar con la biblioteca. */
 export function useDragonBallSeries() {
     return useServerQuery<DbApiSeries[]>({
-        endpoint: `${DRAGONBALL_BASE}/series`,
+        endpoint: EXTRA_ENDPOINTS.DRAGONBALL.Series.endpoint,
         method: "GET",
-        queryKey: ["dragonball", "series"],
+        queryKey: [EXTRA_ENDPOINTS.DRAGONBALL.Series.key],
         muteError: true,
         ...IMMUTABLE,
     })
@@ -49,10 +44,10 @@ export function useDragonBallSeries() {
 /** Guía episódica completa en una sola llamada. */
 export function useDragonBallGuide() {
     return useServerQuery<DbApiEpisodeList, { limit: number }>({
-        endpoint: `${DRAGONBALL_BASE}/episodes`,
+        endpoint: EXTRA_ENDPOINTS.DRAGONBALL.Episodes.endpoint,
         method: "GET",
         params: { limit: GUIDE_LIMIT },
-        queryKey: ["dragonball", "episodes", GUIDE_LIMIT],
+        queryKey: [EXTRA_ENDPOINTS.DRAGONBALL.Episodes.key, GUIDE_LIMIT],
         muteError: true,
         ...IMMUTABLE,
     })
@@ -61,9 +56,9 @@ export function useDragonBallGuide() {
 /** Índice de antagonistas, ubicados por serie y saga. */
 export function useDragonBallVillains() {
     return useServerQuery<DbApiVillain[]>({
-        endpoint: `${DRAGONBALL_BASE}/villains`,
+        endpoint: EXTRA_ENDPOINTS.DRAGONBALL.Villains.endpoint,
         method: "GET",
-        queryKey: ["dragonball", "villains"],
+        queryKey: [EXTRA_ENDPOINTS.DRAGONBALL.Villains.key],
         muteError: true,
         ...IMMUTABLE,
     })
@@ -72,9 +67,20 @@ export function useDragonBallVillains() {
 /** Hitos narrativos curados (transformaciones, sacrificios, deseos, muertes). */
 export function useDragonBallMilestones() {
     return useServerQuery<DbApiMilestone[]>({
-        endpoint: `${DRAGONBALL_BASE}/milestones`,
+        endpoint: EXTRA_ENDPOINTS.DRAGONBALL.Milestones.endpoint,
         method: "GET",
-        queryKey: ["dragonball", "milestones"],
+        queryKey: [EXTRA_ENDPOINTS.DRAGONBALL.Milestones.key],
+        muteError: true,
+        ...IMMUTABLE,
+    })
+}
+
+/** Obtiene la metadata del lore curado de películas / series. */
+export function useDragonBallLore() {
+    return useServerQuery<Record<string, unknown>>({
+        endpoint: EXTRA_ENDPOINTS.DRAGONBALL.Lore.endpoint,
+        method: "GET",
+        queryKey: [EXTRA_ENDPOINTS.DRAGONBALL.Lore.key],
         muteError: true,
         ...IMMUTABLE,
     })

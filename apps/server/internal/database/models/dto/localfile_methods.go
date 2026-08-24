@@ -10,6 +10,7 @@ import (
 	"kamehouse/internal/util/comparison"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -215,6 +216,44 @@ func (f *LocalFile) GetFolderTitle(all ...bool) string {
 	}
 
 	return ""
+}
+
+// GetSeriesFolderTitle returns the series title from the folder hierarchy,
+// walking up from the file's parent folder and skipping seasons, sagas, parts,
+// and category folders to find the actual series folder.
+func (f *LocalFile) GetSeriesFolderTitle() string {
+	if len(f.ParsedFolderData) == 0 {
+		return ""
+	}
+
+	for i := len(f.ParsedFolderData) - 1; i >= 0; i-- {
+		fpd := f.ParsedFolderData[i]
+		cleanTitle := strings.TrimSpace(strings.ToLower(fpd.Title))
+		if cleanTitle == "" {
+			continue
+		}
+		if _, ok := comparison.IgnoredFilenames[cleanTitle]; ok {
+			continue
+		}
+		if comparison.ValueContainsIgnoredKeywords(fpd.Original) {
+			continue
+		}
+		if isSeasonOrSagaFolderNameDTO(fpd.Original) {
+			continue
+		}
+		return fpd.Title
+	}
+	return ""
+}
+
+var (
+	reSeasonFolderInDTO = regexp.MustCompile(`(?i)^(?:season|s|temp|temporada|t)\s*0*(\d+)$`)
+	reSagaFolderInDTO   = regexp.MustCompile(`(?i)^(?:(?:\d+\s*[-–]\s*)?(?:saga|arco?|arc|part|parte)\s+|saga\b)`)
+)
+
+func isSeasonOrSagaFolderNameDTO(name string) bool {
+	clean := strings.TrimSpace(name)
+	return reSeasonFolderInDTO.MatchString(clean) || reSagaFolderInDTO.MatchString(clean)
 }
 
 // getAllFolderTitles returns all valid folder titles (not just the closest one).

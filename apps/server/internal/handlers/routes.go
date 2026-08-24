@@ -149,7 +149,9 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	v1.Use(h.OptionalAuthMiddleware)
 	v1.Use(h.FeaturesMiddleware)
 
-	imageProxy := &util.ImageProxy{}
+	imageProxy := &util.ImageProxy{
+		CacheDir: filepath.Join(app.Config.Cache.Dir, "images"),
+	}
 	v1.GET("/image-proxy", imageProxy.ProxyImage)
 	v1.GET("/proxy", h.VideoProxy)
 	v1.HEAD("/proxy", h.VideoProxy)
@@ -193,11 +195,13 @@ func InitRoutes(app *core.App, e *echo.Echo) {
 	dragonball.Register(v1)
 }
 
-// RegisterIntelligenceRoutes registra las rutas del motor de selección inteligente.
+// RegisterIntelligenceRoutes registra las rutas del motor de selección e inteligencia.
 func (h *Handler) RegisterIntelligenceRoutes(v1 *echo.Group) {
-	intelligence := v1.Group("/intelligence")
-	intelligence.GET("/best-source", h.HandleGetBestSource)
-	intelligence.GET("/stats", h.HandleGetIntelligenceStats)
+	intel := v1.Group("/intelligence")
+	intel.GET("/best-source", h.HandleGetBestSource)
+	intel.GET("/stats", h.HandleGetIntelligenceStats)
+	intel.GET("/chronology", h.HandleGetChronologyTimeline)
+	intel.GET("/search", h.HandleSemanticSearch)
 }
 
 // RegisterAdminRoutes registra las rutas de administración.

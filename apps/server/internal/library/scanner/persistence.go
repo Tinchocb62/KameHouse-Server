@@ -1,13 +1,17 @@
 package scanner
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"kamehouse/internal/api/metadata_provider"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/database/models/dto"
+	librarymetadata "kamehouse/internal/library/metadata"
 	"path/filepath"
+	"strconv"
+	"time"
 )
 
 // persistMatchedMedia saves LibraryMedia records to the database and maps their IDs back to LocalFiles.
@@ -26,8 +30,10 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 	allTmdbIds := make([]int, 0, len(allMatchedIds))
 	for id := range allMatchedIds {
 		realTmdbId := id
-		if movieIds[id] {
-			realTmdbId = id - 1_000_000
+		if movieIds[id] || id >= 1_000_000 {
+			if id >= 1_000_000 {
+				realTmdbId = id - 1_000_000
+			}
 		}
 		allTmdbIds = append(allTmdbIds, realTmdbId)
 	}
@@ -47,13 +53,13 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 
 	for id := range allMatchedIds {
 		realTmdbId := id
-		if movieIds[id] {
-			realTmdbId = id - 1_000_000
-		}
-
+		isMovie := movieIds[id] || id >= 1_000_000
 		mediaType := "SHOW"
-		if movieIds[id] {
+		if isMovie {
 			mediaType = "MOVIE"
+			if id >= 1_000_000 {
+				realTmdbId = id - 1_000_000
+			}
 		}
 
 		// Nothing fresh to write and the record already exists: leave it untouched.
@@ -61,12 +67,32 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 			continue
 		}
 
+		// On-demand fetch if missing from normalizedMap
+		nm, hasNM := normalizedMap[id]
+		if !hasNM && scn.TMDBClient != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			if isMovie {
+				if mRes, err := scn.TMDBClient.GetMovieDetails(ctx, strconv.Itoa(realTmdbId)); err == nil && mRes != nil {
+					nm = librarymetadata.TmdbMovieDetailsToNormalizedMedia(mRes)
+					normalizedMap[id] = nm
+					hasNM = true
+				}
+			} else {
+				if tRes, err := scn.TMDBClient.GetTVDetails(ctx, strconv.Itoa(realTmdbId)); err == nil && tRes != nil {
+					nm = librarymetadata.TmdbTVDetailsToNormalizedMedia(tRes)
+					normalizedMap[id] = nm
+					hasNM = true
+				}
+			}
+			cancel()
+		}
+
 		newMedia := &models.LibraryMedia{
 			Type:   mediaType,
 			TmdbID: realTmdbId,
 		}
 
-		if nm, ok := normalizedMap[id]; ok {
+		if hasNM && nm != nil {
 			if nm.Title != nil {
 				if nm.Title.Romaji != nil {
 					newMedia.TitleRomaji = *nm.Title.Romaji
@@ -81,7 +107,13 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 					newMedia.TitleOriginal = *nm.Title.Native
 				}
 			}
-			if nm.Format != nil {
+			if isMovie {
+				if nm.Format != nil && (string(*nm.Format) == "SPECIAL" || string(*nm.Format) == "OVA") {
+					newMedia.Format = string(*nm.Format)
+				} else {
+					newMedia.Format = "MOVIE"
+				}
+			} else if nm.Format != nil {
 				newMedia.Format = string(*nm.Format)
 			}
 			if nm.Year != nil {
@@ -89,6 +121,8 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 			}
 			if nm.Episodes != nil {
 				newMedia.TotalEpisodes = *nm.Episodes
+			} else if isMovie {
+				newMedia.TotalEpisodes = 1
 			}
 			if nm.CoverImage != nil && nm.CoverImage.Large != nil {
 				newMedia.PosterImage = *nm.CoverImage.Large
@@ -131,6 +165,36 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 			newMedia.Tags = analysis.GetTagsAsJSON()
 			newMedia.DominantVibe = analysis.DominantVibe
 			newMedia.SuggestedSwimlane = analysis.SuggestedSwimlane
+		}
+
+		// Fallback to offline Dragon Ball pre-hydrated catalog if poster or description is still empty
+		if newMedia.PosterImage == "" || newMedia.Description == "" {
+			if pre := CreatePrehydratedDragonBallMedia(id); pre != nil {
+				if newMedia.TitleSpanish == "" && pre.Title.Spanish != nil {
+					newMedia.TitleSpanish = *pre.Title.Spanish
+				}
+				if newMedia.TitleEnglish == "" && pre.Title.English != nil {
+					newMedia.TitleEnglish = *pre.Title.English
+				}
+				if newMedia.TitleRomaji == "" && pre.Title.Romaji != nil {
+					newMedia.TitleRomaji = *pre.Title.Romaji
+				}
+				if newMedia.PosterImage == "" && pre.CoverImage != nil && pre.CoverImage.Large != nil {
+					newMedia.PosterImage = *pre.CoverImage.Large
+				}
+				if newMedia.BannerImage == "" && pre.BannerImage != nil {
+					newMedia.BannerImage = *pre.BannerImage
+				}
+				if newMedia.Description == "" && pre.Description != nil {
+					newMedia.Description = *pre.Description
+				}
+				if newMedia.TotalEpisodes == 0 && pre.Episodes != nil {
+					newMedia.TotalEpisodes = *pre.Episodes
+				}
+				if newMedia.Year == 0 && pre.Year != nil {
+					newMedia.Year = *pre.Year
+				}
+			}
 		}
 
 		if newMedia.TitleRomaji == "" && newMedia.TitleEnglish == "" && newMedia.TitleSpanish == "" && newMedia.TitleOriginal == "" {
@@ -179,8 +243,10 @@ func (scn *Scanner) persistMatchedMedia(allMatchedIds map[int]struct{}, movieIds
 				mapKey = m.TmdbID + 1_000_000
 			}
 			libraryMediaIdMap[mapKey] = m.ID
+			libraryMediaIdMap[m.TmdbID] = m.ID
 		}
 	}
+
 
 	missingAssocCount := 0
 	for _, lf := range localFiles {

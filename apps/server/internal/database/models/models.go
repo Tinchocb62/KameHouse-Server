@@ -66,29 +66,23 @@ type UserAnime struct {
 type LibrarySettings struct {
 	SeriesPaths           LibraryPaths `gorm:"column:series_paths;type:text" json:"seriesPaths"`
 	MoviePaths            LibraryPaths `gorm:"column:movie_paths;type:text" json:"moviePaths"`
-	OpenWebURLOnStart     bool         `gorm:"column:open_web_url_on_start" json:"openWebURLOnStart"`
 	RefreshLibraryOnStart bool         `gorm:"column:refresh_library_on_start" json:"refreshLibraryOnStart"`
 	AutoPlayNextEpisode   bool         `gorm:"column:auto_play_next_episode" json:"autoPlayNextEpisode"`
 	// AutoDetectSkipTimes habilita el scan oportunista de OP/ED en segundo plano
 	// cuando se abre un episodio sin marcas. El botón manual de detección funciona
 	// siempre, independientemente de este flag.
-	AutoDetectSkipTimes         bool      `gorm:"column:auto_detect_skip_times" json:"autoDetectSkipTimes"`
-	EnableWatchContinuity       bool      `gorm:"column:enable_watch_continuity" json:"enableWatchContinuity"`
-	ScannerMatchingThreshold    float64   `gorm:"column:scanner_matching_threshold" json:"scannerMatchingThreshold"`
-	ScannerMatchingAlgorithm    string    `gorm:"column:scanner_matching_algorithm" json:"scannerMatchingAlgorithm"`
-	UseFallbackMetadataProvider bool      `gorm:"column:use_fallback_metadata_provider" json:"useFallbackMetadataProvider"`
-	PrimaryMetadataProvider     string    `gorm:"column:primary_metadata_provider" json:"primaryMetadataProvider"`
-	TmdbApiKey                  string    `gorm:"column:tmdb_api_key" json:"tmdbApiKey"`
-	TmdbLanguage                string    `gorm:"column:tmdb_language" json:"tmdbLanguage"`
-	ScannerStrictStructure      bool      `gorm:"column:scanner_strict_structure" json:"scannerStrictStructure"`
-	ScannerConfig               string    `gorm:"column:scanner_config" json:"scannerConfig"`
-	ScannerProvider             string    `gorm:"column:scanner_provider" json:"scannerProvider"`
-	DisableLocalScanning        bool      `gorm:"column:disable_local_scanning" json:"disableLocalScanning"`
-	ScannerUseLegacyMatching    bool      `gorm:"column:scanner_use_legacy_matching" json:"scannerUseLegacyMatching"`
-	FanartApiKey                string    `gorm:"column:fanart_api_key" json:"fanartApiKey"`
-	OmdbApiKey                  string    `gorm:"column:omdb_api_key" json:"omdbApiKey"`
-	LastScanAt                  time.Time `gorm:"column:last_scan_at" json:"lastScanAt"`
-	AutoScan                    bool      `gorm:"column:auto_scan" json:"autoScan"`
+	AutoDetectSkipTimes      bool      `gorm:"column:auto_detect_skip_times" json:"autoDetectSkipTimes"`
+	EnableWatchContinuity    bool      `gorm:"column:enable_watch_continuity" json:"enableWatchContinuity"`
+	ScannerMatchingThreshold float64   `gorm:"column:scanner_matching_threshold" json:"scannerMatchingThreshold"`
+	PrimaryMetadataProvider  string    `gorm:"column:primary_metadata_provider" json:"primaryMetadataProvider"`
+	TmdbApiKey               string    `gorm:"column:tmdb_api_key" json:"tmdbApiKey"`
+	TmdbLanguage             string    `gorm:"column:tmdb_language" json:"tmdbLanguage"`
+	ScannerStrictStructure   bool      `gorm:"column:scanner_strict_structure" json:"scannerStrictStructure"`
+	ScannerProvider          string    `gorm:"column:scanner_provider" json:"scannerProvider"`
+	DisableLocalScanning     bool      `gorm:"column:disable_local_scanning" json:"disableLocalScanning"`
+	ScannerUseLegacyMatching bool      `gorm:"column:scanner_use_legacy_matching" json:"scannerUseLegacyMatching"`
+	LastScanAt               time.Time `gorm:"column:last_scan_at" json:"lastScanAt"`
+	AutoScan                 bool      `gorm:"column:auto_scan" json:"autoScan"`
 }
 
 func (s *LibrarySettings) GetAllPaths() []string {
@@ -230,25 +224,21 @@ type ScanSummary struct {
 
 type Theme struct {
 	BaseModel
-	EnableColorSettings    bool   `gorm:"column:enable_color_settings" json:"enableColorSettings"`
-	BackgroundColor        string `gorm:"column:background_color" json:"backgroundColor"`
-	AccentColor            string `gorm:"column:accent_color" json:"accentColor"`
-	SidebarBackgroundColor string `gorm:"column:sidebar_background_color" json:"sidebarBackgroundColor"`
-	ThemeEra               string `gorm:"column:theme_era" json:"themeEra"`
-	ThemeMode              string `gorm:"column:theme_mode" json:"themeMode"` // "classic" | "advanced" | "era" | "" (legacy, derivado en el cliente)
-	EnableLiquidGlass      bool   `gorm:"column:enable_liquid_glass" json:"themeEnableLiquidGlass"`
-	HomeItems              []byte `gorm:"column:home_items" json:"homeItems"`
+	EnableColorSettings bool   `gorm:"column:enable_color_settings" json:"enableColorSettings"`
+	BackgroundColor     string `gorm:"column:background_color" json:"backgroundColor"`
+	AccentColor         string `gorm:"column:accent_color" json:"accentColor"`
+	ThemeEra            string `gorm:"column:theme_era" json:"themeEra"`
+	ThemeMode           string `gorm:"column:theme_mode" json:"themeMode"` // "classic" | "advanced" | "era" | "" (legacy, derivado en el cliente)
+	EnableLiquidGlass   bool   `gorm:"column:enable_liquid_glass" json:"themeEnableLiquidGlass"`
 
 	// ── Diseño y Comportamiento ──────────────────────────────────────────
-	AnimeEntryScreenLayout     string `gorm:"column:anime_entry_screen_layout" json:"themeAnimeEntryScreenLayout"`
-	SmallerEpisodeCarouselSize bool   `gorm:"column:smaller_episode_carousel_size" json:"themeSmallerEpisodeCarouselSize"`
-	ExpandSidebarOnHover       bool   `gorm:"column:expand_sidebar_on_hover" json:"themeExpandSidebarOnHover"`
-	DisableSidebarTransparency bool   `gorm:"column:disable_sidebar_transparency" json:"themeDisableSidebarTransparency"`
-	EnableBlurringEffects      bool   `gorm:"column:enable_blurring_effects" json:"themeEnableBlurringEffects"`
-	EnableSidebarGradient      bool   `gorm:"column:enable_sidebar_gradient" json:"themeEnableSidebarGradient"`
-	DisableCarouselAutoScroll  bool   `gorm:"column:disable_carousel_auto_scroll" json:"themeDisableCarouselAutoScroll"`
-	UseLegacyEpisodeCard       bool   `gorm:"column:use_legacy_episode_card" json:"themeUseLegacyEpisodeCard"`
-	EnableCinematicGrain       bool   `gorm:"column:enable_cinematic_grain" json:"themeEnableCinematicGrain"`
+	SmallerEpisodeCarouselSize bool `gorm:"column:smaller_episode_carousel_size" json:"themeSmallerEpisodeCarouselSize"`
+	ExpandSidebarOnHover       bool `gorm:"column:expand_sidebar_on_hover" json:"themeExpandSidebarOnHover"`
+	DisableSidebarTransparency bool `gorm:"column:disable_sidebar_transparency" json:"themeDisableSidebarTransparency"`
+	EnableBlurringEffects      bool `gorm:"column:enable_blurring_effects" json:"themeEnableBlurringEffects"`
+	EnableSidebarGradient      bool `gorm:"column:enable_sidebar_gradient" json:"themeEnableSidebarGradient"`
+	DisableCarouselAutoScroll  bool `gorm:"column:disable_carousel_auto_scroll" json:"themeDisableCarouselAutoScroll"`
+	EnableCinematicGrain       bool `gorm:"column:enable_cinematic_grain" json:"themeEnableCinematicGrain"`
 
 	// ── Pantalla de Biblioteca ───────────────────────────────────────────
 	LibraryScreenBannerType              string `gorm:"column:library_screen_banner_type;default:dynamic" json:"themeLibraryScreenBannerType"`
@@ -277,11 +267,6 @@ type Theme struct {
 	CustomCSS         string      `gorm:"column:custom_css" json:"themeCustomCSS"`
 	MobileCustomCSS   string      `gorm:"column:mobile_custom_css" json:"themeMobileCustomCSS"`
 	UnpinnedMenuItems StringSlice `gorm:"column:unpinned_menu_items;type:text" json:"themeUnpinnedMenuItems"`
-}
-
-type HomeItem struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
 }
 
 type MediastreamSettings struct {

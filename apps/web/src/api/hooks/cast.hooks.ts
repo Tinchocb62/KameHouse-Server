@@ -1,4 +1,5 @@
 import { buildSeaQuery, useServerMutation, useServerQuery } from "@/api/client/requests"
+import { EXTRA_ENDPOINTS } from "@/api/client/endpoints.extra"
 
 export interface CastDevice {
     id: string
@@ -25,9 +26,9 @@ export interface CastPlayResponse {
 // Lista las TVs (KameHouseTV) conectadas al servidor, disponibles para cast.
 export function useCastDevices(enabled: boolean = true) {
     return useServerQuery<CastDevicesResponse>({
-        endpoint: "/api/v1/cast/devices",
+        endpoint: EXTRA_ENDPOINTS.CAST.GetDevices.endpoint,
         method: "GET",
-        queryKey: ["cast-devices"],
+        queryKey: [EXTRA_ENDPOINTS.CAST.GetDevices.key],
         refetchInterval: 15000,
         enabled,
         muteError: true,
@@ -37,7 +38,7 @@ export function useCastDevices(enabled: boolean = true) {
 // Consulta puntual (sin polling) de las TVs conectadas.
 export const fetchCastDevices = async () => {
     return buildSeaQuery<CastDevicesResponse>({
-        endpoint: "/api/v1/cast/devices",
+        endpoint: EXTRA_ENDPOINTS.CAST.GetDevices.endpoint,
         method: "GET",
     })
 }
@@ -45,7 +46,7 @@ export const fetchCastDevices = async () => {
 // Envía un comando de reproducción a la(s) TV(s) conectadas.
 export function useCastPlay() {
     return useServerMutation<CastPlayResponse, CastPlayVariables>({
-        endpoint: "/api/v1/cast/play",
+        endpoint: EXTRA_ENDPOINTS.CAST.Play.endpoint,
         method: "POST",
     })
 }

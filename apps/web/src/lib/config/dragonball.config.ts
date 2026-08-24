@@ -44,11 +44,13 @@ export function resolveSeriesSagas(media: MediaForSagaResolution | null | undefi
 
     if (searchTitle.includes("dragonballz") || searchTitle === "dbz") {
         resolved = DRAGON_BALL_SAGAS[DRAGON_BALL_SERIES.Z]
-    } else if (searchTitle.includes("dragonballgt")) {
+    } else if (searchTitle.includes("dragonballgt") || searchTitle === "dbgt") {
         resolved = DRAGON_BALL_SAGAS[DRAGON_BALL_SERIES.GT]
-    } else if (searchTitle.includes("dragonballsuper")) {
+    } else if (searchTitle.includes("dragonballkai") || searchTitle.includes("dbkai") || searchTitle.includes("dbzkai")) {
+        resolved = DRAGON_BALL_SAGAS[DRAGON_BALL_SERIES.KAI]
+    } else if (searchTitle.includes("dragonballsuper") || searchTitle === "dbs") {
         resolved = DRAGON_BALL_SAGAS[DRAGON_BALL_SERIES.SUPER]
-    } else if (searchTitle.includes("dragonballdaima")) {
+    } else if (searchTitle.includes("dragonballdaima") || searchTitle === "dbdaima") {
         resolved = DRAGON_BALL_SAGAS[DRAGON_BALL_SERIES.DAIMA]
     } else if (searchTitle === "dragonball") {
         resolved = DRAGON_BALL_SAGAS[DRAGON_BALL_SERIES.ORIGINAL]
@@ -75,6 +77,7 @@ export function getDragonBallSpanishTitle(tmdbId: number | undefined | null, epi
         case DRAGON_BALL_SERIES.ORIGINAL: seriesKey = "original"; break;
         case DRAGON_BALL_SERIES.Z: seriesKey = "z"; break;
         case DRAGON_BALL_SERIES.GT: seriesKey = "gt"; break;
+        case DRAGON_BALL_SERIES.KAI: seriesKey = "kai"; break;
         case DRAGON_BALL_SERIES.SUPER: seriesKey = "super"; break;
         case DRAGON_BALL_SERIES.DAIMA: seriesKey = "daima"; break;
     }
@@ -94,7 +97,8 @@ export function getDragonBallSpanishTitle(tmdbId: number | undefined | null, epi
  */
 export function isDragonBallTmdbId(tmdbId: number | undefined | null): boolean {
     if (!tmdbId) return false;
-    return tmdbId in DRAGON_BALL_SAGAS || tmdbId in TMDB_TO_LORE_MOVIE_MAP;
+    const rawId = tmdbId >= 1000000 ? tmdbId - 1000000 : tmdbId;
+    return tmdbId in DRAGON_BALL_SAGAS || rawId in DRAGON_BALL_SAGAS || tmdbId in TMDB_TO_LORE_MOVIE_MAP || rawId in TMDB_TO_LORE_MOVIE_MAP;
 }
 
 /**
@@ -105,17 +109,19 @@ export function isDragonBallTmdbId(tmdbId: number | undefined | null): boolean {
  */
 export function getSeriesEraTheme(tmdbId: number | undefined | null): string | null {
     if (!tmdbId) return null
+    const rawId = tmdbId >= 1000000 ? tmdbId - 1000000 : tmdbId
 
-    switch (tmdbId) {
+    switch (rawId) {
         case DRAGON_BALL_SERIES.ORIGINAL: return "era-db"
         case DRAGON_BALL_SERIES.Z: return "era-dbz"
         case DRAGON_BALL_SERIES.GT: return "era-dbgt"
+        case DRAGON_BALL_SERIES.KAI: return "era-dbkai"
         case DRAGON_BALL_SERIES.SUPER: return "era-dbs"
         case DRAGON_BALL_SERIES.DAIMA: return "era-daima"
     }
 
-    if (tmdbId in TMDB_TO_LORE_MOVIE_MAP) {
-        const loreId = TMDB_TO_LORE_MOVIE_MAP[tmdbId as number];
+    if (rawId in TMDB_TO_LORE_MOVIE_MAP) {
+        const loreId = TMDB_TO_LORE_MOVIE_MAP[rawId as number];
         const movieLore = DRAGON_BALL_MOVIES_LORE[loreId];
         if (movieLore?.seriesContext) {
             switch (movieLore.seriesContext) {

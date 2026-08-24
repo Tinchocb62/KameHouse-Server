@@ -64,6 +64,12 @@ func (bq *BackgroundQueue) Enqueue(lf *dto.LocalFile) {
 		return
 	}
 
+	select {
+	case <-bq.ctx.Done():
+		return
+	default:
+	}
+
 	bq.activeJobs[lf.Path] = struct{}{}
 	select {
 	case bq.jobChan <- lf:

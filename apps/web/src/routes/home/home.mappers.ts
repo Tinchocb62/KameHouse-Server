@@ -21,20 +21,24 @@ export function mapLibraryEntryToMediaCard(
     onNavigate: (mediaId: number) => void,
 ): SwimlaneItem {
     const media = entry.media!
-    const targetId = entry.mediaId || media.tmdbId || media.id
+    const rawMediaId = entry.mediaId || media.tmdbId || media.id
+    const targetId = rawMediaId
+    const isMovieLike = media.format === "MOVIE" || media.format === "SPECIAL" || media.format === "OVA" || media.type === "MOVIE" || (rawMediaId && rawMediaId >= 1_000_000)
+    const effectiveFormat = media.format || (isMovieLike ? "MOVIE" : undefined)
+
     return {
         id: `media-${targetId}`,
+        tmdbId: media.tmdbId ?? undefined,
+        mediaId: entry.mediaId ?? media.id ?? undefined,
         image: media.posterImage || getBackdrop(media) || "",
         title: getTitle(media),
-        subtitle: `${media.year || ""} · ${media.format || ""}`,
-        badge: media.format,
+        subtitle: `${media.year || ""} · ${effectiveFormat || ""}`,
+        badge: effectiveFormat,
         description: stripHtml(media.description),
         aspect: "poster",
         year: media.year || undefined,
         rating: media.score ? (media.score > 10 ? media.score / 10 : media.score) : undefined,
         onClick: () => onNavigate(targetId),
-        // Only set backdropUrl if there's a real landscape banner (bannerImage).
-        // If we fall back to posterImage, it's portrait and should NOT be used as a landscape hero image.
         backdropUrl: media.bannerImage || undefined,
     }
 }

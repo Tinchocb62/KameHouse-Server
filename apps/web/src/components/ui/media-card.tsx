@@ -47,20 +47,7 @@ export const MediaCard = React.memo(function MediaCard({
     const isPoster = aspect === "poster"
     const { isMobile } = useResponsive()
     const [drawerOpen, setDrawerOpen] = React.useState(false)
-    const [isHovered, setIsHovered] = React.useState(false)
     const tvMode = useAppStore(state => state.tvMode)
-
-    const handleMouseEnter = React.useCallback(() => {
-        if (isMobile) return
-        setIsHovered(true)
-    }, [isMobile])
-
-    const handleMouseLeave = React.useCallback(() => {
-        if (isMobile) return
-        setIsHovered(false)
-    }, [isMobile])
-
-
 
     const cleanDesc = React.useMemo(
         () => description?.replace(/<[^>]*>/g, '') ?? '',
@@ -69,10 +56,8 @@ export const MediaCard = React.memo(function MediaCard({
 
     return (
         <div
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
             className={cn(
-                "relative shrink-0 select-none",
+                "relative shrink-0 select-none group",
                 isPoster
                     ? (compact
                         ? "aspect-[2/3] w-[132px] md:w-[160px] lg:w-[192px] 2xl:w-[212px] 3xl:w-[232px]"
@@ -87,8 +72,8 @@ export const MediaCard = React.memo(function MediaCard({
                 onClick={onClick}
                 className={cn(
                     "absolute top-0 left-0 overflow-hidden flex flex-col origin-top",
-                    "transition-[transform,box-shadow,border-color,background-color] duration-base ease-out transform-gpu",
-                    "z-10 hover:z-20 hover:scale-[1.03] active:scale-[0.99] w-full h-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_10%,transparent)] border border-outline-variant/5 hover:border-brand-accent/40 hover:shadow-[0_0_24px_hsl(var(--brand-accent)/0.2)] shadow-elevation-2 group cursor-pointer",
+                    "transition-[transform,box-shadow,border-color,background-color] duration-base ease-smooth-out transform-gpu",
+                    "z-10 hover:z-20 hover:scale-[1.03] active:scale-[0.99] w-full h-full bg-[color:color-mix(in_srgb,var(--md-sys-color-surface-container)_10%,transparent)] border border-outline-variant/5 hover:border-brand-accent/40 hover:shadow-[0_0_24px_hsl(var(--brand-accent)/0.2)] shadow-elevation-2 cursor-pointer",
                     isPoster ? "rounded-xl" : "rounded-container"
                 )}
                 style={{
@@ -101,20 +86,17 @@ export const MediaCard = React.memo(function MediaCard({
                     <DeferredImage
                         src={getMediumResImage(artwork)}
                         alt={title}
-                        className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 transform-gpu"
+                        className="h-full w-full object-cover transition-transform duration-fast ease-smooth-out group-hover:scale-105 transform-gpu"
                     />
 
                     {/* Shadow Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent transition-opacity duration-slow opacity-75 group-hover:opacity-85" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent transition-opacity duration-fast opacity-75 group-hover:opacity-85" />
 
                     {/* Glass sheen sweep */}
                     {!tvMode && (
                         <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-[inherit]">
                             <div
-                                className={cn(
-                                    "w-1/3 h-full bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 absolute inset-y-0 transition-transform duration-slow ease-out translate-x-[-150%]",
-                                    isHovered && "translate-x-[150%]"
-                                )}
+                                className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12 absolute inset-y-0 transition-transform duration-slow ease-smooth-out translate-x-[-150%] group-hover:translate-x-[400%]"
                             />
                         </div>
                     )}

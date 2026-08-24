@@ -1,3 +1,4 @@
+'use no memo'
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { getSeriesName } from "@/lib/helpers/media"
 
@@ -14,6 +15,10 @@ interface UsePlayerMediaSessionProps {
 }
 
 const actions = ["play", "pause", "seekforward", "seekbackward", "seekto", "nexttrack", "previoustrack"] as const
+
+function setMediaCurrentTime(video: HTMLVideoElement, time: number) {
+    video.currentTime = time
+}
 
 export function usePlayerMediaSession({
     videoRef,
@@ -51,7 +56,7 @@ export function usePlayerMediaSession({
                     break
                 case "seekto":
                     if (details.seekTime !== undefined && videoRef.current) {
-                        videoRef.current.currentTime = details.seekTime
+                        setMediaCurrentTime(videoRef.current, details.seekTime)
                     }
                     break
                 case "seekforward":
@@ -83,12 +88,20 @@ export function usePlayerMediaSession({
                     navigator.mediaSession.setActionHandler(action, null)
                 } catch { /* noop */ }
             }
-            if ("mediaSession" in navigator) {
-                navigator.mediaSession.playbackState = "none"
-                navigator.mediaSession.metadata = null
-            }
         }
     }, [togglePlay, skipTime, onNextEpisode, hasNextEpisode, videoRef])
+
+    // Cleanup MediaSession state on player unmount
+    useEffect(() => {
+        return () => {
+            if ("mediaSession" in navigator) {
+                try {
+                    navigator.mediaSession.playbackState = "none"
+                    navigator.mediaSession.metadata = null
+                } catch { /* noop */ }
+            }
+        }
+    }, [])
 
     // Update metadata when info changes
     useEffect(() => {
@@ -127,8 +140,9 @@ export function usePlayerMediaSession({
         const handleTimeUpdate = () => {
             if ("setPositionState" in navigator.mediaSession && isActive.current) {
                 try {
+                    const dur = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0
                     navigator.mediaSession.setPositionState({
-                        duration: video.duration || 0,
+                        duration: dur,
                         playbackRate: video.playbackRate || 1,
                         position: video.currentTime || 0,
                     })

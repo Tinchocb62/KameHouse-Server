@@ -33,7 +33,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         icon: <Icons.navigation.home className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
-        activeBgClass: "glass-liquid glass-active glass-refract"
+        activeBgClass: "bg-white/[0.10] border border-white/20 shadow-elevation-1"
     },
     {
         id: "series",
@@ -42,7 +42,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         icon: <Icons.navigation.tv className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
-        activeBgClass: "glass-liquid glass-active glass-refract"
+        activeBgClass: "bg-white/[0.10] border border-white/20 shadow-elevation-1"
     },
     {
         id: "movies",
@@ -51,7 +51,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
         icon: <Icons.navigation.film className="w-5 h-5" />,
         activeColorClass: "text-on-surface",
         hoverColorClass: "group-hover:text-on-surface",
-        activeBgClass: "glass-liquid glass-active glass-refract"
+        activeBgClass: "bg-white/[0.10] border border-white/20 shadow-elevation-1"
     }
 ]
 
@@ -124,7 +124,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
     const { playSound } = useSound()
     const storeSidebarOpen = useAppStore(state => state.sidebarOpen)
     const sidebarOpen = storeSidebarOpen || !!forceOpen
-    const playlistQueue = useAppStore(state => state.playlistQueue)
+    const playlistQueueLength = useAppStore(state => state.playlistQueue.length)
     const globalQueueOpen = useAppStore(state => state.globalQueueOpen)
     const setGlobalQueueOpen = useAppStore(state => state.setGlobalQueueOpen)
     const marathonMode = useAppStore(state => state.marathonMode)
@@ -139,23 +139,22 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
     const containerRef = React.useRef<HTMLDivElement>(null)
     const navRef = React.useRef<HTMLDivElement>(null)
 
-    const routerState = useRouterState()
-    const currentPath = routerState.location.pathname
+    const currentPath = useRouterState({ select: s => s.location.pathname })
 
     const playChangeSound = () => {
         playSound("category", 0.4)
     }
 
-    // Staggered entrance for nav items/buttons on mount
+    // Staggered entrance for nav items/buttons on mount only
     useGSAP(() => {
         const items = containerRef.current?.querySelectorAll(".gsap-sidebar-item")
         if (items && items.length > 0) {
             gsap.fromTo(items,
                 { opacity: 0, x: -16, scale: 0.95 },
-                { opacity: 1, x: 0, scale: 1, duration: 0.5, stagger: 0.06, ease: "power3.out" }
+                { opacity: 1, x: 0, scale: 1, duration: 0.4, stagger: 0.04, ease: "power3.out" }
             )
         }
-    }, { scope: containerRef })
+    }, { scope: containerRef, dependencies: [] })
 
     return (
         <div ref={containerRef} className={cn(
@@ -190,7 +189,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
             {/* Navigation */}
             <div ref={navRef} className="flex-1 space-y-4 w-full flex flex-col items-center relative">
                 {visibleItems.map((item) => {
-                    const isActive = currentPath === item.to
+                    const isActive = currentPath === item.to || (item.to !== "/home" && (currentPath.startsWith(item.to + "/") || currentPath.startsWith(item.to)))
                     return (
                         <div key={item.to} className="gsap-sidebar-item w-full flex justify-center">
                             <Link
@@ -231,7 +230,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                 })}
 
                 {/* Queue Toggle Button - Shown conditionally */}
-                {playlistQueue.length > 0 && (
+                {playlistQueueLength > 0 && (
                     <div className="gsap-sidebar-item w-full flex justify-center">
                         <button
                             onClick={() => {
@@ -259,7 +258,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                                 <Icons.navigation.layers className="w-5 h-5" />
                                 {/* Badge count */}
                                 <span className="absolute -top-2.5 -right-2.5 bg-on-surface text-surface text-label-sm font-black min-w-[18px] h-[18px] rounded-full flex items-center justify-center border border-surface px-[3px]">
-                                    {playlistQueue.length}
+                                    {playlistQueueLength}
                                 </span>
                             </span>
                             <span className={cn(
@@ -267,7 +266,7 @@ function SidebarContent({ setSidebarOpen, forceOpen }: { setSidebarOpen: (open: 
                                 (sidebarOpen || isMobile) ? "block" : "hidden md:hidden",
                                 globalQueueOpen ? "text-on-surface" : "group-hover:text-on-surface"
                             )}>
-                                Cola ({playlistQueue.length})
+                                Cola ({playlistQueueLength})
                             </span>
                         </button>
                     </div>

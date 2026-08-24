@@ -108,14 +108,31 @@ func NewEntry(ctx context.Context, opts *NewEntryOptions) (*Entry, error) {
 
 	// 2. If no local file provides a mapping, try to lookup by TMDB ID directly.
 	if fetchedMedia == nil {
-		if opts.MediaID > 1_000_000 {
+		if opts.MediaID >= 1_000_000 {
 			// Movies from TMDB have a 1,000,000 offset applied to their MediaID to avoid collisions
 			m, err := db.GetLibraryMediaByTmdbIdAndType(opts.Database, opts.MediaID-1_000_000, "MOVIE")
 			if err == nil && m != nil {
 				fetchedMedia = m
+			} else {
+				m, err = db.GetLibraryMediaByTmdbIdAndType(opts.Database, opts.MediaID-1_000_000, "SHOW")
+				if err == nil && m != nil {
+					fetchedMedia = m
+				}
 			}
 		} else {
 			m, err := db.GetLibraryMediaByTmdbIdAndType(opts.Database, opts.MediaID, "SHOW")
+			if err == nil && m != nil {
+				fetchedMedia = m
+			} else {
+				m, err = db.GetLibraryMediaByTmdbIdAndType(opts.Database, opts.MediaID, "MOVIE")
+				if err == nil && m != nil {
+					fetchedMedia = m
+				}
+			}
+		}
+
+		if fetchedMedia == nil && opts.MediaID > 0 {
+			m, err := db.GetLibraryMediaByID(opts.Database, uint(opts.MediaID))
 			if err == nil && m != nil {
 				fetchedMedia = m
 			}

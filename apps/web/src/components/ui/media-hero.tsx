@@ -37,6 +37,12 @@ export interface MediaHeroProps {
 
     /** Muestra el póster a la izquierda en desktop (como en películas) */
     showPosterColumn?: boolean
+
+    /**
+     * Panel lateral flotante (e.g. SagaSelector) que se renderiza como overlay
+     * glassmorphic a la derecha del backdrop en pantallas `lg+`. En mobile se oculta.
+     */
+    sidePanel?: React.ReactNode
     
     className?: string
 
@@ -76,6 +82,7 @@ export function MediaHero({
     footerText,
     actionButtons,
     showPosterColumn = false,
+    sidePanel,
     className,
     onBackdropClick,
     onTitleClick
@@ -100,36 +107,35 @@ export function MediaHero({
 
     // Smooth Parallax capture scroll listener
     useEffect(() => {
+        let rafId: number | null = null
         const handleScroll = (e: Event) => {
-            const target = e.target
-            if (!backdropRef.current || !heroRef.current) return
-
-            // Dependiendo de si la página usa el window o un scrollContainerRef
-            if (scrollContainerRef?.current) {
-                if (target === scrollContainerRef.current) {
-                    backdropRef.current.style.transform = `translate3d(0, ${scrollContainerRef.current.scrollTop * 0.35}px, 0)`
-                }
-            } else {
+            if (rafId) return
+            rafId = requestAnimationFrame(() => {
+                rafId = null
+                if (!backdropRef.current) return
+                const target = e.target
                 if (target === document || target === window) {
-                    const scrolled = window.scrollY || document.documentElement.scrollTop
-                    backdropRef.current.style.transform = `translate3d(0, ${scrolled * 0.35}px, 0)`
-                } else if (target instanceof HTMLElement && target.contains(heroRef.current)) {
+                    backdropRef.current.style.transform = `translate3d(0, ${window.scrollY * 0.35}px, 0)`
+                } else if (target instanceof HTMLElement && target.scrollTop > 0) {
                     backdropRef.current.style.transform = `translate3d(0, ${target.scrollTop * 0.35}px, 0)`
                 }
-            }
+            })
         }
         window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
-        return () => window.removeEventListener("scroll", handleScroll, { capture: true })
+        return () => {
+            window.removeEventListener("scroll", handleScroll, { capture: true })
+            if (rafId) cancelAnimationFrame(rafId)
+        }
     }, [scrollContainerRef])
 
     useGSAP(() => {
         gsap.from(".media-hero-animate", {
-            y: 35,
+            y: 20,
             opacity: 0,
-            duration: 1.2,
-            stagger: 0.08,
-            ease: "power4.out",
-            delay: 0.15
+            duration: 0.4,
+            stagger: 0.04,
+            ease: "power2.out",
+            delay: 0.05
         })
     }, { scope: heroRef, dependencies: [typeof title === "string" ? title : null] })
 
@@ -196,6 +202,17 @@ export function MediaHero({
             <div className="absolute inset-x-0 bottom-0 h-64 z-10 pointer-events-none scrim-hero-bottom" />
             <div className="absolute inset-x-0 top-0 h-32 z-10 pointer-events-none scrim-hero-top" />
 
+            {/* Side Panel Overlay — visible solo en desktop (lg+) */}
+            {sidePanel && (
+                <div className="hidden lg:flex absolute right-0 top-0 bottom-0 z-30 w-72 xl:w-80 pointer-events-auto">
+                    {/* Gradiente de fusión lateral: difumina el panel hacia el backdrop */}
+                    <div className="absolute inset-y-0 -left-16 w-16 bg-gradient-to-r from-transparent to-black/60 pointer-events-none z-10" />
+                    <div className="flex-1 bg-zinc-950/70 backdrop-blur-[var(--blur-overlay-xl)] border-l border-white/[0.07] overflow-hidden flex flex-col">
+                        {sidePanel}
+                    </div>
+                </div>
+            )}
+
             {/* Content Container */}
             <div className={cn(
                 "relative z-20 w-full max-w-content mx-auto page-px flex",
@@ -214,7 +231,7 @@ export function MediaHero({
 
                 <div className={cn(
                     "flex-1 flex flex-col gap-6 text-left w-full",
-                    !showPosterColumn && "max-w-3xl space-y-5 md:space-y-6",
+                    !showPosterColumn && typeof title === "string" && "max-w-3xl space-y-5 md:space-y-6",
                     // "boxed" lifts the copy off the backdrop onto a glass panel, so it
                     // stays readable over busy art; "fluid" (default) sits directly on it.
                     isBoxedInfo && "pointer-events-auto bg-zinc-950/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 rounded-container p-6 md:p-8"

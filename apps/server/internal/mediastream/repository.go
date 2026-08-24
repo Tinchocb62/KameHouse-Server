@@ -9,6 +9,7 @@ import (
 	"kamehouse/internal/mediastream/cassette"
 	"kamehouse/internal/mediastream/pretranscode"
 	"kamehouse/internal/mediastream/videofile"
+	"kamehouse/internal/util/ffmpegutil"
 	"kamehouse/internal/util/filecache"
 	"os"
 	"path/filepath"
@@ -81,13 +82,8 @@ func (r *Repository) InitializeModules(settings *models.MediastreamSettings, cac
 		r.logger.Error().Err(err).Msg("mediastream: Failed to create transcode directory")
 	}
 
-	if settings.FfmpegPath == "" {
-		settings.FfmpegPath = "ffmpeg"
-	}
-
-	if settings.FfprobePath == "" {
-		settings.FfprobePath = "ffprobe"
-	}
+	settings.FfmpegPath = ffmpegutil.ResolveFFmpegPath(cacheDir, settings.FfmpegPath)
+	settings.FfprobePath = ffmpegutil.ResolveFFprobePath(cacheDir, settings.FfprobePath)
 
 	// Set the settings
 	r.settings = mo.Some(settings)

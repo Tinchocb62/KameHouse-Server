@@ -1,5 +1,3 @@
-"use no memo"
-
 import { AppErrorBoundary } from "@/components/shared/app-error-boundary"
 import { LoadingOverlayWithLogo } from "@/components/shared/loading-overlay-with-logo"
 import { NotFound } from "@/components/shared/not-found"
@@ -23,7 +21,6 @@ const PerformanceMonitor = React.lazy(() =>
     import("@/components/shared/performance-monitor").then((m) => ({ default: m.PerformanceMonitor }))
 )
 import { useRouterState } from "@tanstack/react-router"
-import { AnimatePresence } from "framer-motion"
 import { PageTransition } from "@/components/shared/page-transition"
 
 import { useAppStore } from "@/lib/store"
@@ -45,6 +42,8 @@ function RootComponent() {
 
     const sidebarOpen = useAppStore(state => state.sidebarOpen)
     const tvMode = useAppStore(state => state.tvMode)
+    const showInitialSetup = useAppStore(state => state.showInitialSetup)
+    const setShowInitialSetup = useAppStore(state => state.setShowInitialSetup)
     useTvDpad()
     const { data: status, isLoading, isError, refetch } = useGetStatus()
 
@@ -55,27 +54,25 @@ function RootComponent() {
     React.useEffect(() => { prewarmVideoPlayer() }, [])
 
     React.useEffect(() => {
-        if (!isLoading) {
+        if (!isLoading && !!status) {
             const loader = document.getElementById('global-loader')
             if (loader) {
                 loader.style.opacity = '0'
+                loader.style.transform = 'scale(1.02)'
                 loader.style.pointerEvents = 'none'
-                setTimeout(() => loader.remove(), 500)
+                setTimeout(() => loader.remove(), 400)
             }
         }
-    }, [isLoading])
+    }, [isLoading, status])
 
     if (isLoading || !status) {
-        if (isError) {
-            return <LoadingOverlayWithLogo isError={isError} refetch={refetch} />
-        }
-        return null // Let the global-loader from index.html show
+        return <LoadingOverlayWithLogo isError={isError} refetch={refetch} />
     }
 
-    if (!status.settings?.id) {
+    if (!status.settings?.id || showInitialSetup) {
         return (
             <AppLayout>
-                <GettingStarted status={status} />
+                <GettingStarted status={status} onClose={() => setShowInitialSetup(false)} />
             </AppLayout>
         )
     }
@@ -95,18 +92,16 @@ function RootComponent() {
             <GlobalQueueSidebar />
             <AppLayoutContent
                 style={!tvMode ? {
-                    '--sidebar-width': sidebarOpen ? '260px' : '80px',
+                    '--sidebar-width': sidebarOpen ? 'var(--sidebar-width-expanded)' : 'var(--sidebar-width-collapsed)',
                     transition: 'padding-left 300ms cubic-bezier(0.25, 0.1, 0.25, 1)'
                 } as React.CSSProperties : undefined}
                 className={tvMode ? "pb-24" : "md:pl-[var(--sidebar-width)]"}
             >
                 {!tvMode && <AppTopNav />}
 
-                <AnimatePresence mode="wait" initial={false}>
-                    <PageTransition key={routerState.location.pathname} transitionKey={routerState.location.pathname} className="flex-1 w-full">
-                        <Outlet />
-                    </PageTransition>
-                </AnimatePresence>
+                <PageTransition key={routerState.location.pathname} transitionKey={routerState.location.pathname} className="flex-1 w-full overflow-y-auto">
+                    <Outlet />
+                </PageTransition>
             </AppLayoutContent>
             {tvMode ? <TvNavBar /> : <AppBottomNav />}
 

@@ -6,7 +6,6 @@
   "build": {
     "frontendDist": "../web",
     "devUrl": "http://127.0.0.1:43210",
-    "beforeDevCommand": "pnpm --filter kamehouse-web dev",
     "beforeBuildCommand": "pnpm --filter kamehouse-web build"
   },
   "app": {

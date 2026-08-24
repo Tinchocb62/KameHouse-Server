@@ -86,7 +86,11 @@ export interface WindowBounds {
 
 const isTauri = () => {
   try {
-    return typeof window !== 'undefined' && !!window.__TAURI__;
+    return (
+      typeof window !== 'undefined' &&
+      (!!window.__TAURI__ ||
+        typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== 'undefined')
+    );
   } catch {
     return false;
   }
@@ -94,7 +98,7 @@ const isTauri = () => {
 
 const isElectron = () => {
   try {
-    return typeof window !== 'undefined' && !!window.electron && !window.__TAURI__;
+    return typeof window !== 'undefined' && !!window.electron && !isTauri();
   } catch {
     return false;
   }
@@ -208,17 +212,24 @@ function createElectronBridge(): ElectronAPI {
     },
     on: (channel: string, callback: (...args: unknown[]) => void) => {
       if (isTauri()) {
-        let unsubscribePromise: Promise<() => void> | null = null;
+        let isCancelled = false;
+        let unlistenFn: (() => void) | null = null;
         listen(channel, (event) => {
-          callback(event.payload);
+          if (!isCancelled) callback(event.payload);
         }).then((unsub) => {
-          unsubscribePromise = Promise.resolve(unsub);
-        });
-        unsubscribeMap.set(channel, () => unsubscribePromise?.then((fn) => fn()) || Promise.resolve());
+          if (isCancelled) {
+            unsub();
+          } else {
+            unlistenFn = unsub;
+          }
+        }).catch(console.error);
+
         return () => {
-          const unsub = unsubscribeMap.get(channel);
-          if (unsub) unsub();
-          unsubscribeMap.delete(channel);
+          isCancelled = true;
+          if (unlistenFn) {
+            unlistenFn();
+            unlistenFn = null;
+          }
         };
       }
       return () => {};

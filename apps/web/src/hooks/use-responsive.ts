@@ -1,71 +1,55 @@
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react"
 
 export interface ResponsiveBreakpoints {
-    isMobile: boolean;
-    isTablet: boolean;
-    isDesktop: boolean;
-    isWide: boolean;
+    isMobile: boolean
+    isTablet: boolean
+    isDesktop: boolean
+    isWide: boolean
 }
 
+const SERVER_SNAPSHOT: ResponsiveBreakpoints = Object.freeze({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isWide: true,
+})
+
 function getBreakpoints(): ResponsiveBreakpoints {
-    const w = typeof window !== "undefined" ? window.innerWidth : 1920;
+    if (typeof window === "undefined") return SERVER_SNAPSHOT
+    const w = window.innerWidth
     return {
         isMobile: w <= 767,
         isTablet: w >= 768 && w <= 1023,
         isDesktop: w >= 1024,
         isWide: w >= 1280,
-    };
+    }
+}
+
+function areBreakpointsEqual(a: ResponsiveBreakpoints, b: ResponsiveBreakpoints): boolean {
+    return a.isMobile === b.isMobile && a.isTablet === b.isTablet && a.isDesktop === b.isDesktop && a.isWide === b.isWide
+}
+
+let currentBreakpoints: ResponsiveBreakpoints = getBreakpoints()
+const listeners = new Set<() => void>()
+
+if (typeof window !== "undefined") {
+    const update = () => {
+        const next = getBreakpoints()
+        if (!areBreakpointsEqual(currentBreakpoints, next)) {
+            currentBreakpoints = next
+            listeners.forEach(cb => cb())
+        }
+    }
+    window.addEventListener("resize", update, { passive: true })
 }
 
 export function useResponsive(): ResponsiveBreakpoints {
-    const [breakpoints, setBreakpoints] = useState<ResponsiveBreakpoints>(getBreakpoints);
-
-    useEffect(() => {
-        const mobileQuery = window.matchMedia("(max-width: 767px)");
-        const tabletQuery = window.matchMedia("(min-width: 768px) and (max-width: 1023px)");
-        const desktopQuery = window.matchMedia("(min-width: 1024px)");
-        const wideQuery = window.matchMedia("(min-width: 1280px)");
-
-        const update = () => {
-            setBreakpoints(getBreakpoints());
-        };
-
-        // Initial trigger (redundant but safe)
-        update();
-
-        // matchMedia change listeners
-        if (typeof mobileQuery.addEventListener === "function") {
-            mobileQuery.addEventListener("change", update);
-            tabletQuery.addEventListener("change", update);
-            desktopQuery.addEventListener("change", update);
-            wideQuery.addEventListener("change", update);
-        } else {
-            mobileQuery.addListener(update);
-            tabletQuery.addListener(update);
-            desktopQuery.addListener(update);
-            wideQuery.addListener(update);
-        }
-
-        // Backup: resize event — catches cases where matchMedia change
-        // doesn't fire (e.g. Electron window maximized while hidden)
-        const onResize = () => update();
-        window.addEventListener("resize", onResize, { passive: true });
-
-        return () => {
-            if (typeof mobileQuery.removeEventListener === "function") {
-                mobileQuery.removeEventListener("change", update);
-                tabletQuery.removeEventListener("change", update);
-                desktopQuery.removeEventListener("change", update);
-                wideQuery.removeEventListener("change", update);
-            } else {
-                mobileQuery.removeListener(update);
-                tabletQuery.removeListener(update);
-                desktopQuery.removeListener(update);
-                wideQuery.removeListener(update);
-            }
-            window.removeEventListener("resize", onResize);
-        };
-    }, []);
-
-    return breakpoints;
+    return useSyncExternalStore(
+        (cb) => {
+            listeners.add(cb)
+            return () => listeners.delete(cb)
+        },
+        () => currentBreakpoints,
+        () => SERVER_SNAPSHOT
+    )
 }

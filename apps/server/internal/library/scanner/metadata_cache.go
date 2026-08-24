@@ -156,7 +156,7 @@ func (c *metadataFetchCache) FetchOnce(
 				continue // try next provider
 			}
 
-			if providerID == "tmdb" || providerID == "anidb" {
+			if providerID == "tmdb" || providerID == "anidb" || providerID == "jikan" || providerID == "mal" {
 				best, score := pickBestCandidate(title, searchRes)
 				if best == nil || score < 0.75 {
 					continue
@@ -222,7 +222,7 @@ func (c *metadataFetchCache) Clear() {
 	})
 }
 
-var providerOrder = []string{"tmdb", "anidb"}
+var providerOrder = []string{"tmdb", "jikan", "anidb"}
 
 func orderProviders(providers []librarymetadata.Provider) []librarymetadata.Provider {
 	byID := make(map[string]librarymetadata.Provider, len(providers))

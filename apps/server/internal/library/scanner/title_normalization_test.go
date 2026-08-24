@@ -6,91 +6,100 @@ import (
 
 func TestNormalizeTitle(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		want     string
-		wantBase string
-		season   int
-		part     int
+		name       string
+		input      string
+		want       string
+		wantBase   string
+		wantSeason int
+		wantPart   int
 	}{
 		{
-			name:     "Basic title",
-			input:    "Attack on Titan",
-			want:     "attack on titan",
-			wantBase: "attack on titan",
-			season:   -1,
-			part:     -1,
+			name:       "Dragon Ball Z basic",
+			input:      "Dragon Ball Z",
+			want:       "dragon ball z",
+			wantBase:   "dragon ball z",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 		{
-			// Season markers are stripped from normalized title for accurate matching
-			// Season info is extracted into the Season field instead
-			name:     "Title with season",
-			input:    "Attack on Titan Season 2",
-			want:     "attack on titan",
-			wantBase: "attack on titan",
-			season:   2,
-			part:     -1,
+			name:       "Dragon Ball with season",
+			input:      "Dragon Ball Season 2",
+			want:       "dragon ball",
+			wantBase:   "dragon ball",
+			wantSeason: 2,
+			wantPart:   -1,
 		},
 		{
-			// Season and part markers are stripped from normalized title
-			// They're extracted into Season and Part fields
-			name:     "Title with part",
-			input:    "Attack on Titan Season 3 Part 2",
-			want:     "attack on titan",
-			wantBase: "attack on titan",
-			season:   3,
-			part:     2,
+			name:       "Dragon Ball Super with season and part",
+			input:      "Dragon Ball Super Season 3 Part 2",
+			want:       "dragon ball super",
+			wantBase:   "dragon ball super",
+			wantSeason: 3,
+			wantPart:   2,
 		},
 		{
-			// Roman numerals are kept in normalized title for sequel distinction
-			// e.g. help distinguish "Overlord II" from "Overlord"
-			name:     "Roman numeral season",
-			input:    "Overlord III",
-			want:     "overlord iii",
-			wantBase: "overlord iii",
-			season:   3, // ExtractSeasonNumber should extract this
+			name:       "Dragon Ball Z with Roman numeral",
+			input:      "Dragon Ball Z Part II",
+			want:       "dragon ball z",
+			wantBase:   "dragon ball z",
+			wantSeason: 2,
+			wantPart:   2,
 		},
 		{
-			name:     "Special characters",
-			input:    "Steins;Gate",
-			want:     "steins gate",
-			wantBase: "steins gate",
+			name:       "Special characters in DB movie",
+			input:      "Dragon Ball Z: Battle of Gods",
+			want:       "dragon ball z battle of gods",
+			wantBase:   "dragon ball z battle of gods",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 		{
-			name:     "Smart quotes",
-			input:    "Kino's Journey",
-			want:     "kinos journey",
-			wantBase: "kinos journey",
+			name:       "Smart quotes",
+			input:      "Dragon Ball: Goku's Traffic Safety",
+			want:       "dragon ball gokus traffic safety",
+			wantBase:   "dragon ball gokus traffic safety",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 		{
-			name:     "The Animation suffix",
-			input:    "Persona 4 The Animation",
-			want:     "persona 4",
-			wantBase: "persona 4",
+			name:       "The Animation suffix",
+			input:      "Dragon Ball Z The Animation",
+			want:       "dragon ball z",
+			wantBase:   "dragon ball z",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 		{
-			name:     "Case sensitivity",
-			input:    "ATTACK ON TITAN",
-			want:     "attack on titan",
-			wantBase: "attack on titan",
+			name:       "Case sensitivity uppercase",
+			input:      "DRAGON BALL GT",
+			want:       "dragon ball gt",
+			wantBase:   "dragon ball gt",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 		{
-			name:     "With 'The'",
-			input:    "The Melancholy of Haruhi Suzumiya",
-			want:     "melancholy of haruhi suzumiya",
-			wantBase: "melancholy of haruhi suzumiya",
+			name:       "With 'The'",
+			input:      "The Legend of Shenron",
+			want:       "legend of shenron",
+			wantBase:   "legend of shenron",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 		{
-			name:     "With 'Episode'",
-			input:    "One Piece Episode 1000",
-			want:     "one piece 1000",
-			wantBase: "one piece 1000",
+			name:       "With 'Episode'",
+			input:      "Dragon Ball Z Episode 100",
+			want:       "dragon ball z 100",
+			wantBase:   "dragon ball z 100",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 		{
-			name:     "OAD/OVA",
-			input:    "Attack on Titan OAD",
-			want:     "attack on titan ova",
-			wantBase: "attack on titan ova",
+			name:       "OAD/OVA",
+			input:      "Dragon Ball Z OVA",
+			want:       "dragon ball z ova",
+			wantBase:   "dragon ball z ova",
+			wantSeason: -1,
+			wantPart:   -1,
 		},
 	}
 	for _, tt := range tests {
@@ -99,17 +108,14 @@ func TestNormalizeTitle(t *testing.T) {
 			if got.Normalized != tt.want {
 				t.Errorf("NormalizeTitle(%q).Normalized = %q, want %q", tt.input, got.Normalized, tt.want)
 			}
-			// check base title only if expected is provided (some cases might be tricky with what 'base' implies)
-			if tt.wantBase != "" && got.CleanBaseTitle != tt.wantBase {
+			if got.CleanBaseTitle != tt.wantBase {
 				t.Errorf("NormalizeTitle(%q).CleanBaseTitle = %q, want %q", tt.input, got.CleanBaseTitle, tt.wantBase)
 			}
-			// Check season extraction if specified
-			if tt.season != 0 && got.Season != tt.season {
-				t.Errorf("NormalizeTitle(%q).Season = %d, want %d", tt.input, got.Season, tt.season)
+			if tt.wantSeason != 0 && got.Season != tt.wantSeason {
+				t.Errorf("NormalizeTitle(%q).Season = %d, want %d", tt.input, got.Season, tt.wantSeason)
 			}
-			// Check part extraction if specified
-			if tt.part != 0 && got.Part != tt.part {
-				t.Errorf("NormalizeTitle(%q).Part = %d, want %d", tt.input, got.Part, tt.part)
+			if tt.wantPart != 0 && got.Part != tt.wantPart {
+				t.Errorf("NormalizeTitle(%q).Part = %d, want %d", tt.input, got.Part, tt.wantPart)
 			}
 		})
 	}

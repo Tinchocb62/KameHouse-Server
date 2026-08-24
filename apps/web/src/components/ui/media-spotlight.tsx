@@ -2,12 +2,14 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { DUR_BASE_S, EASE_SMOOTH_OUT } from "@/components/ui/core/motion"
 import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
-import { getLargeResImage, getMediumResImage } from "@/lib/helpers/images"
+import { getHighResImage, getLargeResImage, getMediumResImage } from "@/lib/helpers/images"
 import { DeferredImage } from "@/components/shared/deferred-image"
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 import { useSound } from "@/hooks/use-sound"
+import { useThemeSettings } from "@/lib/theme/theme-hooks"
 import type { SwimlaneItem } from "./swimlane"
 
 interface MediaSpotlightProps {
@@ -16,16 +18,22 @@ interface MediaSpotlightProps {
     className?: string
 }
 
-import { ERAS, ERA_COLOR_MAP, type EraId, getEraFromItem } from "./media-spotlight-helpers"
+import { ERAS, ERA_COLOR_MAP, ERA_DEFAULTS, type EraId, getEraFromItem, isMovieItem } from "./media-spotlight-helpers"
+import { ChronologyModal } from "@/components/shared/chronology-modal"
+import { EraOpeningPlayer } from "@/routes/series/$seriesId/-components/era-opening-player"
 
 export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavigate, className }: MediaSpotlightProps) {
     const { playSound } = useSound()
+    const themeSettings = useThemeSettings()
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl)
     const [activeEraId, setActiveEraId] = React.useState<EraId>("db")
     const [selectedItemId, setSelectedItemId] = React.useState<string | null>(null)
     const [isHovered, setIsHovered] = React.useState(false)
+    const [chronologyOpen, setChronologyOpen] = React.useState(false)
+    const [movieFilter, setMovieFilter] = React.useState<"all" | "movies" | "specials">("all")
 
     const colors = ERA_COLOR_MAP[activeEraId]
+    const currentEraConfig = React.useMemo(() => ERAS.find(e => e.id === activeEraId), [activeEraId])
 
     const playHoverSound = React.useCallback(() => {
         playSound("hover")
@@ -37,27 +45,35 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
             db: { series: null, movies: [] },
             dbz: { series: null, movies: [] },
             dbgt: { series: null, movies: [] },
+            dbkai: { series: null, movies: [] },
             dbs: { series: null, movies: [] },
             dbdaima: { series: null, movies: [] },
         }
 
         items.forEach(item => {
             const era = getEraFromItem(item)
-            if (era) {
-                const isTV = item.badge === "TV"
-                if (isTV) {
-                    const existing = result[era].series
-                    if (!existing) {
-                        result[era].series = item
-                    } else {
-                        // Prioritize classic canonical series over "Kai" recut if both are present in library
-                        const currentIsKai = item.title.toLowerCase().includes("kai")
-                        const existingIsKai = existing.title.toLowerCase().includes("kai")
-                        if (existingIsKai && !currentIsKai) {
-                            result[era].series = item
-                        }
-                    }
+            if (era && result[era]) {
+                const titleLower = item.title.toLowerCase().trim()
+                const isMovie = isMovieItem(item)
+                
+                // Check if title exactly matches canonical era series title
+                const isCanonicalMainSeries = !isMovie && (
+                    (era === "db" && (titleLower === "dragon ball" || titleLower === "dragon ball (original)")) ||
+                    (era === "dbz" && (titleLower === "dragon ball z" || titleLower === "dragon ball z (tv)")) ||
+                    (era === "dbgt" && (titleLower === "dragon ball gt")) ||
+                    (era === "dbkai" && (titleLower.includes("kai") && !titleLower.includes("pelicula") && !titleLower.includes("movie"))) ||
+                    (era === "dbs" && (titleLower === "dragon ball super")) ||
+                    (era === "dbdaima" && (titleLower === "dragon ball daima"))
+                )
+
+                if (isCanonicalMainSeries) {
+                    result[era].series = item
+                } else if (isMovie) {
+                    result[era].movies.push(item)
+                } else if (!result[era].series && (item.badge === "TV" || item.badge === "ONA" || item.badge === "TV_SHORT")) {
+                    result[era].series = item
                 } else {
+                    // All other entries (movies, specials, OVAs) belong to movies list
                     result[era].movies.push(item)
                 }
             }
@@ -66,380 +82,483 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
         // Sort movies by release year ascending
         ERAS.forEach(era => {
             const data = result[era.id]
-            data.movies.sort((a, b) => (Number(a.year) || 0) - (Number(b.year) || 0))
-
-            // If there's no main TV series in library, fallback to the first movie
-            if (!data.series && data.movies.length > 0) {
-                data.series = data.movies[0]
-                data.movies = data.movies.slice(1)
+            if (data) {
+                data.movies.sort((a, b) => (Number(a.year) || 0) - (Number(b.year) || 0))
             }
         })
 
         return result
     }, [items])
 
-    // Find the currently active item to showcase (series or selected movie)
-    const activeItem = React.useMemo(() => {
-        const eraData = categorizedData[activeEraId]
-        if (!eraData) return null
+    const availableEras = React.useMemo(() => {
+        return ERAS.filter(era => {
+            const data = categorizedData[era.id]
+            return data && (data.series !== null || data.movies.length > 0)
+        })
+    }, [categorizedData])
 
-        if (selectedItemId) {
-            const movie = eraData.movies.find(m => m.id === selectedItemId)
-            if (movie) return movie
-            if (eraData.series?.id === selectedItemId) return eraData.series
+    const preferredEraId = React.useMemo<EraId | null>(() => {
+        if (themeSettings.themeEra) {
+            const mapped = themeSettings.themeEra.replace("era-", "") as EraId
+            if (ERAS.some(e => e.id === mapped)) return mapped
         }
+        return null
+    }, [themeSettings.themeEra])
 
-        return eraData.series
-    }, [categorizedData, activeEraId, selectedItemId])
+    const initialEraId = React.useMemo<EraId>(() => {
+        if (preferredEraId && (categorizedData[preferredEraId]?.series || categorizedData[preferredEraId]?.movies.length > 0)) {
+            return preferredEraId
+        }
+        const firstWithContent = ERAS.find(era => categorizedData[era.id]?.series || categorizedData[era.id]?.movies.length > 0)
+        if (firstWithContent) return firstWithContent.id
+        return preferredEraId || "db"
+    }, [categorizedData, preferredEraId])
+
+    const activeSeries = React.useMemo(() => {
+        return categorizedData[activeEraId]?.series
+    }, [categorizedData, activeEraId])
 
     // Update active items when switching eras
     const handleEraSelect = React.useCallback((eraId: EraId) => {
         setActiveEraId(eraId)
-        const eraData = categorizedData[eraId]
-        setSelectedItemId(eraData?.series?.id || null)
-    }, [categorizedData])
+        setMovieFilter("all")
+    }, [])
 
-    // Auto-rotate featured eras/content every 8s when not hovered
+    // Auto-rotate featured eras every 8s when not hovered, only between available eras
     React.useEffect(() => {
-        if (isHovered) return
+        if (isHovered || availableEras.length <= 1) return
 
         const timer = setInterval(() => {
+            if (document.visibilityState === "hidden") return
+
             setActiveEraId(prevEraId => {
-                const currentIndex = ERAS.findIndex(e => e.id === prevEraId)
-                const nextIndex = (currentIndex + 1) % ERAS.length
-                const nextEraId = ERAS[nextIndex].id
-                const eraData = categorizedData[nextEraId]
-                setSelectedItemId(eraData?.series?.id || null)
-                return nextEraId
+                const currentIndex = availableEras.findIndex(e => e.id === prevEraId)
+                const nextIndex = (currentIndex + 1) % availableEras.length
+                return availableEras[nextIndex].id
             })
         }, 8000)
 
         return () => clearInterval(timer)
-    }, [isHovered, categorizedData])
+    }, [isHovered, availableEras])
 
-    // Initialize selected item on first load with a ref guard to avoid circular dependency
+    // Initialize era on first load
     const initializedRef = React.useRef(false)
     React.useEffect(() => {
-        if (!initializedRef.current && categorizedData[activeEraId]?.series) {
+        if (!initializedRef.current && items.length > 0) {
             initializedRef.current = true
-            setSelectedItemId(categorizedData[activeEraId].series!.id)
+            setActiveEraId(initialEraId)
         }
-    }, [categorizedData, activeEraId])
+    }, [items, initialEraId])
 
-    // Update global home page backdrop (always use the main series/era image, not the selected movie)
+    const cleanDescription = React.useMemo(() => {
+        return activeSeries?.description
+            ? activeSeries.description.replace(/<[^>]*>/g, '')
+            : ""
+    }, [activeSeries])
+
+    const displayTitle = React.useMemo(() => {
+        return ERA_DEFAULTS[activeEraId]?.title || activeSeries?.title || currentEraConfig?.title || "Dragon Ball"
+    }, [activeEraId, activeSeries, currentEraConfig])
+
+    const displayDescription = React.useMemo(() => {
+        if (!cleanDescription || cleanDescription.length < 30) {
+            return ERA_DEFAULTS[activeEraId]?.description || cleanDescription || ""
+        }
+        return cleanDescription
+    }, [cleanDescription, activeEraId])
+
+    // Real API backdrops/banners take precedence; fallback to canonical era horizontal backdrop
+    const effectiveBackdropSrc = React.useMemo(() => {
+        if (activeSeries?.backdropUrl) return activeSeries.backdropUrl
+        return ERA_DEFAULTS[activeEraId]?.backdropUrl || ""
+    }, [activeSeries, activeEraId])
+
+    // Update global home page backdrop
     React.useEffect(() => {
-        const mainSeries = categorizedData[activeEraId]?.series
-        if (mainSeries) {
-            setBackdropUrl(mainSeries.backdropUrl || mainSeries.image)
+        if (effectiveBackdropSrc) {
+            setBackdropUrl(effectiveBackdropSrc)
         }
         return () => {
             setBackdropUrl(null)
         }
-    }, [activeEraId, categorizedData, setBackdropUrl])
+    }, [effectiveBackdropSrc, setBackdropUrl])
 
     const activeEraInfo = React.useMemo(() => {
-        const movies = categorizedData[activeEraId]?.movies ?? []
+        const rawMovies = categorizedData[activeEraId]?.movies ?? []
         const name = ERAS.find(era => era.id === activeEraId)?.title ?? ""
-        return { movies, name, hasMovies: movies.length > 0 }
-    }, [categorizedData, activeEraId])
 
-    const { movies: activeEraMovies, name: activeEraName, hasMovies } = activeEraInfo
+        const filteredMovies = rawMovies.filter(m => {
+            if (movieFilter === "all") return true
+            const isSpecial = m.badge === "SPECIAL" || m.badge === "OVA" || m.title.toLowerCase().includes("especial") || m.title.toLowerCase().includes("ova")
+            if (movieFilter === "specials") return isSpecial
+            if (movieFilter === "movies") return !isSpecial
+            return true
+        })
 
-    const cleanDescription = React.useMemo(() => {
-        return activeItem?.description
-            ? activeItem.description.replace(/<[^>]*>/g, '')
-            : ""
-    }, [activeItem])
-
-    const displayTitle = React.useMemo(() => {
-        if (!activeItem) return ""
-        if (activeItem.title.toLowerCase().includes("kai") && activeItem.badge === "TV") {
-            return "Dragon Ball Z"
+        return {
+            movies: filteredMovies,
+            totalMovies: rawMovies.length,
+            name,
+            hasMovies: rawMovies.length > 0
         }
-        return activeItem.title
-    }, [activeItem])
+    }, [categorizedData, activeEraId, movieFilter])
 
-    const displayDescription = React.useMemo(() => {
-        if (!activeItem) return ""
-        if (activeItem.title.toLowerCase().includes("kai") && activeItem.badge === "TV") {
-            return "Cinco años después del final de Dragon Ball, Goku se encuentra con su hermano Raditz, quien le revela su origen alienígena. Comienza una serie de batallas contra poderosos enemigos como Vegeta, Freezer, Cell y Majin Buu para proteger la Tierra de invasores alienígenas y amenazas universales."
+const ERA_SERIES_ID_MAP: Record<EraId, number> = {
+    db: 12609,
+    dbz: 12971,
+    dbgt: 12697,
+    dbkai: 61709,
+    dbs: 62715,
+    dbdaima: 236994,
+}
+
+    const { movies: activeEraMovies, totalMovies, name: activeEraName, hasMovies } = activeEraInfo
+
+    const handleHeroNavigate = React.useCallback(() => {
+        if (activeSeries) {
+            onNavigate(activeSeries)
+        } else {
+            const eraDef = ERA_DEFAULTS[activeEraId]
+            const fallbackId = ERA_SERIES_ID_MAP[activeEraId] || 12609
+            onNavigate({
+                id: `media-${fallbackId}`,
+                mediaId: fallbackId,
+                title: eraDef?.title || "Dragon Ball",
+                image: eraDef?.posterUrl || "",
+                aspect: "poster",
+                onClick: () => {}
+            })
         }
-        return cleanDescription
-    }, [activeItem, cleanDescription])
-
-    if (!activeItem) {
-        return null
-    }
+    }, [activeSeries, onNavigate, activeEraId])
 
     return (
         <section 
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={cn("relative pt-20 md:pt-28 pb-16 w-full select-none overflow-hidden flex flex-col justify-start", hasMovies ? "lg:min-h-0" : "lg:min-h-[720px]", className)}
+            className={cn("relative pt-2 md:pt-4 pb-12 w-full select-none flex flex-col justify-start space-y-6 px-4 sm:px-6 md:px-8 xl:px-10 max-w-[1800px] mx-auto", className)}
         >
-            {/* Ambient glow backgrounds */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-                {/* Global dark/slate base */}
-                <div className="absolute inset-0 bg-transparent" />
-
-                {/* Dynamic colored ambient glows */}
+            {/* Dynamic ambient background glows with GPU acceleration */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 transform-gpu">
                 <div
-                    className="absolute -top-[10%] -left-[5%] w-[50%] h-[70%] rounded-full opacity-[0.35] transition-all duration-slow"
-                    style={{
-                        background: `radial-gradient(ellipse, ${colors.ambientGlow1} 0%, transparent 70%)`
-                    }}
+                    className="absolute -top-[10%] -left-[5%] w-[50%] h-[70%] rounded-full opacity-[0.25] transition-opacity duration-500 will-change-opacity pointer-events-none"
+                    style={{ background: `radial-gradient(ellipse, ${colors.ambientGlow1} 0%, transparent 70%)` }}
                 />
                 <div
-                    className="absolute top-[10%] right-[-5%] w-[45%] h-[60%] rounded-full opacity-[0.35] transition-all duration-slow"
-                    style={{
-                        background: `radial-gradient(ellipse, ${colors.ambientGlow2} 0%, transparent 70%)`
-                    }}
+                    className="absolute top-[10%] right-[-5%] w-[45%] h-[60%] rounded-full opacity-[0.25] transition-opacity duration-500 will-change-opacity pointer-events-none"
+                    style={{ background: `radial-gradient(ellipse, ${colors.ambientGlow2} 0%, transparent 70%)` }}
                 />
-
-                {/* Multi-color warm ambient light matching reference image background */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--era-dbz-hex) 18%, transparent) 0%, color-mix(in srgb, var(--era-daima-hex) 8%, transparent) 45%, transparent 80%)' }} />
             </div>
 
-            {/* Main content grid: Left Column (Artwork + Info Side-by-Side) & Right Column (Era Selector) */}
-            <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch z-10 w-full page-px max-w-content mx-auto">
+            {/* ─── 1. TOP HORIZONTAL ERA SELECTOR BAR ─── */}
+            <div className="relative z-20 flex flex-wrap items-center justify-between gap-3 bg-zinc-950/75 backdrop-blur-xl border border-white/10 rounded-2xl p-2 sm:p-2.5 shadow-xl">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+                    {ERAS.map((era) => {
+                        const isEraActive = era.id === activeEraId
+                        const displayTitle = era.title
+                        const displayYear = era.year
+                        const eraColors = ERA_COLOR_MAP[era.id]
+                        const eraData = categorizedData[era.id]
+                        const hasSeries = !!eraData?.series
+                        const movieCount = eraData?.movies?.length || 0
+                        const hasItems = hasSeries || movieCount > 0
 
-                {/* ─── LADO IZQUIERDO (8/12): Hero + Info lado a lado ─── */}
-                <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-
-                    {/* Imagen Hero */}
-                    <div
-                        className="md:col-span-7 relative w-full aspect-[4/3] md:aspect-[16/10] rounded-hero overflow-hidden border border-white/10 bg-surface-container group/hero transition-all duration-slow"
-                        style={{
-                            boxShadow: `var(--shadow-glass), 0 0 40px -10px ${colors.glow}`
-                        }}
-                    >
-                        {/* Glass glare reflex */}
-                        <div className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 -translate-x-[150%] group-hover/hero:translate-x-[150%] transition-transform [transition-duration:1.6s] ease-out pointer-events-none z-30" />
-
-                        <AnimatePresence mode="popLayout">
-                            <motion.div
-                                key={activeItem.id}
-                                initial={{ opacity: 0, scale: 1.03 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.98 }}
-                                transition={{ duration: 0.85, ease: [0.25, 0.8, 0.25, 1] }}
-                                className="absolute inset-0 w-full h-full"
+                        return (
+                            <motion.button
+                                key={era.id}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                                onClick={() => handleEraSelect(era.id)}
+                                onMouseEnter={playHoverSound}
+                                className={cn(
+                                    "relative flex items-center gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-left shrink-0 cursor-pointer select-none",
+                                    isEraActive
+                                        ? "text-white"
+                                        : hasItems
+                                            ? "text-zinc-300 hover:text-white hover:bg-white/[0.05]"
+                                            : "text-zinc-500 hover:text-zinc-400 opacity-60"
+                                )}
                             >
-                                {/* Artwork Background */}
-                                <div className="absolute inset-0 w-full h-full z-0 bg-surface-container">
-                                    {activeItem.backdropUrl ? (
-                                        <DeferredImage
-                                            src={getLargeResImage(activeItem.backdropUrl)}
-                                            alt={activeItem.title}
-                                            priority={true}
-                                            className="h-full w-full object-cover object-top transition-transform [transition-duration:6s] ease-out group-hover/hero:scale-[1.02]"
-                                        />
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-surface-container">
-                                            <div className="absolute inset-0 opacity-40">
-                                                <DeferredImage
-                                                    src={getLargeResImage(activeItem.image)}
-                                                    alt=""
-                                                    priority={true}
-                                                    className="h-full w-full object-cover object-center blur-2xl saturate-150 scale-110"
-                                                />
-                                            </div>
-                                            <DeferredImage
-                                                src={getLargeResImage(activeItem.image)}
-                                                alt={activeItem.title}
-                                                priority={true}
-                                                className="relative z-10 h-full w-full object-cover opacity-80 mix-blend-luminosity transition-transform [transition-duration:6s] ease-out group-hover/hero:scale-[1.02]"
-                                            />
-                                        </div>
+                                {/* Floating active highlight pill */}
+                                {isEraActive && (
+                                    <motion.div
+                                        layoutId="activeEraPill"
+                                        className="absolute inset-0 rounded-xl pointer-events-none z-0 border"
+                                        style={{
+                                            borderColor: eraColors.glowStrong,
+                                            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                                            boxShadow: `0 0 16px ${eraColors.glow}, inset 0 1px 1px rgba(255, 255, 255, 0.15)`
+                                        }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                    />
+                                )}
+
+                                {/* Kanji Circle */}
+                                <div
+                                    className={cn(
+                                        "relative z-10 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-bold text-[11px] sm:text-xs select-none shrink-0 transition-all duration-300 border",
+                                        isEraActive ? "text-white shadow-sm" : "bg-zinc-900 text-zinc-400"
                                     )}
+                                    style={{
+                                        borderColor: isEraActive ? eraColors.ambientGlow1 : `color-mix(in srgb, ${eraColors.ambientGlow1} 30%, rgba(255,255,255,0.1))`,
+                                        backgroundColor: isEraActive ? eraColors.ambientGlow1 : 'rgba(255,255,255,0.03)',
+                                    }}
+                                >
+                                    {era.kanji}
                                 </div>
 
-                                {/* Subtle vignette only */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent z-10" />
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
+                                <div className="relative z-10 flex flex-col text-left justify-center min-w-0 pr-1">
+                                    <span className={cn(
+                                        "font-sans font-extrabold text-[11px] sm:text-xs tracking-wider uppercase leading-tight truncate transition-colors duration-200",
+                                        isEraActive ? eraColors.textBrand : "text-zinc-200"
+                                    )}>
+                                        {displayTitle}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-zinc-400 leading-none">
+                                        {displayYear}
+                                    </span>
+                                </div>
+                            </motion.button>
+                        )
+                    })}
+                </div>
 
-                    {/* Info a la derecha */}
-                    <div className="md:col-span-5 flex flex-col justify-center h-full py-2">
+                {/* Chronology Action Button */}
+                <motion.button
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                    onClick={() => setChronologyOpen(true)}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider transition-all px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 shadow-sm ml-auto cursor-pointer"
+                    title="Ver Orden Cronológico Completo"
+                >
+                    <Icons.status.sparkles className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Cronología</span>
+                </motion.button>
+            </div>
+
+            {/* ─── 2. FULL-WIDTH CINEMATIC HERO (MAIN TV SERIES ONLY) ─── */}
+            <div className="relative z-10 w-full">
+                <div
+                    onClick={handleHeroNavigate}
+                    className="w-full relative aspect-[16/9] sm:aspect-[2.1/1] lg:aspect-[2.4/1] min-h-[380px] sm:min-h-[420px] max-h-[480px] rounded-3xl overflow-hidden border border-white/10 shadow-2xl group/showcase cursor-pointer bg-zinc-950 flex flex-col justify-end"
+                    style={{
+                        boxShadow: `0 22px 45px -12px rgba(0,0,0,0.85), 0 0 28px -15px ${colors.glow}`,
+                        borderColor: `color-mix(in srgb, ${colors.glowStrong} 25%, rgba(255,255,255,0.1))`
+                    }}
+                >
+                    <AnimatePresence mode="popLayout">
+                        <motion.div
+                            key={activeEraId}
+                            initial={{ opacity: 0, scale: 1.03 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                            className="absolute inset-0 w-full h-full transform-gpu will-change-transform pointer-events-none"
+                        >
+                            {/* Right-aligned compact image container with object-contain & smooth horizontal integration */}
+                            <div className="absolute right-0 top-0 bottom-0 w-full sm:w-[50%] lg:w-[45%] h-full flex items-center justify-end overflow-hidden">
+                                <DeferredImage
+                                    src={effectiveBackdropSrc.startsWith("/") ? effectiveBackdropSrc : getLargeResImage(effectiveBackdropSrc)}
+                                    alt={displayTitle}
+                                    priority={true}
+                                    className="w-full h-full flex items-center justify-end"
+                                    imgClassName="!w-full !h-full !object-contain !object-right transition-transform duration-700 group-hover/showcase:scale-[1.02]"
+                                />
+                                {/* Smooth horizontal gradient strictly covering the first 5% of the left edge */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 via-[5%] to-transparent pointer-events-none" />
+                                {/* Bottom & Top minimal edge blends */}
+                                <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-zinc-950/40 to-transparent pointer-events-none" />
+                            </div>
+
+                            {/* Left-side solid dark background for title & text */}
+                            <div className="absolute inset-y-0 left-0 w-1/2 bg-zinc-950 pointer-events-none hidden sm:block" />
+
+                            {/* Ambient era color glow */}
+                            <div
+                                className="absolute inset-0 opacity-15 pointer-events-none z-10 mix-blend-screen transition-opacity duration-500"
+                                style={{ background: `radial-gradient(circle at 10% 90%, ${colors.ambientGlow1} 0%, transparent 60%)` }}
+                            />
+                        </motion.div>
+                    </AnimatePresence>
+
+                    {/* Text, Badges and Actions Overlay */}
+                    <div className="relative z-20 flex flex-col justify-end p-6 sm:p-8 space-y-3 max-w-2xl">
                         <AnimatePresence mode="wait">
                             <motion.div
-                                key={activeItem.id}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ duration: 0.6, ease: [0.25, 0.8, 0.25, 1] }}
-                                className="flex flex-col px-1 [&>*:not(:first-child)]:mt-4"
+                                key={activeEraId}
+                                initial={{ opacity: 0, y: 14 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                                className="flex flex-col space-y-3 transform-gpu will-change-transform text-left"
                             >
-                                {/* Badges */}
-                                <div className="flex flex-wrap items-center [&>*:not(:first-child)]:ml-1.5">
-                                    <span className={cn(
-                                        "bg-brand-accent text-primary-foreground text-label-sm font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider flex items-center gap-1 shadow-sm border border-brand-accent/20 select-none"
-                                    )}>
-                                        <Icons.status.sparkles size={8} className="fill-current animate-pulse" />
-                                        Destacado
-                                    </span>
-                                    {activeItem.badge && (
-                                        <span className="bg-surface-variant text-white text-label-sm font-bold tracking-wider px-2.5 py-1 rounded-md border border-white/5 uppercase select-none">
-                                            {activeItem.badge}
-                                        </span>
-                                    )}
-                                    {activeItem.year && (
-                                        <span className="bg-surface-variant text-white text-label-sm font-bold tracking-wider px-2.5 py-1 rounded-md border border-white/5 uppercase select-none">
-                                            {activeItem.year}
-                                        </span>
-                                    )}
-                                    {activeItem.rating && (
-                                        <span className="bg-brand-success/20 text-brand-success text-label-sm font-extrabold tracking-wider px-2.5 py-1 rounded-md border border-brand-success/20 uppercase flex items-center ml-1 shadow-sm select-none">
-                                            <Icons.ui.star size={8} fill="currentColor" />
-                                            {activeItem.rating.toFixed(1)} Ki
-                                        </span>
-                                    )}
-                                </div>
+                                {/* Overline / Tagline */}
+                                {currentEraConfig?.tagline && (
+                                    <p className="text-[11px] sm:text-xs font-mono font-bold tracking-[0.2em] text-amber-400 uppercase drop-shadow-md select-none">
+                                        {currentEraConfig.tagline}
+                                    </p>
+                                )}
 
-                                {/* Title */}
-                                <h3 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none text-white uppercase select-none drop-shadow-md font-display">
+                                {/* Title with display font */}
+                                <h3
+                                    onClick={handleHeroNavigate}
+                                    className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.05] text-white uppercase select-none font-display cursor-pointer hover:text-amber-400 transition-colors drop-shadow-lg"
+                                    style={{
+                                        textShadow: "0 2px 12px rgba(0, 0, 0, 0.9)"
+                                    }}
+                                >
                                     {displayTitle}
                                 </h3>
 
-                                {/* Description */}
-                                {activeItem.description && (
-                                    <p className="text-zinc-300/75 text-xs md:text-sm leading-relaxed font-normal select-none max-w-sm">
+                                {/* Metadata Row */}
+                                <div className="flex flex-wrap items-center gap-2 py-0.5">
+                                    <span className="bg-white/15 backdrop-blur-md text-white text-[10px] font-bold tracking-widest px-2.5 py-1 rounded-md border border-white/20 uppercase shadow-sm select-none">
+                                        SERIE TV
+                                    </span>
+
+                                    {(activeSeries?.year || ERA_DEFAULTS[activeEraId]?.year) && (
+                                        <span className="bg-white/10 backdrop-blur-md text-zinc-200 text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-md border border-white/15 uppercase select-none">
+                                            {activeSeries?.year || ERA_DEFAULTS[activeEraId]?.year}
+                                        </span>
+                                    )}
+
+                                    {ERA_DEFAULTS[activeEraId]?.episodes && (
+                                        <span className="bg-white/10 backdrop-blur-md text-zinc-200 text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-md border border-white/15 uppercase select-none">
+                                            {ERA_DEFAULTS[activeEraId].episodes}
+                                        </span>
+                                    )}
+
+                                    {activeSeries?.rating && (
+                                        <span className="bg-emerald-950/80 backdrop-blur-md text-emerald-300 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-md border border-emerald-500/40 uppercase flex items-center gap-1 select-none shadow-sm">
+                                            <Icons.ui.star size={10} fill="currentColor" className="text-emerald-400" />
+                                            {activeSeries.rating.toFixed(1)} Ki
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Synopsis in High Contrast with Constrained Line Length */}
+                                {displayDescription && (
+                                    <p className="text-zinc-200/95 text-xs sm:text-sm leading-relaxed font-normal select-none line-clamp-3 max-w-xl drop-shadow">
                                         {displayDescription}
                                     </p>
                                 )}
 
-                                {/* Botones */}
-                                <div className="flex flex-wrap items-center gap-3 mt-2">
-                                    <button
-                                        onClick={() => onNavigate(activeItem)}
-                                        className={cn(
-                                            "relative overflow-hidden flex-1 sm:flex-initial flex items-center justify-center bg-gradient-to-r from-[var(--era-btn-from)] to-[var(--era-btn-to)] hover:from-[var(--era-btn-hover-from)] hover:to-[var(--era-btn-hover-to)] text-primary-foreground font-black text-xs md:text-sm uppercase tracking-wider py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl hover:scale-[1.03] active:scale-95 transition-all duration-base shadow-xl shadow-brand-accent/20 group/play-btn font-display gap-2"
-                                        )}
+                                {/* Action Buttons & Opening Player */}
+                                <div className="flex flex-wrap items-center gap-3 pt-1.5">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05, y: -1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        transition={{ type: "spring", stiffness: 450, damping: 20 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleHeroNavigate()
+                                        }}
+                                        className="flex items-center justify-center bg-brand-accent text-zinc-950 hover:brightness-110 font-bold text-xs sm:text-sm uppercase tracking-wider py-2.5 px-6 rounded-xl shadow-md shadow-brand-accent/20 font-display gap-2 cursor-pointer"
                                     >
-                                        <div className="absolute inset-0 w-[40px] h-full bg-on-surface/20 transform skew-x-12 -translate-x-[60px] group-hover/play-btn:translate-x-[250px] transition-transform [transition-duration:1.2s] ease-out pointer-events-none" />
-                                        <Icons.media.play size={14} fill="currentColor" />
+                                        <Icons.media.play size={15} fill="currentColor" />
                                         <span>Reproducir</span>
-                                    </button>
+                                    </motion.button>
 
-                                    <button
-                                        onClick={() => onNavigate(activeItem)}
-                                        className="flex-1 sm:flex-initial flex items-center justify-center border border-white/10 bg-white/5 hover:bg-surface-variant hover:border-white/20 text-zinc-200 hover:text-white hover:scale-[1.03] active:scale-95 font-black text-xs md:text-sm uppercase tracking-wider py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all duration-base shadow-xl backdrop-blur-[var(--blur-overlay-sm)] font-display gap-2"
+                                    <motion.button
+                                        whileHover={{ scale: 1.05, y: -1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        transition={{ type: "spring", stiffness: 450, damping: 20 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleHeroNavigate()
+                                        }}
+                                        className="flex items-center justify-center border border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm uppercase tracking-wider py-2.5 px-5 rounded-xl backdrop-blur-md font-display gap-1.5 cursor-pointer shadow-sm"
                                     >
-                                        <Icons.ui.info size={14} />
+                                        <Icons.ui.info size={15} />
                                         <span>Detalles</span>
-                                    </button>
+                                    </motion.button>
+
+                                    {/* Opening Player pill if available */}
+                                    {currentEraConfig?.defaultSaga && (
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <EraOpeningPlayer
+                                                sagaId={currentEraConfig.defaultSaga}
+                                                className="text-xs sm:text-sm"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         </AnimatePresence>
                     </div>
                 </div>
-
-                {/* ─── LADO DERECHO (3/12): Selector de Eras en tarjeta Glassmorphic ─── */}
-                <div className="flex flex-col lg:col-span-3 h-full z-10 justify-center">
-                    <div className="h-full bg-[var(--glass-panel-bg)] backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 rounded-hero p-3.5 sm:p-5 xl:p-6 shadow-elevated flex flex-col justify-center relative overflow-hidden">
-                        <h4 className="font-mono font-bold text-label-sm tracking-widest text-zinc-400 uppercase pl-1 sm:pl-2 shrink-0 mb-3 lg:mb-4">
-                            Seleccionar Era
-                        </h4>
-
-                        <div className="flex flex-row lg:flex-col relative min-h-0 overflow-x-auto lg:overflow-y-auto no-scrollbar py-1 gap-2 lg:gap-2">
-                            <AnimatePresence initial={false}>
-                                {ERAS.map((era) => {
-                                    const isEraActive = era.id === activeEraId
-                                    const displayTitle = era.title
-                                    const displayYear = era.year
-                                    const eraColors = ERA_COLOR_MAP[era.id]
-
-                                    return (
-                                        <button
-                                            key={era.id}
-                                            onClick={() => handleEraSelect(era.id)}
-                                            onMouseEnter={playHoverSound}
-                                            className={cn(
-                                                "group relative flex items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border text-left transition-all duration-slow shrink-0 lg:w-full overflow-hidden",
-                                                isEraActive
-                                                    ? "text-white scale-[1.02] bg-white/[0.06]"
-                                                    : "bg-transparent border-transparent text-zinc-300 hover:text-white hover:bg-white/[0.04] hover:scale-[1.01]"
-                                            )}
-                                            style={{
-                                                borderColor: isEraActive ? eraColors.glow.replace('0.25', '0.6') : 'transparent',
-                                                boxShadow: isEraActive ? `0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.05)` : 'none',
-                                                transition: "all 400ms cubic-bezier(0.16, 1, 0.3, 1)"
-                                            }}
-                                        >
-                                            {/* Active background neon layer */}
-                                            {isEraActive && (
-                                                <motion.div
-                                                    layoutId="activeEraBackground"
-                                                    className="absolute inset-0 -z-10 rounded-xl"
-                                                    style={{
-                                                        background: `linear-gradient(to right, ${eraColors.glow.replace('0.25', '0.15')} 0%, transparent 100%)`,
-                                                        borderLeft: `3px solid ${eraColors.ambientGlow1}`
-                                                    }}
-                                                    transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                                                />
-                                            )}
-
-                                            <div className="flex flex-col text-left justify-center relative z-10 pl-1 mr-2 lg:mr-0">
-                                                <span className={cn(
-                                                    "font-sans font-extrabold text-xs tracking-wider uppercase transition-colors duration-base leading-none mb-1 lg:mb-1.5 whitespace-nowrap",
-                                                    isEraActive ? eraColors.textBrand : "text-zinc-300 group-hover:text-white"
-                                                )}>
-                                                    {displayTitle}
-                                                </span>
-                                                <span className="text-label-sm font-mono font-bold tracking-display text-zinc-500 select-none">[{displayYear}]</span>
-                                            </div>
-
-                                            <Icons.navigation.chevronRight size={14} className={cn(
-                                                "transition-all duration-base relative z-10 shrink-0 hidden lg:block",
-                                                isEraActive ? eraColors.textBrand : "text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-1"
-                                            )} />
-                                        </button>
-                                    )
-                                })}
-                            </AnimatePresence>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            {/* ─── PARTE INFERIOR: Películas con glows y play overlay temático ─── */}
-            <AnimatePresence mode="wait">
-                {hasMovies && (
-                    <motion.div
-                        key={activeEraId}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -15 }}
-                        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                        className="relative z-10 text-left space-y-4 mt-14 page-px max-w-content mx-auto w-full"
-                    >
-                        <h4 className="font-display text-lg md:text-xl tracking-wider text-zinc-300 uppercase flex items-center gap-2">
-                            <span>Películas disponibles de</span>
-                            <span className={colors.textBrand}>{activeEraName}</span>
-                            <span className="text-xs text-zinc-500 font-sans font-bold tracking-normal lowercase">({activeEraMovies.length} películas)</span>
-                        </h4>
+            {/* ─── 3. INTEGRATED CATALOG (MOVIES & SPECIALS ONLY) ─── */}
+            <div className="relative z-10 text-left space-y-4 pt-2 w-full">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="font-display text-lg md:text-xl tracking-wider text-zinc-200 uppercase flex items-center gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: colors.ambientGlow1, boxShadow: `0 0 10px ${colors.glowStrong}` }} />
+                        <span>Películas & Especiales de</span>
+                        <span className={colors.textBrand}>{activeEraName}</span>
+                        <span className="text-xs text-zinc-400 font-sans font-bold tracking-normal lowercase px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 ml-1">
+                            {totalMovies} {totalMovies === 1 ? "título" : "títulos"}
+                        </span>
+                    </h4>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4 pt-2 pb-4 w-full animate-in fade-in slide-in-from-bottom-3 duration-slow">
-                            {/* hasSelection is computed once, not inside each card render */}
-                            {(() => {
-                                const hasSelection = selectedItemId !== null && activeEraMovies.some(m => m.id === selectedItemId)
-                                return activeEraMovies.map((movie) => (
-                                    <SpotlightMovieCard
-                                        key={movie.id}
-                                        movie={movie}
-                                        isSelected={selectedItemId === movie.id}
-                                        hasSelection={hasSelection}
-                                        colors={colors}
-                                        onSelect={setSelectedItemId}
-                                        onHover={playHoverSound}
-                                    />
-                                ))
-                            })()}
+                    {/* Quick Category Filter Pills */}
+                    {totalMovies > 1 && (
+                        <div className="relative flex items-center gap-1 bg-zinc-950/70 p-1 rounded-xl border border-white/10">
+                            {(["all", "movies", "specials"] as const).map((filterKey) => {
+                                const isActive = movieFilter === filterKey
+                                const label = filterKey === "all" ? `Todas (${totalMovies})` : filterKey === "movies" ? "Películas" : "OVAs / Especiales"
+                                return (
+                                    <button
+                                        key={filterKey}
+                                        onClick={() => setMovieFilter(filterKey)}
+                                        className={cn(
+                                            "relative px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer select-none z-10",
+                                            isActive ? "text-white font-black" : "text-zinc-400 hover:text-zinc-200"
+                                        )}
+                                    >
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeMovieFilter"
+                                                className="absolute inset-0 bg-white/15 rounded-lg -z-10 shadow-sm border border-white/15"
+                                                transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                                            />
+                                        )}
+                                        {label}
+                                    </button>
+                                )
+                            })}
                         </div>
+                    )}
+                </div>
+
+                {/* Movies Grid */}
+                {activeEraMovies.length > 0 ? (
+                    <motion.div
+                        layout
+                        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pt-1 pb-4 w-full"
+                    >
+                        <AnimatePresence mode="popLayout">
+                            {activeEraMovies.map((movie, idx) => (
+                                <SpotlightMovieCard
+                                    key={movie.id}
+                                    movie={movie}
+                                    index={idx + 1}
+                                    colors={colors}
+                                    onNavigate={onNavigate}
+                                    onHover={playHoverSound}
+                                />
+                            ))}
+                        </AnimatePresence>
                     </motion.div>
+                ) : (
+                    <div className="p-8 rounded-2xl bg-zinc-950/40 border border-white/5 text-center text-zinc-500 text-sm">
+                        No hay películas ni especiales de esta era en tu biblioteca
+                    </div>
                 )}
-            </AnimatePresence>
+            </div>
+
+            <ChronologyModal isOpen={chronologyOpen} onClose={() => setChronologyOpen(false)} />
         </section>
     )
 })
@@ -447,65 +566,93 @@ export const MediaSpotlight = React.memo(function MediaSpotlight({ items, onNavi
 // ─── Memoized movie card sub-component ────────────────────────────────────────
 interface SpotlightMovieCardProps {
     movie: SwimlaneItem
-    isSelected: boolean
-    hasSelection: boolean
+    index?: number
     colors: typeof ERA_COLOR_MAP[EraId]
-    onSelect: (id: string) => void
+    onNavigate: (item: SwimlaneItem) => void
     onHover: () => void
 }
 
 const SpotlightMovieCard = React.memo(function SpotlightMovieCard({
     movie,
-    isSelected,
-    hasSelection,
+    index,
     colors,
-    onSelect,
+    onNavigate,
     onHover,
 }: SpotlightMovieCardProps) {
+    const posterSrc = movie.image
+        ? (movie.image.startsWith("/") ? movie.image : getMediumResImage(movie.image))
+        : (movie.backdropUrl || "/sagas/namek-freezer.jpg")
+
+    const isSpecial = movie.badge === "SPECIAL" || movie.badge === "OVA" || movie.title.toLowerCase().includes("especial") || movie.title.toLowerCase().includes("ova")
+    const indexLabel = isSpecial ? "OVA" : (index !== undefined ? `#${String(index).padStart(2, '0')}` : undefined)
+
     return (
-        <div
-            onClick={() => onSelect(movie.id)}
+        <motion.div
+            layout
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            whileHover={{ y: -5, scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onNavigate(movie)}
             onMouseEnter={onHover}
             className={cn(
-                "group relative w-full aspect-[2/3] rounded-xl overflow-hidden cursor-pointer border select-none shrink-0",
-                // Hover: zoom sutil + glow del color de la era
-                "hover:z-10 hover:scale-[1.03] hover:border-[color:var(--card-glow-strong)] hover:shadow-[0_0_25px_-3px_var(--card-glow)]",
-                isSelected
-                    ? "scale-[1.04] z-10 opacity-100 border-[color:var(--card-glow-strong)] shadow-[0_0_25px_-3px_var(--card-glow)]"
-                    : hasSelection
-                        ? "border-white/5 opacity-40 grayscale-[30%] hover:opacity-100 hover:grayscale-0"
-                        : "border-white/5 opacity-100"
+                "group relative w-full aspect-[2/3] rounded-2xl overflow-hidden cursor-pointer border border-white/10 hover:border-white/30 select-none shrink-0 bg-zinc-900",
+                "hover:z-10 hover:shadow-[0_15px_35px_rgba(0,0,0,0.9)]"
             )}
-            style={{
-                "--card-glow": colors.glow,
-                "--card-glow-strong": colors.glowStrong,
-                transition: "all 600ms cubic-bezier(0.16, 1, 0.3, 1)",
-            } as React.CSSProperties}
         >
             <DeferredImage
-                src={getMediumResImage(movie.image)}
+                src={posterSrc}
                 alt={movie.title}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-slow group-hover:scale-105"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
 
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10" />
-
-            {/* Title + year at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 z-30 p-3">
-                <p className="text-white font-bold text-label-sm uppercase tracking-wide leading-tight line-clamp-2 drop-shadow-md">
-                    {movie.title}
-                </p>
+            {/* Top Badges (Chronology Index & Format) */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-20 pointer-events-none">
+                {indexLabel && (
+                    <span className={cn(
+                        "text-[9px] font-mono font-black tracking-wider px-2 py-0.5 rounded-md backdrop-blur-md border shadow-sm uppercase",
+                        isSpecial
+                            ? "bg-purple-950/80 text-purple-300 border-purple-500/30"
+                            : "bg-black/60 text-white border-white/15"
+                    )}>
+                        {indexLabel}
+                    </span>
+                )}
                 {movie.year && (
-                    <span className="text-label-sm font-black tracking-widest text-zinc-400 uppercase">{movie.year}</span>
+                    <span className="text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-md border border-white/10 text-zinc-300 uppercase ml-auto">
+                        {movie.year}
+                    </span>
                 )}
             </div>
 
-            {/* Active wash */}
-            {isSelected && (
-                <div className="absolute inset-0 bg-white/[0.04] z-10 pointer-events-none" />
-            )}
-        </div>
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent z-10" />
+
+            {/* Play Button Overlay on Hover */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 pointer-events-none">
+                <motion.div
+                    whileHover={{ scale: 1.15 }}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 20 }}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        onNavigate(movie)
+                    }}
+                    className="w-11 h-11 rounded-full flex items-center justify-center text-white bg-brand-accent shadow-lg shadow-brand-accent/40 pointer-events-auto cursor-pointer"
+                >
+                    <Icons.media.play size={16} fill="currentColor" className="ml-0.5" />
+                </motion.div>
+            </div>
+
+            {/* Title at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 p-3 flex flex-col justify-end">
+                <p className="text-white font-bold text-xs sm:text-sm uppercase tracking-wide leading-tight line-clamp-2 drop-shadow-md group-hover:text-amber-400 transition-colors">
+                    {movie.title}
+                </p>
+            </div>
+        </motion.div>
     )
 })
 

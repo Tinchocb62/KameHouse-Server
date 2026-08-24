@@ -22,23 +22,24 @@ export function LoadingErrorOverlay({
     onClose: () => void
 }) {
     // Debounce buffering spinner on seek: wait 500ms before showing it
-    const [showBuffering, setShowBuffering] = useState(false)
+    const [isSeekBufferingDelayed, setIsSeekBufferingDelayed] = useState(false)
     const bufferingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         if (isBuffering && isSeeking) {
             if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current)
-            bufferingTimerRef.current = setTimeout(() => setShowBuffering(true), 500)
-        } else if (isBuffering) {
-            setShowBuffering(true)
+            bufferingTimerRef.current = setTimeout(() => setIsSeekBufferingDelayed(true), 500)
         } else {
             if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current)
-            setShowBuffering(false)
+            const timer = setTimeout(() => setIsSeekBufferingDelayed(false), 0)
+            return () => clearTimeout(timer)
         }
         return () => {
             if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current)
         }
     }, [isBuffering, isSeeking])
+
+    const showBuffering = isBuffering && (!isSeeking || isSeekBufferingDelayed)
 
     if (status === "loading") {
         // Cambio de stream mid-playback (ej. cambio de pista de audio direct→transcode):

@@ -45,14 +45,11 @@ func (h *Handler) HandleUpdateTheme(c echo.Context) error {
 		return h.RespondWithError(c, err)
 	}
 
-	// Merge: only the color fields are updated by this endpoint, everything
-	// else (carousel/banner/CSS/etc settings) is preserved as-is.
 	merged := *currentTheme
 	merged.ID = 1
 	merged.EnableColorSettings = b.Theme.EnableColorSettings
 	merged.BackgroundColor = b.Theme.BackgroundColor
 	merged.AccentColor = b.Theme.AccentColor
-	merged.SidebarBackgroundColor = b.Theme.SidebarBackgroundColor
 	merged.ThemeEra = b.Theme.ThemeEra
 
 	// Update the theme settings

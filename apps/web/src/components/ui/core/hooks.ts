@@ -1,3 +1,4 @@
+'use no memo'
 import * as React from "react"
 
 /* -------------------------------------------------------------------------------------------------
@@ -60,6 +61,7 @@ export const useIsomorphicLayoutEffect = typeof window !== "undefined" ? React.u
 export function useUpdateEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     const isInitialMount = React.useRef(true)
     const effectRef = React.useRef(effect)
+    const prevDepsRef = React.useRef(deps)
 
     React.useEffect(() => {
         effectRef.current = effect
@@ -68,8 +70,20 @@ export function useUpdateEffect(effect: React.EffectCallback, deps?: React.Depen
     React.useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false
-        } else {
+            return
+        }
+
+        const prevDeps = prevDepsRef.current
+        prevDepsRef.current = deps
+
+        const hasChanged =
+            !deps ||
+            !prevDeps ||
+            deps.length !== prevDeps.length ||
+            deps.some((dep, i) => !Object.is(dep, prevDeps[i]))
+
+        if (hasChanged) {
             return effectRef.current()
         }
-    }, deps)
+    })
 }

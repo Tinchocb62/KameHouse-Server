@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"kamehouse/internal/intelligence"
 	"strconv"
 	"strings"
 
@@ -55,6 +56,29 @@ func (h *Handler) HandleGetIntelligenceStats(c echo.Context) error {
 		"cache":   h.IntelligenceSelector.GetCacheStats(),
 	}
 	return h.RespondWithData(c, stats)
+}
+
+// HandleGetChronologyTimeline returns the Dragon Ball in-universe canonical timeline with user progress.
+//
+//	@summary get Dragon Ball canon timeline.
+//	@desc Returns full historical timeline order with user progress.
+//	@returns intelligence.ChronologyResponse
+//	@route /api/v1/intelligence/chronology [GET]
+func (h *Handler) HandleGetChronologyTimeline(c echo.Context) error {
+	timeline := intelligence.BuildChronologyResponse(h.App.Database)
+	return h.RespondWithData(c, timeline)
+}
+
+// HandleSemanticSearch returns lore entities and smart recommendations for a query.
+//
+//	@summary search lore entities and sagas.
+//	@desc Searches characters, transformations, sagas and milestones.
+//	@returns []intelligence.SemanticSearchResult
+//	@route /api/v1/intelligence/search [GET]
+func (h *Handler) HandleSemanticSearch(c echo.Context) error {
+	query := c.QueryParam("q")
+	results := intelligence.SearchSemanticEntities(query)
+	return h.RespondWithData(c, results)
 }
 
 func splitLangs(s string) []string {

@@ -1,4 +1,4 @@
-import type { SagaDTO } from "@/api/types/series.types"
+import type { SagaDTO, SubSagaDTO } from "@/api/types/series.types"
 import type { SagaDefinition } from "@/lib/config/dragonball_sagas"
 import { cn } from "@/components/ui/core/styling"
 import { SubSagaTimeline } from "./sub-saga-timeline"
@@ -56,11 +56,13 @@ export function SagaSelector({
   const { ref: mainListRef, isAtBottom: mainListIsAtBottom, checkPosition: mainListCheckPosition } = useScrollFadeMask()
   const { ref: subListRef, isAtBottom: subListIsAtBottom, checkPosition: subListCheckPosition } = useScrollFadeMask()
 
-  useEffect(() => {
+  const [prevSubSagaId, setPrevSubSagaId] = useState(activeSubSagaId)
+  if (activeSubSagaId !== prevSubSagaId) {
+    setPrevSubSagaId(activeSubSagaId)
     if (activeSubSagaId) {
       setIsSubMenuOpen(true)
     }
-  }, [activeSubSagaId])
+  }
 
   useEffect(() => {
     mainListCheckPosition()
@@ -235,7 +237,7 @@ export function SagaSelector({
                       id: sub.id,
                       title: localSub?.title || sub.name,
                       episodeRange: `Eps ${sub.episodeRange || (sub.startEp + '-' + sub.endEp)}`,
-                      image: localSub?.image || sub.image,
+                      image: localSub?.image || (sub as SubSagaDTO).image,
                     }
                   })}
                   onSelect={(subId) => {

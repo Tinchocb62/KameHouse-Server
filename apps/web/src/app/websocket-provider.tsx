@@ -35,11 +35,9 @@ export function WebsocketProvider({ children }: { children: React.ReactNode }) {
         share: true, // Allow multiple hooks to share this connection
         onOpen: () => {
         },
-        onError: (event) => {
-            const t = event?.target
-            const readyState =
-                t && typeof WebSocket !== "undefined" && t instanceof WebSocket ? t.readyState : -1
-            console.warn("[WS] Error", { wsUrl, readyState, eventType: event?.type ?? "unknown" })
+        onError: () => {
+            // Silencioso: ERR_CONNECTION_REFUSED es esperado mientras el servidor arranca.
+            // react-use-websocket ya maneja el reconectar automáticamente.
         },
     })
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '../store';
+import { getDeviceId } from '../utils/ws';
 
 export default function PlayerScreen() {
   const serverUrl = useStore(state => state.serverUrl);
@@ -29,7 +30,7 @@ export default function PlayerScreen() {
           const localFiles = await localRes.json();
           const fileInfo = localFiles.find((f: any) => f.episodeId === selectedEpisodeId);
           if (fileInfo) {
-            const clientID = Math.random().toString(36).substring(2, 11);
+            const clientID = getDeviceId();
             const reqRes = await fetch(`${serverUrl}/api/v1/mediastream/request`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

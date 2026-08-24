@@ -10,6 +10,8 @@ export function useGetLibraryExplorerFileTree() {
         method: API_ENDPOINTS.LIBRARY_EXPLORER.GetLibraryExplorerFileTree.methods[0],
         queryKey: [API_ENDPOINTS.LIBRARY_EXPLORER.GetLibraryExplorerFileTree.key],
         enabled: true,
+        staleTime: 60 * 1000,
+        refetchOnWindowFocus: false,
     })
 }
 

@@ -93,7 +93,7 @@ export function PlayerUI(props: PlayerUIProps) {
 
     useEffect(() => {
         localVideoRef.current = domElements.videoElement.current
-    })
+    }, [domElements.videoElement])
 
     const [isEpisodesSidebarOpen, setIsEpisodesSidebarOpen] = React.useState(false)
     const [isQueueSidebarOpen, setIsQueueSidebarOpen] = React.useState(false)

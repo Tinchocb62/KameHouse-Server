@@ -1,20 +1,23 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useGetLibraryCollection, fetchLibraryCollection } from '@/api/hooks/anime_collection.hooks';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { API_ENDPOINTS } from '@/api/generated/endpoints';
 import { SeriesCard, getVhsColor } from './-SeriesCard';
+import { MediaCard } from '@/components/ui/media-card';
 import { getMediumResImage } from '@/lib/helpers/images';
 import { useIntelligenceStore } from '@/hooks/use-home-intelligence';
-import { getSeriesIdFromMedia, getSeriesYear } from '@/lib/helpers/series';
+import { getSeriesIdFromMedia, getSeriesYear, DRAGON_BALL_SERIES_ORDER, DRAGON_BALL_SERIES_INFO } from '@/lib/helpers/series';
+import { isTmdbId } from '@/lib/helpers/type-guards';
 import { Skeleton } from '@/components/ui/skeleton/skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { useResponsive } from '@/hooks/use-responsive';
-import { MediaCard } from '@/components/ui/media-card';
 import { useSound } from '@/hooks/use-sound';
 import { startViewTransition } from '@/lib/helpers/transitions';
 import { ViewModeTabs, type SeriesViewMode } from './-components/view-mode-tabs';
 import { ArcsPanorama } from './-components/arcs-panorama';
+import { useThemeSettings } from '@/lib/theme/theme-hooks';
+import { useAppStore } from '@/lib/store';
 
 export const Route = createFileRoute('/series/')({
     // `view` es opcional para que los <Link to="/series"> existentes no estén
@@ -22,9 +25,9 @@ export const Route = createFileRoute('/series/')({
     validateSearch: (search: Record<string, unknown>): { view?: SeriesViewMode } => ({
         view: search.view === 'etapas' ? 'etapas' : undefined,
     }),
-    loader: ({ context }) => {
+    loader: async ({ context }) => {
         const qc = context.queryClient
-        qc.prefetchQuery({
+        await qc.prefetchQuery({
             queryKey: [API_ENDPOINTS.ANIME_COLLECTION.GetLibraryCollection.key],
             queryFn: fetchLibraryCollection,
         })
@@ -57,7 +60,9 @@ function SeriesFullscreenIndex() {
     const { view: viewParam } = Route.useSearch();
     const view: SeriesViewMode = viewParam ?? 'shelf';
     const { playSound } = useSound();
+    const ts = useThemeSettings();
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const shelfRef = useRef<HTMLElement>(null);
     const setBackdropUrl = useIntelligenceStore(s => s.setBackdropUrl);
     // Tablet (768-1023) se trata como "móvil grande": usa el grid de posters en vez
     // del "VHS shelf" horizontal, que queda apretado en ese ancho. Toda la lógica
@@ -91,7 +96,36 @@ function SeriesFullscreenIndex() {
         if (!collection?.lists) return [];
         const raw = collection.lists
             .flatMap(list => list.entries || [])
-            .filter(entry => entry.media?.format !== "MOVIE");
+            .filter(entry => {
+                const media = entry.media;
+                const format = media?.format?.toUpperCase();
+                const type = media?.type?.toUpperCase();
+
+                // Excluir rigurosamente películas, OVAs, especiales y entradas de TMDB Movie
+                if (format === "MOVIE" || format === "OVA" || format === "SPECIAL") return false;
+                if (type === "MOVIE") return false;
+                if (isTmdbId(entry.mediaId) || isTmdbId(media?.tmdbId)) return false;
+
+                const allTitles = [
+                    media?.titleSpanish,
+                    media?.titleEnglish,
+                    media?.titleRomaji,
+                    media?.titleOriginal,
+                ].filter(Boolean).join(" ").toLowerCase();
+
+                const totalEps = media?.totalEpisodes || entry.libraryData?.mainFileCount || 0;
+                // Si contiene "movie"/"pelicula"/"película"/"film" y tiene 1 solo episodio, es una película
+                if (totalEps <= 1 && (
+                    allTitles.includes("movie") ||
+                    allTitles.includes("pelicula") ||
+                    allTitles.includes("película") ||
+                    allTitles.includes("film")
+                )) {
+                    return false;
+                }
+
+                return true;
+            });
 
         const unique = new Map<number, NonNullable<typeof raw[0]>>();
         raw.forEach(s => { if (s.mediaId) unique.set(s.mediaId, s); });
@@ -99,37 +133,55 @@ function SeriesFullscreenIndex() {
 
         const mapped = filtered.map((s) => {
             const media = s.media;
-            const title = media?.titleEnglish || media?.titleRomaji || media?.titleOriginal || "Sin título";
-            // Metadata puede venir sin totalEpisodes (p.ej. series en emisión): usar los archivos locales como fallback.
-            const totalEps = media?.totalEpisodes || s.libraryData?.mainFileCount || 0;
+            const title = media?.titleSpanish || media?.titleEnglish || media?.titleRomaji || media?.titleOriginal || "Sin título";
+            const seriesId = getSeriesIdFromMedia(media, title);
+            const canonicalInfo = seriesId ? DRAGON_BALL_SERIES_INFO[seriesId] : undefined;
+
+            // Metadata puede venir sin totalEpisodes: usar conteo canónico de la serie o archivos locales
+            const rawTotalEps = media?.totalEpisodes || s.libraryData?.mainFileCount || 0;
+            const totalEps = rawTotalEps > 0 ? rawTotalEps : (canonicalInfo?.episodes || 0);
+
             const watchedFromLibrary = s.libraryData
                 ? Math.max(0, (s.libraryData.mainFileCount || 0) - (s.libraryData.unwatchedCount || 0))
                 : 0;
             const watched = s.listData?.progress || watchedFromLibrary;
             const progressPercent = totalEps > 0 ? Math.min(100, Math.round((watched / totalEps) * 100)) : 0;
-            const yearVal = getSeriesYear(title, media?.year, media?.startDate);
+            const yearVal = getSeriesYear(title, media?.year, media?.startDate, seriesId);
+
+            const rawDesc = media?.description?.replace(/<[^>]*>?/gm, '').trim();
+            const desc = (rawDesc && rawDesc !== 'Sin descripción') ? rawDesc : (canonicalInfo?.description || 'Sin descripción');
+
+            const posterImg = media?.posterImage || media?.bannerImage || canonicalInfo?.poster || '';
+            const bannerImg = media?.bannerImage || media?.posterImage || canonicalInfo?.banner || '';
 
             return {
                 id: s.mediaId as number,
-                title,
+                title: canonicalInfo?.title || title,
                 eps: totalEps,
                 year: yearVal,
                 yearNum: yearVal === 'N/A' ? 9999 : Number(yearVal),
                 progress: progressPercent,
-                img: getMediumResImage(media?.bannerImage || media?.posterImage || ''),
-                poster: getMediumResImage(media?.posterImage || media?.bannerImage || ''),
-                desc: media?.description?.replace(/<[^>]*>?/gm, '') || 'Sin descripción',
-                seriesId: getSeriesIdFromMedia(media),
+                img: getMediumResImage(bannerImg),
+                poster: getMediumResImage(posterImg),
+                desc,
+                seriesId,
+                orderNum: DRAGON_BALL_SERIES_ORDER[seriesId] ?? 999,
             };
         });
 
-        return mapped.sort((a, b) => a.yearNum - b.yearNum);
+        return mapped.sort((a, b) => {
+            if (a.orderNum !== b.orderNum) {
+                return a.orderNum - b.orderNum;
+            }
+            return a.yearNum - b.yearNum;
+        });
     }, [collection]);
 
-    // Pre-cargar portadas en memoria para visualización 0ms instantánea
+    // Pre-cargar portadas visibles iniciales de forma suave
     useEffect(() => {
         if (!seriesList.length) return;
-        seriesList.forEach(item => {
+        const initialBatch = seriesList.slice(0, 4);
+        initialBatch.forEach(item => {
             const src = item.poster || item.img;
             if (src) {
                 const img = new Image();
@@ -148,34 +200,55 @@ function SeriesFullscreenIndex() {
     }, [seriesList, effectiveSelectedId]);
     const selectedItem = seriesList[selectedIndex] ?? null;
 
+    const setActiveSeriesContext = useAppStore(s => s.setActiveSeriesContext);
+    useEffect(() => {
+        if (selectedItem?.seriesId || selectedItem?.id) {
+            setActiveSeriesContext(selectedItem.seriesId || String(selectedItem.id));
+        }
+        return () => {
+            setActiveSeriesContext(null);
+        };
+    }, [selectedItem?.seriesId, selectedItem?.id, setActiveSeriesContext]);
+
+    // Desplazar suavemente hacia la tarjeta seleccionada si está en los bordes
+    useEffect(() => {
+        if (!effectiveSelectedId || isMobile || view === 'etapas') return;
+        const cardEl = document.getElementById(`series-card-${effectiveSelectedId}`);
+        if (cardEl && shelfRef.current) {
+            const shelfRect = shelfRef.current.getBoundingClientRect();
+            const cardRect = cardEl.getBoundingClientRect();
+            if (cardRect.left < shelfRect.left || cardRect.right > shelfRect.right) {
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+    }, [effectiveSelectedId, isMobile, view]);
+
     return (
         <div className="w-full h-full flex flex-col text-on-surface font-sans overflow-hidden relative md:p-6" style={{ background: "var(--bg-primary)" }}>
-            {/* Ambient Background Glow */}
+            {/* Ambient Background Glow (Ultra-light static glow, no expensive background transition) */}
             {selectedItem && !isMobile && view !== 'etapas' && (
                 <div
-                    className="absolute top-1/2 left-0 w-[700px] h-[700px] pointer-events-none blur-[48px] z-0 transform-gpu will-change-transform"
+                    className="absolute top-1/2 left-0 w-[450px] h-[450px] pointer-events-none z-0 transform-gpu"
                     style={{
-                        opacity: 0.06,
+                        opacity: 0.05,
                         background: `radial-gradient(circle, ${getVhsColor(selectedItem.id)} 0%, transparent 70%)`,
-                        transform: getGlowTransform(selectedIndex, seriesList.length, 350),
-                        transition: 'transform 700ms cubic-bezier(0.16, 1, 0.3, 1), background 700ms ease-out',
+                        transform: getGlowTransform(selectedIndex, seriesList.length, 300),
+                        transition: 'transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 300ms ease',
+                        willChange: 'transform',
+                        contain: 'strict',
                     }}
                 />
             )}
 
-            {/* CRT scanlines */}
-            <div className="absolute inset-0 pointer-events-none z-[49] opacity-[0.015] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,6px_100%]" />
-
             {/* Main Shelf Container */}
             <div
-                className="flex-1 min-h-0 backdrop-blur-[var(--blur-overlay-xl)] rounded-corner-lg border border-outline-variant/50 shadow-elevation-3 overflow-hidden relative z-10 flex flex-col"
-                style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 50%, transparent)" }}
+                className="flex-1 min-h-0 rounded-corner-lg border border-outline-variant/30 shadow-elevation-2 overflow-hidden relative z-10 flex flex-col bg-zinc-950/80"
             >
                 {/* Header Bar Desktop (Navegación limpia integrada) */}
                 {!isMobile && (
-                    <header className="w-full px-5 py-3 flex items-center justify-between border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl shrink-0 z-30 select-none">
+                    <header className="w-full px-5 py-3 flex items-center justify-between border-b border-white/10 bg-zinc-950/95 shrink-0 z-30 select-none">
                         <div className="flex items-center gap-3">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.8)] animate-pulse" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]" />
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-white/50">Biblioteca KameHouse</span>
                                 <h1 className="text-sm md:text-base font-black tracking-widest text-white uppercase leading-none font-display">
@@ -210,28 +283,15 @@ function SeriesFullscreenIndex() {
                     )
                 ) : (
                 <main
+                    ref={shelfRef}
                     className={isMobile
                         ? "w-full h-full bg-transparent overflow-y-auto no-scrollbar relative z-10 p-4 pt-20"
-                        : "vhs-shelf w-full flex-1 min-h-0 flex bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar relative z-10 scroll-smooth"}
+                        : "vhs-shelf w-full flex-1 min-h-0 flex bg-transparent overflow-x-auto overflow-y-hidden no-scrollbar relative z-10 p-3 md:p-4 gap-2.5 items-stretch transform-gpu"}
                     role="listbox"
                     aria-orientation="horizontal"
                     aria-label="Colección de series"
                     aria-activedescendant={selectedItem ? `series-card-${selectedItem.id}` : undefined}
-                    style={{ scrollSnapType: 'x proximity', scrollPadding: '0 16px' }}
                 >
-                    {/* Backlight Glow inside shelf */}
-                    {selectedItem && !isMobile && (
-                        <div
-                            className="absolute top-1/2 left-0 w-[500px] h-[500px] pointer-events-none blur-[48px] z-0 transform-gpu will-change-transform"
-                            style={{
-                                opacity: 0.12,
-                                background: `radial-gradient(circle, ${getVhsColor(selectedItem.id)} 0%, transparent 60%)`,
-                                transform: getGlowTransform(selectedIndex, seriesList.length, 250),
-                                transition: 'transform 700ms cubic-bezier(0.16, 1, 0.3, 1), background 700ms ease-out',
-                            }}
-                        />
-                    )}
-
                     {isLoading && seriesList.length === 0 ? (
                         <div className={isMobile ? "w-full grid grid-cols-2 sm:grid-cols-3 gap-4" : "w-full h-full flex items-stretch gap-0 relative z-10 p-2"}>
                             {Array.from({ length: isMobile ? 6 : 8 }).map((_, i) => (
@@ -286,6 +346,7 @@ function SeriesFullscreenIndex() {
                                 key={item.id}
                                 item={item}
                                 isSelected={item.id === effectiveSelectedId}
+                                showUnwatchedCount={ts.themeShowAnimeUnwatchedCount}
                                 onNavigate={handleNavigate}
                                 onSelect={setSelectedId}
                                 entryDelayMs={i < ENTRY_STAGGER_MAX_ITEMS ? i * ENTRY_STAGGER_MS : 0}
@@ -295,19 +356,6 @@ function SeriesFullscreenIndex() {
                 </main>
                 )}
             </div>
-
-            <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-                @keyframes vhs-card-enter {
-                    from { opacity: 0; transform: translateY(16px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .vhs-shelf > article {
-                    animation: vhs-card-enter 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
-                }
-            `}</style>
         </div>
     );
 }

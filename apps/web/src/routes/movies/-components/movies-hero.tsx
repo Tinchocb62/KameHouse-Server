@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Icons } from "@/components/ui/icons"
 import type { Anime_LibraryCollectionEntry } from "@/api/generated/types"
@@ -21,36 +21,49 @@ export function MoviesHero({
     handleMovieClick,
 }: MoviesHeroProps) {
     const [featuredIndex, setFeaturedIndex] = useState(0)
-    const [prevTopFeatured, setPrevTopFeatured] = useState(topFeatured)
     const [isHeroHovered, setIsHeroHovered] = useState(false)
     const heroRef = useRef<HTMLElement>(null)
     const setBackdropUrl = useIntelligenceStore((s) => s.setBackdropUrl)
 
-    if (topFeatured !== prevTopFeatured) {
-        setPrevTopFeatured(topFeatured)
-        setFeaturedIndex(0)
-    }
-
+    // Reset al slide 0 cuando cambia la lista de películas
     useEffect(() => {
-        if (isHeroHovered || topFeatured.length <= 1) return
-        const id = setInterval(() => setFeaturedIndex((p) => (p + 1) % topFeatured.length), 8000)
+        setFeaturedIndex(0)
+    }, [topFeatured])
+
+    // Deslizamiento automático cada 7 segundos si no hay hover y no hay hover directo en una card
+    useEffect(() => {
+        if (isHeroHovered || debouncedMovie || topFeatured.length <= 1) return
+        const id = setInterval(() => {
+            if (document.visibilityState === "hidden") return
+            setFeaturedIndex((p) => (p + 1) % topFeatured.length)
+        }, 7000)
         return () => clearInterval(id)
-    }, [isHeroHovered, topFeatured])
+    }, [isHeroHovered, debouncedMovie, topFeatured.length])
+
+    const handlePrev = useCallback((e?: React.MouseEvent) => {
+        e?.stopPropagation()
+        setFeaturedIndex((p) => (p - 1 + topFeatured.length) % topFeatured.length)
+    }, [topFeatured.length])
+
+    const handleNext = useCallback((e?: React.MouseEvent) => {
+        e?.stopPropagation()
+        setFeaturedIndex((p) => (p + 1) % topFeatured.length)
+    }, [topFeatured.length])
 
     const defaultFeatured = topFeatured[featuredIndex] ?? topFeatured[0] ?? null
     const currentMovie = debouncedMovie ?? defaultFeatured
     const displayMedia = currentMovie?.media
     const currentEraConfig = ERA_TABS.find((t) => t.value === currentMovie?.era) ?? activeEraConfig
 
-    // Si no hay bannerImage (landscape), la imagen disponible es un poster (portrait)
-    // y object-cover la amplía demasiado — hay que tratarlas distinto
     const hasBannerImage = !!displayMedia?.bannerImage
     const backdropSrc = displayMedia?.bannerImage ?? displayMedia?.posterImage ?? null
 
+    // Actualiza el DynamicBackdrop global con la imagen del ítem featured actual
     useEffect(() => {
-        setBackdropUrl(null)
+        if (backdropSrc) setBackdropUrl(getLargeResImage(backdropSrc))
+        else setBackdropUrl(null)
         return () => setBackdropUrl(null)
-    }, [setBackdropUrl])
+    }, [backdropSrc, setBackdropUrl])
 
     const plainDescription = displayMedia?.description
         ? displayMedia.description.replace(/<[^>]*>/g, "")
@@ -59,8 +72,7 @@ export function MoviesHero({
     return (
         <section
             ref={heroRef}
-            // h- fija la altura exacta; min-h permite que crezca con el contenido
-            className="relative w-full min-h-[60dvh] md:min-h-[70vh] max-h-[600px] flex flex-col justify-center overflow-hidden bg-transparent select-none"
+            className="relative w-full min-h-[60dvh] md:min-h-[70vh] max-h-[620px] flex flex-col justify-center overflow-hidden bg-transparent select-none group/hero"
             onMouseEnter={() => setIsHeroHovered(true)}
             onMouseLeave={() => setIsHeroHovered(false)}
         >
@@ -72,7 +84,7 @@ export function MoviesHero({
                     maskImage: "linear-gradient(to top, transparent 0%, rgba(0,0,0,0.05) 1%, rgba(0,0,0,0.4) 6%, rgba(0,0,0,0.9) 14%, black 25%)",
                 }}
             >
-                {/* Ambient blur (siempre, sirve de fondo de color aunque sea poster) */}
+                {/* Ambient blur */}
                 <AnimatePresence mode="wait">
                     {backdropSrc && (
                         <motion.div
@@ -81,7 +93,7 @@ export function MoviesHero({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.6 }}
+                            transition={{ duration: 0.7 }}
                             style={{
                                 backgroundImage: `url(${getLowResImage(backdropSrc)})`,
                                 backgroundSize: "cover",
@@ -92,20 +104,19 @@ export function MoviesHero({
                     )}
                 </AnimatePresence>
 
-                {/* Imagen principal: banner → cubre todo; poster → se ancla a la derecha sin zoom */}
+                {/* Imagen principal: banner → cubre todo; poster → anclado a la derecha sin zoom excesivo */}
                 <div className="absolute inset-0 z-0">
                     <AnimatePresence mode="wait">
                         {backdropSrc && (
                             hasBannerImage ? (
-                                // Banner landscape: cubre el ancho completo en móviles, se ancla a la derecha con menos zoom en desktop
                                 <motion.img
                                     key={backdropSrc + "_banner"}
                                     src={getLargeResImage(backdropSrc)}
                                     alt={displayMedia?.titleSpanish || ""}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
+                                    initial={{ opacity: 0, scale: 1.02 }}
+                                    animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0 }}
-                                    transition={{ duration: 1.0 }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
                                     className="absolute right-0 top-0 h-full w-full md:w-[80%] lg:w-[75%] object-cover object-[center_20%]"
                                     style={{
                                         WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 35%)",
@@ -113,15 +124,14 @@ export function MoviesHero({
                                     }}
                                 />
                             ) : (
-                                // Poster portrait: anclado a la derecha, tamaño natural sin zoom
                                 <motion.img
                                     key={backdropSrc + "_poster"}
                                     src={getLargeResImage(backdropSrc)}
                                     alt={displayMedia?.titleSpanish || ""}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 0.75 }}
+                                    initial={{ opacity: 0, scale: 1.02 }}
+                                    animate={{ opacity: 0.8, scale: 1 }}
                                     exit={{ opacity: 0 }}
-                                    transition={{ duration: 1.0 }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
                                     className="absolute right-0 top-0 h-full w-auto object-contain object-right-top"
                                 />
                             )
@@ -143,9 +153,29 @@ export function MoviesHero({
             {/* Grain */}
             <div className="grain-overlay z-20" />
 
+            {/* Botones de navegación previa / siguiente */}
+            {topFeatured.length > 1 && (
+                <>
+                    <button
+                        onClick={handlePrev}
+                        aria-label="Película anterior"
+                        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full items-center justify-center bg-black/40 hover:bg-black/70 border border-white/10 text-white/80 hover:text-white backdrop-blur-md opacity-0 group-hover/hero:opacity-100 transition-all duration-300 active:scale-95 shadow-elevation-2"
+                    >
+                        <Icons.navigation.chevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                        onClick={handleNext}
+                        aria-label="Siguiente película"
+                        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-40 w-11 h-11 rounded-full items-center justify-center bg-black/40 hover:bg-black/70 border border-white/10 text-white/80 hover:text-white backdrop-blur-md opacity-0 group-hover/hero:opacity-100 transition-all duration-300 active:scale-95 shadow-elevation-2"
+                    >
+                        <Icons.navigation.chevronRight className="w-6 h-6" />
+                    </button>
+                </>
+            )}
+
             {/* Contenido */}
             <div className="relative z-30 w-full max-w-content mx-auto page-px flex flex-col pointer-events-none">
-                <div className="max-w-xl space-y-2.5 pointer-events-auto">
+                <div className="max-w-xl space-y-3 pointer-events-auto">
 
                     {/* Era badge */}
                     <AnimatePresence mode="wait">
@@ -200,8 +230,6 @@ export function MoviesHero({
                                 transition={{ duration: 0.3 }}
                                 className="flex items-center gap-3 text-zinc-400 text-label-sm font-medium tracking-wide"
                             >
-                                {/* (x ?? 0) > 0 y no `x && x > 0`: con x === 0 el && devuelve 0
-                                    y React renderiza ese cero suelto en la fila de metadatos. */}
                                 {(displayMedia.score ?? 0) > 0 && (
                                     <span className="flex items-center gap-1 text-status-warning">
                                         <Icons.ui.star size={11} fill="currentColor" className="stroke-none" />
@@ -240,8 +268,8 @@ export function MoviesHero({
                         )}
                     </AnimatePresence>
 
-                    {/* Botón + dots */}
-                    <div className="flex items-center gap-5 pt-0.5">
+                    {/* Botón Ver Ahora + Controles de Slider */}
+                    <div className="flex flex-wrap items-center gap-4 pt-1">
                         <AnimatePresence mode="wait">
                             {currentMovie && (
                                 <motion.button
@@ -251,7 +279,7 @@ export function MoviesHero({
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 0.3, delay: 0.15 }}
                                     onClick={() => handleMovieClick(currentMovie.mediaId!)}
-                                    className="flex items-center gap-2 px-5 py-2 bg-white text-black text-label-sm font-bold tracking-widest uppercase rounded-sm hover:bg-zinc-100 active:scale-95 transition-all duration-base"
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-white text-black text-label-sm font-bold tracking-widest uppercase rounded-sm hover:bg-zinc-100 active:scale-95 transition-all duration-base shadow-lg"
                                 >
                                     <Icons.media.play size={11} fill="currentColor" />
                                     Ver Ahora
@@ -260,22 +288,49 @@ export function MoviesHero({
                         </AnimatePresence>
 
                         {topFeatured.length > 1 && (
-                            <div className="flex items-center gap-2">
-                                {topFeatured.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setFeaturedIndex(i)}
-                                        className={cn(
-                                            "h-[2px] rounded-full transition-all duration-base",
-                                            i !== featuredIndex && "w-4 bg-white/20 hover:bg-white/45"
-                                        )}
-                                        style={
-                                            i === featuredIndex
-                                                ? { width: "2rem", backgroundColor: currentEraConfig.color }
-                                                : undefined
-                                        }
-                                    />
-                                ))}
+                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                                {topFeatured.length <= 12 ? (
+                                    topFeatured.map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setFeaturedIndex(i)}
+                                            aria-label={`Ir a película ${i + 1}`}
+                                            className={cn(
+                                                "h-[3px] rounded-full transition-all duration-base",
+                                                i !== featuredIndex && "w-3.5 bg-white/25 hover:bg-white/50"
+                                            )}
+                                            style={
+                                                i === featuredIndex
+                                                    ? { width: "1.75rem", backgroundColor: currentEraConfig.color }
+                                                    : undefined
+                                            }
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="flex items-center gap-2 text-label-sm font-mono font-bold text-white/80">
+                                        <button
+                                            onClick={handlePrev}
+                                            className="p-1 text-white/60 hover:text-white active:scale-90 transition-colors"
+                                            aria-label="Anterior"
+                                        >
+                                            <Icons.navigation.chevronLeft className="w-3.5 h-3.5" />
+                                        </button>
+                                        <span className="tracking-widest text-xs">
+                                            <span style={{ color: currentEraConfig.color }}>
+                                                {String(featuredIndex + 1).padStart(2, "0")}
+                                            </span>
+                                            <span className="text-white/40 mx-1">/</span>
+                                            <span>{String(topFeatured.length).padStart(2, "0")}</span>
+                                        </span>
+                                        <button
+                                            onClick={handleNext}
+                                            className="p-1 text-white/60 hover:text-white active:scale-90 transition-colors"
+                                            aria-label="Siguiente"
+                                        >
+                                            <Icons.navigation.chevronRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

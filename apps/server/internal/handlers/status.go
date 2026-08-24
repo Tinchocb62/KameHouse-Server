@@ -19,7 +19,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v4"
 )
 
@@ -91,8 +90,6 @@ func (h *Handler) NewStatus(c echo.Context) *Status {
 	theme, _ = h.App.Database.GetThemeCopy()
 	if theme == nil {
 		theme = &models.Theme{}
-	} else {
-		theme.HomeItems = nil
 	}
 
 	status := &Status{
@@ -523,18 +520,9 @@ func (h *Handler) HandleForceGC(c echo.Context) error {
 //
 //	@summary returns the home items.
 //	@route /api/v1/status/home-items [GET]
-//	@returns []models.HomeItem
+//	@returns []string
 func (h *Handler) HandleGetHomeItems(c echo.Context) error {
-
-	theme, err := h.App.Database.GetTheme()
-	if err != nil {
-		return h.RespondWithError(c, err)
-	}
-
-	var items []*models.HomeItem
-	_ = json.Unmarshal(theme.HomeItems, &items)
-
-	return h.RespondWithData(c, items)
+	return h.RespondWithData(c, []string{})
 }
 
 // HandleUpdateHomeItems ...
@@ -543,31 +531,5 @@ func (h *Handler) HandleGetHomeItems(c echo.Context) error {
 //	@route /api/v1/status/home-items [POST]
 //	@returns nil
 func (h *Handler) HandleUpdateHomeItems(c echo.Context) error {
-
-	type body struct {
-		Items []*models.HomeItem `json:"items"`
-	}
-
-	var b body
-	if err := c.Bind(&b); err != nil {
-		return h.RespondWithError(c, err)
-	}
-
-	theme, err := h.App.Database.GetTheme()
-	if err != nil {
-		return h.RespondWithError(c, err)
-	}
-
-	theme.HomeItems, err = json.Marshal(b.Items)
-	if err != nil {
-		return h.RespondWithError(c, err)
-	}
-
-	// update the settings
-	_, err = h.App.Database.UpsertTheme(theme)
-	if err != nil {
-		return h.RespondWithError(c, err)
-	}
-
 	return nil
 }

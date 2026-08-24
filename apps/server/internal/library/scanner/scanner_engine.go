@@ -67,9 +67,6 @@ type Scanner struct {
 	EventDispatcher events.Dispatcher
 	TMDBClient      *tmdb.Client
 
-	// Optional enrichers
-	FanArtEnricher  *librarymetadata.FanArtEnricher
-	OMDbEnricher    *librarymetadata.OMDbEnricher
 	ScanMode        string
 	TargetPaths     []string
 	FFprobePath     string
@@ -109,8 +106,6 @@ type ScannerOptions struct {
 	UseTMDB                    bool
 	EventDispatcher            events.Dispatcher
 	TMDBClient                 *tmdb.Client
-	FanArtEnricher             *librarymetadata.FanArtEnricher
-	OMDbEnricher               *librarymetadata.OMDbEnricher
 	ScanMode                   string
 	TargetPaths                []string
 	FFprobePath                string
@@ -150,8 +145,6 @@ func NewScanner(opts *ScannerOptions) *Scanner {
 		UseTMDB:                    opts.UseTMDB,
 		EventDispatcher:            opts.EventDispatcher,
 		TMDBClient:                 opts.TMDBClient,
-		FanArtEnricher:             opts.FanArtEnricher,
-		OMDbEnricher:               opts.OMDbEnricher,
 		ScanMode:                   opts.ScanMode,
 		TargetPaths:                opts.TargetPaths,
 		FFprobePath:                opts.FFprobePath,
@@ -721,28 +714,59 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 		}
 	}
 
+	var primaryProvider string
+	if scn.Database != nil {
+		if settings, err := scn.Database.GetSettings(); err == nil && settings != nil {
+			primaryProvider = settings.Library.ScannerProvider
+		}
+	}
+
 	providers := scn.MetadataProviders
 	if len(providers) == 0 {
-		if tmdbProvider != nil {
-			providers = append(providers, tmdbProvider)
+		aniListProvider := librarymetadata.NewAniListProvider(scn.Database, scn.Logger)
+		jikanProvider := librarymetadata.NewJikanProvider(scn.Database, scn.Logger)
+		aniDBProvider := librarymetadata.NewAniDBProvider("", scn.Logger)
+
+		if primaryProvider == "anilist" {
+			providers = append(providers, aniListProvider)
+			if tmdbProvider != nil && tmdbClient != nil && tmdbClient.HasApiKey() {
+				providers = append(providers, tmdbProvider)
+			}
+			providers = append(providers, jikanProvider, aniDBProvider)
+		} else if primaryProvider == "jikan" {
+			providers = append(providers, jikanProvider)
+			if tmdbProvider != nil && tmdbClient != nil && tmdbClient.HasApiKey() {
+				providers = append(providers, tmdbProvider)
+			}
+			providers = append(providers, aniListProvider, aniDBProvider)
+		} else {
+			if tmdbProvider != nil && tmdbClient != nil && tmdbClient.HasApiKey() {
+				providers = append(providers, tmdbProvider)
+			}
+			providers = append(providers, aniListProvider, jikanProvider, aniDBProvider)
 		}
-		providers = append(providers, librarymetadata.NewAniDBProvider("", scn.Logger))
 	}
 
 	// +---------------------+
 	// |  Episode Metadata   |
-	// | Provider (TMDB)     |
+	// | Provider            |
 	// +---------------------+
-	// If MetadataProviderRef is unset (or uses the empty stub), replace it with the
-	// TMDB-backed implementation so episodes get real titles/thumbnails/overviews.
-	if tmdbClient != nil && scn.MetadataProviderRef == nil {
+	// If MetadataProviderRef is unset, initialize it with TMDB (if available), AniList, or Jikan fallback.
+	if scn.MetadataProviderRef == nil {
 		realProvider := metadata_provider.NewProvider(&metadata_provider.NewProviderImplOptions{
-			Database:   scn.Database,
-			Logger:     scn.Logger,
-			TMDBClient: tmdbClient,
+			Database:        scn.Database,
+			Logger:          scn.Logger,
+			TMDBClient:      tmdbClient,
+			DefaultProvider: primaryProvider,
 		})
 		scn.MetadataProviderRef = realProvider
-		scn.Logger.Info().Msg("scanner: TMDB episode metadata provider initialized")
+		if primaryProvider == "anilist" {
+			scn.Logger.Info().Msg("scanner: AniList episode metadata provider initialized")
+		} else if tmdbClient != nil && tmdbClient.HasApiKey() {
+			scn.Logger.Info().Msg("scanner: TMDB episode metadata provider initialized")
+		} else {
+			scn.Logger.Info().Msg("scanner: Jikan episode metadata provider initialized (no TMDB key)")
+		}
 	}
 
 	mf, err := NewMediaFetcher(ctx, &MediaFetcherOptions{
@@ -838,12 +862,6 @@ func (scn *Scanner) Scan(ctx context.Context) (lfs []*dto.LocalFile, err error) 
 		Config:              scn.Config,
 	}
 	hydrator.HydrateMetadata(ctx)
-
-	// +---------------------+
-	// |  Metadata Enrichers |
-	// +---------------------+
-
-	scn.scanEnrichmentPhase(ctx, localFiles, mc, tmdbProvider)
 
 	telemetry.Send(events.EventScanProgress, 80)
 

@@ -10,12 +10,13 @@ import { pluginImageCompress } from "@rsbuild/plugin-image-compress"
 
 const { publicVars } = loadEnv({ prefixes: ["SEA_"] })
 
-/** Puerto del API en desarrollo (proxy `/api` y `getServerBaseUrl` en desktop dev). */
+/** Puerto del API en desarrollo (proxy `/api` y `getServerBaseUrl` en desktop dev).
+ *  El sidecar de Tauri usa 43212 en desarrollo; aseguramos que el proxy apunte al puerto correcto. */
 const devBackendPort =
     process.env.KAMEHOUSE_DEV_API_PORT ||
     process.env.KAMEHOUSE_PORT ||
     process.env.SEA_PUBLIC_DEV_API_PORT ||
-    "43211"
+    "43212"
 const devBackendTarget = `http://127.0.0.1:${devBackendPort}`
 
 const config: RsbuildConfig = {
@@ -51,6 +52,7 @@ const config: RsbuildConfig = {
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
+            "react-grab/package.json": path.resolve(__dirname, "./src/lib/shims/react-grab-pkg.js"),
         },
     },
     dev: {
@@ -99,10 +101,10 @@ const config: RsbuildConfig = {
         title: "KameHouse",
     },
     performance: {
-        preload: {
+        preload: process.env.NODE_ENV === "production" ? {
             type: "initial",
-            include: [/(?:latin|bebas-neue).*\.woff2$/],
-        },
+            include: [/(?:outfit|space-mono).*\.woff2$/],
+        } : false,
         chunkSplit: process.env.NODE_ENV === "production" ? {
             forceSplitting: {
                 "react": /react|react-dom/,

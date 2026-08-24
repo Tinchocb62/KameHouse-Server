@@ -47,14 +47,13 @@ export function VideoPlayerOrchestrator(props: OrchestratorProps) {
     const { data: settingsQuery } = useGetSettings()
     const transcodeEnabled = settingsQuery?.mediastream?.transcodeEnabled ?? false
 
-    const [prevStreamTypeProp, setPrevStreamTypeProp] = useState(props.streamType)
-    useEffect(() => {
-        if (props.streamType !== prevStreamTypeProp) {
-            setPrevStreamTypeProp(props.streamType)
-            setForceTranscode(false)
-            setStreamType(props.streamType || "direct")
-        }
-    }, [props.streamType, prevStreamTypeProp])
+    const currentStreamKey = `${props.streamUrl}_${props.episodeNumber}_${props.streamType}`
+    const [prevStreamKey, setPrevStreamKey] = useState(currentStreamKey)
+    if (currentStreamKey !== prevStreamKey) {
+        setPrevStreamKey(currentStreamKey)
+        setForceTranscode(false)
+        setStreamType(props.streamType || "direct")
+    }
 
     const isLocal = !props.isExternalStream && Boolean(props.streamUrl) && streamType !== "online"
 

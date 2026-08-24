@@ -71,7 +71,7 @@ export function DeferredImage(props: DeferredImageProps) {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isLowResLoaded, setIsLowResLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
-    const [showLqip, setShowLqip] = useState(true);
+    const [showLqip, setShowLqip] = useState(!priority);
     const containerRef = useRef<HTMLDivElement>(null);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -84,7 +84,7 @@ export function DeferredImage(props: DeferredImageProps) {
         setIsLowResLoaded(false);
         setHasError(false);
         setIsIntersecting(priority);
-        setShowLqip(true);
+        setShowLqip(!priority);
     }
 
     useEffect(() => {
@@ -120,18 +120,16 @@ export function DeferredImage(props: DeferredImageProps) {
 
     useEffect(() => {
         if (!src) {
-            Promise.resolve().then(() => {
-                setHasError(true);
-                setIsLoaded(true);
-                setIsIntersecting(true);
-            });
+            setHasError(true);
+            setIsLoaded(true);
+            setIsIntersecting(true);
             return;
         }
 
         if (priority) {
-            Promise.resolve().then(() => {
+            if (!isIntersecting) {
                 setIsIntersecting(true);
-            });
+            }
             return;
         }
 
@@ -162,7 +160,7 @@ export function DeferredImage(props: DeferredImageProps) {
             {/* Pulse Skeleton: shown only while low-res image is NOT loaded and high-res is NOT loaded */}
             {!isLoaded && !isLowResLoaded && !hasError && isIntersecting && showSkeleton && (
                 <div className="absolute inset-0 z-10 overflow-hidden">
-                    <div className="absolute inset-0 animate-pulse bg-zinc-800/80 backdrop-blur-[var(--blur-overlay-md)]" />
+                    <div className="absolute inset-0 animate-pulse bg-zinc-800/80" />
                     <Skeleton className="h-full w-full rounded-none bg-transparent opacity-50" />
                 </div>
             )}

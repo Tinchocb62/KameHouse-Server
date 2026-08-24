@@ -2,6 +2,7 @@ export const DRAGON_BALL_SERIES = {
     ORIGINAL: 12609,
     Z: 12971,
     GT: 12697,
+    KAI: 61709,
     SUPER: 62715,
     DAIMA: 236994,
 }
@@ -215,8 +216,9 @@ export const DRAGON_BALL_SAGAS: Record<number, SagaDefinition[]> = {
             subSagas: [
                 { id: "gran-saiyaman-arc", title: "El Gran Saiyaman", description: "Gohan estudia en la secundaria y se convierte en el héroe enmascarado Gran Saiyaman para combatir el crimen sin revelar su identidad. Conoce a Videl, hija de Mr. Satan.", startEp: 200, endEp: 209 },
                 { id: "torneo-25", title: "El 25° Torneo de Artes Marciales", description: "Goku consigue permiso para regresar del Más Allá por un día. Los guerreros Z se inscriben pero Babidi y Dabura irrumpen con sus propios planes, captando la energía del torneo para despertar a Buu.", startEp: 210, endEp: 219, image: "/sagas/z/world-tournament-saga.webp" },
-                { id: "babidi-dabura-vegeta-majin", title: "Babidi, Dabura y el Majin Vegeta", description: "Los guerreros Z siguen a Babidi hasta su nave. Gohan cae ante el poderoso Dabura. Vegeta acepta ser convertido en Majin para recuperar su salvajismo y enfrenta a Goku en un duelo épico. La energía del combate alimenta el sello de Majin Buu.", startEp: 220, endEp: 237, image: "/sagas/z/babidi-saga.jpg" },
-                { id: "despertar-buu-sacrificio-vegeta", title: "El Despertar de Buu y el Sacrificio de Vegeta", description: "Majin Buu emerge en su forma gordita e inocente pero de poder incontenible. Vegeta, en un acto de redención, se sacrifica con la Explosión Final para destruirlo, sin éxito. Mr. Satan establece una improbable amistad con el monstruo rosado.", startEp: 238, endEp: 253, image: "/sagas/z/majin-buu-saga.jpg" },
+                { id: "babidi-dabura-vegeta-majin", title: "La Nave de Babidi y Majin Vegeta", description: "Los guerreros Z siguen a Babidi hasta su nave. Gohan cae ante el poderoso Dabura. Vegeta acepta ser convertido en Majin para recuperar su salvajismo y enfrenta a Goku en un duelo épico. La energía del combate alimenta el sello de Majin Buu.", startEp: 220, endEp: 231, image: "/sagas/z/babidi-saga.jpg" },
+                { id: "despertar-buu-sacrificio-vegeta", title: "El Despertar de Buu y el Sacrificio de Vegeta", description: "Majin Buu emerge en su forma gordita e inocente pero de poder incontenible. Vegeta, en un acto de redención, se sacrifica con la Explosión Final (ep 232-237) para destruirlo.", startEp: 232, endEp: 237, image: "/sagas/z/majin-buu-saga.jpg" },
+                { id: "ssj3-fusion-dance", title: "El Super Saiyajin 3 y la Fusión", description: "Goku muestra por primera vez la transformación del Super Saiyajin 3 ante Buu para ganar tiempo. Goten y Trunks aprenden la danza de la Fusión en el Templo Sagrado.", startEp: 238, endEp: 253, image: "/sagas/z/fusion-saga.jpg" },
                 { id: "super-buu", title: "La Amenaza de Super Buu", description: "Buu absorbe a Piccolo, Gotenks y Gohan transformado, convirtiéndose en Super Buu. Goku y Vegeta se fusionan con los Potaras y entran al cuerpo de Buu para rescatar a sus amigos.", startEp: 254, endEp: 275, image: "/sagas/z/fusion-saga.jpg" },
                 { id: "fusion-kid-buu", title: "Fusión y Batalla Final contra Kid Buu", description: "Kid Buu destruye la Tierra. Goku y Vegeta luchan en el Planeta de las Kaioshins. La Genki-Dama final de Goku, alimentada por toda la humanidad, derrota definitivamente a Kid Buu.", startEp: 276, endEp: 287, image: "/sagas/z/kid-buu-saga.jpg" },
                 { id: "mundo-paz", title: "Un Mundo en Paz (Epílogo)", description: "10 años después, la vida sigue su curso. Goku conoce a Uub, la reencarnación de Kid Buu, en el siguiente torneo mundial y decide entrenarlo. Fin de Dragon Ball Z.", startEp: 288, endEp: 291, image: "/sagas/z/peaceful-world-saga.jpg" },
@@ -279,6 +281,67 @@ export const DRAGON_BALL_SAGAS: Record<number, SagaDefinition[]> = {
                 { id: "dragones-2-6", title: "Los Primeros Dragones (2★ al 6★)", description: "Goku y Pan enfrentan y derrotan a los cinco primeros Dragones Malignos: Haze Shenron (2★), Eis Shenron (6★, en equipo con Nuova), Oceanus Shenron (6★), Naturon Shenron (7★) y Rage Shenron (5★).", startEp: 48, endEp: 56 },
                 { id: "nuova-eis", title: "Nuova Shenron (4★) y Eis Shenron (6★)", description: "El Dragón de Fuego Nuova ayuda a Goku brevemente antes de ser absorbido. Eis Shenron combate sucio hasta el final. Goku derrota a ambos en un combate agotador.", startEp: 57, endEp: 60 },
                 { id: "omega-shenron", title: "Omega Shenron (1★) y el Final Eterno", description: "Syn Shenron absorbe todas las esferas y se convierte en Omega Shenron, el dragón definitivo. Goku y Vegeta se fusionan en Gogeta SSJ4. La Genki-Dama universal y el último adiós de Goku.", startEp: 61, endEp: 64 },
+            ],
+        },
+    ],
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DRAGON BALL KAI  (167 eps)
+    // ─────────────────────────────────────────────────────────────────────────
+    [DRAGON_BALL_SERIES.KAI]: [
+        {
+            id: "saiyajin",
+            title: "Saga de los Saiyajin",
+            description:
+                "Cinco años después del 23° Torneo, Raditz llega a la Tierra revelando el origen Saiyajin de Goku. Goku y Piccolo se alían para detenerlo, dando inicio al épico entrenamiento ante la inminente llegada de Vegeta y Nappa.",
+            startEp: 1,
+            endEp: 17,
+            image: "/sagas/saiyajin.jpg",
+            subSagas: [
+                { id: "llegada-raditz", title: "La Llegada de Raditz y el Sacrificio de Goku", description: "Raditz secuestra a Gohan. Goku y Piccolo se unen para derrotarlo al costo de la vida de Goku, quien viaja por el Camino de la Serpiente.", startEp: 1, endEp: 4, image: "/sagas/z/raditz-saga.webp" },
+                { id: "entrenamiento-sayajin", title: "El Camino de la Serpiente y el Entrenamiento", description: "Goku entrena con Kaio-sama aprendiendo el Kaio-ken y la Genki-Dama. Los Guerreros Z se preparan en la Tierra.", startEp: 5, endEp: 9, image: "/sagas/z/saiyan-training.webp" },
+                { id: "batalla-vegeta", title: "La Batalla Decisiva: Goku vs Vegeta", description: "Vegeta y Nappa diezman a los Guerreros Z. Goku llega y desata el Kaio-ken x4 contra el Galick Ho de Vegeta en un duelo legendario.", startEp: 10, endEp: 17, image: "/sagas/saiyajin.jpg" },
+            ],
+        },
+        {
+            id: "namek-freezer",
+            title: "Saga de Freezer",
+            description:
+                "Gohan, Krilin y Bulma viajan a Namekusei para revivir a sus amigos caídos. Allí enfrentan a las tropas del tirano Freezer, a las Fuerzas Especiales Ginyu y presencian el despertar del legendario Super Saiyajin.",
+            startEp: 18,
+            endEp: 54,
+            image: "/sagas/namek-freezer.jpg",
+            subSagas: [
+                { id: "viaje-namek", title: "Viaje a Namekusei y las Fuerzas Especiales Ginyu", description: "Krilin y Gohan se alían con Vegeta contra el Capitán Ginyu y su escuadrón. Goku llega y demuestra un poder abrumador.", startEp: 18, endEp: 35, image: "/sagas/z/namek-saga.webp" },
+                { id: "batalla-freezer", title: "La Batalla contra Freezer y el Super Saiyajin", description: "Freezer desata sus múltiples transformaciones. Tras la muerte de Krilin, Goku despierta la furia del Super Saiyajin en un Namek al borde de la destrucción.", startEp: 36, endEp: 54, image: "/sagas/namek-freezer.jpg" },
+            ],
+        },
+        {
+            id: "androides-cell",
+            title: "Saga de los Androides y Cell",
+            description:
+                "Trunks del Futuro advierte sobre los androides del Dr. Gero y el bio-androide definitivo Cell, quien organiza los Juegos de Cell para decidir el destino de la Tierra.",
+            startEp: 55,
+            endEp: 98,
+            image: "/sagas/trunks-androides-cell.jpg",
+            subSagas: [
+                { id: "amenaza-androides", title: "La Amenaza de los Androides 17 y 18", description: "Aparecen el Dr. Gero, 19, 17, 18 y 16. Goku cae enfermo del corazón y Vegeta demuestra el poder del Super Saiyajin.", startEp: 55, endEp: 67, image: "/sagas/trunks-androides-cell.jpg" },
+                { id: "evolucion-cell", title: "La Evolución de Cell hacia la Perfección", description: "Cell absorbe a los androides alcanzando su forma perfecta tras superar a Piccolo, Vegeta y Trunks.", startEp: 68, endEp: 82, image: "/sagas/z/imperfect-cell-saga.jpg" },
+                { id: "juegos-cell", title: "Los Juegos de Cell y el Super Saiyajin 2 de Gohan", description: "Goku cede su lugar a Gohan, quien desata el Super Saiyajin 2. Tras el sacrificio de Goku, el Kamehameha Padre-Hijo pulveriza a Cell.", startEp: 83, endEp: 98, image: "/sagas/trunks-androides-cell.jpg" },
+            ],
+        },
+        {
+            id: "majin-buu",
+            title: "Saga de Majin Buu",
+            description:
+                "Siete años después, el mago Babidi despierta al destructivo monstruo Majin Buu. Goku estrena el Super Saiyajin 3, Gotenks y Vegetto desafían a Buu y la Genki-Dama universal sella la paz del universo.",
+            startEp: 99,
+            endEp: 167,
+            image: "/sagas/majin-buu.jpg",
+            subSagas: [
+                { id: "torneo-25-buu", title: "El 25° Torneo y el Despertar de Majin Buu", description: "Goku regresa del Más Allá por un día. Majin Vegeta se enfrenta a Goku y se sacrifica inútilmente contra Majin Buu.", startEp: 99, endEp: 114, image: "/sagas/gran-saiyaman-torneo25.jpg" },
+                { id: "fusiones-super-buu", title: "Super Saiyajin 3, Gotenks y Vegetto", description: "Goku muestra el SSJ3. Goten y Trunks aprenden la Fusión Gotenks, y Goku y Vegeta se unen mediante los Pendientes Pothala creando a Vegetto.", startEp: 115, endEp: 145, image: "/sagas/majin-buu.jpg" },
+                { id: "kid-buu-final", title: "La Batalla Final contra Kid Buu y el Gran Final", description: "En el Planeta Supremo, Goku reúne la energía de toda la humanidad en la Súper Genki-Dama para aniquilar a Kid Buu para siempre.", startEp: 146, endEp: 167, image: "/sagas/majin-buu.jpg" },
             ],
         },
     ],

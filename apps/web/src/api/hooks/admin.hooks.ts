@@ -7,7 +7,8 @@ export function useGetTranscodeStats() {
         endpoint: API_ENDPOINTS.ADMIN.GetTranscodeStats.endpoint,
         method: API_ENDPOINTS.ADMIN.GetTranscodeStats.methods[0],
         queryKey: [API_ENDPOINTS.ADMIN.GetTranscodeStats.key],
-        refetchInterval: 2000,
+        refetchInterval: 8000,
+        refetchIntervalInBackground: false,
     })
 }
 

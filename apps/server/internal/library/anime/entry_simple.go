@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"kamehouse/internal/api/metadata"
 	"kamehouse/internal/api/metadata_provider"
+	"kamehouse/internal/constants"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/platforms/platform"
@@ -68,8 +69,8 @@ func NewSimpleEntry(ctx context.Context, opts *NewSimpleAnimeEntryOptions) (*Sim
 
 	// If not found, try looking it up by TMDB ID
 	if fetchedMedia == nil {
-		if opts.MediaID > 1_000_000 {
-			m, err := db.GetLibraryMediaByTmdbIdAndType(opts.Database, opts.MediaID-1_000_000, "MOVIE")
+		if opts.MediaID >= constants.MovieIDOffset {
+			m, err := db.GetLibraryMediaByTmdbIdAndType(opts.Database, opts.MediaID-constants.MovieIDOffset, "MOVIE")
 			if err == nil && m != nil {
 				fetchedMedia = m
 			}

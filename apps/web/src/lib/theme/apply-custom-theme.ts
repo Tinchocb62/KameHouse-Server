@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useThemeSettings } from "./theme-hooks"
 import { useAppStore } from "@/lib/store"
+import { usePerformanceStore } from "@/lib/hardware/performance-store"
 
 function supportsLiquidRefraction(): boolean {
     const brands = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } }).userAgentData?.brands
@@ -39,6 +40,30 @@ export function hexToHslTriplet(hex: string): string | null {
     return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`
 }
 
+function setDatasetProp(el: HTMLElement, key: string, value: string | undefined) {
+    if (value === undefined) {
+        if (key in el.dataset) {
+            delete el.dataset[key]
+        }
+    } else {
+        if (el.dataset[key] !== value) {
+            el.dataset[key] = value
+        }
+    }
+}
+
+function setStyleProp(style: CSSStyleDeclaration, name: string, value: string | null) {
+    if (value === null) {
+        if (style.getPropertyValue(name)) {
+            style.removeProperty(name)
+        }
+    } else {
+        if (style.getPropertyValue(name) !== value) {
+            style.setProperty(name, value)
+        }
+    }
+}
+
 /**
  * Applies the user's custom color palette (Settings → Apariencia → Paleta de
  * Colores) as CSS custom property overrides on the document root, when
@@ -47,8 +72,9 @@ export function hexToHslTriplet(hex: string): string | null {
 export function useApplyCustomTheme() {
     const ts = useThemeSettings()
     const tvMode = useAppStore(state => state.tvMode)
-
-    const isFirstMount = React.useRef(true)
+    const effectiveTier = usePerformanceStore(state => state.getEffectiveTier())
+    const autoThrottleActive = usePerformanceStore(state => state.autoThrottleActive)
+    const isEcoMode = effectiveTier === "low_power" || autoThrottleActive
 
     React.useLayoutEffect(() => {
         const root = document.documentElement.style
@@ -56,27 +82,22 @@ export function useApplyCustomTheme() {
 
         const applyDOMChanges = () => {
             const mode = ts.effectiveMode
-            html.dataset.mode = mode
+            setDatasetProp(html, "mode", mode)
 
             // 1. Efectos por modo — Clásico: glass sutil (tokens de [data-mode="classic"]),
             // sin liquid ni gradiente. Por Era: según toggles.
-            const flatOn = tvMode || (mode === "era" && ts.themeEnableBlurringEffects === false)
+            // En modo Eco / Ahorro o Throttled se fuerza flatOn = true para 0% costo de GPU.
+            const flatOn = tvMode || isEcoMode || (mode === "era" && ts.themeEnableBlurringEffects === false)
             const liquidOn =
+                !isEcoMode &&
                 (mode === "era" && ts.themeEnableLiquidGlass) &&
                 supportsLiquidRefraction()
             const sidebarGradientOn = mode === "era" && ts.themeEnableSidebarGradient === true
 
-            if (flatOn) html.dataset.flat = "true"
-            else delete html.dataset.flat
-
-            if (liquidOn && !flatOn) html.dataset.liquid = "true"
-            else delete html.dataset.liquid
-
-            if (sidebarGradientOn) html.dataset.sidebarGradient = "true"
-            else delete html.dataset.sidebarGradient
-
-            if (ts.themeEnableCinematicGrain) html.dataset.grain = "true"
-            else delete html.dataset.grain
+            setDatasetProp(html, "flat", flatOn ? "true" : undefined)
+            setDatasetProp(html, "liquid", (liquidOn && !flatOn) ? "true" : undefined)
+            setDatasetProp(html, "sidebarGradient", sidebarGradientOn ? "true" : undefined)
+            setDatasetProp(html, "grain", ts.themeEnableCinematicGrain ? "true" : undefined)
 
             // 2. Paleta — Clásico es paleta fija (los colores custom se
             // ignoran); Por Era aplica la era elegida + overrides del preset Personalizado.
@@ -85,77 +106,38 @@ export function useApplyCustomTheme() {
             const accentOn = mode === "era" && ts.enableColorSettings && ts.hasCustomAccentColor
 
             if (mode === "classic") {
-                html.dataset.theme = "classic"
-            }
-
-            if (eraOn) {
-                html.dataset.theme = ts.themeEra
-
-                // Universe usa la paleta curada de todas las series (rosa/rojo/
-                // verde/azul/violeta) definida en colors.css — no se extraen
-                // colores dominantes de imágenes. Se limpian posibles inline
-                // overrides previos para que gane la cascada CSS.
-                root.removeProperty("--glow-color-1")
-                root.removeProperty("--glow-color-2")
-                root.removeProperty("--glow-color-3")
-                root.removeProperty("--glow-color-4")
-                root.removeProperty("--glow-color-5")
+                setDatasetProp(html, "theme", "classic")
+            } else if (eraOn) {
+                setDatasetProp(html, "theme", ts.themeEra)
             } else {
-                if (mode === "era") delete html.dataset.theme
-                root.removeProperty("--glow-color-1")
-                root.removeProperty("--glow-color-2")
-                root.removeProperty("--glow-color-3")
-                root.removeProperty("--glow-color-4")
-                root.removeProperty("--glow-color-5")
+                setDatasetProp(html, "theme", undefined)
             }
+
+            setStyleProp(root, "--glow-color-1", null)
+            setStyleProp(root, "--glow-color-2", null)
+            setStyleProp(root, "--glow-color-3", null)
+            setStyleProp(root, "--glow-color-4", null)
+            setStyleProp(root, "--glow-color-5", null)
 
             if (bgOn) {
-                root.setProperty("--bg-primary", ts.backgroundColor)
+                setStyleProp(root, "--bg-primary", ts.backgroundColor)
             } else {
-                root.removeProperty("--bg-primary")
+                setStyleProp(root, "--bg-primary", null)
             }
 
             if (accentOn) {
                 const hsl = hexToHslTriplet(ts.accentColor)
                 if (hsl) {
-                    root.setProperty("--brand-accent", hsl)
-                    root.setProperty("--brand-accent-hex", ts.accentColor)
+                    setStyleProp(root, "--brand-accent", hsl)
+                    setStyleProp(root, "--brand-accent-hex", ts.accentColor)
                 }
             } else {
-                root.removeProperty("--brand-accent")
-                root.removeProperty("--brand-accent-hex")
+                setStyleProp(root, "--brand-accent", null)
+                setStyleProp(root, "--brand-accent-hex", null)
             }
         }
 
-        if (isFirstMount.current || !document.startViewTransition) {
-            applyDOMChanges()
-            isFirstMount.current = false
-        } else {
-            const transition = document.startViewTransition(() => {
-                applyDOMChanges()
-            })
-            // Interrumpida por otra transición = final normal; sin catch queda
-            // como unhandled rejection en consola (InvalidStateError).
-            transition.finished.catch(() => {})
-            transition.ready.catch(() => {})
-        }
-
-        return () => {
-            delete html.dataset.mode
-            delete html.dataset.flat
-            delete html.dataset.liquid
-            delete html.dataset.sidebarGradient
-            delete html.dataset.theme
-            delete html.dataset.grain
-            root.removeProperty("--bg-primary")
-            root.removeProperty("--brand-accent")
-            root.removeProperty("--brand-accent-hex")
-            root.removeProperty("--glow-color-1")
-            root.removeProperty("--glow-color-2")
-            root.removeProperty("--glow-color-3")
-            root.removeProperty("--glow-color-4")
-            root.removeProperty("--glow-color-5")
-        }
+        applyDOMChanges()
     }, [
         ts.effectiveMode,
         ts.themeEra,
@@ -170,6 +152,7 @@ export function useApplyCustomTheme() {
         ts.backgroundColor,
         ts.accentColor,
         tvMode,
+        isEcoMode,
     ])
 }
 

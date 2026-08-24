@@ -14,6 +14,7 @@ const (
 	TmdbApiUrl           = "https://api.themoviedb.org/3"
 	TmdbImageBaseUrl     = "https://image.tmdb.org/t/p/original"
 	IsRspackFrontend     = true
+	MovieIDOffset        = 1_000_000
 )
 
 const (

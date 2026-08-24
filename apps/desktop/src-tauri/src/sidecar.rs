@@ -217,7 +217,28 @@ impl SidecarManager {
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
         info!("[Sidecar] Using binary: {:?}", binary_path);
 
-        if !binary_path.exists() {
+        // In dev mode, wait for the server binary to be built if it doesn't exist yet
+        if self.is_dev && !binary_path.exists() {
+            info!("[Sidecar] Server binary not found yet in dev mode, waiting for compilation...");
+            window_manager.emit_to_main(app_handle, "server-status", "compiling");
+            let wait_start = std::time::Instant::now();
+            let max_wait = Duration::from_secs(60);
+
+            while !binary_path.exists() {
+                if self.is_shutdown.load(Ordering::SeqCst) {
+                    return Ok(());
+                }
+                if wait_start.elapsed() > max_wait {
+                    let err = format!("Timed out waiting for server binary at {:?}", binary_path);
+                    error!("[Sidecar] {}", err);
+                    self.set_status(ServerStatus::Crashed);
+                    let _ = window_manager.show_crash_screen(app_handle, &err);
+                    return Err(err.into());
+                }
+                tokio::time::sleep(Duration::from_millis(200)).await;
+            }
+            info!("[Sidecar] Server binary detected after {:?}", wait_start.elapsed());
+        } else if !binary_path.exists() {
             let err = format!("Server binary not found at {:?}", binary_path);
             error!("[Sidecar] {}", err);
             self.set_status(ServerStatus::Crashed);
@@ -229,9 +250,11 @@ impl SidecarManager {
         #[cfg(not(target_os = "windows"))]
         {
             use std::os::unix::fs::PermissionsExt;
-            let mut perms = std::fs::metadata(&binary_path)?.permissions();
-            perms.set_mode(0o755);
-            std::fs::set_permissions(&binary_path, perms)?;
+            if let Ok(metadata) = std::fs::metadata(&binary_path) {
+                let mut perms = metadata.permissions();
+                perms.set_mode(0o755);
+                let _ = std::fs::set_permissions(&binary_path, perms);
+            }
         }
 
         // Prepare arguments
@@ -271,16 +294,40 @@ impl SidecarManager {
         self.reap_orphan_on_port(self.get_port()).await;
 
         info!("[Sidecar] Spawning server process: {:?} with args: {:?}", binary_path, args);
+        window_manager.emit_to_main(app_handle, "server-status", "starting");
 
-        // Spawn the process
-        let mut cmd = Command::new(&binary_path);
-        cmd.args(&args)
-            .envs(&env_vars)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .kill_on_drop(true);
+        // Spawn the process with retry to handle brief file locks during Go build
+        let mut child_opt: Option<Child> = None;
+        let spawn_start = std::time::Instant::now();
+        let max_spawn_retry = Duration::from_secs(10);
 
-        let mut child = cmd.spawn()?;
+        while child_opt.is_none() {
+            let mut cmd = Command::new(&binary_path);
+            cmd.args(&args)
+                .envs(&env_vars)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .kill_on_drop(true);
+
+            match cmd.spawn() {
+                Ok(child) => {
+                    child_opt = Some(child);
+                }
+                Err(e) => {
+                    if spawn_start.elapsed() > max_spawn_retry || self.is_shutdown.load(Ordering::SeqCst) {
+                        let err = format!("Failed to spawn server process: {}", e);
+                        error!("[Sidecar] {}", err);
+                        self.set_status(ServerStatus::Crashed);
+                        let _ = window_manager.show_crash_screen(app_handle, &err);
+                        return Err(err.into());
+                    }
+                    warn!("[Sidecar] Temporary error spawning server (retrying in 250ms): {}", e);
+                    tokio::time::sleep(Duration::from_millis(250)).await;
+                }
+            }
+        }
+
+        let mut child = child_opt.unwrap();
 
         // Set status to starting
         self.set_status(ServerStatus::Starting);
@@ -469,7 +516,7 @@ impl SidecarManager {
                     {
                         if let Some(id) = child.id() {
                             let _ = std::process::Command::new("taskkill")
-                                .args(["/PID", &id.to_string(), "/F"])
+                                .args(["/PID", &id.to_string(), "/F", "/T"])
                                 .output();
                         }
                     }

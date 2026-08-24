@@ -1,3 +1,4 @@
+'use no memo'
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useAniSkipTimes, getAniSkipTimes } from "@/api/hooks/aniskip.hooks"
 import { useGetSettings } from "@/api/hooks/settings.hooks"
@@ -16,6 +17,10 @@ const INTRO_REGEX = /^(op\d*|opening\d*|intro\d*)\b/i
 const INTRO_WORD_REGEX = /\b(op\d*|opening\d*|intro\d*)\b/i
 const OUTRO_REGEX = /^(ed\d*|ending\d*|credits|créditos|outro\d*)\b/i
 const OUTRO_WORD_REGEX = /\b(ed\d*|ending\d*|credits|créditos|outro\d*)\b/i
+
+function setVideoCurrentTime(video: HTMLVideoElement, time: number) {
+    video.currentTime = time
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -432,7 +437,7 @@ export function usePlayerSkip({
         }
 
         checkManualSkipOverrides(target)
-        video.currentTime = target
+        setVideoCurrentTime(video, target)
         lastManualSeekTimestampRef.current = Date.now()
         video.play().catch(() => {})
         triggerControlsVisibility()
@@ -441,7 +446,7 @@ export function usePlayerSkip({
     const undoSkip = useCallback(() => {
         const video = videoRef.current
         if (!video || preSkipPositionRef.current === 0) return
-        video.currentTime = preSkipPositionRef.current
+        setVideoCurrentTime(video, preSkipPositionRef.current)
         lastManualSeekTimestampRef.current = Date.now()
         video.play().catch(() => {})
         triggerControlsVisibility()
@@ -455,7 +460,7 @@ export function usePlayerSkip({
         const next = chapters.find(c => c.startTime > curr + 0.5)
         if (next) {
             checkManualSkipOverrides(next.startTime)
-            video.currentTime = next.startTime
+            setVideoCurrentTime(video, next.startTime)
             lastManualSeekTimestampRef.current = Date.now()
             video.play().catch(() => {})
             triggerControlsVisibility()
@@ -469,7 +474,7 @@ export function usePlayerSkip({
         const prevs = chapters.filter(c => c.startTime < curr - 1.5)
         const target = prevs.length > 0 ? prevs[prevs.length - 1].startTime : 0
         checkManualSkipOverrides(target)
-        video.currentTime = target
+        setVideoCurrentTime(video, target)
         lastManualSeekTimestampRef.current = Date.now()
         video.play().catch(() => {})
         triggerControlsVisibility()
@@ -482,12 +487,12 @@ export function usePlayerSkip({
         const curr = video.currentTime
         const activeOp = resolveActiveOp(skipTimesOp, getEffectiveTotal(video), mediaFormat)
         if (activeOp && curr >= activeOp.startTime && curr < activeOp.endTime) {
-            video.currentTime = activeOp.endTime
+            setVideoCurrentTime(video, activeOp.endTime)
             lastManualSeekTimestampRef.current = Date.now()
             video.play().catch(() => {})
             setSkipMode(null)
         }
-    }, [videoRef, setAutoSkipIntro, skipTimesOp, setSkipMode, getEffectiveTotal])
+    }, [videoRef, setAutoSkipIntro, skipTimesOp, setSkipMode, getEffectiveTotal, mediaFormat])
 
     const handleSetAutoSkipOutro = useCallback((val: boolean) => {
         setAutoSkipOutro(val)
@@ -500,12 +505,12 @@ export function usePlayerSkip({
         if (activeOp && curr < activeOp.endTime) return
         const activeEd = resolveActiveEd(skipTimesEd, total, mediaFormat)
         if (activeEd && curr >= activeEd.startTime && curr < activeEd.endTime) {
-            video.currentTime = activeEd.endTime
+            setVideoCurrentTime(video, activeEd.endTime)
             lastManualSeekTimestampRef.current = Date.now()
             video.play().catch(() => {})
             setSkipMode(null)
         }
-    }, [videoRef, setAutoSkipOutro, skipTimesOp, skipTimesEd, setSkipMode, getEffectiveTotal])
+    }, [videoRef, setAutoSkipOutro, skipTimesOp, skipTimesEd, setSkipMode, getEffectiveTotal, mediaFormat])
 
     const handleSetTvMode = useCallback((val: boolean) => {
         setTvMode(val)
@@ -526,7 +531,7 @@ export function usePlayerSkip({
         // 1. Check intro
         const activeOp = resolveActiveOp(skipTimesOp, total, mediaFormat)
         if (activeOp && curr >= activeOp.startTime && curr < activeOp.endTime) {
-            video.currentTime = activeOp.endTime
+            setVideoCurrentTime(video, activeOp.endTime)
             lastManualSeekTimestampRef.current = Date.now()
             video.play().catch(() => {})
             setSkipMode(null)
@@ -549,7 +554,7 @@ export function usePlayerSkip({
             return
         }
         if (inEd && activeEd) {
-            video.currentTime = activeEd.endTime
+            setVideoCurrentTime(video, activeEd.endTime)
             lastManualSeekTimestampRef.current = Date.now()
             video.play().catch(() => {})
             setSkipMode(null)
@@ -566,11 +571,11 @@ export function usePlayerSkip({
         if (activeMode === "intro") {
             const activeOp = resolveActiveOp(skipTimesOp, total, mediaFormat)
             if (!activeOp || !(curr >= activeOp.startTime && curr < activeOp.endTime)) return
-            video.currentTime = activeOp.endTime
+            setVideoCurrentTime(video, activeOp.endTime)
         } else {
             const activeEd = resolveActiveEd(skipTimesEd, total, mediaFormat)
             if (!activeEd || !(curr >= activeEd.startTime && curr < activeEd.endTime)) return
-            video.currentTime = activeEd.endTime
+            setVideoCurrentTime(video, activeEd.endTime)
         }
 
         lastManualSeekTimestampRef.current = Date.now()
@@ -664,7 +669,7 @@ export function usePlayerSkip({
             if (skippable) {
                 const key = `${skippable.name}_${skippable.startTime}`
                 skippedChaptersRef.current.add(key)
-                video.currentTime = skippable.endTime
+                setVideoCurrentTime(video, skippable.endTime)
                 lastManualSeekTimestampRef.current = Date.now()
                 video.play().catch(() => {})
                 triggerToast("pause")
@@ -687,7 +692,7 @@ export function usePlayerSkip({
             if (cfg.autoSkipIntroPref && inWindow && !hasAutoSkippedIntroRef.current && shouldAutoSkip(source)) {
                 hasAutoSkippedIntroRef.current = true
                 preSkipPositionRef.current = curr
-                video.currentTime = endTime
+                setVideoCurrentTime(video, endTime)
                 lastManualSeekTimestampRef.current = Date.now()
                 video.play().catch(() => {})
                 setSkipMode(null)
@@ -698,8 +703,10 @@ export function usePlayerSkip({
                 const remaining = Math.ceil(endTime - curr)
                 const progress = Math.round(((curr - startTime) / Math.max(1, endTime - startTime)) * 100)
                 if (skipModeRef.current !== "intro") setSkipMode("intro")
-                if (skipRemainingSecondsRef.current !== remaining) setSkipRemainingSeconds(remaining)
-                if (segmentProgressRef.current !== progress) setSegmentProgress(progress)
+                if (skipRemainingSecondsRef.current !== remaining) {
+                    setSkipRemainingSeconds(remaining)
+                    setSegmentProgress(progress)
+                }
             } else if (skipModeRef.current === "intro") {
                 setSkipMode(null)
             }
@@ -728,7 +735,7 @@ export function usePlayerSkip({
                 hasAutoSkippedOutroRef.current = true
                 preSkipPositionRef.current = curr
 
-                video.currentTime = endTime
+                setVideoCurrentTime(video, endTime)
                 lastManualSeekTimestampRef.current = Date.now()
                 video.play().catch(() => {})
 
@@ -741,8 +748,10 @@ export function usePlayerSkip({
                 const remaining = Math.ceil(endTime - curr)
                 const progress = Math.round(((curr - startTime) / Math.max(1, endTime - startTime)) * 100)
                 if (skipModeRef.current !== "outro") setSkipMode("outro")
-                if (skipRemainingSecondsRef.current !== remaining) setSkipRemainingSeconds(remaining)
-                if (segmentProgressRef.current !== progress) setSegmentProgress(progress)
+                if (skipRemainingSecondsRef.current !== remaining) {
+                    setSkipRemainingSeconds(remaining)
+                    setSegmentProgress(progress)
+                }
             } else if (skipModeRef.current === "outro") {
                 setSkipMode(null)
             }
@@ -807,7 +816,7 @@ export function usePlayerSkip({
                 cfg.onNextEpisode()
             }
         }
-    }, [])
+    }, [setActiveChapter, setSegmentProgress, setShowNextEpisode, setSkipMode, setSkipRemainingSeconds, triggerToast, videoRef])
 
     // D6: Se eliminó el efecto que limpiaba hasTriggeredNextEpisodeRef cuando
     // showNextEpisode pasaba a false. Ese comportamiento era incorrecto: si el
@@ -867,8 +876,8 @@ export function usePlayerSkip({
                 }
             } else {
                 if (!hasTriggeredNextEpisodeRef.current) {
-                    hasTriggeredNextEpisodeRef.current = true
                     const timer = setTimeout(() => {
+                        hasTriggeredNextEpisodeRef.current = true
                         if (videoRef.current) videoRef.current.pause()
                         configRef.current.onNextEpisode?.()
                     }, tvMode ? 5000 : 1000)

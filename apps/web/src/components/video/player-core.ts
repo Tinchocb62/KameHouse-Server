@@ -48,8 +48,10 @@ function getAbsoluteLanUrl(playableUrl: string, serverIPs?: string[], serverPort
     }
     const port = serverPort || __DEV_SERVER_PORT
 
+    const protocol = typeof window !== "undefined" ? window.location.protocol : "http:"
+
     if (playableUrl.startsWith("/")) {
-        return `http://${lanIp}:${port}${playableUrl}`
+        return `${protocol}//${lanIp}:${port}${playableUrl}`
     }
 
     try {
@@ -155,7 +157,8 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     // emite un durationchange finito), partimos de la duración de ffprobe.
     useEffect(() => {
         if (duration === 0 && metadataDuration && Number.isFinite(metadataDuration) && metadataDuration > 0) {
-            setDurationState(metadataDuration)
+            const timer = setTimeout(() => setDurationState(metadataDuration), 0)
+            return () => clearTimeout(timer)
         }
     }, [metadataDuration, duration])
     // D3: initialize from the persisted store so volume survives page reloads.
@@ -209,6 +212,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         setSkipStepSeconds: setSkipStepSecondsPref,
         playbackRate: playbackRatePref,
         setPlaybackRate: setPlaybackRatePref,
+        preferredAudioProfile,
         preferredAudioLang,
         setPreferredAudioLang,
         preferredAudioTrackIndexMap,
@@ -245,6 +249,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             setSkipStepSeconds: state.setSkipStepSeconds,
             playbackRate: state.playbackRate,
             setPlaybackRate: state.setPlaybackRate,
+            preferredAudioProfile: state.preferredAudioProfile,
             preferredAudioLang: state.preferredAudioLang,
             setPreferredAudioLang: state.setPreferredAudioLang,
             preferredAudioTrackIndexMap: state.preferredAudioTrackIndex,
@@ -286,9 +291,9 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             setGlobalAspectRatioPref(ratio)
         }
     }, [mediaId, setAspectRatioForSeries, setGlobalAspectRatioPref])
-    const setPreferredAudioTrackIndex = (index: number) => {
+    const setPreferredAudioTrackIndex = useCallback((index: number) => {
         if (mediaId) setPreferredAudioTrackIndexMap(mediaId, index)
-    }
+    }, [mediaId, setPreferredAudioTrackIndexMap])
 
     // D3: Sync the <video> element volume with the persisted value on mount.
     // We do this once after the video element is created so that it is in sync
@@ -413,7 +418,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
         const path = streamUrl || playableUrl
         if (!path || streamType !== "transcode") return
         preloadMutate({ path, streamType: "transcode", audioStreamIndex: 0, preferredAudioLang })
-    }, [streamUrl, playableUrl, streamType, preferredAudioLang])
+    }, [streamUrl, playableUrl, streamType, preferredAudioLang, preloadMutate])
 
     const { onProgress: onTrackingProgress, reset: resetTracking } = useAnimeTracking({
         mediaId,
@@ -446,20 +451,26 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
     }, [mediaId, episodeNumber, playableUrl, resetTracking])
 
     useEffect(() => {
-        setAudioTracks([])
-        setSubtitleTracks([])
-        setActiveAudioIndex(0)
-        setActiveSubtitleIndex(null)
-        // Nuevo episodio o URL completamente distinta: nunca es un stream-switch de audio.
-        // Resetear para que el loading inicial use fondo negro sólido.
-        setIsStreamSwitching(false)
+        const timer = setTimeout(() => {
+            setAudioTracks([])
+            setSubtitleTracks([])
+            setActiveAudioIndex(0)
+            setActiveSubtitleIndex(null)
+            // Nuevo episodio o URL completamente distinta: nunca es un stream-switch de audio.
+            // Resetear para que el loading inicial use fondo negro sólido.
+            setIsStreamSwitching(false)
+        }, 0)
+        return () => clearTimeout(timer)
     }, [playableUrl])
 
     // Cuando el stream está listo (ya sea tras carga inicial o tras un switch de audio),
     // desactivar la bandera de stream-switching para limpiar el overlay.
     useEffect(() => {
         if (status === "ready") {
-            setIsStreamSwitching(false)
+            const timer = setTimeout(() => {
+                setIsStreamSwitching(false)
+            }, 0)
+            return () => clearTimeout(timer)
         }
     }, [status])
 
@@ -680,20 +691,63 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
 
         let preferred: AudioTrack | undefined
 
-        // Ignorar "und" como preferencia: matchearía la primera pista sin etiqueta
-        // (ver onSelectAudio) y pisaría las heurísticas de Latino/Español de abajo.
-        if (preferredAudioLang && preferredAudioLang.toLowerCase() !== "und") {
+        // 1. Matcheo por Perfil Inteligente de Doblaje
+        if (preferredAudioProfile === "latino") {
+            // Prioridad máxima: Latino explícito por código o título
+            preferred = audioTracks.find(t => {
+                const lang = (t.language || "").toLowerCase()
+                const title = (t.title || "").toLowerCase()
+                return lang === "spa-lat" || lang === "es-la" || lang === "es-mx" || lang === "lat" ||
+                    title.includes("latino") || title.includes("latin") || title.includes("mexico") || title.includes("hispano")
+            })
+            // Fallback: Español general que no sea castellano explícito
+            if (!preferred) {
+                preferred = audioTracks.find(t => {
+                    const lang = (t.language || "").toLowerCase()
+                    const title = (t.title || "").toLowerCase()
+                    return (lang.startsWith("es") || lang.startsWith("spa")) && !title.includes("castellano") && !title.includes("spain")
+                })
+            }
+        } else if (preferredAudioProfile === "castellano") {
+            preferred = audioTracks.find(t => {
+                const lang = (t.language || "").toLowerCase()
+                const title = (t.title || "").toLowerCase()
+                return lang === "spa-es" || lang === "es-es" || title.includes("castellano") || title.includes("españa") || title.includes("spain")
+            })
+            if (!preferred) {
+                preferred = audioTracks.find(t => {
+                    const lang = (t.language || "").toLowerCase()
+                    return lang.startsWith("es") || lang.startsWith("spa")
+                })
+            }
+        } else if (preferredAudioProfile === "japanese") {
+            preferred = audioTracks.find(t => {
+                const lang = (t.language || "").toLowerCase()
+                const title = (t.title || "").toLowerCase()
+                return lang === "jpn" || lang === "ja" || title.includes("japon") || title.includes("japan") || title.includes("raw") || title.includes("orig")
+            })
+        } else if (preferredAudioProfile === "english") {
+            preferred = audioTracks.find(t => {
+                const lang = (t.language || "").toLowerCase()
+                const title = (t.title || "").toLowerCase()
+                return lang === "eng" || lang === "en" || title.includes("english") || title.includes("ingl")
+            })
+        }
+
+        // 2. Si no hubo match por perfil, usar preferredAudioLang explícito
+        if (!preferred && preferredAudioLang && preferredAudioLang.toLowerCase() !== "und") {
             preferred = audioTracks.find(t => {
                 const lang = t.language?.toLowerCase() || ""
                 return lang === preferredAudioLang.toLowerCase() || lang.startsWith(preferredAudioLang.toLowerCase())
             })
         }
 
-        // Si falló el match por idioma (ej. era "und"), intentar recuperar el índice persistido.
+        // 3. Si falló el match por idioma (ej. era "und"), intentar recuperar el índice persistido.
         if (!preferred && preferredAudioTrackIndex >= 0) {
             preferred = audioTracks.find(t => t.index === preferredAudioTrackIndex)
         }
 
+        // 4. Heurística fallback por defecto (Latino primero, luego Español)
         if (!preferred) {
             preferred = audioTracks.find(t => {
                 const lang = t.language?.toLowerCase() || ""
@@ -717,7 +771,7 @@ export function usePlayerCore(props: PlayerCoreProps): PlayerCore {
             // Pasar { auto: true } para que en direct play no dispare transcode.
             onSelectAudio(preferred, { auto: true })
         }
-    }, [audioTracksKey, preferredAudioLang, preferredAudioTrackIndex, activeAudioIndex, onSelectAudio, audioTracks])
+    }, [audioTracksKey, preferredAudioProfile, preferredAudioLang, preferredAudioTrackIndex, activeAudioIndex, onSelectAudio, audioTracks])
 
     // Misma guarda que el audio: auto-configurar subtítulos UNA vez por lista
     // de pistas. Sin esto, elegir un subtítulo manualmente con audio doblado

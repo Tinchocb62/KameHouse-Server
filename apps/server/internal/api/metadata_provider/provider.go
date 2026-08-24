@@ -3,6 +3,7 @@
 package metadata_provider
 
 import (
+	"kamehouse/internal/api/anilist"
 	"kamehouse/internal/api/jikan"
 	"kamehouse/internal/api/metadata"
 	"kamehouse/internal/api/tmdb"
@@ -80,7 +81,9 @@ type NewProviderImplOptions struct {
 	FileCacher       interface{}
 	ExtensionBankRef interface{}
 	// If set, enables real episode metadata enrichment via TMDB.
-	TMDBClient *tmdb.Client
+	TMDBClient      *tmdb.Client
+	DefaultProvider string
+	DisableTMDB     bool
 }
 
 type RoutingProvider struct {
@@ -98,49 +101,78 @@ func NewRoutingProvider(jikanProv *JikanProviderImpl, tmdbProv *TMDBProviderImpl
 }
 
 func (p *RoutingProvider) GetAnimeMetadata(id int) (*metadata.AnimeMetadata, error) {
-	if p.database != nil {
+	if p.database != nil && p.tmdbProvider != nil {
 		if m, err := db.GetLibraryMediaByID(p.database, uint(id)); err == nil && m != nil {
 			if m.Type == "MOVIE" || m.Type == "SHOW" {
-				return p.tmdbProvider.GetAnimeMetadata(id)
+				meta, err := p.tmdbProvider.GetAnimeMetadata(id)
+				if err == nil && meta != nil {
+					return meta, nil
+				}
 			}
 		}
 	}
-	return p.jikanProvider.GetAnimeMetadata(id)
+	if p.jikanProvider != nil {
+		return p.jikanProvider.GetAnimeMetadata(id)
+	}
+	return nil, nil
 }
 
 func (p *RoutingProvider) GetAnimeMetadataWrapper(baseAnime *platform.UnifiedMedia, animeMetadata *metadata.AnimeMetadata) AnimeMetadataWrapper {
-	if p.database != nil && baseAnime != nil {
+	if p.database != nil && baseAnime != nil && p.tmdbProvider != nil {
 		if m, err := db.GetLibraryMediaByID(p.database, uint(baseAnime.ID)); err == nil && m != nil {
 			if m.Type == "MOVIE" || m.Type == "SHOW" {
 				return p.tmdbProvider.GetAnimeMetadataWrapper(baseAnime, animeMetadata)
 			}
 		}
 	}
-	return p.jikanProvider.GetAnimeMetadataWrapper(baseAnime, animeMetadata)
+	if p.jikanProvider != nil {
+		return p.jikanProvider.GetAnimeMetadataWrapper(baseAnime, animeMetadata)
+	}
+	return NewSimpleAnimeMetadataWrapper(animeMetadata)
 }
 
 func (p *RoutingProvider) SetUseFallbackProvider(v bool) {
-	p.jikanProvider.SetUseFallbackProvider(v)
-	p.tmdbProvider.SetUseFallbackProvider(v)
+	if p.jikanProvider != nil {
+		p.jikanProvider.SetUseFallbackProvider(v)
+	}
+	if p.tmdbProvider != nil {
+		p.tmdbProvider.SetUseFallbackProvider(v)
+	}
 }
 
 func (p *RoutingProvider) ClearCache() {
-	p.jikanProvider.ClearCache()
-	p.tmdbProvider.ClearCache()
+	if p.jikanProvider != nil {
+		p.jikanProvider.ClearCache()
+	}
+	if p.tmdbProvider != nil {
+		p.tmdbProvider.ClearCache()
+	}
 }
 
 func (p *RoutingProvider) Close() error {
-	_ = p.jikanProvider.Close()
-	_ = p.tmdbProvider.Close()
+	if p.jikanProvider != nil {
+		_ = p.jikanProvider.Close()
+	}
+	if p.tmdbProvider != nil {
+		_ = p.tmdbProvider.Close()
+	}
 	return nil
 }
 
 func NewProvider(opts *NewProviderImplOptions) Provider {
-	if opts != nil && opts.TMDBClient != nil {
+	if opts != nil {
+		if opts.DefaultProvider == "anilist" {
+			aniClient := anilist.NewClient(opts.Logger)
+			return NewAniListProviderImpl(aniClient, opts.Database, opts.Logger, opts.TMDBClient)
+		}
+
 		jikanClient := jikan.NewClient(opts.Logger)
 		jikanProv := NewJikanProviderImpl(jikanClient, opts.Database, opts.Logger, opts.TMDBClient)
-		tmdbProv := NewTMDBProviderImpl(opts.TMDBClient, opts.Database, opts.Logger)
-		return NewRoutingProvider(jikanProv, tmdbProv, opts.Database)
+		if !opts.DisableTMDB && opts.TMDBClient != nil && opts.TMDBClient.HasApiKey() && opts.DefaultProvider != "jikan" {
+			tmdbProv := NewTMDBProviderImpl(opts.TMDBClient, opts.Database, opts.Logger)
+			return NewRoutingProvider(jikanProv, tmdbProv, opts.Database)
+		}
+		return jikanProv
 	}
 	return &ProviderImpl{}
 }

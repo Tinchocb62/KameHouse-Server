@@ -82,7 +82,7 @@ export async function buildSeaQuery<T, D = void>(
         headers["Authorization"] = `Bearer ${password}`
     }
 
-    const maxRetries = 3;
+    const maxRetries = 2;
     let attempt = 0;
 
     while (attempt <= maxRetries) {
@@ -103,13 +103,12 @@ export async function buildSeaQuery<T, D = void>(
                     errorData = text;
                 }
 
-                // If 502, 503, 504, 429 -> retry
+                // If 502, 503, 504, 429 -> retry silenciosamente
                 if ((res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504) && attempt < maxRetries) {
-                    attempt++;
-                    const delay = 1000 * Math.pow(2, attempt - 1) * (0.5 + Math.random() * 0.5);
-                    console.warn(`[API] Request failed with ${res.status}. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`);
-                    await sleep(delay);
-                    continue;
+                    attempt++
+                    const delay = 300 * attempt
+                    await sleep(delay)
+                    continue
                 }
 
                 const errorMessage = typeof errorData === "object" && errorData !== null && "error" in errorData && typeof (errorData as Record<string, unknown>).error === "string"
@@ -131,15 +130,15 @@ export async function buildSeaQuery<T, D = void>(
             return json.data as T;
 
         } catch (error) {
-            // Network errors or already thrown ApiError
-            if (error instanceof TypeError && attempt < maxRetries) { // fetch throws TypeError on network failure
-                attempt++;
-                const delay = 1000 * Math.pow(2, attempt - 1) * (0.5 + Math.random() * 0.5);
-                console.warn(`[API] Network error. Retrying in ${delay}ms... (Attempt ${attempt}/${maxRetries})`);
-                await sleep(delay);
-                continue;
+            // Network errors (TypeError) = servidor no disponible (ERR_CONNECTION_REFUSED, etc.)
+            // No loguear durante retries — es ruido esperado cuando el servidor aún no arrancó.
+            if (error instanceof TypeError && attempt < maxRetries) {
+                attempt++
+                const delay = 200 * attempt
+                await sleep(delay)
+                continue
             }
-            throw error;
+            throw error
         }
     }
 

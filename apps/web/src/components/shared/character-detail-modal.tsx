@@ -1,6 +1,7 @@
 import * as React from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Icons } from "@/components/ui/icons"
+import { getScouterKi } from "@/lib/config/dragonball-lore.config"
 
 interface LoreTransformation {
     name: string
@@ -19,6 +20,7 @@ interface LoreWikiCharacter {
     personality?: string
     techniques?: string[]
     transformations?: LoreTransformation[]
+    ki?: string
 }
 
 interface CharacterEdge {
@@ -81,6 +83,8 @@ export function CharacterDetailModal({
                     />
 
                     <motion.div 
+                        role="dialog"
+                        aria-modal="true"
                         initial={{ opacity: 0, scale: 0.94, y: 16 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -109,7 +113,18 @@ export function CharacterDetailModal({
                             <p className="text-xs text-zinc-500 text-center mt-1">Alias: {charInfo.alias.join(", ")}</p>
                         )}
 
-                        <div className="w-full mt-4 sm:mt-6 space-y-2 sm:space-y-3 font-mono text-label-sm text-on-surface-variant/60">
+                        {/* Scouter Ki Level HUD */}
+                        <div className="w-full mt-3 p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 shadow-inner flex items-center justify-between text-[11px] font-mono text-emerald-400">
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                                <span className="font-bold tracking-wider uppercase text-[10px]">SCOUTER KI:</span>
+                            </div>
+                            <span className="font-black text-emerald-300 tracking-widest text-xs drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]">
+                                {getScouterKi(charInfo.name, charInfo.ki)}
+                            </span>
+                        </div>
+
+                        <div className="w-full mt-3 sm:mt-4 space-y-2 sm:space-y-3 font-mono text-label-sm text-on-surface-variant/60">
                             <div className="flex justify-between border-b border-outline-variant/30 pb-1">
                                 <span>Raza</span>
                                 <span className="font-bold text-on-surface uppercase">{charInfo.race || "N/A"}</span>

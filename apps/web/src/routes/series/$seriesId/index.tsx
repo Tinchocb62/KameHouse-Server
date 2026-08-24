@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router"
-import { HydrationBoundary, dehydrate, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query"
 import React, { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGSAP } from "@gsap/react"
@@ -13,7 +13,9 @@ import { useGetContinuityWatchHistoryItem } from "@/api/hooks/continuity.hooks"
 import { useServerQuery } from "@/api/client/requests"
 import { usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
+import { EXTRA_ENDPOINTS } from "@/api/client/endpoints.extra"
 import { EmptyState } from "@/components/shared/empty-state"
+import { useAppStore } from "@/lib/store"
 
 const VideoPlayer = React.lazy(() =>
     import("@/components/video/player").then(m => ({ default: m.VideoPlayer }))
@@ -51,9 +53,9 @@ export const Route = createFileRoute("/series/$seriesId/")(
             subSaga: (search.subSaga as string) ?? "",
             autoplay: (search.autoplay as string) || undefined,
         }),
-        loader: ({ params: { seriesId }, context }) => {
+        loader: async ({ params: { seriesId }, context }) => {
             const qc = context.queryClient
-            qc.prefetchQuery({
+            await qc.prefetchQuery({
                 queryKey: [API_ENDPOINTS.ANIME_ENTRIES.GetAnimeEntry.key, seriesId],
                 queryFn: () => fetchAnimeEntry(seriesId),
                 staleTime: 60000,
@@ -78,7 +80,6 @@ function SeriesDetailPage() {
 
 export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const { playSound } = useSound()
-    const queryClient = useQueryClient()
     const navigate = useNavigate()
     const {
         tab: activeTab,
@@ -96,9 +97,9 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const isStackedLayout = false
 
     const { data: lore } = useServerQuery<DragonBallLoreData>({
-        endpoint: "/api/v1/lore/dragonball",
+        endpoint: EXTRA_ENDPOINTS.DRAGONBALL.Lore.endpoint,
         method: "GET",
-        queryKey: ["dragonball-lore"],
+        queryKey: [EXTRA_ENDPOINTS.DRAGONBALL.Lore.key],
         staleTime: 300000,
         enabled: isDragonBallTmdbId(entry?.media?.tmdbId),
         muteError: true,
@@ -108,6 +109,15 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     const [mobileSagasOpen, setMobileSagasOpen] = useState(false)
     const [scrollToEpisode, setScrollToEpisode] = useState<number | undefined>(undefined)
     
+    const setActiveSeriesContext = useAppStore(s => s.setActiveSeriesContext)
+    React.useEffect(() => {
+        const contextKey = entry?.media?.tmdbId || seriesId
+        setActiveSeriesContext(String(contextKey))
+        return () => {
+            setActiveSeriesContext(null)
+        }
+    }, [seriesId, entry?.media?.tmdbId, setActiveSeriesContext])
+
     // Reset scroll target when saga/subsaga changes
     const [prevSagaParams, setPrevSagaParams] = useState({ saga: activeSagaId, subSaga: activeSubSagaId })
     if (activeSagaId !== prevSagaParams.saga || activeSubSagaId !== prevSagaParams.subSaga) {
@@ -167,7 +177,6 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
         nextSeriesTarget,
         heroBackdrop,
         resumeInfo,
-        sagaEpisodes,
         sagaProgress,
         fillerStats,
         episodeViewModels,
@@ -183,7 +192,6 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     // ── Playback logic ────────────────────────────────────────────────────────
     const {
         playTarget,
-        setPlayTarget,
         preloadPath,
         defaultTargetPath,
         nextEp,
@@ -213,6 +221,14 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
         [preloadStream]
     )
 
+    const activeSaga = React.useMemo(() => {
+        return sagas?.find(s => s.id === activeSagaId)
+    }, [sagas, activeSagaId])
+
+    const handlePlayHover = React.useCallback(() => {
+        preloadPath(defaultTargetPath)
+    }, [preloadPath, defaultTargetPath])
+
     // ── Backdrop sync ─────────────────────────────────────────────────────────
     React.useEffect(() => {
         if (heroBackdrop) {
@@ -235,12 +251,12 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
     useGSAP(
         () => {
             gsap.from(".series-animate", {
-                y: 35,
+                y: 20,
                 opacity: 0,
-                duration: 1.2,
-                stagger: 0.08,
-                ease: "power4.out",
-                delay: 0.15,
+                duration: 0.4,
+                stagger: 0.04,
+                ease: "power2.out",
+                delay: 0.05,
             })
         },
         { scope: pageRef, dependencies: [seriesId] }
@@ -318,10 +334,24 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                 backdropUrl={heroBackdrop}
                 sagaCount={sagas?.length ?? 0}
                 onPlay={handlePlayDefault}
-                onPlayHover={() => preloadPath(defaultTargetPath)}
+                onPlayHover={handlePlayHover}
                 hasProgress={!!continuityData?.item?.currentTime}
                 resumeEpisodeNumber={resumeInfo?.number}
                 resumeEpisodeTitle={resumeInfo?.title}
+                sagaPanel={sagas && sagas.length > 0 ? (
+                    <SagaSelector
+                        sagas={sagas}
+                        localSagas={entry?.media ? resolveSeriesSagas(entry.media) : []}
+                        activeSagaId={activeSagaId}
+                        onSelectSaga={sagaId => {
+                            setSearchParams({ saga: sagaId, subSaga: "" })
+                        }}
+                        activeSubSagaId={activeSubSagaId}
+                        onSelectSubSaga={subSagaId =>
+                            setSearchParams({ subSaga: subSagaId })
+                        }
+                    />
+                ) : undefined}
             />
 
             {/* Barra de progreso "Continuar viendo" (espeja movies/$movieId.tsx) */}
@@ -373,14 +403,14 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                 </div>
 
                 <div className="mt-4 min-h-[300px]">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence mode="wait" initial={false}>
                         {activeTab === "episodes" && (
                             <motion.div
                                 key="episodes"
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 10 }}
-                                transition={{ duration: 0.2 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15 }}
                                 className={cn(
                                     "mt-8 flex gap-10",
                                     // Settings → Apariencia → Layout de Página de Anime.
@@ -393,41 +423,19 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                 {sagas && sagas.length > 0 && (
                                     <div
                                         className={cn(
-                                            "flex-shrink-0 h-full flex flex-col gap-4",
-                                            !isStackedLayout &&
-                                                "lg:w-80 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)]"
+                                            "flex-shrink-0 flex flex-col gap-4 lg:hidden",
                                         )}
                                     >
                                         <button
                                             onClick={() => setMobileSagasOpen(true)}
-                                            className="lg:hidden w-full flex items-center justify-between px-4 py-3 bg-surface-container border border-outline-variant/30 rounded-xl font-bold text-on-surface uppercase tracking-widest text-sm active:scale-95 transition-all"
+                                            className="w-full flex items-center justify-between px-4 py-3 bg-surface-container border border-outline-variant/30 rounded-xl font-bold text-on-surface uppercase tracking-widest text-sm active:scale-95 transition-all"
                                         >
                                             <span>Sagas y Arcos</span>
                                             <span className="text-lg leading-none">+</span>
                                         </button>
 
-                                        {/* Desktop static layout */}
-                                        <div className="hidden lg:block h-full flex flex-col min-h-0">
-                                            <SagaSelector
-                                                sagas={sagas}
-                                                localSagas={
-                                                    entry?.media
-                                                        ? resolveSeriesSagas(entry.media)
-                                                        : []
-                                                }
-                                                activeSagaId={activeSagaId}
-                                                onSelectSaga={sagaId => {
-                                                    setSearchParams({ saga: sagaId, subSaga: "" })
-                                                }}
-                                                activeSubSagaId={activeSubSagaId}
-                                                onSelectSubSaga={subSagaId =>
-                                                    setSearchParams({ subSaga: subSagaId })
-                                                }
-                                            />
-                                        </div>
-
                                         {/* Mobile Vaul drawer */}
-                                        <div className="lg:hidden">
+                                        <div>
                                             <Vaul
                                                 open={mobileSagasOpen}
                                                 onOpenChange={setMobileSagasOpen}
@@ -484,10 +492,11 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                     </div>
                                 )}
 
+
                                 <div className="flex-grow flex flex-col min-w-0">
                                     <div ref={loreHeaderRef} className="scroll-mt-6" />
                                     <SagaLoreHeader
-                                        saga={sagas?.find(s => s.id === activeSagaId)}
+                                        saga={activeSaga}
                                         subSaga={activeSubSaga}
                                         media={entry?.media}
                                         onSelectCharacter={setSelectedCharacterName}
@@ -498,10 +507,7 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                     />
 
                                     <CharacterCarousel
-                                        characters={
-                                            sagas?.find(s => s.id === activeSagaId)
-                                                ?.keyCharacters || []
-                                        }
+                                        characters={activeSaga?.keyCharacters || []}
                                         onSelect={setSelectedCharacterName}
                                     />
 
@@ -564,16 +570,16 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                                     <li><strong className="text-on-surface">Formato:</strong> {entry.media?.format || "-"}</li>
                                                     <li><strong className="text-on-surface">Estado:</strong> {entry.media?.status || "-"}</li>
                                                     <li><strong className="text-on-surface">Episodios:</strong> {entry.media?.totalEpisodes || "-"}</li>
-                                                    <li><strong className="text-on-surface">Duración:</strong> {entry.media?.duration ? `${entry.media.duration} min` : "-"}</li>
+                                                    <li><strong className="text-on-surface">Duración:</strong> {entry.media?.runtime ? `${entry.media.runtime} min` : (entry.media as { duration?: number })?.duration ? `${(entry.media as { duration?: number }).duration} min` : "-"}</li>
                                                     <li><strong className="text-on-surface">Año:</strong> {entry.media?.year || "-"}</li>
                                                 </ul>
                                             </div>
                                             
-                                            {entry.media?.studios && entry.media.studios.length > 0 && (
+                                            {(entry.media as { studios?: string[] })?.studios && ((entry.media as { studios?: string[] }).studios?.length ?? 0) > 0 && (
                                                 <div>
                                                     <h4 className="text-label-sm font-bold text-on-surface-variant uppercase tracking-widest mb-2">Estudios</h4>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {entry.media.studios.map(studio => (
+                                                        {(entry.media as { studios?: string[] }).studios?.map((studio: string) => (
                                                             <span key={studio} className="px-3 py-1 bg-surface-container border border-outline-variant/20 rounded-full text-label-sm font-semibold text-on-surface">
                                                                 {studio}
                                                             </span>
@@ -582,13 +588,13 @@ export function SeriesDetailClient({ seriesId }: { seriesId: string }) {
                                                 </div>
                                             )}
                                             
-                                            {entry.media?.genres && entry.media.genres.length > 0 && (
+                                            {entry.media?.genres && (Array.isArray(entry.media.genres) ? entry.media.genres.length > 0 : Object.keys(entry.media.genres).length > 0) && (
                                                 <div>
                                                     <h4 className="text-label-sm font-bold text-on-surface-variant uppercase tracking-widest mb-2">Géneros</h4>
                                                     <div className="flex flex-wrap gap-2">
-                                                        {entry.media.genres.map(genre => (
-                                                            <span key={genre} className="px-3 py-1 bg-surface-container border border-outline-variant/20 rounded-full text-label-sm font-semibold text-on-surface">
-                                                                {genre}
+                                                        {(Array.isArray(entry.media.genres) ? entry.media.genres : Object.values(entry.media.genres)).map((genre: unknown) => (
+                                                            <span key={String(genre)} className="px-3 py-1 bg-surface-container border border-outline-variant/20 rounded-full text-label-sm font-semibold text-on-surface">
+                                                                {String(genre)}
                                                             </span>
                                                         ))}
                                                     </div>

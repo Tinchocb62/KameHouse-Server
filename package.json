@@ -4,21 +4,20 @@
   "private": true,
   "scripts": {
     "dev:web": "pnpm --filter kamehouse-web dev",
-    "dev:desktop": "concurrently -n server,app -c blue,green \"pnpm build:server\" \"pnpm --filter kamehouse-desktop dev\"",
-    "build:server": "cd apps/server && go build -o kamehouse.exe .",
+    "dev:desktop": "concurrently -k -n web,app -c cyan,green \"pnpm dev:web\" \"pnpm --filter kamehouse-desktop dev\"",
+    "build:server:dev": "go -C apps/server build -o kamehouse.exe .",
+    "build:server": "go -C apps/server build -o kamehouse.exe . && pwsh -NoProfile -NonInteractive -Command \"$b='apps/desktop/src-tauri/binaries'; New-Item -ItemType Directory -Force $b | Out-Null; @('windows.exe','darwin-amd64','darwin-arm64','linux-amd64','linux-arm64') | ForEach-Object { Copy-Item 'apps/server/kamehouse.exe' \\\"$b/kamehouse-server-$_-x86_64-pc-windows-msvc.exe\\\" -Force; Copy-Item 'apps/server/kamehouse.exe' \\\"$b/kamehouse-server-$_.exe\\\" -Force; Copy-Item 'apps/server/kamehouse.exe' \\\"$b/kamehouse-server-$_\\\" -Force }\"",
     "build:web": "pnpm --filter kamehouse-web build",
-    "build:desktop": "pnpm --filter kamehouse-desktop build",
+    "build:desktop": "pnpm build:server && pnpm --filter kamehouse-desktop build",
     "build:all": "pnpm build:web && pnpm build:desktop",
     "clean": "pnpm --recursive exec rm -rf node_modules && rm -rf node_modules"
-  },
-  "pnpm": {
-    "overrides": {},
-    "onlyBuiltDependencies": [
-      "electron"
-    ]
   },
   "devDependencies": {
     "concurrently": "^10.0.3",
     "react-devtools": "^7.0.1"
+  },
+  "patchedDependencies": {
+    "jassub@2.5.1": "patches/jassub@2.5.1.patch",
+    "react-scan@0.5.7": "patches/react-scan@0.5.7.patch"
   }
 }

@@ -14,6 +14,7 @@
 
 import { useRef, useCallback } from "react"
 import { useUpdateContinuityWatchHistoryItem } from "@/api/hooks/continuity.hooks"
+import { toast } from "sonner"
 
 interface UseAnimeTrackingOptions {
     /** Media (series / movie) ID from the backend */
@@ -79,6 +80,13 @@ export function useAnimeTracking({
                         kind: "mediastream",
                         predictive: false,
                     },
+                }, {
+                    onSuccess: () => {
+                        toast.success(`Episodio ${episodeNumber} completado — Progreso sincronizado`, {
+                            duration: 3500,
+                            id: `scrobble-${mediaId}-${episodeNumber}`,
+                        })
+                    }
                 })
             }
         },

@@ -43,6 +43,12 @@ export function MoviesFilterBar({
         document.addEventListener("mousedown", handleClick)
         return () => document.removeEventListener("mousedown", handleClick)
     }, [sortOpen, setSortOpen])
+    const eraCounts: Record<string, number> = { all: allMovies.length }
+    for (let i = 0; i < allMovies.length; i++) {
+        const era = allMovies[i].era
+        eraCounts[era] = (eraCounts[era] || 0) + 1
+    }
+
     return (
         <div className="w-full flex flex-col p-6 bg-[var(--glass-bg)] backdrop-blur-overlay-md border border-[var(--glass-border)] rounded-container overflow-visible gap-6">
             <h3 className="font-display text-2xl tracking-widest text-on-surface/90 uppercase flex items-center justify-center flex-shrink-0">
@@ -128,10 +134,7 @@ export function MoviesFilterBar({
                 <span className="text-label-sm font-black uppercase tracking-wider text-on-surface-variant">Eras</span>
                 <div className="flex flex-col gap-2">
                     {ERA_TABS.map((tab) => {
-                        const count =
-                            tab.value === "all"
-                                ? allMovies.length
-                                : allMovies.filter((m) => m.era === tab.value).length
+                        const count = eraCounts[tab.value] || 0
                         const isActive = activeEra === tab.value
 
                         return (

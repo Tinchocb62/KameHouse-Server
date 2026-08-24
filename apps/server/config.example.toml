@@ -63,8 +63,7 @@ dir = "$KAMEHOUSE_DATA_DIR/extensions"
 apiKey = ""               # TMDB API Key personalizado (opcional, el servidor incluye uno por defecto)
 
 [metadata]
-tmdbApiKey = ""           # Bearer token de TMDb (opcional — hay uno incluido)
-fanartApiKey = ""         # API key de FanArt.tv — logos HD transparentes, clearart, thumbs
-#                           # Obtené una gratis en: https://fanart.tv/get-an-api-key/
+provider = "jikan"          # Proveedor principal: "jikan" (MyAnimeList - por defecto, sin cuenta) o "tmdb"
+tmdbApiKey = ""           # Bearer token de TMDb (opcional — usado como fallback para imágenes y backdrops)
 omdbApiKey = ""           # API key de OMDb — ratings IMDb, RT, Metacritic, runtime, director
 #                           # Obtené una gratis en: https://www.omdbapi.com/apikey.aspx (1000 req/día)

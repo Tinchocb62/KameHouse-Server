@@ -128,8 +128,9 @@ func getDragonBallSagaDetails(tmdbID int) []sagaResolution {
 			{id: "majin-buu", name: "Saga de Majin Buu", startEp: 200, endEp: 291, subSagas: []subSagaResolution{
 				{id: "gran-saiyaman-arc", name: "El Gran Saiyaman", startEp: 200, endEp: 209},
 				{id: "torneo-25", name: "El 25° Torneo de Artes Marciales", startEp: 210, endEp: 219},
-				{id: "babidi-dabura-vegeta-majin", name: "Babidi, Dabura y el Majin Vegeta", startEp: 220, endEp: 237},
-				{id: "despertar-buu-sacrificio-vegeta", name: "El Despertar de Buu y el Sacrificio de Vegeta", startEp: 238, endEp: 253},
+				{id: "babidi-dabura-vegeta-majin", name: "La Nave de Babidi y Majin Vegeta", startEp: 220, endEp: 231},
+				{id: "despertar-buu-sacrificio-vegeta", name: "El Despertar de Buu y el Sacrificio de Vegeta", startEp: 232, endEp: 237},
+				{id: "ssj3-fusion-dance", name: "El Super Saiyajin 3 y la Fusión", startEp: 238, endEp: 253},
 				{id: "super-buu", name: "La Amenaza de Super Buu", startEp: 254, endEp: 275},
 				{id: "fusion-kid-buu", name: "Fusión y Batalla Final contra Kid Buu", startEp: 276, endEp: 287},
 				{id: "mundo-paz", name: "Un Mundo en Paz (Epílogo)", startEp: 288, endEp: 291},

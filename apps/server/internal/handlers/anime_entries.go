@@ -600,20 +600,28 @@ func (h *Handler) HandleOpenAnimeEntryInExplorer(c echo.Context) error {
 	return h.RespondWithData(c, true)
 }
 
-// HandleGetAnimeEntrySilenceStatus returns a stable no-op silence status.
+// HandleGetAnimeEntrySilenceStatus returns the silence status of an anime entry.
 //
 //	@summary returns the silence status.
 //	@param id - int - true - "Anime media ID"
 //	@route /api/v1/library/anime-entry/silence/{id} [GET]
 //	@returns bool
 func (h *Handler) HandleGetAnimeEntrySilenceStatus(c echo.Context) error {
+	mID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return h.RespondWithError(c, err)
+	}
+
+	entry, _ := h.App.Database.GetSilencedMediaEntry(uint(mID))
+	isSilenced := entry != nil && entry.ID != 0
+
 	return h.RespondWithData(c, map[string]interface{}{
-		"mediaID":  c.Param("id"),
-		"silenced": false,
+		"mediaID":  mID,
+		"silenced": isSilenced,
 	})
 }
 
-// HandleToggleAnimeEntrySilenceStatus toggles the silence flag (no-op until DB column exists).
+// HandleToggleAnimeEntrySilenceStatus toggles the silence flag for an anime entry.
 //
 //	@summary toggles the silence flag.
 //	@route /api/v1/library/anime-entry/silence [POST]
@@ -626,9 +634,24 @@ func (h *Handler) HandleToggleAnimeEntrySilenceStatus(c echo.Context) error {
 	if err := c.Bind(&b); err != nil {
 		return h.RespondWithError(c, err)
 	}
+
+	entry, _ := h.App.Database.GetSilencedMediaEntry(uint(b.MediaID))
+	var newStatus bool
+	if entry != nil && entry.ID != 0 {
+		if err := h.App.Database.DeleteSilencedMediaEntry(uint(b.MediaID)); err != nil {
+			return h.RespondWithError(c, err)
+		}
+		newStatus = false
+	} else {
+		if err := h.App.Database.InsertSilencedMediaEntry(uint(b.MediaID)); err != nil {
+			return h.RespondWithError(c, err)
+		}
+		newStatus = true
+	}
+
 	return h.RespondWithData(c, map[string]interface{}{
 		"mediaID":  b.MediaID,
-		"silenced": false, // Placeholder until silence column is added to DB
+		"silenced": newStatus,
 	})
 }
 

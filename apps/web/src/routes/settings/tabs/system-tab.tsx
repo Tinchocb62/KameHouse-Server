@@ -1,35 +1,57 @@
 import React from "react"
-import { Section, Card, OsToggle } from "../components"
-import { DangerZone } from "@/components/settings/danger-zone"
-import { type Control, Controller } from "react-hook-form"
+import { type Control, Controller, useWatch } from "react-hook-form"
 import { type SettingsFormValues } from "../index"
 import { toast } from "sonner"
 import { useBackupDatabase } from "@/api/hooks/system.hooks"
-import { getServerBaseUrl } from "@/api/client/server-url"
-import { API_ENDPOINTS } from "@/api/generated/endpoints"
+import { buildSeaQuery } from "@/api/client/requests"
+import { SecretField } from "@/components/settings/secret-field"
+import { DangerZone } from "@/components/settings/danger-zone"
+import { Icons } from "@/components/ui/icons"
+import { SettingsSection, SettingsCard, OsToggle } from "../components"
+
 interface SystemTabProps {
     control: Control<SettingsFormValues>
+    onOpenWizard?: () => void
+    searchQuery?: string
 }
 
-const HardDriveIcon = () => (
-    <svg className="w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-        <line x1="2" y1="10" x2="22" y2="10" />
-        <line x1="6" y1="14" x2="6.01" y2="14" />
-        <line x1="10" y1="14" x2="10.01" y2="14" />
-    </svg>
-)
+function ApiKeyCard({ name, description, connected, children }: { name: string; description: string; connected: boolean; children: React.ReactNode }) {
+    return (
+        <div className="bg-white/[0.02] rounded-xl p-4 space-y-3 border border-white/10">
+            <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                <div>
+                    <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">{name}</h4>
+                    <p className="text-[11px] text-on-surface-variant mt-0.5">{description}</p>
+                </div>
+                {connected ? (
+                    <div className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-full shrink-0">
+                        <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">Conectado</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_hsl(var(--brand-success))]" />
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full shrink-0">
+                        <span className="text-[10px] font-mono text-on-surface-variant uppercase">Sin configurar</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                    </div>
+                )}
+            </div>
+            {children}
+        </div>
+    )
+}
 
 const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-export function SystemTab({ control }: SystemTabProps) {
+export function SystemTab({ control, searchQuery }: SystemTabProps) {
     const { mutate: backupDb, isPending: isBackingUp } = useBackupDatabase()
+
+    const tmdbApiKey = useWatch({ control, name: "library.tmdbApiKey" })
 
     const handleBackup = () => {
         backupDb(undefined, {
@@ -43,68 +65,108 @@ export function SystemTab({ control }: SystemTabProps) {
         })
     }
 
-    const handleGenerateReport = async () => {
-        toast.loading("Generando reporte...", { id: "report-toast" })
-        try {
-            const url = `${getServerBaseUrl() || window.location.origin}${API_ENDPOINTS.SYSTEM.GetDiagnosticsReport.endpoint}`
-            const res = await fetch(url)
-            if (!res.ok) throw new Error("Error fetching report")
-            
-            const blob = await res.blob()
-            const downloadUrl = window.URL.createObjectURL(blob)
-            
-            const contentDisposition = res.headers.get("content-disposition")
-            let filename = "kamehouse-diagnostics.zip"
-            if (contentDisposition) {
-                const match = contentDisposition.match(/filename="?([^"]+)"?/)
-                if (match && match[1]) filename = match[1]
-            }
-
-            const a = document.createElement("a")
-            a.href = downloadUrl
-            a.download = filename
-            document.body.appendChild(a)
-            a.click()
-            window.URL.revokeObjectURL(downloadUrl)
-            a.remove()
-            toast.success("Reporte descargado", { id: "report-toast" })
-        } catch {
-            toast.error("Error al generar el reporte", { id: "report-toast" })
-        }
-    }
-
     const handleClearCache = async () => {
-        if (!("caches" in window)) {
-            toast.error("Este navegador no soporta la API de cachés")
-            return
-        }
+        toast.loading("Limpiando caché del sistema...", { id: "cache-toast" })
         try {
-            const keys = await caches.keys()
-            await Promise.all(keys.map((k) => caches.delete(k)))
-            if (keys.length > 0) {
-                toast.success(`${keys.length} caché(s) locales eliminadas — recargá la página para regenerarlas`)
-            } else {
-                toast.info("No había cachés locales que limpiar")
-            }
+            await buildSeaQuery({
+                endpoint: "/api/v1/system/cache/clear",
+                method: "POST",
+            })
+            toast.success("Caché liberada correctamente", { id: "cache-toast" })
         } catch {
-            toast.error("No se pudo limpiar la caché local")
+            toast.error("No se pudo limpiar la caché", { id: "cache-toast" })
         }
     }
+
+    const connectedApiCount = tmdbApiKey ? 1 : 0
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-slow outline-none">
-            {/* Aplicación & Core DB Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-                {/* Aplicación */}
-                <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 md:col-span-2 space-y-5 divide-y divide-outline-variant/3">
-                    <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Aplicación</h4>
+        <div className="w-full space-y-7 animate-in fade-in duration-base pb-8">
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                1. PROVEEDORES Y CLAVES DE API
+               ═══════════════════════════════════════════════════════════════════ */}
+            <SettingsSection
+                label="Proveedores de Metadatos y APIs"
+                description="Claves para enriquecer sinopsis, afiches en alta resolución y calificaciones oficiales."
+                icon={Icons.ui.key}
+                badge={
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                        {connectedApiCount} vinculada
+                    </span>
+                }
+            >
+                <SettingsCard divide={false} className="p-5 space-y-4">
+                    <ApiKeyCard
+                        name="The Movie Database (TMDB)"
+                        description="Permite buscar automáticamente afiches oficiales, sinopsis de sagas y fechas de emisión."
+                        connected={!!tmdbApiKey}
+                    >
+                        <Controller
+                            control={control}
+                            name="library.tmdbApiKey"
+                            render={({ field }) => (
+                                <SecretField
+                                    label="API Key de TMDB v3"
+                                    value={field.value || ""}
+                                    onChange={field.onChange}
+                                    placeholder="Ingresa tu API Key de TMDB"
+                                />
+                            )}
+                        />
+                    </ApiKeyCard>
+                </SettingsCard>
+            </SettingsSection>
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                2. MANTENIMIENTO Y NOTIFICACIONES
+               ═══════════════════════════════════════════════════════════════════ */}
+            <SettingsSection
+                label="Mantenimiento y Notificaciones"
+                description="Respaldos de base de datos, limpieza de caché y avisos de sistema."
+                icon={Icons.ui.rotate}
+            >
+                <SettingsCard>
+                    <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/[0.01]">
+                        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-xs font-bold text-on-surface">Copia de Seguridad SQLite</p>
+                                <p className="text-[11px] text-on-surface-variant">Genera un dump seguro de tu progreso.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleBackup}
+                                disabled={isBackingUp}
+                                className="shrink-0 px-3 py-1.5 rounded-lg bg-brand-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                            >
+                                {isBackingUp ? <Icons.ui.spinner className="w-3.5 h-3.5 animate-spin" /> : <Icons.status.archive className="w-3.5 h-3.5" />}
+                                <span>{isBackingUp ? "Creando..." : "Crear Copia"}</span>
+                            </button>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 flex items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                                <p className="text-xs font-bold text-on-surface">Limpieza de Caché</p>
+                                <p className="text-[11px] text-on-surface-variant">Libera miniaturas y temporales.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleClearCache}
+                                className="shrink-0 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 text-xs font-bold text-on-surface flex items-center gap-1.5 transition-all active:scale-95"
+                            >
+                                <Icons.ui.trash className="w-3.5 h-3.5 text-zinc-400" />
+                                <span>Limpiar</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <Controller
                         control={control}
-                        name="library.openWebURLOnStart"
+                        name="notifications.disableNotifications"
                         render={({ field }) => (
                             <OsToggle
-                                label="Abrir Interfaz Web al Iniciar"
-                                description="Abre automáticamente el navegador con KameHouse al arrancar el servidor."
+                                label="Desactivar Todas las Notificaciones"
+                                description="Silencia avisos flotantes de sistema en el navegador."
                                 checked={!!field.value}
                                 onChange={field.onChange}
                             />
@@ -112,62 +174,44 @@ export function SystemTab({ control }: SystemTabProps) {
                     />
                     <Controller
                         control={control}
-                        name="Platform.hideAudienceScore"
+                        name="notifications.disableAutoScannerNotifications"
                         render={({ field }) => (
                             <OsToggle
-                                label="Ocultar Puntuación de Audiencia"
-                                description="No mostrar la puntuación de la comunidad en las tarjetas de media."
+                                label="Silenciar Avisos del Escáner Automático"
+                                description="No muestra alertas cuando el indexador añade episodios en segundo plano."
                                 checked={!!field.value}
                                 onChange={field.onChange}
                             />
                         )}
                     />
-                </div>
+                </SettingsCard>
+            </SettingsSection>
 
-                {/* Base de Datos Core */}
-                <div className="bg-surface-container rounded-container p-6 shadow-elevation-1 flex flex-col justify-between">
-                    <div className="space-y-1">
-                        <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
-                            <HardDriveIcon /> Base de Datos Core
-                        </h4>
-                        <span className="text-label-sm font-mono text-on-surface-variant block">Engine: SQLite 3</span>
-                    </div>
-                    <div className="pt-5 flex flex-col gap-2">
-                        <button
-                            type="button"
-                            onClick={handleBackup}
-                            disabled={isBackingUp}
-                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-label-sm font-bold uppercase tracking-widest text-on-surface-variant rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                            {isBackingUp ? "Respaldando..." : "Respaldar DB"}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleGenerateReport}
-                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-label-sm font-bold uppercase tracking-widest text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
-                        >
-                            Generar Reporte
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleClearCache}
-                            className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high border border-outline-variant text-label-sm font-bold uppercase tracking-widest text-on-surface-variant rounded-xl transition-all active:scale-[0.98]"
-                        >
-                            Limpiar Caché Local
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Zona de Peligro */}
-            <Section label="Zona de Peligro">
-                <Card>
+            {/* ═══════════════════════════════════════════════════════════════════
+                3. ZONA DE PELIGRO (CRÍTICO - COLAPSABLE)
+               ═══════════════════════════════════════════════════════════════════ */}
+            <SettingsSection
+                label="Zona de Peligro"
+                description="Restablecer ajustes de fábrica o reiniciar el servidor."
+                icon={Icons.ui.alert}
+                collapsible
+                defaultOpen={false}
+                searchQuery={searchQuery}
+                badge={
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">
+                        Crítico
+                    </span>
+                }
+            >
+                <div className="rounded-2xl border border-red-500/20 bg-red-950/[0.05] p-5">
                     <DangerZone
-                        title="Zona de Riesgo Crítico"
-                        description="Operaciones destructivas que alteran permanentemente los datos del servidor KameHouse."
+                        title="Restablecimiento y Zona de Peligro"
+                        description="Acciones de mantenimiento que pueden restablecer la configuración de fábrica de KameHouse."
                     />
-                </Card>
-            </Section>
+                </div>
+            </SettingsSection>
+
         </div>
     )
 }
+

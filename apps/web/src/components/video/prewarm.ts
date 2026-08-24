@@ -30,8 +30,8 @@ export function prewarmVideoPlayer() {
     }
 
     if (typeof window.requestIdleCallback === "function") {
-        window.requestIdleCallback(run, { timeout: 2500 })
+        window.requestIdleCallback(run, { timeout: 4000 })
     } else {
-        setTimeout(run, 300)
+        setTimeout(run, 2000)
     }
 }

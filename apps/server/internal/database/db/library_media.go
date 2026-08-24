@@ -197,3 +197,50 @@ func UpdateLibraryMediaMappings(d *Database, id uint, anidbId, malId int) error 
 		"myanimelist_id": malId,
 	}).Error
 }
+
+// CleanBrokenLibraryMediaPosters resets broken/hallucinated legacy placeholder image URLs in the DB
+// and updates the core Dragon Ball series with their verified authentic TMDB artwork.
+func CleanBrokenLibraryMediaPosters(d *Database) {
+	brokenPatterns := []string{
+		"%daima_poster%", "%daima_banner%",
+		"%bardock_poster%", "%bardock_banner%",
+		"%trunks_future%", "%deadzone%",
+		"%broly_poster%", "%superhero_poster%",
+		"%6GI51l50f4Gf0K7D5V7bZ2V6eB5%",
+		"%3w8hdA7V1f6Y23qgJjW8R9Y54Vb%",
+		"%4gN1vO4bZz2PzR0V6eB6aQ7lH4m%",
+		"%qV8s4B1zO0f1V7bZ2V6eB5lH4m0%",
+		"%96X0I7m4oD1vO4bZz2PzR0V6eB5%",
+		"%f02FFv0x2fB6aQ7lH4m0vO4bZz2%",
+		"%rugyJioKn7Ky1qO4bZz2PzR0V6e%",
+		"%2exOOgqIeYvC4vFk7Hj5tQ3XpW6%",
+		"%6xK4S5gN0V8bZ2PzR0V6eB6aQ7l%",
+		"%mX9V8s4B1zO0f1V7bZ2V6eB5lH4%",
+		"%7hM7zP0V6eB5lH4m0vO4bZz2PzR%",
+		"%dJODzGsqM92Z2rP0Z8dI1iPz8N0%",
+	}
+	for _, p := range brokenPatterns {
+		d.Gorm().Model(&models.LibraryMedia{}).Where("poster_image LIKE ?", p).Update("poster_image", "")
+		d.Gorm().Model(&models.LibraryMedia{}).Where("banner_image LIKE ?", p).Update("banner_image", "")
+	}
+
+	// Set verified official artwork for canonical TV series if missing or cleared
+	verifiedArt := map[int][2]string{
+		12609:  {"https://image.tmdb.org/t/p/w500/30L49n4Dhn7dzuGG50GV3ybMhC3.jpg", "https://image.tmdb.org/t/p/original/onCLyCOgszTIyyVs2XKYSkKPOPG.jpg"},
+		12971:  {"https://image.tmdb.org/t/p/w500/ydf1CeiBLfdxiyNTpskM0802TKl.jpg", "https://image.tmdb.org/t/p/original/oQ5CnVj3TRifXl2bIOri6H6rfNe.jpg"},
+		12697:  {"https://image.tmdb.org/t/p/w500/aJOlYXjxb5IvnTsO4I1tmFpC7GH.jpg", "https://image.tmdb.org/t/p/original/rLHhDpv6rrhuzBjNzaMRNv2fng.jpg"},
+		61709:  {"https://image.tmdb.org/t/p/w500/oz5zbMBKCUsb7hsbjdxvK8yagPD.jpg", "https://image.tmdb.org/t/p/original/ojsPI8fNwcecKLhVC4rB4ZZhFMc.jpg"},
+		42705:  {"https://image.tmdb.org/t/p/w500/oz5zbMBKCUsb7hsbjdxvK8yagPD.jpg", "https://image.tmdb.org/t/p/original/ojsPI8fNwcecKLhVC4rB4ZZhFMc.jpg"},
+		62715:  {"https://image.tmdb.org/t/p/w500/qA2UwUQbj05aeBMCuC0mHSQ4loE.jpg", "https://image.tmdb.org/t/p/original/qEUrbXJ2qt4Rg84Btlx4STOhgte.jpg"},
+		236994: {"https://image.tmdb.org/t/p/w500/oUmWLyeko3kYdUr8DBLIsxwcugl.jpg", "https://image.tmdb.org/t/p/original/lMULbSFZNXUC87MqOZQ4SSV9DXI.jpg"},
+	}
+
+	for tmdbId, art := range verifiedArt {
+		d.Gorm().Model(&models.LibraryMedia{}).
+			Where("tmdb_id = ? AND (poster_image = '' OR poster_image IS NULL)", tmdbId).
+			Update("poster_image", art[0])
+		d.Gorm().Model(&models.LibraryMedia{}).
+			Where("tmdb_id = ? AND (banner_image = '' OR banner_image IS NULL)", tmdbId).
+			Update("banner_image", art[1])
+	}
+}

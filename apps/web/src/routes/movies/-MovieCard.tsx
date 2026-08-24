@@ -72,7 +72,7 @@ export const MovieCard = memo(function MovieCard({
             {/* Poster Wrap (Flat style) */}
             <div 
                 className={cn(
-                    "relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-container border transition-all duration-slow [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] transform-gpu will-change-transform",
+                    "relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-container border transition-all duration-fast ease-smooth-out transform-gpu",
                     !hasLocalFiles && !isMobile && "grayscale opacity-45",
                 )}
                 style={{
@@ -138,7 +138,7 @@ export const MovieCard = memo(function MovieCard({
                 {hasProgress && (
                     <div className="absolute bottom-0 inset-x-0 h-1" style={{ background: "color-mix(in srgb, var(--md-sys-color-surface) 40%, transparent)" }}>
                         <div
-                            className="h-full transition-all duration-slow"
+                            className="h-full transition-all duration-base"
                             style={{ width: `${progressPercent}%`, backgroundColor: eraConfig.color }}
                         />
                     </div>
@@ -178,7 +178,7 @@ export const MovieCard = memo(function MovieCard({
                             <div className="flex flex-wrap items-center gap-2 mt-2 text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
                                 {(movie.score ?? 0) > 0 && !hideAudienceScore && (
                                     <span className="text-brand-success font-extrabold">
-                                        {(movie.score / 10).toFixed(0)}% COINCIDENCIA
+                                        {movie.score}% COINCIDENCIA
                                     </span>
                                 )}
                                 {(movie.year ?? 0) > 0 && <span className="text-on-surface-variant font-medium">{movie.year}</span>}

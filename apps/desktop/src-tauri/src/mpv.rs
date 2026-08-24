@@ -125,6 +125,12 @@ impl MpvManager {
         cmd.arg(format!("--input-ipc-server={}", ipc_path))
             .arg("--keep-open=no")
             .arg("--force-window=yes")
+            .arg("--hwdec=auto-safe")
+            .arg("--vo=gpu-next,gpu")
+            .arg("--gpu-api=auto")
+            .arg("--cache=yes")
+            .arg("--demuxer-max-bytes=150M")
+            .arg("--demuxer-readahead-secs=20")
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
             .stdin(std::process::Stdio::null());

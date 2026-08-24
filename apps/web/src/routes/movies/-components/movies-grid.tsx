@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback, memo } from "react"
 import { motion } from "framer-motion"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import type { Anime_LibraryCollectionEntry, Continuity_WatchHistory } from "@/api/generated/types"
@@ -28,7 +28,7 @@ function columnsForWidth(width: number): number {
     return Math.max(1, Math.floor((width + CARD_GAP) / (CARD_WIDTH + CARD_GAP)))
 }
 
-export function MoviesGrid({
+export const MoviesGrid = memo(function MoviesGrid({
     filteredSorted,
     isLoading,
     allMoviesLength,
@@ -68,7 +68,7 @@ export function MoviesGrid({
             if (overflowY === "auto" || overflowY === "scroll") break
             scroller = scroller.parentElement
         }
-        setScrollEl(scroller)
+        setScrollEl(scroller ?? document.documentElement)
 
         const measure = (width: number) => {
             setGridWidth(width)
@@ -103,7 +103,8 @@ export function MoviesGrid({
         const gapSize = gridWidth < 768 ? 12 : 24
         const cardWidth = Math.max(80, (gridWidth - (columns - 1) * gapSize) / columns)
         const posterHeight = cardWidth * 1.5
-        return Math.ceil(posterHeight + 64 + 40)
+        // 80px para el bloque título/info (mt-3.5 + h-10 + línea metadata + espacio extra para wrap)
+        return Math.ceil(posterHeight + 80 + 40)
     }, [gridWidth, columns])
 
     const virtualizer = useVirtualizer({
@@ -145,13 +146,7 @@ export function MoviesGrid({
                                 }}
                             >
                                 {rowItems.map((entry) => (
-                                    <motion.div
-                                        key={entry.mediaId}
-                                        initial={{ opacity: 0, y: 24, scale: 0.96 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.94, y: 12 }}
-                                        transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                                    >
+                                    <div key={entry.mediaId} className="h-full">
                                         <MovieCard
                                             entry={entry}
                                             era={entry.era}
@@ -159,7 +154,7 @@ export function MoviesGrid({
                                             onClick={handleMovieClick}
                                             onHoverCard={handleHoverCard}
                                         />
-                                    </motion.div>
+                                    </div>
                                 ))}
                             </div>
                         )
@@ -168,4 +163,4 @@ export function MoviesGrid({
             )}
         </div>
     )
-}
+})

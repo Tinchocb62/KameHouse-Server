@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"kamehouse/internal/api/tmdb"
+	"kamehouse/internal/constants"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models/dto"
 	"time"
@@ -84,7 +85,7 @@ func (p *TMDBProvider) SearchMedia(ctx context.Context, query string) ([]*dto.No
 	movieResults, movieErr := p.client.SearchMovie(ctx, query)
 	if movieErr == nil {
 		for _, r := range movieResults {
-			nm := tmdbMovieResultToNormalizedMedia(r)
+			nm := TmdbMovieResultToNormalizedMedia(r)
 			results = append(results, nm)
 		}
 	}
@@ -124,7 +125,7 @@ func (p *TMDBProvider) SearchMovie(ctx context.Context, query string) ([]*dto.No
 	movieResults, err := p.client.SearchMovie(ctx, query)
 	if err == nil {
 		for _, r := range movieResults {
-			nm := tmdbMovieResultToNormalizedMedia(r)
+			nm := TmdbMovieResultToNormalizedMedia(r)
 			results = append(results, nm)
 		}
 		if len(results) == 0 {
@@ -148,12 +149,12 @@ func (p *TMDBProvider) GetMediaDetails(ctx context.Context, id string) (*dto.Nor
 
 	// If it's a number, try to determine if it's TV or Movie based on offset
 	if numID, err := strconv.Atoi(id); err == nil {
-		if numID >= 1000000 {
+		if numID >= constants.MovieIDOffset {
 			// Movie
-			realID := numID - 1000000
+			realID := numID - constants.MovieIDOffset
 			movieRes, err := p.client.GetMovieDetails(ctx, strconv.Itoa(realID))
 			if err == nil {
-				res := tmdbMovieDetailsToNormalizedMedia(movieRes)
+				res := TmdbMovieDetailsToNormalizedMedia(movieRes)
 				if p.db != nil {
 					_ = db.UpsertMetadataCache(p.db, "tmdb-media-details", id, res, 7*24*time.Hour)
 				}
@@ -177,7 +178,7 @@ func (p *TMDBProvider) GetMediaDetails(ctx context.Context, id string) (*dto.Nor
 				realID := posID - 1000000
 				movieRes, err := p.client.GetMovieDetails(ctx, strconv.Itoa(realID))
 				if err == nil {
-					return tmdbMovieDetailsToNormalizedMedia(movieRes), nil
+					return TmdbMovieDetailsToNormalizedMedia(movieRes), nil
 				}
 			} else {
 				tvRes, err := p.client.GetTVDetails(ctx, strconv.Itoa(posID))
@@ -198,7 +199,7 @@ func (p *TMDBProvider) GetMediaDetails(ctx context.Context, id string) (*dto.Nor
 	// Try Movie next
 	movieRes, movieErr := p.client.GetMovieDetails(ctx, id)
 	if movieErr == nil {
-		nm := tmdbMovieDetailsToNormalizedMedia(movieRes)
+		nm := TmdbMovieDetailsToNormalizedMedia(movieRes)
 		return nm, nil
 	}
 
@@ -369,8 +370,8 @@ func TmdbTVDetailsToNormalizedMedia(r *tmdb.TVDetails) *dto.NormalizedMedia {
 	}
 }
 
-// tmdbMovieResultToNormalizedMedia converts a TMDB Movie SearchResult to NormalizedMedia.
-func tmdbMovieResultToNormalizedMedia(r tmdb.SearchResult) *dto.NormalizedMedia {
+// TmdbMovieResultToNormalizedMedia converts a TMDB Movie SearchResult to NormalizedMedia.
+func TmdbMovieResultToNormalizedMedia(r tmdb.SearchResult) *dto.NormalizedMedia {
 	tmdbID := r.ID
 	title := &dto.NormalizedMediaTitle{}
 	if r.Title != "" {
@@ -435,8 +436,8 @@ func tmdbMovieResultToNormalizedMedia(r tmdb.SearchResult) *dto.NormalizedMedia 
 	}
 }
 
-// tmdbMovieDetailsToNormalizedMedia converts full TMDB MovieDetails to NormalizedMedia.
-func tmdbMovieDetailsToNormalizedMedia(r *tmdb.MovieDetails) *dto.NormalizedMedia {
+// TmdbMovieDetailsToNormalizedMedia converts full TMDB MovieDetails to NormalizedMedia.
+func TmdbMovieDetailsToNormalizedMedia(r *tmdb.MovieDetails) *dto.NormalizedMedia {
 	tmdbID := r.ID
 	title := &dto.NormalizedMediaTitle{}
 	if r.Title != "" {

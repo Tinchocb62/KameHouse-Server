@@ -76,6 +76,19 @@ func SetCached[T any](c *Client, key string, value T, ttl time.Duration) {
 	c.cache.Store(key, value)
 }
 
+// HasApiKey returns true if a non-empty TMDB API key or bearer token is configured.
+func (c *Client) HasApiKey() bool {
+	return c != nil && strings.Trim(c.bearerToken, " \t\r\n\"'") != ""
+}
+
+// GetBearerToken returns the configured bearer token.
+func (c *Client) GetBearerToken() string {
+	if c == nil {
+		return ""
+	}
+	return c.bearerToken
+}
+
 // GetClient returns the client instance itself (provided for compatibility/easier access)
 func (c *Client) GetClient() *Client {
 	return c

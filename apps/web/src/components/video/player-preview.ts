@@ -2,7 +2,8 @@ import Hls from "hls.js"
 
 export const VIDEOCORE_PREVIEW_THUMBNAIL_SIZE = 200
 export const VIDEOCORE_PREVIEW_CAPTURE_INTERVAL_SECONDS = 4
-const MAX_CONCURRENT_JOBS = 5
+const MAX_CONCURRENT_JOBS = 1
+const MAX_PREVIEW_CACHE_SIZE = 150
 const PREFETCH_AHEAD_COUNT = 10
 
 export class PlayerPreviewManager {
@@ -257,10 +258,7 @@ export class PlayerPreviewManager {
             })
             const previewUrl = URL.createObjectURL(imageBlob)
 
-            this.previewCache.set(segmentIndex, previewUrl)
-            if (segmentIndex > this.highestCachedIndex) {
-                this.highestCachedIndex = segmentIndex
-            }
+            this.setCachedPreview(segmentIndex, previewUrl)
             return previewUrl
         }
         catch {
@@ -471,14 +469,26 @@ export class PlayerPreviewManager {
             })
             const previewUrl = URL.createObjectURL(imageBlob)
 
-            this.previewCache.set(segmentIndex, previewUrl)
-            if (segmentIndex > this.highestCachedIndex) {
-                this.highestCachedIndex = segmentIndex
-            }
+            this.setCachedPreview(segmentIndex, previewUrl)
             return previewUrl
         }
         catch {
             return undefined
+        }
+    }
+
+    private setCachedPreview(segmentIndex: number, url: string): void {
+        if (this.previewCache.size >= MAX_PREVIEW_CACHE_SIZE) {
+            const oldestKey = this.previewCache.keys().next().value
+            if (oldestKey !== undefined) {
+                const oldUrl = this.previewCache.get(oldestKey)
+                if (oldUrl) URL.revokeObjectURL(oldUrl)
+                this.previewCache.delete(oldestKey)
+            }
+        }
+        this.previewCache.set(segmentIndex, url)
+        if (segmentIndex > this.highestCachedIndex) {
+            this.highestCachedIndex = segmentIndex
         }
     }
 

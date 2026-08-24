@@ -181,6 +181,25 @@ func (scn *Scanner) enrichSingleMedia(
 		})
 
 		for _, ep := range eps {
+			sagaId := ep.SagaId
+			sagaName := ep.SagaName
+
+			// If sagaId or sagaName is empty, populate from Dragon Ball local saga definitions
+			if sagaId == "" || sagaName == "" {
+				dbSagas := GetDragonBallSagas(positiveTmdbId)
+				epNum := ep.EpisodeNumber
+				if ep.AbsoluteEpisodeNumber > 0 {
+					epNum = ep.AbsoluteEpisodeNumber
+				}
+				for _, s := range dbSagas {
+					if epNum >= s.startEp && epNum <= s.endEp {
+						sagaId = s.id
+						sagaName = s.name
+						break
+					}
+				}
+			}
+
 			libEp := &models.LibraryEpisode{
 				LibraryMediaID: libMediaId,
 				EpisodeNumber:  ep.EpisodeNumber,
@@ -190,8 +209,8 @@ func (scn *Scanner) enrichSingleMedia(
 				Description:    ep.Overview,
 				Image:          ep.Image,
 				RuntimeMinutes: ep.Length,
-				SagaId:         ep.SagaId,
-				SagaName:       ep.SagaName,
+				SagaId:         sagaId,
+				SagaName:       sagaName,
 				AbsoluteNumber: ep.AbsoluteEpisodeNumber,
 			}
 

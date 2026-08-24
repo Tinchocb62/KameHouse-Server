@@ -22,7 +22,7 @@ function setRefValue<T>(ref: React.MutableRefObject<T>, value: T) {
 
 export function usePlayerJassub({
     videoRef,
-    canvasRef,
+    canvasRef: _canvasRef,
     jassubRef,
     activeSubtitleIndex,
     subtitleTracks,
@@ -125,6 +125,11 @@ export function usePlayerJassub({
                     fonts: fontUrls ?? [],
                 })
 
+                if (isCancelled) {
+                    jassub.destroy()
+                    return
+                }
+
                 setRefValue(currentJassubRef, jassub)
                 setIsJassubActive(true)
                 setIsJassubLoading(false)
@@ -148,7 +153,7 @@ export function usePlayerJassub({
                 setIsJassubActive(false)
             }
         }
-    }, [activeSubtitleIndex, trackUrl, trackCodec, subtitleSizePref, fontUrls, videoRef, canvasRef, jassubRef, setIsJassubLoading, setIsJassubActive])
+    }, [activeSubtitleIndex, trackUrl, trackCodec, subtitleSizePref, fontUrls, videoRef, jassubRef, setIsJassubLoading, setIsJassubActive])
     // Note: JASSUB owns canvas sizing via its internal ResizeObserver. Because the
     // canvas control is transferred to the offscreen worker (useOffscreen + app-supplied
     // canvas), writing canvas.width/height on the main thread throws InvalidStateError

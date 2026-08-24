@@ -28,7 +28,7 @@ export function RangeSlider({ label, description, min, max, step = 1, value, onC
                     step={step}
                     value={value}
                     onChange={(e) => onChange(parseFloat(e.target.value))}
-                    className="w-full accent-brand-secondary bg-surface-container h-1.5 rounded-lg appearance-none cursor-pointer"
+                    className="w-full accent-brand-accent bg-white/10 hover:bg-white/15 h-1.5 rounded-lg appearance-none cursor-pointer transition-all"
                 />
                 <span className="text-xs font-mono text-on-surface-variant text-right shrink-0 min-w-[3rem]">
                     {formatValue ? formatValue(value) : value}

@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"kamehouse/internal/notifier"
 	"kamehouse/internal/util"
 	"strings"
@@ -555,7 +557,9 @@ func (p *Pipeline) runHead(start int32, speculative bool) error {
 		return err
 	}
 
+	threads := max(1, runtime.NumCPU()/2)
 	args := []string{"-nostats", "-hide_banner", "-loglevel", "warning",
+		"-threads", strconv.Itoa(threads),
 		// Limit input analysis so FFmpeg starts writing the first segment faster.
 		// Default values (5 000 000 µs / 5 MB) force reading deep into large MKV
 		// files before the muxer is ready. 10 MB is enough to detect all streams.

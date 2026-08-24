@@ -210,10 +210,6 @@ func (h *Handler) HandleSaveSettings(c echo.Context) error {
 
 	if b.Theme != nil {
 		b.Theme.ID = 1
-		// Preserve HomeItems – they are managed by a separate flow
-		if currentTheme, err := h.App.Database.GetTheme(); err == nil && currentTheme != nil {
-			b.Theme.HomeItems = currentTheme.HomeItems
-		}
 		_, _ = h.App.Database.UpsertTheme(b.Theme)
 	}
 

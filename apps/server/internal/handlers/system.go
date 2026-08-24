@@ -66,8 +66,6 @@ func (h *Handler) HandleGetDiagnosticsReport(c echo.Context) error {
 			return s
 		}
 		settingsCopy.Library.TmdbApiKey = redact(settingsCopy.Library.TmdbApiKey)
-		settingsCopy.Library.FanartApiKey = redact(settingsCopy.Library.FanartApiKey)
-		settingsCopy.Library.OmdbApiKey = redact(settingsCopy.Library.OmdbApiKey)
 
 		settingsJSON, _ := json.MarshalIndent(&settingsCopy, "", "  ")
 		f, _ := zipWriter.Create("settings.json")

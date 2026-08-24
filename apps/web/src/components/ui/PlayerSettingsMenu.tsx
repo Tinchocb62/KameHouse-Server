@@ -116,15 +116,29 @@ export function PlayerSettingsMenu({
     }, [isOpen, setIsOpen])
 
     const getFriendlyLanguage = (lang: string) => {
-        const lower = lang.toLowerCase()
-        if (lower.startsWith("spa") || lower === "es") return "Español"
-        if (lower.startsWith("jpn") || lower === "ja") return "Japonés"
-        if (lower.startsWith("eng") || lower === "en") return "Inglés"
-        if (lower.startsWith("fra") || lower === "fr") return "Francés"
-        if (lower.startsWith("ger") || lower === "de") return "Alemán"
-        if (lower.startsWith("ita") || lower === "it") return "Italiano"
-        if (lower.startsWith("por") || lower === "pt") return "Portugués"
-        if (lower === "und") return "Desconocido"
+        if (!lang) return "Desconocido"
+        const lower = lang.trim().toLowerCase()
+        if (lower === "und" || lower === "unknown") return "Desconocido"
+
+        const codeMap: Record<string, string> = {
+            spa: "es", jpn: "ja", eng: "en", fra: "fr", fre: "fr",
+            ger: "de", deu: "de", ita: "it", por: "pt", rus: "ru",
+            chi: "zh", zho: "zh", kor: "ko", cat: "ca", eus: "eu", glg: "gl"
+        }
+        const normalized = codeMap[lower] || lower
+
+        try {
+            if (typeof Intl !== "undefined" && Intl.DisplayNames) {
+                const dn = new Intl.DisplayNames(["es"], { type: "language", fallback: "none" })
+                const name = dn.of(normalized)
+                if (name) {
+                    return name.charAt(0).toUpperCase() + name.slice(1)
+                }
+            }
+        } catch {
+            // fallback if code is invalid
+        }
+
         return lang.toUpperCase()
     }
 

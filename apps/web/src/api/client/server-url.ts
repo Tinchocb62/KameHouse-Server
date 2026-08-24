@@ -27,6 +27,15 @@ export function getApiWebSocketUrl(): string {
 }
 
 export function getServerBaseUrl(removeProtocol: boolean = false): string {
+    // Si el runtime de desktop (Tauri / sidecar) definió el puerto local, conectarse directamente a él.
+    if (typeof window !== "undefined" && window.__KAMEHOUSE_PORT__) {
+        let ret = `http://127.0.0.1:${window.__KAMEHOUSE_PORT__}`
+        if (removeProtocol) {
+            ret = ret.replace("http://", "").replace("https://", "")
+        }
+        return ret
+    }
+
     if (typeof window !== "undefined") {
         const o = window.location?.origin ?? ""
         if (o.includes("wails.localhost") || o.startsWith("wails://")) {
@@ -41,10 +50,9 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
 
     if (__isDesktop__) {
         let ret: string
-        if (import.meta.env.MODE === "development") {
-            // Igual que en web: con la UI servida por Rsbuild (`npm run dev`), usar base vacía
-            // para que HTTP/WS vayan al mismo origen y el proxy en `/api` apunte al backend real
-            // (`KAMEHOUSE_DEV_API_PORT`, etc.). Evita desalinear desktop dev con un `__DEV_SERVER_PORT` fijo.
+        if (typeof window !== "undefined" && window.__KAMEHOUSE_PORT__) {
+            ret = `http://127.0.0.1:${window.__KAMEHOUSE_PORT__}`
+        } else if (import.meta.env.MODE === "development") {
             if (typeof window !== "undefined") {
                 const o = window.location?.origin ?? ""
                 if (o.startsWith("http://") || o.startsWith("https://")) {
@@ -75,9 +83,6 @@ export function getServerBaseUrl(removeProtocol: boolean = false): string {
 
     // For standard web environments (dev proxy or production self-hosted),
     // relative paths are preferred because the server and client share an origin.
-    // If removeProtocol is explicitly requested, we shouldn't return an empty string if we need a host,
-    // but typically removeProtocol implies an absolute host.
-    // However, returning "" implies absolute path `/api/v1/...` which the browser resolves correctly.
     if (import.meta.env.MODE === "development") {
         return ""
     }

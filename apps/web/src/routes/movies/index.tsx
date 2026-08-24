@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useState, useMemo, useEffect, useCallback, useRef } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query"
 
 import { useGetLibraryCollection, fetchLibraryCollection } from "@/api/hooks/anime_collection.hooks"
@@ -9,7 +9,7 @@ import type { Anime_LibraryCollectionEntry } from "@/api/generated/types"
 import { isTmdbId } from "@/lib/helpers/type-guards"
 
 import { EraTab, ERA_TABS } from "./-MovieCard"
-import { SortOption, getEntryEra } from "./-components/movies-utils"
+import { SortOption, getEntryEra, getReleaseDateTimestamp } from "./-components/movies-utils"
 import { MoviesHero } from "./-components/movies-hero"
 import { MoviesFilterBar } from "./-components/movies-filter-bar"
 import { MoviesGrid } from "./-components/movies-grid"
@@ -24,9 +24,9 @@ const LIBRARY_BG_BLUR_PX: Record<string, number> = { none: 0, sm: 8, md: 16, lg:
 import { useIntelligenceStore } from "@/hooks/use-home-intelligence"
 
 export const Route = createFileRoute("/movies/")({
-    loader: ({ context }) => {
+    loader: async ({ context }) => {
         const qc = context.queryClient
-        qc.prefetchQuery({
+        await qc.prefetchQuery({
             queryKey: [API_ENDPOINTS.ANIME_COLLECTION.GetLibraryCollection.key],
             queryFn: fetchLibraryCollection,
         })
@@ -46,35 +46,24 @@ function MoviesPageWrapper() {
 
 function MoviesPage() {
     const [activeEra, setActiveEra] = useState<EraTab>("all")
-    const [prevActiveEra, setPrevActiveEra] = useState<EraTab>("all")
-    const [sortBy, setSortBy] = useState<SortOption>("year_asc")
+    const navigate = useNavigate()
+    const ts = useThemeSettings()
+
+    const [sortBy, setSortBy] = useState<SortOption>(() => {
+        const mapped: Record<string, SortOption> = {
+            TITLE_ASC: "alpha",
+            TITLE_DESC: "alpha",
+            YEAR_DESC: "year_desc",
+            SCORE_DESC: "year_desc",
+        }
+        return mapped[ts.themeAnimeLibraryCollectionDefaultSorting] || "year_asc"
+    })
     const [sortOpen, setSortOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
     
     const [hoveredMovie, setHoveredMovie] = useState<(Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null>(null)
     const [debouncedMovie, setDebouncedMovie] = useState<(Anime_LibraryCollectionEntry & { era: EraTab; startedAtTimestamp: number }) | null>(null)
-
-    const navigate = useNavigate()
-    const ts = useThemeSettings()
-
-    // Seed the sort dropdown from Settings → Apariencia → Ordenación (once,
-    // when it first loads) — the closest equivalent this page's sort options support.
-    const appliedDefaultSort = useRef(false)
-    useEffect(() => {
-        if (appliedDefaultSort.current) return
-        const mapped: Record<string, SortOption> = {
-            TITLE_ASC: "alpha",
-            TITLE_DESC: "alpha",
-            YEAR_DESC: "year_desc",
-            SCORE_DESC: "year_asc",
-        }
-        const mappedSort = mapped[ts.themeAnimeLibraryCollectionDefaultSorting]
-        if (mappedSort) {
-            setSortBy(mappedSort)
-            appliedDefaultSort.current = true
-        }
-    }, [ts.themeAnimeLibraryCollectionDefaultSorting])
 
     const { data: collection, isLoading } = useGetLibraryCollection()
     const { data: watchHistory } = useGetContinuityWatchHistory()
@@ -102,9 +91,17 @@ function MoviesPage() {
         })
         const unique = new Map<number, Anime_LibraryCollectionEntry>()
         rawMovies.forEach(m => { if (m.mediaId) unique.set(m.mediaId, m) })
-        return Array.from(unique.values()).map(entry => {
+        const mapped = Array.from(unique.values()).map(entry => {
             const startedAt = entry.listData?.startedAt
             return { ...entry, era: getEntryEra(entry), startedAtTimestamp: startedAt ? new Date(startedAt).getTime() : 0 }
+        })
+
+        // Orden inicial cronológico por fecha de estreno
+        return mapped.sort((a, b) => {
+            const dateA = getReleaseDateTimestamp(a)
+            const dateB = getReleaseDateTimestamp(b)
+            if (dateA && dateB && dateA !== dateB) return dateA - dateB
+            return (a.media?.year || 0) - (b.media?.year || 0)
         })
     }, [collection])
 
@@ -125,43 +122,44 @@ function MoviesPage() {
         }
 
         switch (sortBy) {
-            case "year_asc": return [...result].sort((a, b) => (a.media?.year || 0) - (b.media?.year || 0))
-            case "year_desc": return [...result].sort((a, b) => (b.media?.year || 0) - (a.media?.year || 0))
-            case "alpha": return [...result].sort((a, b) => (a.media?.titleRomaji || "").localeCompare(b.media?.titleRomaji || ""))
-            default: return result
+            case "year_asc":
+                return [...result].sort((a, b) => {
+                    const dateA = getReleaseDateTimestamp(a)
+                    const dateB = getReleaseDateTimestamp(b)
+                    if (dateA && dateB && dateA !== dateB) return dateA - dateB
+                    return (a.media?.year || 0) - (b.media?.year || 0)
+                })
+            case "year_desc":
+                return [...result].sort((a, b) => {
+                    const dateA = getReleaseDateTimestamp(a)
+                    const dateB = getReleaseDateTimestamp(b)
+                    if (dateA && dateB && dateA !== dateB) return dateB - dateA
+                    return (b.media?.year || 0) - (a.media?.year || 0)
+                })
+            case "alpha":
+                return [...result].sort((a, b) => {
+                    const titleA = a.media?.titleSpanish || a.media?.titleRomaji || a.media?.titleEnglish || ""
+                    const titleB = b.media?.titleSpanish || b.media?.titleRomaji || b.media?.titleEnglish || ""
+                    return titleA.localeCompare(titleB)
+                })
+            default:
+                return result
         }
     }, [allMovies, activeEra, sortBy, searchQuery])
 
     const activeEraConfig = ERA_TABS.find(t => t.value === activeEra) || ERA_TABS[0]
 
-    if (activeEra !== prevActiveEra) {
-        setPrevActiveEra(activeEra)
+    // Limpiar hover al cambiar de era (useEffect, no durante render)
+    useEffect(() => {
         setHoveredMovie(null)
         setDebouncedMovie(null)
-    }
+    }, [activeEra])
 
-    const featuredList = useMemo(() => filteredSorted.filter(m => m.media?.bannerImage), [filteredSorted])
-    
-    // Select recommendations: stable shuffle of 8 movies for 'all', top 5 for specific eras
+    // Lista de películas para el Hero: todas las películas disponibles en orden cronológico
     const topFeatured = useMemo(() => {
-        if (activeEra === "all" && featuredList.length > 0) {
-            // Seeded deterministic shuffle to keep useMemo pure and prevent React Compiler warnings
-            const shuffled = [...featuredList]
-            let seed = 42
-            const random = () => {
-                const x = Math.sin(seed++) * 10000
-                return x - Math.floor(x)
-            }
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(random() * (i + 1))
-                const temp = shuffled[i]
-                shuffled[i] = shuffled[j]
-                shuffled[j] = temp
-            }
-            return shuffled.slice(0, 8)
-        }
-        return featuredList.slice(0, 5)
-    }, [featuredList, activeEra])
+        if (filteredSorted.length > 0) return filteredSorted
+        return allMovies
+    }, [filteredSorted, allMovies])
 
     const handleMovieClick = useCallback((mediaId: number) => {
         navigate({ to: "/movies/$movieId", params: { movieId: String(mediaId) } })
@@ -202,7 +200,7 @@ function MoviesPage() {
                 <LibraryBanner />
             )}
 
-            <div className="relative w-full max-w-content mx-auto px-6 md:px-12 lg:px-16 mt-12">
+            <div className="relative w-full max-w-content mx-auto px-6 md:px-12 lg:px-16 mt-8 space-y-10">
                 <div className="flex flex-col lg:flex-row gap-8 min-h-[70vh]">
                     {/* Left Column: Filter Sidebar */}
                     <div className="lg:w-80 flex-shrink-0 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-7rem)] flex flex-col gap-4">

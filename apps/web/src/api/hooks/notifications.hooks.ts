@@ -14,6 +14,8 @@ export function useGetNotifications() {
         method: API_ENDPOINTS.NOTIFICATIONS.GetNotifications.methods[0],
         queryKey: [API_ENDPOINTS.NOTIFICATIONS.GetNotifications.key],
         enabled: true,
+        staleTime: 60 * 1000,
+        refetchOnWindowFocus: false,
     })
 }
 

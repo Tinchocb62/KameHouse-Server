@@ -4,13 +4,15 @@ import { API_ENDPOINTS } from "@/api/generated/endpoints"
 import { SaveSettings_Variables, /* SaveAutoDownloaderSettings_Variables, */ SaveMediaPlayerSettings_Variables, GettingStarted_Variables } from "@/api/generated/endpoint.types"
 import { useQueryClient } from "@tanstack/react-query"
 
-export function useGetStatus() {
+export function useGetStatus(options?: { enabled?: boolean }) {
     return useServerQuery<Status>({
         endpoint: API_ENDPOINTS.STATUS.GetStatus.endpoint,
         method: API_ENDPOINTS.STATUS.GetStatus.methods[0],
         queryKey: [API_ENDPOINTS.STATUS.GetStatus.key],
-        enabled: true,
+        enabled: options?.enabled ?? true,
         muteError: true,
+        retry: (failureCount) => failureCount < 40,
+        retryDelay: (attemptIndex) => Math.min(600 * (attemptIndex + 1), 1500),
     })
 }
 
@@ -21,6 +23,8 @@ export function useGetSettings() {
         queryKey: [API_ENDPOINTS.SETTINGS.GetSettings.key],
         enabled: true,
         muteError: true,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
     })
 }
 
@@ -31,6 +35,7 @@ export function useSaveSettings() {
         method: API_ENDPOINTS.SETTINGS.SaveSettings.methods[0],
         mutationKey: [API_ENDPOINTS.SETTINGS.SaveSettings.key],
         onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.STATUS.GetStatus.key] })
             await queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.SETTINGS.GetSettings.key] })
         },
     })
@@ -58,6 +63,7 @@ export function useSaveMediaPlayerSettings() {
         mutationKey: [API_ENDPOINTS.SETTINGS.SaveMediaPlayerSettings.key],
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.SETTINGS.GetSettings.key] })
+            await queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.STATUS.GetStatus.key] })
         },
     })
 }

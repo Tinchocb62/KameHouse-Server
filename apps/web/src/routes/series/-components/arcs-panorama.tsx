@@ -15,7 +15,6 @@ import {
 } from "@/lib/config/dragonball_arcs"
 import type { StageCollectionEntry, ResolvedStageSaga } from "@/lib/config/dragonball_stages"
 import type { Anime_LibraryCollection } from "@/api/generated/types"
-import { SagaRow } from "./saga-row"
 
 export type SagaTimelineItem = {
     id: string
@@ -117,7 +116,11 @@ export function ArcsPanorama({
     const effectiveActiveId =
         activeId ?? timelineItems.find(s => s.type === "saga" && s.saga.percent < 100)?.id ?? timelineItems[0]?.id ?? null
 
-    const activeItem = timelineItems.find(a => a.id === effectiveActiveId) ?? null
+    const activeTimelineItem = useMemo(() => {
+        return timelineItems.find(item => item.id === effectiveActiveId)
+    }, [timelineItems, effectiveActiveId])
+    const activeAuraColor = activeTimelineItem && activeTimelineItem.type === "saga" ? activeTimelineItem.arc.arc.colors[0] : null
+
     const openItem = timelineItems.find(a => a.id === openId && a.type === "saga") as SagaTimelineItem | null
 
     const handleFocus = useCallback(
@@ -170,24 +173,30 @@ export function ArcsPanorama({
         const container = scrollContainerRef.current
         if (!container || isMobile) return
 
+        let rafId: number | null = null
+        let pendingId: string | null = null
+
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
-                        const id = entry.target.id.replace("saga-slice-", "")
-                        handleFocus(id)
+                        pendingId = entry.target.id.replace("saga-slice-", "")
+                        if (!rafId) {
+                            rafId = requestAnimationFrame(() => {
+                                if (pendingId) handleFocus(pendingId)
+                                rafId = null
+                            })
+                        }
                     }
                 })
             },
             {
                 root: container,
-                // Un pequeño margen en el centro para detectar cuál elemento está centrado
-                rootMargin: "0px -49% 0px -49%",
-                threshold: 0,
+                rootMargin: "0px -40% 0px -40%",
+                threshold: 0.1,
             }
         )
 
-        // Usamos un pequeño timeout para asegurar que los elementos del DOM ya fueron creados
         const timeoutId = setTimeout(() => {
             const nodes = container.querySelectorAll('[role="tab"]')
             nodes.forEach((node) => observer.observe(node))
@@ -196,6 +205,7 @@ export function ArcsPanorama({
         return () => {
             clearTimeout(timeoutId)
             observer.disconnect()
+            if (rafId) cancelAnimationFrame(rafId)
         }
     }, [timelineItems, handleFocus, isMobile])
 
@@ -206,77 +216,87 @@ export function ArcsPanorama({
 
         // 1. Mouse Wheel -> Horizontal Scroll
         const onWheel = (e: WheelEvent) => {
-            if (e.deltaY !== 0) {
-                e.preventDefault()
-                container.scrollBy({ left: e.deltaY, behavior: "auto" })
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                container.scrollLeft += e.deltaY
             }
         }
 
         // 2. Edge Panning
-        let animationFrameId: number
+        let animationFrameId: number | null = null
         let isPanning = false
         let panDirection = 0
         const PAN_SPEED = 12
         const EDGE_THRESHOLD = 150
+
+        const panLoop = () => {
+            if (isPanning && scrollContainerRef.current) {
+                scrollContainerRef.current.scrollBy({ left: panDirection * PAN_SPEED, behavior: "auto" })
+                animationFrameId = requestAnimationFrame(panLoop)
+            } else {
+                animationFrameId = null
+            }
+        }
+
+        const startPanning = (direction: number) => {
+            panDirection = direction
+            if (!isPanning) {
+                isPanning = true
+                if (animationFrameId === null) {
+                    animationFrameId = requestAnimationFrame(panLoop)
+                }
+            }
+        }
+
+        const stopPanning = () => {
+            isPanning = false
+            panDirection = 0
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId)
+                animationFrameId = null
+            }
+        }
 
         const onMouseMove = (e: MouseEvent) => {
             const { clientX } = e
             const { innerWidth } = window
             
             if (clientX < EDGE_THRESHOLD) {
-                panDirection = -1
-                isPanning = true
+                startPanning(-1)
             } else if (clientX > innerWidth - EDGE_THRESHOLD) {
-                panDirection = 1
-                isPanning = true
+                startPanning(1)
             } else {
-                isPanning = false
-                panDirection = 0
+                stopPanning()
             }
-        }
-
-        const panLoop = () => {
-            if (isPanning && scrollContainerRef.current) {
-                scrollContainerRef.current.scrollBy({ left: panDirection * PAN_SPEED, behavior: "auto" })
-            }
-            animationFrameId = requestAnimationFrame(panLoop)
         }
 
         const onMouseLeave = () => {
-            isPanning = false
-            panDirection = 0
+            stopPanning()
         }
 
-        container.addEventListener("wheel", onWheel, { passive: false })
-        container.addEventListener("mousemove", onMouseMove)
-        container.addEventListener("mouseleave", onMouseLeave)
-        animationFrameId = requestAnimationFrame(panLoop)
+        container.addEventListener("wheel", onWheel, { passive: true })
+        container.addEventListener("mousemove", onMouseMove, { passive: true })
+        container.addEventListener("mouseleave", onMouseLeave, { passive: true })
 
         return () => {
             container.removeEventListener("wheel", onWheel)
             container.removeEventListener("mousemove", onMouseMove)
             container.removeEventListener("mouseleave", onMouseLeave)
-            cancelAnimationFrame(animationFrameId)
+            if (animationFrameId !== null) cancelAnimationFrame(animationFrameId)
         }
     }, [isMobile])
 
     return (
         <div className="relative w-full h-full bg-ui-background overflow-hidden">
             {/* Efecto de Aura de Fondo con Crossfade */}
-            {!isMobile && timelineItems.map((item) => (
-                item.type === "saga" && (
+            {!isMobile && activeAuraColor && (
                 <div
-                    key={`aura-${item.id}`}
-                    className={cn(
-                        "absolute inset-0 transition-opacity duration-700 ease-in-out pointer-events-none mix-blend-screen",
-                        effectiveActiveId === item.id ? "opacity-60" : "opacity-0"
-                    )}
+                    key={`aura-${effectiveActiveId}`}
+                    className="absolute inset-0 transition-opacity duration-700 ease-in-out pointer-events-none opacity-35"
                     style={{
-                        background: `radial-gradient(ellipse at center, ${item.arc.arc.colors[0]} 0%, transparent 80%)`
+                        background: `radial-gradient(ellipse at center, ${activeAuraColor} 0%, transparent 80%)`
                     }}
                 />
-                )
-            ))}
+            )}
 
             {/* Switch Mode (Global Top Right) */}
             <div className="absolute top-4 right-4 lg:top-8 lg:right-8 flex items-center gap-3 bg-zinc-950/80 backdrop-blur-md p-2 rounded-full border border-white/10 z-[100] shadow-xl">
@@ -307,7 +327,7 @@ export function ArcsPanorama({
             <div className={cn(
                 "relative z-10 w-full h-full p-2 sm:p-4 overflow-y-auto no-scrollbar lg:flex lg:flex-col lg:justify-center",
                 "transition-all duration-700 ease-out origin-bottom",
-                openItem ? "scale-[0.96] opacity-30 blur-[2px] pointer-events-none" : "scale-100 opacity-100 blur-0"
+                openItem ? "scale-[0.96] opacity-30 pointer-events-none" : "scale-100 opacity-100"
             )}>
                 {/* Header (Título de la Página) */}
                 <div className="relative z-10 flex flex-col items-center justify-center text-center w-full py-10 lg:py-0 lg:mb-16">
@@ -447,10 +467,6 @@ export function ArcsPanorama({
 
 // ─── Franja de Arco (acordeón desktop) ─────────────────────────────────────
 
-function arcSummary(sagas: ResolvedStageSaga[]): string {
-    return `${sagas.length} ${sagas.length === 1 ? "saga" : "sagas"} · ${sagas.reduce((acc, s) => acc + s.totalEps, 0)} episodios`
-}
-
 /** Tarjeta de nodo de Saga en la línea de tiempo (Desktop) */
 const SagaTimelineNode = memo(function SagaTimelineNode({
     item,
@@ -588,7 +604,7 @@ const MobileSagaCard = memo(function MobileSagaCard({
                 className="absolute inset-0"
                 style={{ background: `linear-gradient(to right, ${auraTo}E6 0%, ${auraFrom}80 50%, transparent 95%)` }}
             />
-            <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent mix-blend-overlay" />
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
             <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
             <div className="relative z-10 h-full flex flex-col justify-center gap-1 p-5">
@@ -690,7 +706,7 @@ function SagaDetailDrawer({
                 <div className="relative overflow-hidden shrink-0">
                     <div
                         aria-hidden
-                        className="absolute inset-0 opacity-20 mix-blend-screen"
+                        className="absolute inset-0 opacity-15"
                         style={{ background: `linear-gradient(135deg, ${auraFrom} 0%, ${auraTo} 70%, transparent 100%)` }}
                     />
                     <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950/90" />

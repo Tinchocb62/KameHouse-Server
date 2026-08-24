@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
+	"kamehouse/internal/events"
 	"kamehouse/internal/mediastream"
+	"kamehouse/internal/util/ffmpegutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -631,4 +633,65 @@ func (h *Handler) HandleResolveMAL(c echo.Context) error {
 	}
 
 	return h.RespondWithData(c, map[string]interface{}{"malId": nil})
+}
+
+// HandleGetFFmpegStatus returns the current status and resolved paths of FFmpeg and FFprobe.
+//
+//	@summary get ffmpeg binary status.
+//	@desc This returns the status and version of ffmpeg and ffprobe binaries.
+//	@returns ffmpegutil.FFmpegStatus
+//	@route /api/v1/mediastream/ffmpeg/status [GET]
+func (h *Handler) HandleGetFFmpegStatus(c echo.Context) error {
+	mSettings, _ := h.App.Database.GetMediastreamSettings()
+	var customFfmpeg, customFfprobe string
+	if mSettings != nil {
+		customFfmpeg = mSettings.FfmpegPath
+		customFfprobe = mSettings.FfprobePath
+	}
+
+	var status ffmpegutil.FFmpegStatus = h.App.FFmpegManager.GetStatus(customFfmpeg, customFfprobe)
+	return h.RespondWithData(c, status)
+}
+
+// HandleInstallFFmpeg starts background download and installation of FFmpeg and FFprobe.
+//
+//	@summary install ffmpeg binaries.
+//	@desc Downloads and extracts ffmpeg and ffprobe into cache/bin directory.
+//	@route /api/v1/mediastream/ffmpeg/install [POST]
+func (h *Handler) HandleInstallFFmpeg(c echo.Context) error {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+		defer cancel()
+
+		err := h.App.FFmpegManager.EnsureBinaries(ctx, func(pct int, msg string) {
+			h.App.WSEventManager.SendEvent("ffmpeg-download-progress", map[string]interface{}{
+				"progress": pct,
+				"status":   msg,
+			})
+		})
+
+		if err != nil {
+			h.App.Logger.Error().Err(err).Msg("ffmpegutil: Error durante la instalación de FFmpeg")
+			h.App.WSEventManager.SendEvent(events.ErrorToast, fmt.Sprintf("Error instalando FFmpeg: %v", err))
+			h.App.WSEventManager.SendEvent("ffmpeg-download-progress", map[string]interface{}{
+				"progress": 0,
+				"status":   "Error en la instalación",
+				"error":    err.Error(),
+			})
+		} else {
+			h.App.Logger.Info().Msg("ffmpegutil: FFmpeg y FFprobe instalados y listos")
+			h.App.WSEventManager.SendEvent(events.SuccessToast, "FFmpeg y FFprobe instalados correctamente")
+			h.App.WSEventManager.SendEvent("ffmpeg-download-progress", map[string]interface{}{
+				"progress": 100,
+				"status":   "Instalado correctamente",
+			})
+			if mSettings, ok := h.App.Database.GetMediastreamSettings(); ok {
+				h.App.MediastreamRepository.InitializeModules(mSettings, h.App.Config.Cache.Dir, h.App.Config.Cache.TranscodeDir)
+			}
+		}
+	}()
+
+	return h.RespondWithData(c, map[string]interface{}{
+		"started": true,
+	})
 }

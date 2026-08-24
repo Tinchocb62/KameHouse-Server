@@ -15,7 +15,7 @@ const HorizontalDraggableScrollAnatomy = defineStyleAnatomy({
     ]),
     container: cva([
         "UI-HorizontalDraggableScroll__container",
-        "flex max-w-full w-full overflow-x-scroll scrollbar-hide scroll select-none",
+        "flex max-w-full w-full overflow-x-scroll scrollbar-hide scroll select-none overscroll-x-contain",
     ]),
     chevronOverlay: cva([
         "flex flex-none items-center justify-center cursor-pointer absolute z-40 group/chevron",
@@ -116,16 +116,20 @@ export const HorizontalDraggableScroll = React.forwardRef<HTMLDivElement, Horizo
     const [isScrolledToRight, setIsScrolledToRight] = React.useState(false)
     const [showChevronRight, setShowRightChevron] = React.useState(false)
 
+    const scrollRafRef = React.useRef<number | null>(null)
     const handleScroll = React.useCallback(() => {
-        const div = ref.current
+        if (scrollRafRef.current) return
+        scrollRafRef.current = requestAnimationFrame(() => {
+            scrollRafRef.current = null
+            const div = ref.current
+            if (div) {
+                const scrolledToLeft = div.scrollLeft <= 2
+                const scrolledToRight = div.scrollLeft + div.clientWidth >= div.scrollWidth - 2
 
-        if (div) {
-            const scrolledToLeft = div.scrollLeft === 0
-            const scrolledToRight = div.scrollLeft + div.clientWidth === div.scrollWidth
-
-            setIsScrolledToLeft(scrolledToLeft)
-            setIsScrolledToRight(scrolledToRight)
-        }
+                setIsScrolledToLeft(prev => prev !== scrolledToLeft ? scrolledToLeft : prev)
+                setIsScrolledToRight(prev => prev !== scrolledToRight ? scrolledToRight : prev)
+            }
+        })
     }, [])
 
     useUpdateEffect(() => {
@@ -172,12 +176,28 @@ export const HorizontalDraggableScroll = React.forwardRef<HTMLDivElement, Horizo
         }
     }, [])
 
-    // Ambient auto-scroll — pauses while the user hovers, drags, or focuses the lane.
+    // Ambient auto-scroll — pauses while the user hovers, drags, focuses the lane, or when out of viewport.
     const isPausedRef = React.useRef(false)
+    const isVisibleRef = React.useRef(false)
+
     React.useEffect(() => {
         if (!autoScroll) return
         const div = ref.current
         if (!div) return
+
+        // Cachear maxScroll con ResizeObserver para evitar layout thrashing en cada frame
+        let maxScroll = div.scrollWidth - div.clientWidth
+        const resizeObserver = new ResizeObserver(() => {
+            if (div) maxScroll = div.scrollWidth - div.clientWidth
+        })
+        resizeObserver.observe(div)
+
+        // IntersectionObserver: sleep autoScroll when off-screen to save 100% CPU/GPU
+        const observer = new IntersectionObserver((entries) => {
+            isVisibleRef.current = entries[0]?.isIntersecting ?? false
+        }, { threshold: 0.05 })
+
+        observer.observe(div)
 
         let rafId: number
         let lastTime: number | null = null
@@ -187,8 +207,7 @@ export const HorizontalDraggableScroll = React.forwardRef<HTMLDivElement, Horizo
             const dt = (time - lastTime) / 1000
             lastTime = time
 
-            if (!isPausedRef.current && document.visibilityState === "visible") {
-                const maxScroll = div.scrollWidth - div.clientWidth
+            if (!isPausedRef.current && isVisibleRef.current && document.visibilityState === "visible") {
                 if (maxScroll > 0) {
                     const next = div.scrollLeft + autoScrollSpeed * dt
                     div.scrollLeft = next >= maxScroll ? 0 : next
@@ -207,6 +226,8 @@ export const HorizontalDraggableScroll = React.forwardRef<HTMLDivElement, Horizo
         div.addEventListener("focusout", resume)
 
         return () => {
+            resizeObserver.disconnect()
+            observer.disconnect()
             cancelAnimationFrame(rafId)
             div.removeEventListener("pointerenter", pause)
             div.removeEventListener("pointerleave", resume)

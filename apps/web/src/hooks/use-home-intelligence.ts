@@ -14,11 +14,18 @@ export const useIntelligenceStore = create<IntelligenceStore>((set) => ({
     currentBackdropUrl: null,
     pendingUrl: null,
     setBackdropUrl: (url) => {
-        if (hoverTimer) clearTimeout(hoverTimer)
+        if (hoverTimer) {
+            clearTimeout(hoverTimer)
+            hoverTimer = null
+        }
         if (url === null) {
-            hoverTimer = setTimeout(() => set({ currentBackdropUrl: null }), 300)
+            set({ currentBackdropUrl: null, pendingUrl: null })
         } else {
-            hoverTimer = setTimeout(() => set({ currentBackdropUrl: url }), 150)
+            set({ pendingUrl: url })
+            hoverTimer = setTimeout(() => {
+                set({ currentBackdropUrl: url })
+                hoverTimer = null
+            }, 120)
         }
     },
 }))

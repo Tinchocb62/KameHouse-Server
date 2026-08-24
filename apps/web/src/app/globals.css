@@ -262,6 +262,8 @@ media-time-range {
   background: var(--page-gradient);
   pointer-events: none;
   z-index: 0;
+  transform: translateZ(0);
+  contain: strict;
 }
 
 [data-theme="era-universe"] .era-universe-layer {

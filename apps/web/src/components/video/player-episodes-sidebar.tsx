@@ -1,3 +1,4 @@
+import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/components/ui/core/styling"
 import { DeferredImage } from "@/components/shared/deferred-image"
@@ -20,7 +21,7 @@ interface PlayerEpisodesSidebarProps {
     onMarathonModeChange?: (enabled: boolean) => void
 }
 
-export function PlayerEpisodesSidebar({
+export const PlayerEpisodesSidebar = React.memo(function PlayerEpisodesSidebar({
     isOpen,
     onClose,
     episodes,
@@ -178,4 +179,4 @@ export function PlayerEpisodesSidebar({
             )}
         </AnimatePresence>
     )
-}
+})

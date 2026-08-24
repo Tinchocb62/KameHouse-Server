@@ -8,7 +8,7 @@ interface TopNavProps {
 }
 
 export const AppTopNav = ({ title }: TopNavProps) => {
-    const { setSidebarOpen } = useAppStore()
+    const setSidebarOpen = useAppStore(state => state.setSidebarOpen)
     const isFullscreen = useAppStore(state => state.isFullscreen)
 
     if (isFullscreen) return null

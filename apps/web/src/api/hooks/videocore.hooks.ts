@@ -14,5 +14,7 @@ export function useGetVideoInsights(variables: GetVideoInsights_Variables, enabl
         method: API_ENDPOINTS.VIDEOCORE.GetVideoInsights.methods[0],
         queryKey: [API_ENDPOINTS.VIDEOCORE.GetVideoInsights.key, variables.episodeId],
         enabled: enabled && !!variables.episodeId,
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
     })
 }

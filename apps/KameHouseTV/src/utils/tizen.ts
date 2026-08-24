@@ -1,7 +1,7 @@
 export function registerTizenKeys() {
   try {
     if (typeof (window as any).tizen !== 'undefined' && (window as any).tizen.tvinputdevice) {
-      const keys = ['VolumeUp', 'VolumeDown', 'VolumeMute', 'Play', 'Pause', 'PlayPause', 'MediaPlay', 'MediaPause', 'MediaStop'];
+      const keys = ['VolumeUp', 'VolumeDown', 'VolumeMute', 'Play', 'Pause', 'PlayPause', 'MediaPlay', 'MediaPause', 'MediaStop', 'MediaFastForward', 'MediaRewind', 'ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue'];
       keys.forEach(k => {
         try {
           (window as any).tizen.tvinputdevice.registerKey(k);

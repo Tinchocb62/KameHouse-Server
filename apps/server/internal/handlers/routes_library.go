@@ -38,7 +38,9 @@ func (h *Handler) RegisterLibraryRoutes(v1 *echo.Group) {
 	v1Library.PATCH("/anime-entry/bulk-action", h.HandleAnimeEntryBulkAction)
 	v1Library.POST("/anime-entry/open-in-explorer", h.HandleOpenAnimeEntryInExplorer)
 	v1Library.POST("/anime-entry/update-progress", h.HandleUpdateAnimeEntryProgress)
+	v1Library.POST("/anime-entry/progress", h.HandleUpdateAnimeEntryProgress)
 	v1Library.POST("/anime-entry/update-repeat", h.HandleUpdateAnimeEntryRepeat)
+	v1Library.POST("/anime-entry/repeat", h.HandleUpdateAnimeEntryRepeat)
 	v1Library.GET("/anime-entry/silence/:id", h.HandleGetAnimeEntrySilenceStatus)
 	v1Library.POST("/anime-entry/silence", h.HandleToggleAnimeEntrySilenceStatus)
 

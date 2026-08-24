@@ -33,6 +33,8 @@ export class VideoCorePgsRenderer {
     private _canvasWidth: number = 0
     private _canvasHeight: number = 0
     private _resizeObserver: ResizeObserver | null = null
+    private _lastRenderedTime: number = -1
+    private _lastIsPlaying: boolean = false
 
     constructor(options: VideoCorePgsRendererOptions) {
         this._videoElement = options.videoElement
@@ -272,15 +274,21 @@ export class VideoCorePgsRenderer {
                 return
             }
 
+            const isPlaying = !this._videoElement.paused
+            const currentTime = this._videoElement.currentTime
+            const stateChanged = isPlaying !== this._lastIsPlaying || currentTime !== this._lastRenderedTime || this._videoElement.seeking
+
             // Send render request to worker with current video state
-            if (this._worker && (!this._videoElement.paused || this._videoElement.seeking)) {
+            if (this._worker && (isPlaying || stateChanged)) {
+                this._lastRenderedTime = currentTime
+                this._lastIsPlaying = isPlaying
                 this._worker.postMessage({
                     type: "render",
                     payload: {
-                        currentTime: this._videoElement.currentTime,
+                        currentTime,
                         canvasWidth: this._canvasWidth,
                         canvasHeight: this._canvasHeight,
-                        isPlaying: !this._videoElement.paused,
+                        isPlaying,
                     },
                 })
             }

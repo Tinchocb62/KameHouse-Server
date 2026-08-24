@@ -23,6 +23,8 @@ export interface SwimlaneItem {
     year?: string | number
     rating?: number
     episodeNumber?: number
+    tmdbId?: number
+    mediaId?: number
     onClick: () => void
     backdropUrl?: string
 }
@@ -45,36 +47,19 @@ interface MediaStackProps extends MediaCardProps {
 
 function MediaStack({ stackCount = 2, className, ...props }: MediaStackProps) {
     const stackItems = Array.from({ length: stackCount }).map((_, i) => i + 1)
-    const isPoster = props.aspect === "poster"
 
     return (
         <div className={cn("relative group/stack", className)}>
             {/* Background stack elements */}
             {stackItems.map((idx) => (
-                <motion.div
+                <div
                     key={idx}
                     className={cn(
-                        "absolute inset-0 border border-white/5 shadow-2xl overflow-hidden",
-                        "bg-zinc-900/50 backdrop-blur-[var(--blur-overlay-sm)]",
-                        isPoster ? "rounded-xl" : "rounded-xl"
+                        "absolute inset-0 border border-white/5 shadow-2xl overflow-hidden pointer-events-none",
+                        "bg-zinc-900/90 rounded-xl transition-transform duration-300 ease-out",
+                        idx === 1 && "translate-x-1 translate-y-1 group-hover/stack:translate-x-3 group-hover/stack:-translate-y-1 group-hover/stack:rotate-1",
+                        idx === 2 && "translate-x-2 translate-y-2 group-hover/stack:translate-x-6 group-hover/stack:-translate-y-2 group-hover/stack:rotate-2"
                     )}
-                    initial={false}
-                    animate={{
-                        x: idx * 4,
-                        y: idx * 4,
-                        scale: 1,
-                        opacity: 1,
-                    }}
-                    whileHover={{
-                        x: idx * 12,
-                        y: -idx * 4,
-                        rotateZ: idx * 1,
-                        transition: { 
-                            type: "spring", 
-                            stiffness: 300, 
-                            damping: 25,
-                        }
-                    }}
                     style={{
                         zIndex: 10 - idx,
                     }}
@@ -82,22 +67,16 @@ function MediaStack({ stackCount = 2, className, ...props }: MediaStackProps) {
             ))}
 
             {/* Main top card */}
-            <motion.div
-                className="relative z-20"
-                whileHover={{
-                    y: -8,
-                    transition: { type: "spring", stiffness: 300, damping: 25 }
-                }}
-            >
+            <div className="relative z-20 transition-transform duration-300 ease-out group-hover/stack:-translate-y-2">
                 <MediaCard {...props} />
                 
                 {/* Minimalist Series Indicator */}
                 <div className="absolute top-4 right-4 z-30">
-                    <div className="bg-black/60 backdrop-blur-[var(--blur-overlay-sm)] text-white/70 text-caption font-black px-2 py-1 rounded-md border border-white/10 uppercase tracking-ultra">
+                    <div className="bg-black/85 text-white/80 text-caption font-black px-2 py-1 rounded-md border border-white/10 uppercase tracking-ultra">
                         Serie
                     </div>
                 </div>
-            </motion.div>
+            </div>
         </div>
     )
 }
@@ -139,20 +118,13 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
                     applyRubberBandEffect
                     autoScroll={!ts.themeDisableCarouselAutoScroll && !tvMode}
                 >
-                    {items.map((item, index) => (
-                        <motion.div
+                    {items.map((item) => (
+                        <div
                             key={item.id}
-                            className="snap-start"
+                            className="snap-start shrink-0 transform-gpu animate-in fade-in duration-base"
+                            style={{ contentVisibility: "auto", containIntrinsicSize: "auto 240px" }}
                             onMouseEnter={() => onHover?.(item.backdropUrl ?? null)}
                             onMouseLeave={() => onHover?.(null)}
-                            initial={tvMode ? false : { opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-50px" }}
-                            transition={tvMode ? { duration: 0 } : { 
-                                duration: 0.8,
-                                delay: Math.min(index * 0.04, 0.3),
-                                ease: [0.23, 1, 0.32, 1]
-                            }}
                         >
                             {item.badge === "TV" ? (
                                 <MediaStack
@@ -169,7 +141,7 @@ const SwimlaneInner = React.memo(function SwimlaneInner({
                                     compact={!!ts.themeSmallerEpisodeCarouselSize}
                                 />
                             )}
-                        </motion.div>
+                        </div>
                     ))}
                 </HorizontalDraggableScroll>
             </div>

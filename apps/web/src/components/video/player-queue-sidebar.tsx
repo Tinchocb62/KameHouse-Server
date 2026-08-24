@@ -1,3 +1,4 @@
+import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Icons } from "@/components/ui/icons"
 import { cn } from "@/components/ui/core/styling"
@@ -11,7 +12,7 @@ interface PlayerQueueSidebarProps {
     currentQueueIndex: number
 }
 
-export function PlayerQueueSidebar({
+export const PlayerQueueSidebar = React.memo(function PlayerQueueSidebar({
     isOpen,
     onClose,
     playlistQueue,
@@ -166,4 +167,4 @@ export function PlayerQueueSidebar({
             )}
         </AnimatePresence>
     )
-}
+})

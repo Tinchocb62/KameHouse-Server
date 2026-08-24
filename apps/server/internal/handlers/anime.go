@@ -1,7 +1,8 @@
-﻿package handlers
+package handlers
 
 import (
 	"fmt"
+	"kamehouse/internal/constants"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/database/models/dto"
@@ -60,8 +61,8 @@ func (h *Handler) getTMDBEpisodeCollection(mID int) (*anime.EpisodeCollection, e
 	// Look for LibraryMedia that has this TMDB ID
 	var libraryMedia *models.LibraryMedia
 	var err error
-	if tmdbID >= 1_000_000 {
-		libraryMedia, err = db.GetLibraryMediaByTmdbIdAndType(h.App.Database, tmdbID-1_000_000, "MOVIE")
+	if tmdbID >= constants.MovieIDOffset {
+		libraryMedia, err = db.GetLibraryMediaByTmdbIdAndType(h.App.Database, tmdbID-constants.MovieIDOffset, "MOVIE")
 	} else {
 		libraryMedia, err = db.GetLibraryMediaByTmdbIdAndType(h.App.Database, tmdbID, "SHOW")
 	}

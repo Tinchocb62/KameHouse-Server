@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"kamehouse/internal/constants"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
 	"github.com/rs/zerolog"
@@ -76,8 +77,8 @@ func (r *UnifiedResolver) ResolveUnifiedMedia(ctx context.Context, mediaID strin
 		var libMedia *models.LibraryMedia
 		var err error
 		tmdbID := -id
-		if tmdbID >= 1_000_000 {
-			libMedia, err = db.GetLibraryMediaByTmdbIdAndType(r.db, tmdbID-1_000_000, "MOVIE")
+		if tmdbID >= constants.MovieIDOffset {
+			libMedia, err = db.GetLibraryMediaByTmdbIdAndType(r.db, tmdbID-constants.MovieIDOffset, "MOVIE")
 		} else {
 			libMedia, err = db.GetLibraryMediaByTmdbIdAndType(r.db, tmdbID, "SHOW")
 		}

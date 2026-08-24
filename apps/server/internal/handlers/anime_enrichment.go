@@ -5,15 +5,19 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
+	"kamehouse/internal/api/jikan"
 	"kamehouse/internal/api/tmdb"
 	"kamehouse/internal/database/db"
 	"kamehouse/internal/database/models"
 	"kamehouse/internal/library/anime"
 	librarymetadata "kamehouse/internal/library/metadata"
 	"kamehouse/internal/platforms/platform"
+
+	"github.com/rs/zerolog"
 )
 
 // SettingsCache provides in-memory caching for application settings to reduce repeated database calls.
@@ -58,12 +62,12 @@ func (c *SettingsCache) Invalidate() {
 // GlobalSettingsCache is the centralized instance for application settings.
 var GlobalSettingsCache = &SettingsCache{}
 
-func getActiveProvider(settings *models.Settings, dbInstance *db.Database) librarymetadata.Provider {
+func getActiveProvider(settings *models.Settings, dbInstance *db.Database, logger *zerolog.Logger) librarymetadata.Provider {
 	var useTMDB bool
 	var tmdbToken string
 	var tmdbLanguage string
 	if settings != nil {
-		useTMDB = settings.Library.ScannerProvider == "tmdb"
+		useTMDB = settings.Library.ScannerProvider == "tmdb" || settings.Library.ScannerProvider == ""
 		tmdbToken = settings.Library.TmdbApiKey
 		tmdbLanguage = settings.Library.TmdbLanguage
 	}
@@ -71,31 +75,30 @@ func getActiveProvider(settings *models.Settings, dbInstance *db.Database) libra
 		tmdbToken = os.Getenv("KAMEHOUSE_TMDB_TOKEN")
 	}
 
-	if useTMDB {
+	if useTMDB && tmdbToken != "" {
 		if tmdbLanguage == "" || tmdbLanguage == "en" || tmdbLanguage == "es" {
 			tmdbLanguage = "es-MX"
 		}
-		if tmdbToken != "" {
-			return librarymetadata.NewTMDBProvider(tmdbToken, dbInstance, tmdbLanguage)
-		}
+		return librarymetadata.NewTMDBProvider(tmdbToken, dbInstance, tmdbLanguage)
 	}
 
-	return nil
+	// Fallback to Jikan provider when TMDB token is not present
+	return librarymetadata.NewJikanProvider(dbInstance, logger)
 }
 
-// enrichEpisodesWithTMDB fetches episode-level metadata from TMDB and fills in
+// enrichEpisodesWithTMDB fetches episode-level metadata from TMDB or Jikan and fills in
 // any fields that AniDB/Animap left empty (title, overview/summary, still image, runtime).
 // Supports multi-season series by fetching all available seasons in parallel.
 // This is purely additive — never overwrites existing non-empty values.
 func (h *Handler) enrichEpisodesWithTMDB(ctx context.Context, entry *anime.Entry, settings *models.Settings) {
-	if entry == nil || entry.Media == nil || entry.Media.TmdbID == 0 {
+	if entry == nil || entry.Media == nil || (entry.Media.TmdbID == 0 && entry.Media.MyanimelistId == 0) {
 		return
 	}
 	if len(entry.Episodes) == 0 {
 		return
 	}
 
-	// Skip TMDB fetch when all episodes already have image and overview from the primary provider.
+	// Skip fetch when all episodes already have image and overview from the primary provider.
 	allComplete := true
 	for _, ep := range entry.Episodes {
 		if ep == nil {
@@ -110,14 +113,18 @@ func (h *Handler) enrichEpisodesWithTMDB(ctx context.Context, entry *anime.Entry
 	if allComplete {
 		h.App.Logger.Debug().
 			Int("tmdbID", entry.Media.TmdbID).
+			Int("malID", entry.Media.MyanimelistId).
 			Int("episodeCount", len(entry.Episodes)).
 			Msg("enrichEpisodesWithTMDB: skipped — episodes complete")
 		return
 	}
 
-	h.App.Logger.Debug().Int("tmdbID", entry.Media.TmdbID).Msg("enrichEpisodesWithTMDB: starting enrichment")
+	h.App.Logger.Debug().
+		Int("tmdbID", entry.Media.TmdbID).
+		Int("malID", entry.Media.MyanimelistId).
+		Msg("enrichEpisodesWithTMDB: starting enrichment")
 
-	provider := getActiveProvider(settings, h.App.Database)
+	provider := getActiveProvider(settings, h.App.Database, h.App.Logger)
 	if provider == nil {
 		return
 	}
@@ -137,7 +144,11 @@ func (h *Handler) enrichEpisodesWithTMDB(ctx context.Context, entry *anime.Entry
 
 	// If it's a movie, handle differently
 	if entry.Media.Format == string(platform.MediaFormatMovie) {
-		movie, err := provider.GetMediaDetails(ctx, strconv.Itoa(tmdbID+1000000))
+		lookUpID := strconv.Itoa(tmdbID + 1000000)
+		if tmdbID == 0 && entry.Media.MyanimelistId > 0 {
+			lookUpID = strconv.Itoa(entry.Media.MyanimelistId)
+		}
+		movie, err := provider.GetMediaDetails(ctx, lookUpID)
 		if err == nil && movie != nil {
 			for i := range entry.Episodes {
 				if entry.Episodes[i].EpisodeMetadata == nil {
@@ -157,9 +168,55 @@ func (h *Handler) enrichEpisodesWithTMDB(ctx context.Context, entry *anime.Entry
 		return
 	}
 
-	// Fetch Season 1 baseline — requires TMDBProvider specifically
+	// Fetch Season 1 baseline if using TMDBProvider specifically
 	tmdbProvider, ok := provider.(*librarymetadata.TMDBProvider)
-	if !ok {
+	if !ok || tmdbID == 0 {
+		// Fallback to Jikan for episode list enrichment
+		malID := entry.Media.MyanimelistId
+		if malID > 0 {
+			jClient := jikan.NewClient(h.App.Logger)
+			if epList, err := jClient.GetAnimeEpisodes(ctx, malID); err == nil && epList != nil {
+				jEpMap := make(map[int]string)
+				jSynMap := make(map[int]string)
+				jAirMap := make(map[int]string)
+				for _, epData := range epList.Data {
+					jEpMap[epData.Episode] = epData.Title
+					jSynMap[epData.Episode] = epData.Synopsis
+					jAirMap[epData.Episode] = epData.Aired
+				}
+				for i := range entry.Episodes {
+					ep := entry.Episodes[i]
+					if ep == nil {
+						continue
+					}
+					if ep.EpisodeMetadata == nil {
+						entry.Episodes[i].EpisodeMetadata = &anime.EpisodeMetadata{}
+					}
+					md := entry.Episodes[i].EpisodeMetadata
+					if t, ok := jEpMap[ep.EpisodeNumber]; ok && t != "" {
+						if md.Title == "" {
+							md.Title = t
+						}
+						if entry.Episodes[i].EpisodeTitle == "" {
+							entry.Episodes[i].EpisodeTitle = t
+						}
+					}
+					if syn, ok := jSynMap[ep.EpisodeNumber]; ok && syn != "" {
+						if md.Overview == "" {
+							md.Overview = syn
+						}
+						if md.Summary == "" {
+							md.Summary = syn
+						}
+					}
+					if air, ok := jAirMap[ep.EpisodeNumber]; ok && air != "" {
+						if md.AirDate == "" {
+							md.AirDate = air
+						}
+					}
+				}
+			}
+		}
 		return
 	}
 
@@ -270,36 +327,117 @@ func (h *Handler) enrichEpisodesWithTMDB(ctx context.Context, entry *anime.Entry
 		Msg("enrichEpisodesWithTMDB: complete")
 }
 
-// enrichMediaWithTMDB fetches series-level metadata from TMDB if the local description is missing.
+// isBrokenImageURL returns true if the given URL is clearly an invalid / placeholder path that
+// will return a 404. These are short filename-style hashes (e.g. "daima_poster.jpg",
+// "bardock_poster.jpg") that were hardcoded without a real TMDB hash, or genuinely empty strings.
+func isBrokenImageURL(url string) bool {
+	if url == "" {
+		return true
+	}
+	// Real TMDB image hashes are 24–30 hex-like characters followed by .jpg / .png.
+	// Placeholder filenames typically contain underscores and are much shorter.
+	// Quick heuristic: flag any TMDB CDN URL whose filename looks like a placeholder.
+	placeholders := []string{
+		"daima_poster", "daima_banner",
+		"bardock_poster", "bardock_banner",
+		"trunks_future", "deadzone",
+		"broly_poster", "superhero_poster",
+	}
+	for _, p := range placeholders {
+		if len(url) > 0 && containsStr(url, p) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsStr(s, substr string) bool {
+	return strings.Contains(s, substr)
+}
+
+// enrichMediaWithTMDB fetches series-level metadata from TMDB or Jikan API if the local metadata or poster is missing/broken.
 func (h *Handler) enrichMediaWithTMDB(ctx context.Context, entry *anime.Entry, settings *models.Settings) {
-	if entry == nil || entry.Media == nil || entry.Media.TmdbID == 0 {
+	if entry == nil || entry.Media == nil || (entry.Media.TmdbID == 0 && entry.Media.MyanimelistId == 0 && entry.Media.TitleRomaji == "") {
 		return
 	}
 
-	// Only enrich if important metadata is missing
+	// Only enrich if important metadata is missing OR if the stored image URL is a broken placeholder
 	missingMetadata := entry.Media.Description == "" ||
+		entry.Media.Description == "Sin descripción" ||
 		(entry.Media.TitleSpanish == "" && entry.Media.TitleEnglish == "") ||
-		entry.Media.PosterImage == ""
+		isBrokenImageURL(entry.Media.PosterImage) ||
+		isBrokenImageURL(entry.Media.BannerImage)
 
 	if !missingMetadata {
 		return
 	}
 
-	h.App.Logger.Debug().Int("tmdbID", entry.Media.TmdbID).Msg("enrichMediaWithTMDB: fetching series metadata")
-
-	provider := getActiveProvider(settings, h.App.Database)
+	provider := getActiveProvider(settings, h.App.Database, h.App.Logger)
 	if provider == nil {
 		return
 	}
-	tmdbID := entry.Media.TmdbID
 
-	// Fetch details
-	lookUpID := strconv.Itoa(tmdbID)
-	// Type is always set by the scanner; Format can be empty on records that never
-	// got enriched, which is precisely the case this function has to recover.
-	if entry.Media.Format == string(platform.MediaFormatMovie) || entry.Media.Type == "MOVIE" {
-		lookUpID = strconv.Itoa(tmdbID + 1000000)
+	lookUpID := ""
+	if provider.GetProviderID() == "jikan" {
+		if entry.Media.MyanimelistId > 0 {
+			lookUpID = strconv.Itoa(entry.Media.MyanimelistId)
+		} else {
+			// Map known TMDB IDs to MAL IDs for anime
+			malMap := map[int]int{
+				12609:  223,   // Dragon Ball
+				12971:  813,   // Dragon Ball Z
+				12697:  225,   // Dragon Ball GT
+				61709:  6033,  // Dragon Ball Kai
+				42705:  6033,  // Dragon Ball Kai
+				62715:  30694, // Dragon Ball Super
+				236994: 56884, // Dragon Ball Daima
+			}
+			if malID, ok := malMap[entry.Media.TmdbID]; ok {
+				lookUpID = strconv.Itoa(malID)
+				entry.Media.MyanimelistId = malID
+			} else {
+				// Search dynamically by title on Jikan API
+				searchQuery := entry.Media.TitleRomaji
+				if searchQuery == "" {
+					searchQuery = entry.Media.TitleEnglish
+				}
+				if searchQuery == "" {
+					searchQuery = entry.Media.TitleSpanish
+				}
+				if searchQuery != "" {
+					results, err := provider.SearchMedia(ctx, searchQuery)
+					if err == nil && len(results) > 0 && results[0] != nil {
+						lookUpID = results[0].ExplicitID
+						if results[0].MyanimelistId != nil {
+							entry.Media.MyanimelistId = *results[0].MyanimelistId
+						}
+					}
+				}
+			}
+		}
+	} else {
+		// TMDB provider
+		tmdbID := entry.Media.TmdbID
+		if tmdbID > 0 {
+			if entry.Media.Format == string(platform.MediaFormatMovie) || entry.Media.Type == "MOVIE" {
+				lookUpID = strconv.Itoa(tmdbID + 1000000)
+			} else {
+				lookUpID = strconv.Itoa(tmdbID)
+			}
+		}
 	}
+
+	if lookUpID == "" {
+		return
+	}
+
+	h.App.Logger.Debug().
+		Str("provider", provider.GetName()).
+		Str("lookUpID", lookUpID).
+		Int("tmdbID", entry.Media.TmdbID).
+		Int("malID", entry.Media.MyanimelistId).
+		Str("existingPoster", entry.Media.PosterImage).
+		Msg("enrichMediaWithTMDB: fetching series metadata via API")
 
 	nm, err := provider.GetMediaDetails(ctx, lookUpID)
 	if err != nil || nm == nil {
@@ -307,7 +445,7 @@ func (h *Handler) enrichMediaWithTMDB(ctx context.Context, entry *anime.Entry, s
 	}
 
 	updated := false
-	if nm.Description != nil && *nm.Description != "" && entry.Media.Description == "" {
+	if nm.Description != nil && *nm.Description != "" && (entry.Media.Description == "" || entry.Media.Description == "Sin descripción") {
 		entry.Media.Description = *nm.Description
 		updated = true
 	}
@@ -320,12 +458,19 @@ func (h *Handler) enrichMediaWithTMDB(ctx context.Context, entry *anime.Entry, s
 			entry.Media.TitleEnglish = *nm.Title.English
 			updated = true
 		}
+		if nm.Title.Romaji != nil && *nm.Title.Romaji != "" && entry.Media.TitleRomaji == "" {
+			entry.Media.TitleRomaji = *nm.Title.Romaji
+			updated = true
+		}
 	}
-	if nm.CoverImage != nil && nm.CoverImage.Large != nil && entry.Media.PosterImage == "" {
+	// Update poster if missing or broken
+	if nm.CoverImage != nil && nm.CoverImage.Large != nil && *nm.CoverImage.Large != "" &&
+		isBrokenImageURL(entry.Media.PosterImage) {
 		entry.Media.PosterImage = *nm.CoverImage.Large
 		updated = true
 	}
-	if nm.BannerImage != nil && *nm.BannerImage != "" && entry.Media.BannerImage == "" {
+	// Update banner if missing or broken
+	if nm.BannerImage != nil && *nm.BannerImage != "" && isBrokenImageURL(entry.Media.BannerImage) {
 		entry.Media.BannerImage = *nm.BannerImage
 		updated = true
 	}
@@ -334,9 +479,9 @@ func (h *Handler) enrichMediaWithTMDB(ctx context.Context, entry *anime.Entry, s
 		// Persist to database
 		_, err := db.InsertLibraryMedia(h.App.Database, entry.Media)
 		if err != nil {
-			h.App.Logger.Warn().Err(err).Int("tmdbID", tmdbID).Msg("enrichMediaWithTMDB: failed to persist enriched metadata")
+			h.App.Logger.Warn().Err(err).Int("tmdbID", entry.Media.TmdbID).Int("malID", entry.Media.MyanimelistId).Msg("enrichMediaWithTMDB: failed to persist enriched metadata")
 		} else {
-			h.App.Logger.Info().Int("tmdbID", tmdbID).Msg("enrichMediaWithTMDB: updated series metadata in DB")
+			h.App.Logger.Info().Int("tmdbID", entry.Media.TmdbID).Int("malID", entry.Media.MyanimelistId).Str("poster", entry.Media.PosterImage).Msg("enrichMediaWithTMDB: updated series metadata in DB from API")
 		}
 	}
 }

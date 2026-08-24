@@ -2,6 +2,8 @@ import type {
     Anime_Episode,
     Anime_LibraryCollectionEntry,
     Models_LibraryMedia,
+    MediaCandidate,
+    SelectionResult,
 } from "@/api/generated/types"
 
 export type CardAspect = "poster" | "wide" | "square"
@@ -81,33 +83,16 @@ export interface ContinueWatchingEntry {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Intelligent Selection Engine Types
-// Mirrors Go types in internal/intelligence/types.go
+// Re-exported from @/api/generated/types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface MediaCandidate {
-    filePath: string
-    resolution: number
-    codec: string
-    bitrate: number
-    audioLangs: string[]
-    audioCodec: string
-    fileSize: number
-    isHDR: boolean
-    container: string
-}
+export type { MediaCandidate, SelectionResult }
 
 export interface ScoringWeights {
     resolution: number
     codec: number
     bitrate: number
     audioMatch: number
-}
-
-export interface SelectionResult {
-    winner: MediaCandidate
-    allCandidates: MediaCandidate[]
-    totalScore: number
-    reason: string
 }
 
 export interface IntelligenceStats {

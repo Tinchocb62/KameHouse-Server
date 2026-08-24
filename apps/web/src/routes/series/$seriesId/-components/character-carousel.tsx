@@ -1,3 +1,4 @@
+import { memo } from "react"
 import type { CharacterDTO } from "@/api/types/series.types"
 import { motion } from "framer-motion"
 import { staggerList, staggerAvatar } from "@/components/ui/core/motion"
@@ -8,7 +9,7 @@ interface CharacterCarouselProps {
   onSelect?: (name: string) => void
 }
 
-export function CharacterCarousel({ characters, onSelect }: CharacterCarouselProps) {
+export const CharacterCarousel = memo(function CharacterCarousel({ characters, onSelect }: CharacterCarouselProps) {
   if (!characters || characters.length === 0) return null
 
   return (
@@ -35,4 +36,4 @@ export function CharacterCarousel({ characters, onSelect }: CharacterCarouselPro
       </motion.div>
     </div>
   )
-}
+})

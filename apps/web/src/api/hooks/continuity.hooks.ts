@@ -17,6 +17,7 @@ export function useGetContinuityWatchHistoryItem(id: number) {
         method: API_ENDPOINTS.CONTINUITY.GetContinuityWatchHistoryItem.methods[0],
         queryKey: [API_ENDPOINTS.CONTINUITY.GetContinuityWatchHistoryItem.key, id],
         enabled: id > 0,
+        staleTime: 5000,
     })
 }
 
@@ -26,6 +27,7 @@ export function useGetContinuityWatchHistory() {
         method: API_ENDPOINTS.CONTINUITY.GetContinuityWatchHistory.methods[0],
         queryKey: [API_ENDPOINTS.CONTINUITY.GetContinuityWatchHistory.key],
         enabled: true,
+        staleTime: 5000,
     })
 }
 

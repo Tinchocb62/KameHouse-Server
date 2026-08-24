@@ -1,0 +1,8 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -18728,3 +18728,3 @@
+ // src/web/utils/check-react-grab-version.ts
+-import { version as REACT_GRAB_VERSION } from "react-grab/package.json";
++var REACT_GRAB_VERSION = "0.1.50";
+ var didRunVersionCheck = false;

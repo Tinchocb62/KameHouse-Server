@@ -23,31 +23,28 @@ export function RadioCardGroup({ name, options, value, onChange }: RadioCardGrou
                 return (
                     <div
                         key={opt.value || "default"}
-                        className={cn(
-                            "flex items-start gap-4 p-4 rounded-xl border transition-all duration-base cursor-pointer group",
-                            isActive
-                                ? "border-brand-accent/30 bg-brand-accent/[0.03] bg-[radial-gradient(ellipse_at_left,hsl(var(--brand-accent)/0.04),transparent_70%)]"
-                                : "border-outline-variant hover:border-outline-variant hover:bg-surface-container-high"
-                        )}
                         onClick={() => onChange(opt.value)}
+                        className={cn(
+                            "flex items-start gap-4 p-4 rounded-xl border transition-all duration-base cursor-pointer group select-none",
+                            isActive
+                                ? "border-brand-accent/50 bg-brand-accent/[0.06] shadow-[0_0_12px_hsl(var(--brand-accent)/0.15)]"
+                                : "border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]"
+                        )}
                     >
-                        <input
-                            id={`${name}-radio-${opt.value || "default"}`}
-                            type="radio"
-                            name={name}
-                            value={opt.value}
-                            checked={isActive}
-                            onChange={() => onChange(opt.value)}
-                            className="mt-1 accent-brand-accent"
-                            onClick={(e) => e.stopPropagation()}
-                        />
+                        <div className="mt-1 shrink-0 pointer-events-none">
+                            <input
+                                type="radio"
+                                name={name}
+                                value={opt.value}
+                                checked={isActive}
+                                readOnly
+                                className="accent-brand-accent pointer-events-none"
+                            />
+                        </div>
                         <div className="flex-1 -mt-0.5">
-                            <label
-                                htmlFor={`${name}-radio-${opt.value || "default"}`}
-                                className="text-xs font-bold text-on-surface block tracking-tight cursor-pointer"
-                            >
+                            <span className="text-xs font-bold text-on-surface block tracking-tight">
                                 {opt.label}
-                            </label>
+                            </span>
                             {opt.desc && <span className="text-caption text-on-surface-variant block mt-0.5">{opt.desc}</span>}
                         </div>
                         {opt.badge && (
@@ -55,7 +52,7 @@ export function RadioCardGroup({ name, options, value, onChange }: RadioCardGrou
                                 "h-8 px-3 rounded-lg flex items-center justify-center text-label-sm font-black uppercase tracking-wider shrink-0",
                                 isActive
                                     ? "bg-brand-accent/20 text-brand-accent border border-brand-accent/30"
-                                    : "bg-surface-container text-on-surface-variant border border-outline-variant"
+                                    : "bg-white/[0.04] text-on-surface-variant border border-white/10"
                             )}>
                                 {opt.badge}
                             </div>

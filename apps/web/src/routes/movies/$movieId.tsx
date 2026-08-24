@@ -11,6 +11,7 @@ import { useGetContinuityWatchHistoryItem } from "@/api/hooks/continuity.hooks"
 import { useCastPlay } from "@/api/hooks/cast.hooks"
 import { usePreloadMediastreamMediaContainer } from "@/api/hooks/mediastream.hooks"
 import { API_ENDPOINTS } from "@/api/generated/endpoints"
+import { EXTRA_ENDPOINTS } from "@/api/client/endpoints.extra"
 import { Anime_LocalFile, FileTechnicalInfo, Mediastream_StreamType } from "@/api/generated/types"
 import { EmptyState } from "@/components/shared/empty-state"
 import { PlayCta } from "@/components/ui/play-cta"
@@ -36,9 +37,9 @@ import { useThemeSettings } from "@/lib/theme/theme-hooks"
 
 
 export const Route = createFileRoute("/movies/$movieId")({
-    loader: ({ params: { movieId }, context }) => {
+    loader: async ({ params: { movieId }, context }) => {
         const qc = context.queryClient
-        qc.prefetchQuery({
+        await qc.prefetchQuery({
             queryKey: [API_ENDPOINTS.ANIME_ENTRIES.GetAnimeEntry.key, movieId],
             queryFn: () => fetchAnimeEntry(movieId),
         })
@@ -79,9 +80,9 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
     const ts = useThemeSettings()
 
     const { data: lore } = useServerQuery<DragonBallLoreData>({
-        endpoint: "/api/v1/lore/dragonball",
+        endpoint: EXTRA_ENDPOINTS.DRAGONBALL.Lore.endpoint,
         method: "GET",
-        queryKey: ["dragonball-lore"],
+        queryKey: [EXTRA_ENDPOINTS.DRAGONBALL.Lore.key],
         staleTime: 300000,
         enabled: isDragonBallTmdbId(entry?.media?.tmdbId),
         muteError: true,
@@ -97,9 +98,11 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         malId?: number | null
     } | null>(null)
 
-    const initialWatched = entry?.episodes?.[0]?.watched || false
+    // BUG 15: También chequea listData.progress para películas sin episodes[0]
+    const initialWatched = entry?.episodes?.[0]?.watched
+        || (entry?.listData?.progress ?? 0) >= (entry?.media?.totalEpisodes ?? 1)
+        || false
     const [isWatched, setIsWatched] = useState(initialWatched)
-    const [prevInitialWatched, setPrevInitialWatched] = useState(initialWatched)
     const { mutate: updateProgress } = useUpdateAnimeEntryProgress(Number(movieId), 1, false)
     const { mutate: preloadStream } = usePreloadMediastreamMediaContainer()
 
@@ -112,30 +115,52 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         preloadStream({ path: defaultTargetPath, streamType: "direct", audioStreamIndex: 0, preferredAudioLang: "" })
     }, [defaultTargetPath, preloadStream])
 
-    if (initialWatched !== prevInitialWatched) {
-        setPrevInitialWatched(initialWatched)
-        setIsWatched(initialWatched)
-    }
+    // BUG 14: Sincronizar isWatched cuando llegan nuevos datos de la entrada (useEffect, no render)
+    useEffect(() => {
+        setIsWatched(
+            entry?.episodes?.[0]?.watched
+            || (entry?.listData?.progress ?? 0) >= (entry?.media?.totalEpisodes ?? 1)
+            || false
+        )
+    }, [entry?.episodes, entry?.listData?.progress, entry?.media?.totalEpisodes])
+
+    const setActiveSeriesContext = useAppStore(s => s.setActiveSeriesContext)
+    useEffect(() => {
+        const tmdbId = entry?.media?.tmdbId || Number(movieId)
+        if (tmdbId) {
+            setActiveSeriesContext(String(tmdbId))
+        }
+        return () => {
+            setActiveSeriesContext(null)
+        }
+    }, [entry?.media?.tmdbId, movieId, setActiveSeriesContext])
 
     useEffect(() => {
         if (entry?.media?.id) playSound("detail", 0.4)
     }, [entry?.media?.id, playSound])
 
-    // Parallax del backdrop — escucha en captura porque la página scrollea
-    // dentro de su propio contenedor, no en window (mismo patrón que SeriesHero)
+    // Parallax del backdrop — escucha en captura con throttling por requestAnimationFrame
     useEffect(() => {
+        let rafId: number | null = null
         const handleScroll = (e: Event) => {
+            if (rafId !== null) return
             const target = e.target
-            if (!backdropRef.current || !containerRef.current) return
-            if (target === document || target === window) {
-                const scrolled = window.scrollY || document.documentElement.scrollTop
-                backdropRef.current.style.transform = `translate3d(0, ${scrolled * 0.35}px, 0)`
-            } else if (target instanceof HTMLElement && target.contains(containerRef.current)) {
-                backdropRef.current.style.transform = `translate3d(0, ${target.scrollTop * 0.35}px, 0)`
-            }
+            rafId = requestAnimationFrame(() => {
+                rafId = null
+                if (!backdropRef.current || !containerRef.current) return
+                if (target === document || target === window) {
+                    const scrolled = window.scrollY || document.documentElement.scrollTop
+                    backdropRef.current.style.transform = `translate3d(0, ${scrolled * 0.35}px, 0)`
+                } else if (target instanceof HTMLElement && target.contains(containerRef.current)) {
+                    backdropRef.current.style.transform = `translate3d(0, ${target.scrollTop * 0.35}px, 0)`
+                }
+            })
         }
         window.addEventListener("scroll", handleScroll, { capture: true, passive: true })
-        return () => window.removeEventListener("scroll", handleScroll, { capture: true })
+        return () => {
+            if (rafId !== null) cancelAnimationFrame(rafId)
+            window.removeEventListener("scroll", handleScroll, { capture: true })
+        }
     }, [])
 
     // Sincroniza el backdrop con el DynamicBackdrop global (glass real detrás del contenido)
@@ -148,12 +173,12 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
 
     useGSAP(() => {
         gsap.from(".movie-animate", {
-            y: 35,
+            y: 20,
             opacity: 0,
-            duration: 1.2,
-            stagger: 0.08,
-            ease: "power4.out",
-            delay: 0.15
+            duration: 0.4,
+            stagger: 0.04,
+            ease: "power2.out",
+            delay: 0.05
         })
     }, { scope: containerRef, dependencies: [movieId] })
 
@@ -201,10 +226,15 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
 
     const techInfo = entry.localFiles?.[0]?.technicalInfo as FileTechnicalInfo | undefined
     const streamWidth = techInfo?.videoStream?.width ?? 0
+    const colorTransfer = (techInfo?.videoStream?.colorTransfer || "").toLowerCase()
+    const isHDR = colorTransfer.includes("smpte2084") || colorTransfer.includes("arib-std-b67") || (((techInfo?.videoStream as unknown as { bitsPerRawSample?: number })?.bitsPerRawSample ?? 0) > 8)
     const technicalData = techInfo ? {
         fileSize: formatFileSize(techInfo.size || 0),
-        resolutionTag: streamWidth >= 1920 ? "1080P FHD" : "720P HD",
+        resolutionTag: streamWidth >= 3840 ? "4K UHD" : streamWidth >= 1920 ? "1080P FHD" : streamWidth >= 1280 ? "720P HD" : "SD",
         is4K: streamWidth >= 3840,
+        isHDR,
+        videoCodec: techInfo.videoStream?.codec?.toUpperCase(),
+        audioCodec: techInfo.audioStreams?.[0]?.codec?.toUpperCase(),
     } : null
 
     const progressPercent = continuityData?.item?.duration ? (continuityData.item.currentTime / continuityData.item.duration) * 100 : 0
@@ -317,10 +347,26 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
                 {media.isNsfw ? "18+" : "PG-13"}
             </span>
             
-            {technicalData?.is4K && (
-                <span className="flex items-center gap-1 font-black text-on-surface tracking-wider px-2 py-0.5 rounded-full" style={{ background: "linear-gradient(to right, var(--era-shimmer-1), var(--era-shimmer-2))" }}>
+            {technicalData?.is4K ? (
+                <span className="flex items-center gap-1 font-black text-on-surface tracking-wider px-2.5 py-0.5 rounded-full text-xs" style={{ background: "linear-gradient(to right, var(--era-shimmer-1), var(--era-shimmer-2))" }}>
                     <Icons.ui.star size={10} fill="currentColor" />
-                    4K
+                    4K UHD
+                </span>
+            ) : technicalData?.resolutionTag ? (
+                <span className="flex items-center justify-center bg-white/[0.06] border border-white/10 rounded-full px-2.5 py-0.5 text-zinc-300 font-bold text-xs">
+                    {technicalData.resolutionTag}
+                </span>
+            ) : null}
+
+            {technicalData?.isHDR && (
+                <span className="flex items-center justify-center bg-amber-500/15 border border-amber-500/30 rounded-full px-2.5 py-0.5 text-amber-300 font-black text-xs tracking-wider">
+                    HDR10
+                </span>
+            )}
+
+            {technicalData?.videoCodec && (
+                <span className="flex items-center justify-center bg-white/[0.04] border border-white/10 rounded-full px-2 py-0.5 text-zinc-400 font-bold text-xs">
+                    {technicalData.videoCodec}
                 </span>
             )}
             
@@ -399,19 +445,22 @@ function MovieDetailClient({ movieId }: { movieId: string }) {
         <div ref={containerRef} className="h-full w-full flex flex-col overflow-y-auto no-scrollbar text-on-surface relative select-none" data-theme={localTheme || undefined}>
 
 
-            <MediaHero
-                scrollContainerRef={containerRef}
-                backdropUrl={backdropUrl}
-                posterUrl={posterUrl}
-                hasBannerImage={hasBannerImage}
-                title={titleNode}
-                topBadge={topBadge}
-                metadataRow={metadataRow}
-                synopsis={synopsis}
-                actionButtons={actionButtons}
-                showPosterColumn={true}
-                onBackdropClick={handlePlayDefault}
-            />
+            {/* BUG 13: movie-animate en el wrapper del hero para que GSAP tenga targets */}
+            <div className="movie-animate">
+                <MediaHero
+                    scrollContainerRef={containerRef}
+                    backdropUrl={backdropUrl}
+                    posterUrl={posterUrl}
+                    hasBannerImage={hasBannerImage}
+                    title={titleNode}
+                    topBadge={topBadge}
+                    metadataRow={metadataRow}
+                    synopsis={synopsis}
+                    actionButtons={actionButtons}
+                    showPosterColumn={true}
+                    onBackdropClick={handlePlayDefault}
+                />
+            </div>
 
             {/* Progress bar */}
             {continuityData?.item?.currentTime && continuityData.item.duration && (

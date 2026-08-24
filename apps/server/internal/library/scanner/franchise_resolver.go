@@ -65,10 +65,14 @@ func ResolveFranchiseID(ct string, franchise FranchiseDef) (int, bool, bool) {
 	return 0, false, false
 }
 
-// franchiseHasWord returns true if word appears as a whole token in ct.
+// franchiseHasWord returns true if word/phrase appears as a whole token sequence in ct.
 // ct must be padded with a leading and trailing space.
 func franchiseHasWord(ct, word string) bool {
-	return strings.Contains(ct, " "+word+" ")
+	norm := strings.TrimSpace(normalizeDragonBallTitle(word))
+	if norm == "" {
+		return false
+	}
+	return strings.Contains(ct, " "+norm+" ")
 }
 
 // franchiseMatchesMapping checks Keywords (AND), Excluded (NONE), AnyOf (OR).
@@ -96,3 +100,4 @@ func franchiseMatchesMapping(ct string, keywords, anyOf, excluded []string) bool
 	}
 	return true
 }
+

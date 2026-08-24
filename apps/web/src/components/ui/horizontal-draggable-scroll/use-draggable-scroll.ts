@@ -17,6 +17,7 @@ type OptionsType = {
 type ReturnType = {
     events: {
         onMouseDown: (e: React.MouseEvent<HTMLElement>) => void
+        onClickCapture: (e: React.MouseEvent) => void
     }
 }
 
@@ -98,39 +99,12 @@ export function useDraggableScroll(
 
     useIsomorphicLayoutEffect(() => {
         if (isMounted && ref.current) {
-            layoutState.current.isScrollableAlongX =
-                window.getComputedStyle(ref.current).overflowX === "scroll"
-            layoutState.current.isScrollableAlongY =
-                window.getComputedStyle(ref.current).overflowY === "scroll"
-
-            layoutState.current.maxHorizontalScroll = ref.current.scrollWidth - ref.current.clientWidth
-            layoutState.current.maxVerticalScroll = ref.current.scrollHeight - ref.current.clientHeight
-
-            layoutState.current.cursorStyleOfWrapperElement = window.getComputedStyle(ref.current).cursor
-
-            layoutState.current.cursorStyleOfChildElements = []
-            layoutState.current.transformStyleOfChildElements = []
-            layoutState.current.transitionStyleOfChildElements = [];
-
-            (ref.current.childNodes as NodeListOf<HTMLOptionElement>).forEach(
-                (child: HTMLElement) => {
-                    layoutState.current.cursorStyleOfChildElements.push(
-                        window.getComputedStyle(child).cursor,
-                    )
-
-                    layoutState.current.transformStyleOfChildElements.push(
-                        window.getComputedStyle(child).transform === "none"
-                            ? ""
-                            : window.getComputedStyle(child).transform,
-                    )
-
-                    layoutState.current.transitionStyleOfChildElements.push(
-                        window.getComputedStyle(child).transition === "none"
-                            ? ""
-                            : window.getComputedStyle(child).transition,
-                    )
-                },
-            )
+            const el = ref.current
+            layoutState.current.isScrollableAlongX = el.scrollWidth > el.clientWidth
+            layoutState.current.isScrollableAlongY = el.scrollHeight > el.clientHeight
+            layoutState.current.maxHorizontalScroll = el.scrollWidth - el.clientWidth
+            layoutState.current.maxVerticalScroll = el.scrollHeight - el.clientHeight
+            layoutState.current.cursorStyleOfWrapperElement = el.style.cursor || ""
         }
     }, [isMounted])
 
@@ -195,65 +169,57 @@ export function useDraggableScroll(
     }
 
     const rubberBandAnimationTimer = useRef<NodeJS.Timeout | null>(null)
-    const keepMovingX = useRef<NodeJS.Timeout | null>(null)
-    const keepMovingY = useRef<NodeJS.Timeout | null>(null)
+    const momentumRafId = useRef<number | null>(null)
 
     const callbackMomentum = () => {
         const minimumSpeedToTriggerMomentum = 0.05
+        if (momentumRafId.current) {
+            cancelAnimationFrame(momentumRafId.current)
+            momentumRafId.current = null
+        }
 
-        keepMovingX.current = setInterval(() => {
-            const lastScrollSpeedX = internalState.current.scrollSpeedX
-            const newScrollSpeedX = lastScrollSpeedX * decayRate
-            internalState.current.scrollSpeedX = newScrollSpeedX
+        const stepMomentum = () => {
+            let continueX = false
+            let continueY = false
 
-            const isAtLeft = ref.current.scrollLeft <= 0
-            const isAtRight = ref.current.scrollLeft >= layoutState.current.maxHorizontalScroll
-            const hasReachedHorizontalEdges = isAtLeft || isAtRight
-
-            runScroll()
-
-            if (
-                Math.abs(newScrollSpeedX) < minimumSpeedToTriggerMomentum ||
-                internalState.current.isMouseDown ||
-                hasReachedHorizontalEdges
-            ) {
+            if (Math.abs(internalState.current.scrollSpeedX) >= minimumSpeedToTriggerMomentum && !internalState.current.isMouseDown) {
+                internalState.current.scrollSpeedX *= decayRate
+                const isAtLeft = ref.current.scrollLeft <= 0
+                const isAtRight = ref.current.scrollLeft >= layoutState.current.maxHorizontalScroll
+                if (!isAtLeft && !isAtRight) {
+                    continueX = true
+                }
+            } else {
                 internalState.current.scrollSpeedX = 0
-                if (keepMovingX.current) {
-                    clearInterval(keepMovingX.current)
-                    keepMovingX.current = null
-                }
             }
-        }, timing)
 
-        keepMovingY.current = setInterval(() => {
-            const lastScrollSpeedY = internalState.current.scrollSpeedY
-            const newScrollSpeedY = lastScrollSpeedY * decayRate
-            internalState.current.scrollSpeedY = newScrollSpeedY
-
-            const isAtTop = ref.current.scrollTop <= 0
-            const isAtBottom = ref.current.scrollTop >= layoutState.current.maxVerticalScroll
-            const hasReachedVerticalEdges = isAtTop || isAtBottom
+            if (Math.abs(internalState.current.scrollSpeedY) >= minimumSpeedToTriggerMomentum && !internalState.current.isMouseDown) {
+                internalState.current.scrollSpeedY *= decayRate
+                const isAtTop = ref.current.scrollTop <= 0
+                const isAtBottom = ref.current.scrollTop >= layoutState.current.maxVerticalScroll
+                if (!isAtTop && !isAtBottom) {
+                    continueY = true
+                }
+            } else {
+                internalState.current.scrollSpeedY = 0
+            }
 
             runScroll()
 
-            if (
-                Math.abs(newScrollSpeedY) < minimumSpeedToTriggerMomentum ||
-                internalState.current.isMouseDown ||
-                hasReachedVerticalEdges
-            ) {
-                internalState.current.scrollSpeedY = 0
-                if (keepMovingY.current) {
-                    clearInterval(keepMovingY.current)
-                    keepMovingY.current = null
-                }
+            if (continueX || continueY) {
+                momentumRafId.current = requestAnimationFrame(stepMomentum)
+            } else {
+                momentumRafId.current = null
             }
-        }, timing)
+        }
+
+        momentumRafId.current = requestAnimationFrame(stepMomentum)
 
         internalState.current.isDraggingX = false
         internalState.current.isDraggingY = false
 
         if (applyRubberBandEffect) {
-            const transitionDurationInMilliseconds = 250;
+            const transitionDurationInMilliseconds = 250
 
             setChildrenTransformAndTransition(
                 ref.current,
@@ -281,61 +247,22 @@ export function useDraggableScroll(
         )
     }
 
-    const onMouseDown = (e: React.MouseEvent<HTMLElement>) => {
-        const isMouseActive = getIsMousePressActive(e.buttons)
-        if (!isMouseActive) {
-            return
-        }
-
-        internalState.current.isMouseDown = true
-        internalState.current.lastMouseX = e.clientX
-        internalState.current.lastMouseY = e.clientY
-        internalState.current.initialMouseX = e.clientX
-        internalState.current.initialMouseY = e.clientY
-    }
-
-    const onMouseUp = (e: MouseEvent) => {
-        const isDragging =
-            internalState.current.isDraggingX || internalState.current.isDraggingY
-
-        const dx = internalState.current.initialMouseX - e.clientX
-        const dy = internalState.current.initialMouseY - e.clientY
-
-        const isMotionIntentional =
-            Math.abs(dx) > safeDisplacement || Math.abs(dy) > safeDisplacement
-
-        const isDraggingConfirmed = isDragging && isMotionIntentional
-
-        if (isDraggingConfirmed) {
-            ref.current.childNodes.forEach((child) => {
-                child.addEventListener("click", preventClick)
-            })
-        } else {
-            ref.current.childNodes.forEach((child) => {
-                child.removeEventListener("click", preventClick)
-            })
-        }
-
-        internalState.current.isMouseDown = false
-        internalState.current.lastMouseX = 0
-        internalState.current.lastMouseY = 0
-
-        updateCursor(ref.current, layoutState.current.cursorStyleOfWrapperElement)
-        updateChildrenCursors(ref.current, layoutState.current.cursorStyleOfChildElements)
-
-        if (isDraggingConfirmed) {
-            callbackMomentum()
-        }
-    }
-
     const rafId = useRef<number | null>(null)
+
+    const isDraggingConfirmedRef = useRef(false)
+
+    const handleCaptureClick = React.useCallback((e: React.MouseEvent) => {
+        if (isDraggingConfirmedRef.current) {
+            e.preventDefault()
+            e.stopPropagation()
+            isDraggingConfirmedRef.current = false
+        }
+    }, [])
 
     const onMouseMove = (e: MouseEvent) => {
         if (!internalState.current.isMouseDown) {
             return
         }
-
-        e.preventDefault()
 
         if (rafId.current) cancelAnimationFrame(rafId.current)
         rafId.current = requestAnimationFrame(() => {
@@ -352,7 +279,6 @@ export function useDraggableScroll(
             internalState.current.isDraggingY = true
 
             updateCursor(ref.current, "grabbing")
-            updateChildrenCursors(ref.current, "grabbing")
 
             const isAtLeft = ref.current.scrollLeft <= 0 && layoutState.current.isScrollableAlongX
             const isAtRight =
@@ -370,38 +296,92 @@ export function useDraggableScroll(
         })
     }
 
+    const onMouseUp = (e: MouseEvent) => {
+        window.removeEventListener("mousemove", onMouseMove)
+        window.removeEventListener("mouseup", onMouseUp)
+
+        const isDragging =
+            internalState.current.isDraggingX || internalState.current.isDraggingY
+
+        const dx = internalState.current.initialMouseX - e.clientX
+        const dy = internalState.current.initialMouseY - e.clientY
+
+        const isMotionIntentional =
+            Math.abs(dx) > safeDisplacement || Math.abs(dy) > safeDisplacement
+
+        const isDraggingConfirmed = isDragging && isMotionIntentional
+        isDraggingConfirmedRef.current = isDraggingConfirmed
+
+        internalState.current.isMouseDown = false
+        internalState.current.lastMouseX = 0
+        internalState.current.lastMouseY = 0
+
+        if (ref.current) {
+            ref.current.style.willChange = ""
+        }
+
+        updateCursor(ref.current, layoutState.current.cursorStyleOfWrapperElement)
+        updateChildrenCursors(ref.current, layoutState.current.cursorStyleOfChildElements)
+
+        if (isDraggingConfirmed) {
+            callbackMomentum()
+        }
+    }
+
+    const onMouseDown = (e: React.MouseEvent<HTMLElement>) => {
+        const isMouseActive = getIsMousePressActive(e.buttons)
+        if (!isMouseActive) {
+            return
+        }
+
+        if (momentumRafId.current) {
+            cancelAnimationFrame(momentumRafId.current)
+            momentumRafId.current = null
+        }
+
+        internalState.current.isMouseDown = true
+        internalState.current.lastMouseX = e.clientX
+        internalState.current.lastMouseY = e.clientY
+        internalState.current.initialMouseX = e.clientX
+        internalState.current.initialMouseY = e.clientY
+
+        if (ref.current) {
+            ref.current.style.willChange = "scroll-position"
+        }
+
+        // Attach listeners on demand only while dragging with passive listeners
+        window.addEventListener("mousemove", onMouseMove, { passive: true })
+        window.addEventListener("mouseup", onMouseUp, { passive: true })
+    }
+
     const handleResize = () => {
+        if (!ref.current) return
         layoutState.current.maxHorizontalScroll = ref.current.scrollWidth - ref.current.clientWidth
         layoutState.current.maxVerticalScroll = ref.current.scrollHeight - ref.current.clientHeight
     }
 
-    const onMouseUpRef = useRef(onMouseUp)
     const onMouseMoveRef = useRef(onMouseMove)
+    const onMouseUpRef = useRef(onMouseUp)
     const handleResizeRef = useRef(handleResize)
-
     useEffect(() => {
-        onMouseUpRef.current = onMouseUp
         onMouseMoveRef.current = onMouseMove
+        onMouseUpRef.current = onMouseUp
         handleResizeRef.current = handleResize
     })
 
     useEffect(() => {
-        const handleMouseUp = (e: MouseEvent) => onMouseUpRef.current(e)
-        const handleMouseMove = (e: MouseEvent) => onMouseMoveRef.current(e)
         const handleResizeEvent = () => handleResizeRef.current()
 
         if (isMounted) {
-            window.addEventListener("mouseup", handleMouseUp)
-            window.addEventListener("mousemove", handleMouseMove)
-            window.addEventListener("resize", handleResizeEvent)
+            window.addEventListener("resize", handleResizeEvent, { passive: true })
         }
         return () => {
-            window.removeEventListener("mouseup", handleMouseUp)
-            window.removeEventListener("mousemove", handleMouseMove)
+            window.removeEventListener("mousemove", onMouseMoveRef.current)
+            window.removeEventListener("mouseup", onMouseUpRef.current)
             window.removeEventListener("resize", handleResizeEvent)
 
-            if (keepMovingX.current) clearInterval(keepMovingX.current)
-            if (keepMovingY.current) clearInterval(keepMovingY.current)
+            if (momentumRafId.current) cancelAnimationFrame(momentumRafId.current)
+            if (rafId.current) cancelAnimationFrame(rafId.current)
             if (rubberBandAnimationTimer.current) clearTimeout(rubberBandAnimationTimer.current)
         }
     }, [isMounted])
@@ -409,6 +389,7 @@ export function useDraggableScroll(
     return {
         events: {
             onMouseDown,
+            onClickCapture: handleCaptureClick,
         },
     }
 }

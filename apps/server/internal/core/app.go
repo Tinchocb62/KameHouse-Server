@@ -23,7 +23,6 @@ import (
 	"kamehouse/internal/library/anime"
 	"kamehouse/internal/library/autoscanner"
 	"kamehouse/internal/library/fillermanager"
-	"kamehouse/internal/library/metadata"
 	"kamehouse/internal/library/scanner"
 	"kamehouse/internal/library_explorer"
 	"kamehouse/internal/local"
@@ -36,6 +35,7 @@ import (
 	"kamehouse/internal/user"
 	"kamehouse/internal/util"
 	"kamehouse/internal/util/cache"
+	"kamehouse/internal/util/ffmpegutil"
 	"kamehouse/internal/util/filecache"
 	"kamehouse/internal/videocore"
 )
@@ -45,8 +45,6 @@ type (
 		TMDBClient *tmdb.Client
 		Provider   *metadata_provider.DynamicProvider
 		Platform   *platform.DynamicPlatform
-		FanArt     *metadata.FanArtEnricher
-		OMDb       *metadata.OMDbEnricher
 	}
 
 	CoreServices struct {
@@ -56,6 +54,7 @@ type (
 		WSEventManager *events.WSEventManager
 		FileCacher     *filecache.Cacher
 		ThumbnailCache *cache.ThumbnailCache
+		FFmpegManager  *ffmpegutil.Manager
 	}
 
 	StreamingServices struct {
@@ -163,9 +162,8 @@ func NewKameHouse(configOpts *ConfigOptions) *App {
 	tmdbClient := initTMDBClient(cfg, database)
 	_, wsEventManager := initEventSystem(logger, database)
 	notifier.Global().Init(database, wsEventManager, logger)
-	enrichers := initMetadataEnrichers(cfg)
 	fileCacher := initFileCacher(cfg, logger)
-	metadataProvider := initMetadataProvider(logger, fileCacher, database, tmdbClient)
+	metadataProvider := initMetadataProvider(cfg, logger, fileCacher, database, tmdbClient)
 
 	localManager := initLocalManager(cfg, database, logger, wsEventManager)
 
@@ -196,6 +194,7 @@ func NewKameHouse(configOpts *ConfigOptions) *App {
 			WSEventManager: wsEventManager,
 			FileCacher:     fileCacher,
 			ThumbnailCache: thumbnailCache,
+			FFmpegManager:  ffmpegutil.NewManager(cfg.Cache.Dir, logger),
 		},
 		StreamingServices: StreamingServices{
 			VideoCore:             videoCore,
@@ -213,8 +212,6 @@ func NewKameHouse(configOpts *ConfigOptions) *App {
 			TMDBClient: tmdbClient,
 			Provider:   dynamicProvider,
 			Platform:   dynamicPlatform,
-			FanArt:     enrichers.FanArt,
-			OMDb:       enrichers.OMDb,
 		},
 		Version:           constants.Version,
 		ContinuityManager: continuityManager,
@@ -308,6 +305,7 @@ func initDatabase(cfg *Config, logger *zerolog.Logger) *db.Database {
 func initAppDatabaseEntries(database *db.Database, logger *zerolog.Logger) {
 	HandleNewDatabaseEntries(database, logger)
 	database.RunDatabaseCleanup()
+	db.CleanBrokenLibraryMediaPosters(database)
 	_, _ = database.GetAllLibraryPathsFromSettings()
 }
 
@@ -331,20 +329,6 @@ func initEventSystem(logger *zerolog.Logger, database *db.Database) (events.Disp
 	return dispatcher, wsEventManager
 }
 
-type metadataEnrichers struct {
-	FanArt *metadata.FanArtEnricher
-	OMDb   *metadata.OMDbEnricher
-}
-
-func initMetadataEnrichers(cfg *Config) metadataEnrichers {
-	fanartEnricher := metadata.NewFanArtEnricher(cfg.Metadata.FanArtAPIKey)
-	omdbEnricher := metadata.NewOMDbEnricher(cfg.Metadata.OMDbAPIKey)
-	return metadataEnrichers{
-		FanArt: fanartEnricher,
-		OMDb:   omdbEnricher,
-	}
-}
-
 func initFileCacher(cfg *Config, logger *zerolog.Logger) *filecache.Cacher {
 	fileCacher, err := filecache.NewCacher(cfg.Cache.Dir)
 	if err != nil {
@@ -353,12 +337,13 @@ func initFileCacher(cfg *Config, logger *zerolog.Logger) *filecache.Cacher {
 	return fileCacher
 }
 
-func initMetadataProvider(logger *zerolog.Logger, fileCacher *filecache.Cacher, database *db.Database, tmdbClient *tmdb.Client) metadata_provider.Provider {
+func initMetadataProvider(cfg *Config, logger *zerolog.Logger, fileCacher *filecache.Cacher, database *db.Database, tmdbClient *tmdb.Client) metadata_provider.Provider {
 	return metadata_provider.NewProvider(&metadata_provider.NewProviderImplOptions{
-		Logger:     logger,
-		FileCacher: fileCacher,
-		Database:   database,
-		TMDBClient: tmdbClient,
+		Logger:          logger,
+		FileCacher:      fileCacher,
+		Database:        database,
+		TMDBClient:      tmdbClient,
+		DefaultProvider: cfg.Metadata.Provider,
 	})
 }
 

@@ -153,6 +153,20 @@ func readEmbeddedMediaIdentity(ctx context.Context, path string, lf *dto.LocalFi
 	return identity, true
 }
 
+func isGenericOrNumericTitle(t string) bool {
+	clean := strings.ToLower(strings.TrimSpace(t))
+	if clean == "" {
+		return true
+	}
+	if _, err := strconv.Atoi(clean); err == nil {
+		return true
+	}
+	if IsSeasonOrSagaFolderName(clean) {
+		return true
+	}
+	return false
+}
+
 func applyEmbeddedMediaIdentity(lf *dto.LocalFile, identity *dto.LocalFileEmbeddedMetadata) {
 	if lf == nil || identity == nil {
 		return
@@ -160,13 +174,14 @@ func applyEmbeddedMediaIdentity(lf *dto.LocalFile, identity *dto.LocalFileEmbedd
 	if lf.ParsedData == nil {
 		lf.ParsedData = &dto.LocalFileParsedData{Original: filepath.Base(lf.Path)}
 	}
-	if identity.Title != "" {
+	// Only override Title if current parsed title is empty or generic
+	if identity.Title != "" && (lf.ParsedData.Title == "" || isGenericOrNumericTitle(lf.ParsedData.Title)) {
 		lf.ParsedData.Title = identity.Title
 	}
-	if identity.Season != nil {
+	if identity.Season != nil && (lf.ParsedData.Season == "" || lf.ParsedData.Season == "0" || lf.ParsedData.Season == "1") {
 		lf.ParsedData.Season = strconv.Itoa(*identity.Season)
 	}
-	if identity.Episode != nil {
+	if identity.Episode != nil && (lf.ParsedData.Episode == "" || lf.ParsedData.Episode == "0") {
 		lf.ParsedData.Episode = strconv.Itoa(*identity.Episode)
 		if lf.Metadata != nil {
 			lf.Metadata.Episodes = []int{*identity.Episode}
@@ -185,22 +200,36 @@ func parsedMediaFromLocalFile(lf *dto.LocalFile) parser.ParsedMedia {
 		name = filepath.Base(lf.Path)
 	}
 	pm := parser.Parse(filepath.Base(name))
-	if parsedTitle := lf.GetParsedTitle(); parsedTitle != "" {
+
+	// If parsed media only has episode number or a generic/numeric title, resolve series name from folder
+	if pm.IsEpisodeOnly || isGenericOrNumericTitle(pm.Title) {
+		if seriesTitle := lf.GetSeriesFolderTitle(); seriesTitle != "" {
+			pm.Title = seriesTitle
+		} else if folderTitle := lf.GetFolderTitle(); folderTitle != "" && !isGenericOrNumericTitle(folderTitle) {
+			pm.Title = folderTitle
+		}
+	} else if parsedTitle := lf.GetParsedTitle(); parsedTitle != "" {
 		pm.Title = parsedTitle
 	}
 
-	if lf.EmbeddedMetadata == nil {
-		return pm
+	// Propagate season from folder if file does not specify an explicit season > 1
+	if pm.Season <= 1 {
+		if folderSeason := lf.GetSeasonNumber(); folderSeason > 0 {
+			pm.Season = folderSeason
+		}
 	}
 
-	if lf.EmbeddedMetadata.Title != "" {
-		pm.Title = lf.EmbeddedMetadata.Title
-	}
-	if lf.EmbeddedMetadata.Season != nil {
-		pm.Season = *lf.EmbeddedMetadata.Season
-	}
-	if lf.EmbeddedMetadata.Episode != nil {
-		pm.Episodes = []int{*lf.EmbeddedMetadata.Episode}
+	// Embedded metadata overrides only if title is empty or generic
+	if lf.EmbeddedMetadata != nil {
+		if lf.EmbeddedMetadata.Title != "" && (pm.Title == "" || isGenericOrNumericTitle(pm.Title)) {
+			pm.Title = lf.EmbeddedMetadata.Title
+		}
+		if lf.EmbeddedMetadata.Season != nil && pm.Season <= 1 {
+			pm.Season = *lf.EmbeddedMetadata.Season
+		}
+		if lf.EmbeddedMetadata.Episode != nil && (len(pm.Episodes) == 0 || (len(pm.Episodes) == 1 && pm.Episodes[0] <= 1 && pm.IsEpisodeOnly)) {
+			pm.Episodes = []int{*lf.EmbeddedMetadata.Episode}
+		}
 	}
 
 	return pm

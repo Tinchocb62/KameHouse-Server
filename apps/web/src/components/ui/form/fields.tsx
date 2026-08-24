@@ -1,6 +1,6 @@
 import { Icons } from "@/components/ui/icons"
 import { DirectorySelector, DirectorySelectorProps } from "@/components/shared/directory-selector"
-import { IconButton } from "@/components/ui/button"
+import { Button, IconButton } from "@/components/ui/button"
 import { cn } from "@/components/ui/core/styling"
 import React, { forwardRef, useMemo } from "react"
 import { Controller, FormState, get, useController, useFormContext } from "react-hook-form"
@@ -274,7 +274,7 @@ const MultiDirectorySelectorFieldInner = forwardRef<HTMLInputElement, FieldCompo
                         <DirectorySelector
                             shouldExist={shouldExist}
                             {...props}
-                            label="Directory"
+                            label={paths.length > 1 ? `Carpeta ${i + 1}` : undefined}
                             value={v ?? ""}
                             defaultValue={v ?? ""}
                             onSelect={value => {
@@ -290,16 +290,21 @@ const MultiDirectorySelectorFieldInner = forwardRef<HTMLInputElement, FieldCompo
                         size="sm"
                         intent="alert-outline"
                         icon={<Icons.ui.trash />}
+                        title="Eliminar carpeta"
                         onClick={() => _onChange?.(paths.filter((_, index) => index !== i))}
                     />
                 </div>
             ))}
-            <IconButton
+            <Button
                 size="sm"
-                intent="gray-subtle"
-                icon={<Icons.ui.plus />}
+                type="button"
+                intent="gray-glass"
+                leftIcon={<Icons.ui.plus />}
+                className="text-xs rounded-xl"
                 onClick={() => _onChange?.([...paths, ""])}
-            />
+            >
+                Añadir otra carpeta
+            </Button>
         </div>
     },
 )

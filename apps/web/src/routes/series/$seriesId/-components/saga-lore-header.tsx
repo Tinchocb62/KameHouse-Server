@@ -23,7 +23,7 @@ export interface SagaLoreHeaderProps {
     fillerStats?: { filler: number; total: number; percent: number }
 }
 
-export function SagaLoreHeader({ 
+export const SagaLoreHeader = React.memo(function SagaLoreHeader({ 
     saga, 
     subSaga, 
     media, 
@@ -431,4 +431,4 @@ export function SagaLoreHeader({
             </AnimatePresence>
         </div>
     )
-}
+})

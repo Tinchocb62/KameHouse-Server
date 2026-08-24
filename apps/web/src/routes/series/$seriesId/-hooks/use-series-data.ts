@@ -1,7 +1,8 @@
 import { useMemo } from "react"
 import { getHighResImage } from "@/lib/helpers/images"
-import { getDragonBallSpanishTitle } from "@/lib/config/dragonball.config"
+import { getDragonBallSpanishTitle, resolveSeriesSagas } from "@/lib/config/dragonball.config"
 import { getNextInTimeline } from "@/lib/config/franchise_timeline"
+import { getServerBaseUrl } from "@/api/client/server-url"
 import type { Anime_Entry, Anime_Episode, Anime_LocalFile, Continuity_WatchHistoryItemResponse, Anime_LibraryCollection } from "@/api/generated/types"
 import type { SagaDTO, PremiumEpisode } from "@/api/types/series.types"
 
@@ -192,7 +193,7 @@ export function useSeriesData({
         })
         const total = sagaEpisodes.length
         return { filler: fillerCount, total, percent: Math.round((fillerCount / total) * 100) }
-    }, [sagaEpisodes, entry?.localFiles])
+    }, [sagaEpisodes])
 
     // ── Memoized PremiumEpisode view-models ───────────────────────────────────
     // This is the core performance fix: the array was built inline in JSX as a
@@ -201,6 +202,23 @@ export function useSeriesData({
     // Moving the construction here means the list only re-renders when the
     // content actually changes — NOT on hover-preload, scroll, mobileSagasOpen,
     // playTarget changes, etc.
+    const dbSagaDefs = useMemo(() => resolveSeriesSagas(entry?.media), [entry?.media])
+
+    const lfMap = useMemo(() => {
+        const map = new Map<number, Anime_LocalFile>()
+        if (!entry?.localFiles) return map
+        for (const f of entry.localFiles) {
+            const fEp = f.metadata?.episode || f.parsedInfo?.episode
+            if (fEp != null) {
+                const epNum = Number(fEp)
+                if (!isNaN(epNum) && !map.has(epNum)) {
+                    map.set(epNum, f)
+                }
+            }
+        }
+        return map
+    }, [entry?.localFiles])
+
     const episodeViewModels = useMemo<PremiumEpisode[]>(() => {
         if (!computedEpisodes) return []
 
@@ -209,27 +227,11 @@ export function useSeriesData({
             : computedEpisodes.filter(ep => ep.sagaId === activeSagaId)
 
         const tmdbId = entry?.media?.tmdbId
-        const localFiles = entry?.localFiles
+        const serverBase = getServerBaseUrl()
 
         return filtered.map(ep => {
             const epNum = ep.absoluteEpisodeNumber || ep.episodeNumber
-            const lf =
-                ep.localFile ||
-                localFiles?.find(f => {
-                    const fEp = f.metadata?.episode || f.parsedInfo?.episode
-                    const fSeason = f.parsedInfo?.season
-
-                    if (ep.absoluteEpisodeNumber && Number(fEp) === ep.absoluteEpisodeNumber) {
-                        return true
-                    }
-                    if (fSeason != null && ep.seasonNumber != null) {
-                        return (
-                            Number(fEp) === ep.episodeNumber &&
-                            Number(fSeason) === ep.seasonNumber
-                        )
-                    }
-                    return Number(fEp) === ep.episodeNumber
-                })
+            const lf = ep.localFile || lfMap.get(ep.absoluteEpisodeNumber || ep.episodeNumber) || lfMap.get(ep.episodeNumber)
 
             const localizedTitle = getDragonBallSpanishTitle(tmdbId, epNum)
             const resolvedTitle =
@@ -240,14 +242,51 @@ export function useSeriesData({
                 ep.displayTitle ||
                 `Episodio ${epNum}`
 
+            const metaDuration = (ep.episodeMetadata as { duration?: number } | undefined)?.duration
+            const durationSec =
+                (lf?.technicalInfo?.videoStream as { duration?: number } | undefined)?.duration ||
+                (lf?.technicalInfo as { container?: { duration?: number } } | undefined)?.container?.duration ||
+                (metaDuration ? metaDuration * 60 : undefined)
+            const durationMinutes = durationSec
+                ? Math.max(1, Math.round(durationSec / 60))
+                : (entry?.media?.runtime || 24)
+
+            // Resolve thumbnail with layered fallback:
+            // 1. Episode metadata image (TMDB / provider still)
+            // 2. Video thumbnail generated from local file
+            // 3. Sub-saga / saga curated artwork
+            // 4. Series heroBackdrop / poster
+            const currentSaga = sagas?.find(s => s.id === ep.sagaId)
+            const currentSubSaga = currentSaga?.subSagas?.find(ss => epNum >= ss.startEp && epNum <= ss.endEp)
+
+            const defSaga = dbSagaDefs?.find(s => s.id === ep.sagaId || (epNum >= s.startEp && epNum <= s.endEp))
+            const defSubSaga = defSaga?.subSagas?.find(ss => epNum >= ss.startEp && epNum <= ss.endEp)
+
+            let resolvedThumbnail = ep.episodeMetadata?.image || ""
+            if (!resolvedThumbnail && lf?.path) {
+                resolvedThumbnail = `${serverBase}/api/v1/video-thumbnail?path=${encodeURIComponent(lf.path)}`
+            }
+            if (!resolvedThumbnail) {
+                resolvedThumbnail =
+                    defSubSaga?.image ||
+                    defSaga?.image ||
+                    currentSubSaga?.image ||
+                    (currentSaga as { image?: string } | undefined)?.image ||
+                    heroBackdrop ||
+                    entry?.media?.bannerImage ||
+                    entry?.media?.posterImage ||
+                    ""
+            }
+
             return {
                 id: epNum.toString(),
                 title: resolvedTitle,
                 number: epNum,
                 description: ep.episodeMetadata?.summary || ep.episodeMetadata?.overview || "",
-                thumbnailUrl: ep.episodeMetadata?.image || heroBackdrop || "",
+                thumbnailUrl: resolvedThumbnail,
                 episodeType: (ep.episodeMetadata?.isFiller ? "Filler" : (lf?.metadata?.episodeType || "Canon")) as PremiumEpisode["episodeType"],
                 isWatched: ep.watched,
+                duration: durationMinutes,
                 resolution: lf?.technicalInfo?.videoStream?.height
                     ? `${lf.technicalInfo.videoStream.height}p`
                     : undefined,
@@ -258,7 +297,7 @@ export function useSeriesData({
                 sagaName: sagas?.find(s => s.id === ep.sagaId)?.name,
             } as PremiumEpisode
         })
-    }, [computedEpisodes, sagas, activeSagaId, entry?.localFiles, entry?.media?.tmdbId, heroBackdrop])
+    }, [computedEpisodes, sagas, activeSagaId, entry?.localFiles, entry?.media, heroBackdrop, dbSagaDefs])
 
     return {
         computedEpisodes,

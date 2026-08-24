@@ -1,4 +1,5 @@
 import { GettingStarted_Variables } from "@/api/generated/endpoint.types"
+import type { Models_Settings } from "@/api/generated/types"
 import { z } from "zod"
 
 
@@ -105,32 +106,32 @@ export const gettingStartedSchema = _gettingStartedSchema.extend({
     notifications: settingsSchema.shape.notifications.optional(),
 })
 
-export const getDefaultSettings = (data: z.infer<typeof gettingStartedSchema>): GettingStarted_Variables => ({
+export const getDefaultSettings = (data: z.infer<typeof gettingStartedSchema>, existingSettings?: Models_Settings | null): GettingStarted_Variables => ({
     library: {
-        autoScan: false,
-        openWebURLOnStart: false,
-        refreshLibraryOnStart: false,
-        autoPlayNextEpisode: true,
-        autoDetectSkipTimes: true,
-        enableWatchContinuity: data.library.enableWatchContinuity,
-        seriesPaths: data.library.seriesPaths || [],
-        moviePaths: data.library.moviePaths || [],
-        scannerMatchingThreshold: 0,
-        scannerMatchingAlgorithm: "",
-        useFallbackMetadataProvider: false,
-        scannerUseLegacyMatching: false,
-        scannerStrictStructure: false,
-        scannerProvider: data.library.scannerProvider || "tmdb",
-        scannerConfig: "",
-        disableLocalScanning: data.library.disableLocalScanning,
-        tmdbApiKey: data.library.tmdbApiKey,
-        tmdbLanguage: "es-MX",
-        primaryMetadataProvider: data.library.primaryMetadataProvider || "tmdb",
-        fanartApiKey: data.library.fanartApiKey || "",
-        omdbApiKey: data.library.omdbApiKey || "",
+        autoScan: data.library.autoScan ?? existingSettings?.library?.autoScan ?? false,
+        openWebURLOnStart: existingSettings?.library?.openWebURLOnStart ?? false,
+        refreshLibraryOnStart: existingSettings?.library?.refreshLibraryOnStart ?? false,
+        autoPlayNextEpisode: data.library.autoPlayNextEpisode ?? existingSettings?.library?.autoPlayNextEpisode ?? true,
+        autoDetectSkipTimes: data.library.autoDetectSkipTimes ?? existingSettings?.library?.autoDetectSkipTimes ?? true,
+        enableWatchContinuity: data.library.enableWatchContinuity ?? existingSettings?.library?.enableWatchContinuity ?? true,
+        seriesPaths: data.library.seriesPaths ?? existingSettings?.library?.seriesPaths ?? [],
+        moviePaths: data.library.moviePaths ?? existingSettings?.library?.moviePaths ?? [],
+        scannerMatchingThreshold: existingSettings?.library?.scannerMatchingThreshold ?? 0,
+        scannerMatchingAlgorithm: existingSettings?.library?.scannerMatchingAlgorithm ?? "",
+        useFallbackMetadataProvider: existingSettings?.library?.useFallbackMetadataProvider ?? false,
+        scannerUseLegacyMatching: existingSettings?.library?.scannerUseLegacyMatching ?? false,
+        scannerStrictStructure: existingSettings?.library?.scannerStrictStructure ?? false,
+        scannerProvider: data.library.scannerProvider || existingSettings?.library?.scannerProvider || "tmdb",
+        scannerConfig: existingSettings?.library?.scannerConfig ?? "",
+        disableLocalScanning: data.library.disableLocalScanning ?? existingSettings?.library?.disableLocalScanning ?? false,
+        tmdbApiKey: data.library.tmdbApiKey || existingSettings?.library?.tmdbApiKey || "",
+        tmdbLanguage: existingSettings?.library?.tmdbLanguage || "es-MX",
+        primaryMetadataProvider: data.library.primaryMetadataProvider || existingSettings?.library?.primaryMetadataProvider || "tmdb",
+        fanartApiKey: data.library.fanartApiKey || existingSettings?.library?.fanartApiKey || "",
+        omdbApiKey: data.library.omdbApiKey || existingSettings?.library?.omdbApiKey || "",
     },
-    mediaPlayer: {},
-    enableTranscode: data.enableTranscode,
+    mediaPlayer: existingSettings?.mediaPlayer || {},
+    enableTranscode: data.enableTranscode ?? existingSettings?.mediastream?.transcodeEnabled ?? false,
 })
 
 

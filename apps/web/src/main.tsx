@@ -27,14 +27,14 @@ declare module "@tanstack/react-router" {
     }
 }
 
-// react-scan is available for profiling, but opt-in only via VITE_REACT_SCAN=true
-// to avoid mandatory internet access on every dev start.
-// To enable: VITE_REACT_SCAN=true npm run dev
-if (import.meta.env.DEV && import.meta.env.VITE_REACT_SCAN === "true") {
-    const script = document.createElement("script")
-    script.src = "https://unpkg.com/react-scan/dist/auto.global.js"
-    script.crossOrigin = "anonymous"
-    document.head.appendChild(script)
+// React Scan para profiling visual, detección de re-renders y generador de prompts para IA
+if (typeof window !== "undefined" && import.meta.env.DEV) {
+    import("react-scan").then(({ scan }) => {
+        scan({
+            enabled: true,
+            log: false,
+        })
+    }).catch(() => {})
 }
 
 // Global error telemetry — capture unhandled errors and promise rejections.
@@ -81,30 +81,31 @@ window.addEventListener("error", (event) => {
     } catch { /* non-fatal */ }
 })
 
-async function init() {
-    // El build "desktop" (SEA_PUBLIC_PLATFORM=desktop) también se sirve en un
-    // navegador normal durante `npm run dev`. En ese contexto el runtime de Tauri
-    // no existe, así que `invoke` sería undefined y tiraría. Solo intentamos obtener
-    // el puerto dinámico cuando Tauri está realmente presente; si no, el fallback de
-    // `getServerBaseUrl` (rutas relativas / __DEV_SERVER_PORT) ya resuelve el backend.
-    const hasTauriRuntime = typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== "undefined"
-    if (__isDesktop__ && hasTauriRuntime) {
-        try {
-            const { invoke } = await import("@tauri-apps/api/core")
-            const port = await invoke<number>("get_local_server_port")
-            if (port) {
-                window.__KAMEHOUSE_PORT__ = port
-            }
-        } catch (e) {
-            console.error("[Desktop] Failed to get dynamic server port", e)
-        }
-    }
-
+function init() {
+    // Renderizamos la UI de inmediato para que la pantalla de carga se muestre sin ningún retraso
     ReactDOM.createRoot(document.getElementById("root")!).render(
         <ClientProviders>
             <RouterProvider router={router} />
         </ClientProviders>,
     )
+
+    // En segundo plano, si estamos en Tauri, resolvemos el puerto dinámico si está disponible
+    const hasTauriRuntime = typeof (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== "undefined"
+    if (__isDesktop__ && hasTauriRuntime) {
+        import("@tauri-apps/api/core").then(({ invoke }) => {
+            invoke<number>("get_local_server_port")
+                .then((port) => {
+                    if (port) {
+                        window.__KAMEHOUSE_PORT__ = port
+                        // Refrescamos la consulta de status con el nuevo puerto si corresponde
+                        queryClient.invalidateQueries({ queryKey: ["/status"] })
+                    }
+                })
+                .catch((e) => {
+                    console.error("[Desktop] Failed to get dynamic server port", e)
+                })
+        }).catch(() => {})
+    }
 }
 
 init()

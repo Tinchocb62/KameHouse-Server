@@ -1,5 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![allow(linker_messages)]
 
 mod sidecar;
 mod settings;
@@ -22,6 +23,14 @@ use updater::UpdaterManager;
 use mpv::MpvManager;
 
 pub fn run() {
+    #[cfg(target_os = "windows")]
+    if std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS").is_err() {
+        std::env::set_var(
+            "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+            "--enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist --disable-frame-rate-limit",
+        );
+    }
+
     let sidecar_manager = Arc::new(SidecarManager::new());
     let settings_manager = Arc::new(SettingsManager::new());
     let window_manager = Arc::new(WindowManager::new(settings_manager.clone()));
@@ -106,11 +115,19 @@ pub fn run() {
                 let mut webview_args: Vec<&str> = Vec::new();
                 if settings.disable_hardware_acceleration {
                     webview_args.push("--disable-gpu");
-                } else if settings.enable_aggressive_gpu_flags {
+                    webview_args.push("--disable-gpu-compositing");
+                } else {
                     webview_args.push("--enable-gpu-rasterization");
                     webview_args.push("--enable-zero-copy");
                     webview_args.push("--ignore-gpu-blocklist");
                     webview_args.push("--enable-accelerated-2d-canvas");
+                    webview_args.push("--use-angle=d3d11");
+                    webview_args.push("--enable-features=D3D11VideoDecoder,DirectCompositionOverlays,DirectCompositionVideoOverlays,CanvasOopRasterization,TouchpadAndWheelScrollLatching");
+
+                    if settings.enable_aggressive_gpu_flags {
+                        webview_args.push("--disable-frame-rate-limit");
+                        webview_args.push("--enable-gpu-memory-buffer-video-frames");
+                    }
                 }
                 if !webview_args.is_empty() {
                     let joined = webview_args.join(" ");

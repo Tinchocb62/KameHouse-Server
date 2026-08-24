@@ -14,6 +14,12 @@ pub struct WindowBounds {
     pub height: u32,
 }
 
+impl WindowBounds {
+    pub fn is_valid(&self) -> bool {
+        self.width > 0 && self.height > 0 && self.x > -10000 && self.y > -10000
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DesktopSettings {
     pub minimize_to_tray: bool,
@@ -81,12 +87,13 @@ impl SettingsManager {
                 Ok(content) => {
                     match serde_json::from_str::<DesktopSettings>(&content) {
                         Ok(loaded) => {
-                            *settings = DesktopSettings { window_bounds: loaded.window_bounds.clone(), ..Default::default() };
+                            let valid_bounds = loaded.window_bounds.filter(|b| b.is_valid());
+                            *settings = DesktopSettings { window_bounds: valid_bounds.clone(), ..Default::default() };
                             settings.minimize_to_tray = loaded.minimize_to_tray;
                             settings.open_in_background = loaded.open_in_background;
                             settings.open_at_launch = loaded.open_at_launch;
                             settings.update_channel = loaded.update_channel;
-                            settings.window_bounds = loaded.window_bounds;
+                            settings.window_bounds = valid_bounds;
                             settings.window_maximized = loaded.window_maximized;
                             settings.disable_hardware_acceleration = loaded.disable_hardware_acceleration;
                             settings.enable_aggressive_gpu_flags = loaded.enable_aggressive_gpu_flags;
@@ -158,7 +165,9 @@ impl SettingsManager {
                 }
                 "windowBounds" | "window_bounds" => {
                     if let Ok(bounds) = serde_json::from_value::<WindowBounds>(value) {
-                        settings.window_bounds = Some(bounds);
+                        if bounds.is_valid() {
+                            settings.window_bounds = Some(bounds);
+                        }
                     }
                 }
                 "windowMaximized" | "window_maximized" => {

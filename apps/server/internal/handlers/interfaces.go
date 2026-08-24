@@ -77,13 +77,6 @@ type TMDBClient interface {
 	GetTVExternalIDs(tmdbID int) (interface{}, error)
 }
 
-type FanArtEnricher interface {
-	EnrichMovie(movieID int, language string) (interface{}, error)
-	EnrichTV(tvID int, language string) (interface{}, error)
-}
-
-type OMDbEnricher interface{}
-
 type AnimeCollectionProvider interface {
 	GetAnimeCollection(bypassCache bool) (*platform.UnifiedCollection, error)
 }

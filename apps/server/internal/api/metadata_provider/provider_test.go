@@ -1,41 +1,53 @@
 package metadata_provider
 
 import (
-	"kamehouse/internal/api/metadata"
-	"strconv"
 	"testing"
+
+	"kamehouse/internal/api/tmdb"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProvider(t *testing.T) {
-	t.Skip("Skipping because of Platform API (TMDB) missing/fake data for 199112")
+func TestNewProvider_FallbackToJikan(t *testing.T) {
+	// Without TMDB client
+	prov := NewProvider(&NewProviderImplOptions{})
+	assert.NotNil(t, prov)
+	_, ok := prov.(*JikanProviderImpl)
+	assert.True(t, ok, "Expected JikanProviderImpl when no TMDB client is provided")
 
-	metadataProvider := GetFakeProvider(t, nil)
+	// With TMDB client but empty API key
+	emptyTmdb := tmdb.NewClient("")
+	provEmpty := NewProvider(&NewProviderImplOptions{
+		TMDBClient: emptyTmdb,
+	})
+	assert.NotNil(t, provEmpty)
+	_, okEmpty := provEmpty.(*JikanProviderImpl)
+	assert.True(t, okEmpty, "Expected JikanProviderImpl when TMDB client has empty API key")
 
-	tests := []struct {
-		platform         metadata.Platform
-		mediaID          int
-		expectedEpisodes int
-	}{
-		{platform: metadata.TMDBPlatform, mediaID: 199112, expectedEpisodes: 8},
-	}
+	// With configured TMDB client
+	configuredTmdb := tmdb.NewClient("some_test_key_12345")
+	provRouting := NewProvider(&NewProviderImplOptions{
+		TMDBClient: configuredTmdb,
+	})
+	assert.NotNil(t, provRouting)
+	_, okRouting := provRouting.(*RoutingProvider)
+	assert.True(t, okRouting, "Expected RoutingProvider when TMDB client has API key configured")
 
-	for _, tt := range tests {
-		t.Run(strconv.Itoa(tt.mediaID), func(t *testing.T) {
-			res, err := metadataProvider.GetAnimeMetadata(tt.mediaID)
-			if assert.NoError(t, err) {
-				t.Logf("Titles: %v", res.Titles)
-				t.Logf("\tEpisode count: %d", len(res.Episodes))
-				for id, ep := range res.Episodes {
-					t.Logf("\t\tEp(%s): %s", id, ep.Title)
-					t.Logf("\t\t\tEpisode: %s", ep.Episode)
-					t.Logf("\t\t\tNumber: %d", ep.EpisodeNumber)
-					t.Logf("\t\t\tAbsolute: %d", ep.AbsoluteEpisodeNumber)
-					t.Logf("\t\t\tSeason: %d", ep.SeasonNumber)
-				}
-				assert.Equal(t, tt.expectedEpisodes, len(res.Episodes))
-			}
-		})
-	}
+	// Explicit AniList provider
+	provAniList := NewProvider(&NewProviderImplOptions{
+		DefaultProvider: "anilist",
+		TMDBClient:      configuredTmdb,
+	})
+	assert.NotNil(t, provAniList)
+	_, okAniList := provAniList.(*AniListProviderImpl)
+	assert.True(t, okAniList, "Expected AniListProviderImpl when defaultProvider is anilist")
+
+	// Explicit Jikan provider with TMDB configured
+	provJikan := NewProvider(&NewProviderImplOptions{
+		DefaultProvider: "jikan",
+		TMDBClient:      configuredTmdb,
+	})
+	assert.NotNil(t, provJikan)
+	_, okJikan := provJikan.(*JikanProviderImpl)
+	assert.True(t, okJikan, "Expected JikanProviderImpl when defaultProvider is jikan")
 }

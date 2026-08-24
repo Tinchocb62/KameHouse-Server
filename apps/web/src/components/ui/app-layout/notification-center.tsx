@@ -101,7 +101,7 @@ export function NotificationBell({ sidebarOpen, compact = false }: { sidebarOpen
                             "fixed z-[70] flex flex-col overflow-hidden",
                             "bg-zinc-950/40 backdrop-blur-[var(--blur-overlay-xl)] border border-white/10 rounded-container",
                             isMobile
-                                ? "left-4 right-4 bottom-24 max-h-[60vh]"
+                                ? "top-16 left-3 right-3 max-h-[65vh]"
                                 : "left-24 bottom-6 w-[380px] max-h-[70vh]"
                         )}
                     >
